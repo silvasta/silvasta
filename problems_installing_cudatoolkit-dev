@@ -1,0 +1,197 @@
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ conda install -c conda-forge cudatoolkit-dev=9.2
+Collecting package metadata (current_repodata.json): done
+Solving environment: failed with initial frozen solve. Retrying with flexible solve.
+Collecting package metadata (repodata.json): done
+Solving environment: done
+
+## Package Plan ##
+
+  environment location: /scratch_net/computer/username/apps/Conda/conda_envs/CenterNet
+
+  added / updated specs:
+    - cudatoolkit-dev=9.2
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    brotlipy-0.7.0             |py36h8f6f2f9_1001         341 KB  conda-forge
+    chardet-4.0.0              |   py36h5fab9bb_1         219 KB  conda-forge
+    conda-4.10.2               |   py36h5fab9bb_0         3.0 MB  conda-forge
+    conda-package-handling-1.7.3|   py36h8f6f2f9_0         916 KB  conda-forge
+    cryptography-3.4.7         |   py36hb60f036_0         1.1 MB  conda-forge
+    cudatoolkit-dev-9.2        |           py36_2           9 KB  conda-forge
+    idna-2.10                  |     pyh9f0ad1d_0          52 KB  conda-forge
+    pycosat-0.6.3              |py36h8f6f2f9_1006         107 KB  conda-forge
+    pyopenssl-20.0.1           |     pyhd8ed1ab_0          48 KB  conda-forge
+    pysocks-1.7.1              |   py36h5fab9bb_3          27 KB  conda-forge
+    requests-2.25.1            |     pyhd3deb0d_0          51 KB  conda-forge
+    ruamel_yaml-0.15.80        |py36h8f6f2f9_1004         268 KB  conda-forge
+    tqdm-4.61.1                |     pyhd8ed1ab_0          79 KB  conda-forge
+    urllib3-1.26.6             |     pyhd8ed1ab_0          99 KB  conda-forge
+    yaml-0.2.5                 |       h516909a_0          82 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:         6.4 MB
+
+The following NEW packages will be INSTALLED:
+
+  brotlipy           conda-forge/linux-64::brotlipy-0.7.0-py36h8f6f2f9_1001
+  chardet            conda-forge/linux-64::chardet-4.0.0-py36h5fab9bb_1
+  conda              conda-forge/linux-64::conda-4.10.2-py36h5fab9bb_0
+  conda-package-han~ conda-forge/linux-64::conda-package-handling-1.7.3-py36h8f6f2f9_0
+  cryptography       conda-forge/linux-64::cryptography-3.4.7-py36hb60f036_0
+  cudatoolkit-dev    conda-forge/linux-64::cudatoolkit-dev-9.2-py36_2
+  idna               conda-forge/noarch::idna-2.10-pyh9f0ad1d_0
+  pycosat            conda-forge/linux-64::pycosat-0.6.3-py36h8f6f2f9_1006
+  pyopenssl          conda-forge/noarch::pyopenssl-20.0.1-pyhd8ed1ab_0
+  pysocks            conda-forge/linux-64::pysocks-1.7.1-py36h5fab9bb_3
+  python_abi         conda-forge/linux-64::python_abi-3.6-2_cp36m
+  requests           conda-forge/noarch::requests-2.25.1-pyhd3deb0d_0
+  ruamel_yaml        conda-forge/linux-64::ruamel_yaml-0.15.80-py36h8f6f2f9_1004
+  tqdm               conda-forge/noarch::tqdm-4.61.1-pyhd8ed1ab_0
+  urllib3            conda-forge/noarch::urllib3-1.26.6-pyhd8ed1ab_0
+  yaml               conda-forge/linux-64::yaml-0.2.5-h516909a_0
+
+The following packages will be UPDATED:
+
+  ca-certificates    pkgs/main::ca-certificates-2021.5.25-~ --> conda-forge::ca-certificates-2021.5.30-ha878542_0
+
+The following packages will be SUPERSEDED by a higher-priority channel:
+
+  certifi            pkgs/main::certifi-2021.5.30-py36h06a~ --> conda-forge::certifi-2021.5.30-py36h5fab9bb_0
+  openssl              pkgs/main::openssl-1.1.1k-h27cfd23_0 --> conda-forge::openssl-1.1.1k-h7f98852_0
+
+
+Proceed ([y]/n)? y
+
+
+Downloading and Extracting Packages
+pysocks-1.7.1        | 27 KB     | ####################################################################### | 100% 
+conda-4.10.2         | 3.0 MB    | ####################################################################### | 100% 
+pycosat-0.6.3        | 107 KB    | ####################################################################### | 100% 
+tqdm-4.61.1          | 79 KB     | ####################################################################### | 100% 
+ruamel_yaml-0.15.80  | 268 KB    | ####################################################################### | 100% 
+requests-2.25.1      | 51 KB     | ####################################################################### | 100% 
+pyopenssl-20.0.1     | 48 KB     | ####################################################################### | 100% 
+chardet-4.0.0        | 219 KB    | ####################################################################### | 100% 
+brotlipy-0.7.0       | 341 KB    | ####################################################################### | 100% 
+cryptography-3.4.7   | 1.1 MB    | ####################################################################### | 100% 
+yaml-0.2.5           | 82 KB     | ####################################################################### | 100% 
+idna-2.10            | 52 KB     | ####################################################################### | 100% 
+conda-package-handli | 916 KB    | ####################################################################### | 100% 
+cudatoolkit-dev-9.2  | 9 KB      | ####################################################################### | 100% 
+urllib3-1.26.6       | 99 KB     | ####################################################################### | 100% 
+Preparing transaction: done
+Verifying transaction: done
+Executing transaction: done
+
+
+#########
+Problem starts here
+
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/bin/zstdmt' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/lib/tkConfig.sh' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/bin/zstdmt' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/lib/tkConfig.sh' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/lib/tkConfig.sh' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/include/zstd_errors.h' is not a directory
+
+
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ ls apps/Conda/conda_envs/
+.conda_envs_dir_test  CenterNet/            pytcu10/              
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ ls apps/Conda/conda_envs/CenterNet/
+bin/                         lib/                         share/
+compiler_compat/             lib64/                       shell/
+conda-meta/                  licensing/                   ssl/
+condabin/                    nvvm                         x86_64-conda-linux-gnu/
+etc/                         pkgs/                        x86_64-conda_cos6-linux-gnu/
+include/                     scripts/                     
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ ls apps/Conda/conda_envs/CenterNet/bin/
+Display all 122 possibilities? (y or n)
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ ls apps/Conda/conda_envs/CenterNet/bin/zstd
+zstd      zstdcat   zstdgrep  zstdless  zstdmt    
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ conda deactivate
+username@computer:/scratch_net/computer/username$ conda env list
+# conda environments:
+#
+base                  *  /scratch_net/computer/username/apps/Conda/conda
+CenterNet                /scratch_net/computer/username/apps/Conda/conda_envs/CenterNet
+pytcu10                  /scratch_net/computer/username/apps/Conda/conda_envs/pytcu10
+
+
+#########
+Problem happens now all the time when I deactivate and activate the environement
+
+username@computer:/scratch_net/computer/username$ conda activate CenterNet
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/bin/zstdmt' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/lib/tkConfig.sh' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/bin/zstdmt' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/lib/tkConfig.sh' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/lib/tkConfig.sh' is not a directory
+ln: target '/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet/include/zstd_errors.h' is not a directory
+(/scratch_net/computer/username/apps/Conda/conda_envs/CenterNet) username@computer:/scratch_net/computer/username$ conda list
+# packages in environment at /scratch_net/computer/username/apps/Conda/conda_envs/CenterNet:
+#
+# Name                    Version                   Build  Channel
+_libgcc_mutex             0.1                        main  
+_openmp_mutex             4.5                       1_gnu  
+blas                      1.0                    openblas  
+brotlipy                  0.7.0           py36h8f6f2f9_1001    conda-forge
+ca-certificates           2021.5.30            ha878542_0    conda-forge
+certifi                   2021.5.30        py36h5fab9bb_0    conda-forge
+cffi                      1.14.5           py36h261ae71_0  
+chardet                   4.0.0            py36h5fab9bb_1    conda-forge
+conda                     4.10.2           py36h5fab9bb_0    conda-forge
+conda-package-handling    1.7.3            py36h8f6f2f9_0    conda-forge
+cryptography              3.4.7            py36hb60f036_0    conda-forge
+cudatoolkit               9.2                           0  
+cudatoolkit-dev           9.2                      py36_2    conda-forge
+freetype                  2.10.4               h5ab3b9f_0  
+idna                      2.10               pyh9f0ad1d_0    conda-forge
+intel-openmp              2021.2.0           h06a4308_610  
+jpeg                      9b                   h024ee3a_2  
+lcms2                     2.12                 h3be6417_0  
+ld_impl_linux-64          2.35.1               h7274673_9  
+libffi                    3.3                  he6710b0_2  
+libgcc-ng                 9.3.0               h5101ec6_17  
+libgfortran-ng            7.5.0               ha8ba4b0_17  
+libgfortran4              7.5.0               ha8ba4b0_17  
+libgomp                   9.3.0               h5101ec6_17  
+libopenblas               0.3.13               h4367d64_0  
+libpng                    1.6.37               hbc83047_0  
+libstdcxx-ng              9.3.0               hd4cf53a_17  
+libtiff                   4.2.0                h85742a9_0  
+libwebp-base              1.2.0                h27cfd23_0  
+lz4-c                     1.9.3                h2531618_0  
+mkl                       2021.2.0           h06a4308_296  
+ncurses                   6.2                  he6710b0_1  
+ninja                     1.10.2               hff7bd54_1  
+numpy                     1.17.0           py36h99e49ec_0  
+numpy-base                1.17.0           py36h2f8d375_0  
+olefile                   0.46                     py36_0  
+openssl                   1.1.1k               h7f98852_0    conda-forge
+pillow                    8.2.0            py36he98fc37_0  
+pip                       21.1.2           py36h06a4308_0  
+pycosat                   0.6.3           py36h8f6f2f9_1006    conda-forge
+pycparser                 2.20                       py_2  
+pyopenssl                 20.0.1             pyhd8ed1ab_0    conda-forge
+pysocks                   1.7.1            py36h5fab9bb_3    conda-forge
+python                    3.6.13               h12debd9_1  
+python_abi                3.6                     2_cp36m    conda-forge
+pytorch                   0.4.1           py36_py35_py27__9.0.176_7.1.2_2    pytorch
+readline                  8.1                  h27cfd23_0  
+requests                  2.25.1             pyhd3deb0d_0    conda-forge
+ruamel_yaml               0.15.80         py36h8f6f2f9_1004    conda-forge
+setuptools                52.0.0           py36h06a4308_0  
+six                       1.16.0             pyhd3eb1b0_0  
+sqlite                    3.36.0               hc218d9a_0  
+tk                        8.6.10               hbc83047_0  
+torchvision               0.2.1                      py_2    pytorch
+tqdm                      4.61.1             pyhd8ed1ab_0    conda-forge
+urllib3                   1.26.6             pyhd8ed1ab_0    conda-forge
+wheel                     0.36.2             pyhd3eb1b0_0  
+xz                        5.2.5                h7b6447c_0  
+yaml                      0.2.5                h516909a_0    conda-forge
+zlib                      1.2.11               h7b6447c_3  
+zstd                      1.4.9                haebb681_0 
