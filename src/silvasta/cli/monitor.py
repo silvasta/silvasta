@@ -6,62 +6,77 @@ from types import SimpleNamespace
 from rich.console import Console
 from rich.panel import Panel
 
+from ..utils.parse import RegexMatch, LogPatterns
 from ..utils.path import find_project_root, pyproject_log_section
 
 
-def main():
+def main(log_path: Path | None = None):
     """Show tail log display"""
 
-    root: Path = find_project_root("pyproject.toml")
+    if log_path is None:
+        root: Path = find_project_root("pyproject.toml")
+        log_config: SimpleNamespace = pyproject_log_section()
+        log_path: Path = root / "logs" / log_config.file_name
 
-    log_config: SimpleNamespace = pyproject_log_section()
-    # PARAM: log dir relative path from root
-    log_path: Path = root / "logs" / log_config.file_name
+    console = Console()
 
     if not log_path.exists():
-        print(f"No log file found at {log_path}")
-        sys.exit(1)
+        if not log_path.parent.exists():
+            # Avoid creating entire directories when the issue is most likely a wrong input path
+            console.print(
+                f"[bold red]Error:[/bold red] Log file {log_path} not found and no parent folder avaliable!"
+            )
+            sys.exit(1)
 
-    tail_log(str(log_path))
+        log_path.touch()
+        console.print(f"[dim]Created missing log file: {log_path}[/dim]")
+
+    try:
+        launch_tail_log_console(log_path)
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopped tailing.[/yellow]")
+        sys.exit(0)
 
 
-def tail_log(log_path: str):
+def launch_tail_log_console(log_path: Path):
+    """Launch console with live log prints from file assuming it is valid"""
+
     console = Console()
-    path = Path(log_path)
-    if not path.exists():
-        console.print(f"[bold red]Error:[/bold red] Log file {log_path} not found.")
-        return
-
     console.print(
-        Panel(f"Tailing [bold cyan]{log_path}[/bold cyan]...", title="Loguru Monitor")
+        Panel(  # TODO: move to printer, use Panel in default printer! title etc
+            f"Tailing [bold cyan]{log_path}[/bold cyan] ...",
+            title="Loguru Monitor",
+        )
     )
+    log_styles: dict[RegexMatch, str] = {
+        LogPatterns.DEBUG: "bold yellow",
+        LogPatterns.INFO: "bold white",
+        LogPatterns.WARNING: "bold magenta",
+        LogPatterns.ERROR: "bold red",
+        LogPatterns.SUCCESS: "bold green",
+    }
+    with open(log_path, "r") as f:
+        f.seek(0, 2)  # Move to end of file
 
-    with open(path, "r") as f:
-        # Go to the end of the file
-        f.seek(0, 2)
+        while True:
+            if not (line := f.readline()):
+                time.sleep(0.1)  # save CPU
+                continue
 
-        try:
-            while True:
-                line = f.readline()
-                if not line:
-                    time.sleep(0.1)  # Sleep briefly to save CPU
-                    continue
+            match line:
+                case (
+                    LogPatterns.DEBUG
+                    | LogPatterns.INFO
+                    | LogPatterns.WARNING
+                    | LogPatterns.ERROR
+                    | LogPatterns.SUCCESS as matcher
+                ):  # Coloring based on Loguru levels
+                    style: str = log_styles[matcher]
+                case _:
+                    style = None
 
-                # Simple coloring based on Loguru levels
-                if "DEBUG" in line:
-                    console.print(line.strip(), style="bold yellow")
-                elif "INFO" in line:
-                    console.print(line.strip(), style="bold white")
-                elif "WARNING" in line:
-                    console.print(line.strip(), style="bold magenta")
-                elif "ERROR" in line:
-                    console.print(line.strip(), style="bold red")
-                elif "SUCCESS" in line:
-                    console.print(line.strip(), style="bold green")
-                else:
-                    console.print(line.strip())
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Stopped tailing.[/yellow]")
+            console.print(line.strip(), style=style)
 
 
 if __name__ == "__main__":

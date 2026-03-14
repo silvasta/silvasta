@@ -22,12 +22,12 @@ all = ["silvasta[tui,viz]"]
 [project.scripts]
 silvasta-tail = "silvasta.cli.monitor:main"
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
-
 [tool.silvasta.logging]
 level = "INFO"
 file_name = "utils.log"
 rotation = "10 MB"
 retention = "1 month"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

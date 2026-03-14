@@ -1,5 +1,3 @@
-"""Config: Tools to work with Command line on Console"""
+from .monitor import main as monitor
 
-# TODO: check docstring
-
-__all__: list = []
+__all__: list = [monitor]

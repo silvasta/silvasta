@@ -1,12 +1,8 @@
-"""Composition of frequently used generalized functions, utils and tools"""
-
-# TODO: check docstring
-
 from importlib.metadata import PackageNotFoundError, version
 import logging
 
 try:  # Show pyproject.toml package name
-    __version__ = version("silvasta")
+    __version__: str = version("silvasta")
 except PackageNotFoundError:
     __version__ = "unknown"
 
