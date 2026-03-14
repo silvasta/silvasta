@@ -1,18 +1,16 @@
-# TODO: where to place best?
-# - must be separated from utils because of dependency
-# - needed not only in CLI but as well in TUI
-
-try:
-    from loguru import logger
-except ImportError:
-    raise ImportError(
-        "Loguru is required for this module. Install 'silvasta[logging]'."
-    )
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 from ..utils.path import find_project_root, pyproject_log_section
+
+try:
+    from loguru import logger
+except ImportError:
+    raise ImportError(
+        "Loguru is required for this module. Install with: 'silvasta[log|cli|tui]'"
+    )  # TODO: better message / handling of optinal dependency
+
 
 _is_configured = False
 
@@ -29,17 +27,17 @@ def setup_logging(
     if _is_configured:
         return logger
 
-    # TODO: catch error
+    # TODO: parameter input
     # - figure out how it should work without toml
     # - per argument? env variable? new config file type?
-    #
+
     if project_root is None:
-        # FIX: here it will crash -> move in try, still loss of configurability
+        # For now: let it crash without valid project_root and toml
         project_root: Path = find_project_root("pyproject.toml")
 
     try:  # Parse config from pyproject.toml file
         log_config: SimpleNamespace = pyproject_log_section()
-        # values
+        # Values
         log_level = log_config.level
         log_filename = log_config.file_name
         rotation = log_config.rotation
