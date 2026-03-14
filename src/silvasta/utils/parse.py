@@ -1,6 +1,34 @@
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Generator, Iterable
+
+
+class PatternNamer:  # TEST: together with silvasta.config.settings.Names
+    """Factory for bidirectional connection of path and name"""
+
+    # Usage:
+    # namer = PatternNamer(config.names.schema_file_pattern)
+    # filename = namer.format("robot") # Returns: "robot_schema_columns.csv"
+    # extracted = namer.extract(Path("some/dir/robot_schema_columns.csv")) # Returns: "robot"
+
+    def __init__(self, pattern: str):
+        self.pattern = pattern
+        # Simple regex to extract the {name} part dynamically
+        # "{name}_schema.csv" -> r"^(.*)_schema\.csv$"
+        regex_pattern = pattern.replace("{name}", "(.*)").replace(".", r"\.")
+        self._regex = re.compile(f"^{regex_pattern}$")
+
+    def format(self, name: str) -> str:
+        """String input -> returns filename string"""
+        return self.pattern.format(name=name)
+
+    def extract(self, path: Path) -> str:
+        """Path input -> returns extracted name string"""
+        match = self._regex.match(path.name)
+        if not match:
+            raise ValueError(f"Path {path.name} does not match pattern {self.pattern}")
+        return match.group(1)
 
 
 class RegexMatch:

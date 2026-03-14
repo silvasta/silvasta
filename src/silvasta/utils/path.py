@@ -1,14 +1,39 @@
 import functools
+import logging
+import os
 import re
 import shutil
 import tomllib
+from enum import Enum, auto
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Union
-import logging
+from typing import Callable, ParamSpec, Union, overload
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+
+# WARNING: path.pyi is not active, check if confusion with type hints  occurs!
+
+
+class XDG_HOMES(Enum):
+    DATA = auto()
+    STATE = auto()
+    CONFIG = auto()
+
+    @property
+    def path(self) -> Path:
+        env_var_key = f"XDG_{self.name}_HOME"
+        return Path(os.getenv(env_var_key, self._default_path()))
+
+    def _default_path(self) -> Path:
+        mapping: dict = {
+            XDG_HOMES.DATA: ".local/share",
+            XDG_HOMES.STATE: ".local/state",
+            XDG_HOMES.CONFIG: ".config",
+        }
+        return Path.home() / mapping[self]
 
 
 def recursive_root(path: Path, indicator: str) -> Path | None:
@@ -99,21 +124,35 @@ def pyproject_log_section() -> SimpleNamespace:
 class PathGuard:
     """Centralized path enforcement toolkit"""
 
+    @overload
     @staticmethod
-    def dir(target: Union[Callable[..., Path], Path]) -> Any:
+    def dir(target: Path) -> Path:
+        """If you pass a Path, you get a Path back."""
+        ...
+
+    # NOTE: overload needed to get proper type checks at function calls
+
+    @overload
+    @staticmethod
+    def dir(target: Callable[P, Path]) -> Callable[P, Path]:
+        """If you pass a Callable, you get a Callable back with the exact same arguments."""
+        ...
+
+    @staticmethod
+    def dir(target: Union[Callable[P, Path], Path]) -> Union[Callable[P, Path], Path]:
         """Hybrid: Ensure path is directory and exists, create if missing"""
 
-        # Case 1: Used as a Decorator (@PathGuard.dir)
-        if callable(target):
+        # Case 1: Used as a Function Call (PathGuard.dir(path))
+        if isinstance(target, Path):
+            return PathGuard._ensure_dir_logic(target)
 
-            @functools.wraps(target)
-            def wrapper(*args, **kwargs):
-                path: Path = target(*args, **kwargs)  # FIX: ty warning
-                return PathGuard._ensure_dir_logic(path)
+        # Case 2: Used as a Decorator (@PathGuard.dir)
+        @functools.wraps(target)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
+            path: Path = target(*args, **kwargs)  # The warning will now be gone!
+            return PathGuard._ensure_dir_logic(path)
 
-            return wrapper
-        # Case 2: Used as a Function Call (PathGuard.dir(path))
-        return PathGuard._ensure_dir_logic(target)
+        return wrapper
 
     @staticmethod
     def _ensure_dir_logic(path: Path) -> Path:
@@ -123,30 +162,39 @@ class PathGuard:
         logger.debug(f"Directory ensured: {path}")
         return path
 
+    @overload
+    @staticmethod
+    def file(target: Path) -> Path:
+        """If you pass a Path, you get a Path back."""
+        ...
+
+    # TASK: for later, outsource type defs to .pyi file
+
+    @overload
+    @staticmethod
+    def file(target: Callable[P, Path]) -> Callable[P, Path]:
+        """If you pass a Callable, you get a Callable back with the exact same arguments."""
+        ...
+
     @staticmethod
     def file(
-        target: Union[Callable[..., Path], Path],
+        target: Union[Callable[P, Path], Path],
         raise_error=True,
         default_content: str | None = None,
-    ):
+    ) -> Union[Callable[P, Path], Path]:
         """Ensure path is file, write default content and | or raise error"""
 
-        # Case 1: Used as a Decorator (@PathGuard.file)
-        if callable(target):
+        # Case 1: Used as a Function Call (PathGuard.file(path))
+        if isinstance(target, Path):
+            return PathGuard._ensure_file_logic(target, raise_error, default_content)
 
-            def decorator(func: Callable[..., Path]):
-                @functools.wraps(func)
-                def wrapper(*args, **kwargs):
-                    path = Path(func(*args, **kwargs))
-                    return PathGuard._ensure_file_logic(
-                        path, raise_error, default_content
-                    )
+        # Case 2: Used as a bare Decorator (@PathGuard.file)
+        @functools.wraps(target)
+        def wrapper(*args, **kwargs) -> Path:
+            path = Path(target(*args, **kwargs))
+            return PathGuard._ensure_file_logic(path, raise_error, default_content)
 
-                return wrapper
-
-            return decorator
-        # Case 2: Used as a Function Call (PathGuard.dir(path))
-        return PathGuard._ensure_file_logic(target, raise_error, default_content)
+        return wrapper
 
     @staticmethod
     def _ensure_file_logic(
@@ -164,23 +212,40 @@ class PathGuard:
                 raise FileNotFoundError(f"Critical file missing: {path}")
         return path
 
+    @overload
     @staticmethod
-    def unique(target: Union[Callable[..., Path], Path]) -> Any:
+    def unique(target: Path) -> Path:
+        """If you pass a Path, you get a Path back."""
+        ...
+
+    # TASK: for later, outsource type defs to .pyi file
+
+    @overload
+    @staticmethod
+    def unique(target: Callable[P, Path]) -> Callable[P, Path]:
+        """If you pass a Callable, you get a Callable back with the exact same arguments."""
+        ...
+
+    @staticmethod
+    def unique(
+        target: Union[Callable[P, Path], Path],
+    ) -> Union[Callable[P, Path], Path]:
         """Hybrid: Ensures the returned path does NOT exist,
         If it exists, auto-increments suffix (file_1.txt, file_2.txt)"""
 
-        # Case 1: Used as Decorator (@PathGuard.unique)
-        if callable(target):
+        if isinstance(target, Path):
+            # Case 1: Direct call (PathGuard.unique(path))
+            return PathGuard._get_unique_candidate(target)
 
-            @functools.wraps(target)
-            def wrapper(*args, **kwargs):
-                path: Path = target(*args, **kwargs)  # FIX: ty warning
-                return PathGuard._get_unique_candidate(path)
+        # AI: this was the second fix, looks solid?
 
-            return wrapper
+        # Case 2: Used as Decorator (@PathGuard.unique)
+        @functools.wraps(target)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
+            path: Path = target(*args, **kwargs)
+            return PathGuard._get_unique_candidate(path)
 
-        # Case 2: Direct call (PathGuard.unique(path))
-        return PathGuard._get_unique_candidate(target)
+        return wrapper
 
     @staticmethod
     def _get_unique_candidate(path: Path) -> Path:
