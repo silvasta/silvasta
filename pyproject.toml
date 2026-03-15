@@ -5,10 +5,7 @@ description = "Collection of frequently used generalized utils, functions and to
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.11"
-dependencies = [
-    "pydantic>=2.12.5",
-    "pydantic-settings>=2.13.1",
-]
+dependencies = ["pydantic>=2.12.5", "pydantic-settings>=2.13.1"]
 
 [build-system]
 requires = ["uv_build>=0.10.9,<0.11.0"]
@@ -34,3 +31,18 @@ retention = "1 month"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+# E: pycodestyle errors
+# F: Pyflakes
+# I: isort (import sorting)
+# UP: pyupgrade (modernize syntax)
+# B: flake8-bugbear (finds likely bugs)
+# N: pep8-naming
+select = ["E", "F", "I", "UP", "B", "N"]
+ignore = [
+  "E501",
+] # Ignore long lines if you want Ruff to only format them, not error on them

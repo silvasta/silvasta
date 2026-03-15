@@ -4,20 +4,19 @@ import os
 import re
 import shutil
 import tomllib
+from collections.abc import Callable
 from enum import Enum, auto
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Callable, ParamSpec, Union, overload
+from typing import ParamSpec, overload
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 P = ParamSpec("P")
 
-# WARNING: path.pyi is not active, check if confusion with type hints  occurs!
 
-
-class XDG_HOMES(Enum):
+class XdgHomes(Enum):
     DATA = auto()
     STATE = auto()
     CONFIG = auto()
@@ -29,9 +28,9 @@ class XDG_HOMES(Enum):
 
     def _default_path(self) -> Path:
         mapping: dict = {
-            XDG_HOMES.DATA: ".local/share",
-            XDG_HOMES.STATE: ".local/state",
-            XDG_HOMES.CONFIG: ".config",
+            XdgHomes.DATA: ".local/share",
+            XdgHomes.STATE: ".local/state",
+            XdgHomes.CONFIG: ".config",
         }
         return Path.home() / mapping[self]
 
@@ -117,42 +116,14 @@ def pyproject_name() -> str:
 def pyproject_log_section() -> SimpleNamespace:
     """Fetches from: [tool.silvasta.logging] in pyproject.toml"""
     pyproject: SimpleNamespace = pyproject_sns()
-    tool_project_section: SimpleNamespace = getattr(pyproject.tool, pyproject_name())
+    tool_project_section: SimpleNamespace = getattr(
+        pyproject.tool, pyproject_name()
+    )
     return tool_project_section.logging
 
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
-
-    @overload
-    @staticmethod
-    def dir(target: Path) -> Path:
-        """If you pass a Path, you get a Path back."""
-        ...
-
-    # NOTE: overload needed to get proper type checks at function calls
-
-    @overload
-    @staticmethod
-    def dir(target: Callable[P, Path]) -> Callable[P, Path]:
-        """If you pass a Callable, you get a Callable back with the exact same arguments."""
-        ...
-
-    @staticmethod
-    def dir(target: Union[Callable[P, Path], Path]) -> Union[Callable[P, Path], Path]:
-        """Hybrid: Ensure path is directory and exists, create if missing"""
-
-        # Case 1: Used as a Function Call (PathGuard.dir(path))
-        if isinstance(target, Path):
-            return PathGuard._ensure_dir_logic(target)
-
-        # Case 2: Used as a Decorator (@PathGuard.dir)
-        @functools.wraps(target)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
-            path: Path = target(*args, **kwargs)  # The warning will now be gone!
-            return PathGuard._ensure_dir_logic(path)
-
-        return wrapper
 
     @staticmethod
     def _ensure_dir_logic(path: Path) -> Path:
@@ -164,37 +135,43 @@ class PathGuard:
 
     @overload
     @staticmethod
-    def file(target: Path) -> Path:
+    def dir(target: Path) -> Path:
         """If you pass a Path, you get a Path back."""
         ...
 
-    # TASK: for later, outsource type defs to .pyi file
+    # INFO: overload used to get proper type checks at function calls
 
     @overload
     @staticmethod
-    def file(target: Callable[P, Path]) -> Callable[P, Path]:
+    def dir(target: Callable[P, Path]) -> Callable[P, Path]:
         """If you pass a Callable, you get a Callable back with the exact same arguments."""
         ...
 
     @staticmethod
-    def file(
-        target: Union[Callable[P, Path], Path],
-        raise_error=True,
-        default_content: str | None = None,
-    ) -> Union[Callable[P, Path], Path]:
-        """Ensure path is file, write default content and | or raise error"""
+    def dir(
+        target: Callable[P, Path] | Path,
+    ) -> Callable[P, Path] | Path:
+        """Hybrid: Ensure path is directory and exists, create if missing"""
 
-        # Case 1: Used as a Function Call (PathGuard.file(path))
+        # Case 1: Used as a Function Call (PathGuard.dir(path))
         if isinstance(target, Path):
-            return PathGuard._ensure_file_logic(target, raise_error, default_content)
+            return PathGuard._ensure_dir_logic(target)
 
-        # Case 2: Used as a bare Decorator (@PathGuard.file)
-        @functools.wraps(target)
-        def wrapper(*args, **kwargs) -> Path:
-            path = Path(target(*args, **kwargs))
-            return PathGuard._ensure_file_logic(path, raise_error, default_content)
+        # Case 2: Used as a Decorator (@PathGuard.dir)
+        if callable(target):
 
-        return wrapper
+            @functools.wraps(target)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
+                path: Path = target(
+                    *args, **kwargs
+                )  # The warning will now be gone!
+                return PathGuard._ensure_dir_logic(path)
+
+            return wrapper
+
+        raise TypeError(
+            f"Invalid target type for PathGuard.dir: {type(target)}"
+        )
 
     @staticmethod
     def _ensure_file_logic(
@@ -212,13 +189,114 @@ class PathGuard:
                 raise FileNotFoundError(f"Critical file missing: {path}")
         return path
 
+    # TASK: for later, check outsourcing type defs to .pyi file
+    # - pro: centralized management, file here cleaner
+    # - con: type hints here completele disabled
+    # -> todo for entire file, more work, error prone
+
+    @overload  # CASE 1: Decorator WITH Arguments (@PathGuard.file(default_content="..."))
+    @staticmethod
+    def file(
+        target: None = None,
+        *,  # forces keyword arguments, avoids passing f.e. string to `target`
+        raise_error: bool = True,
+        default_content: str | None = None,
+    ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
+
+    @overload  # CASE 2: Function Call -> PathGuard.file(path)
+    @staticmethod
+    def file(
+        target: Path,
+        raise_error: bool = True,
+        default_content: str | None = None,
+    ) -> Path: ...
+
+    @overload  # CASE 3: Bare Decorator -> @PathGuard.file
+    @staticmethod
+    def file(target: Callable[P, Path]) -> Callable[P, Path]: ...
+
+    @staticmethod
+    def file(
+        target: Callable[P, Path] | Path | None = None,
+        raise_error=True,
+        default_content: str | None = None,
+    ) -> (
+        Path
+        | Callable[P, Path]
+        | Callable[
+            [Callable[P, Path]],
+            Callable[P, Path],
+        ]
+    ):
+        """Ensure path is file, write default content and | or raise error"""
+
+        # CASE 1: Decorator WITH Arguments -> @PathGuard.file(default_content="...")
+        if target is None:
+
+            def decorator(func: Callable[P, Path]) -> Callable[P, Path]:
+                @functools.wraps(func)
+                def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
+                    path = Path(func(*args, **kwargs))
+                    return PathGuard._ensure_file_logic(
+                        path, raise_error, default_content
+                    )
+
+                return wrapper
+
+            return decorator
+
+        # CASE 2: Function Call -> PathGuard.file(path)
+        if isinstance(target, Path):
+            return PathGuard._ensure_file_logic(
+                target, raise_error, default_content
+            )
+
+        # CASE 3: Bare Decorator -> @PathGuard.file
+        if callable(target):
+
+            @functools.wraps(target)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
+                path = Path(target(*args, **kwargs))
+                return PathGuard._ensure_file_logic(
+                    path, raise_error, default_content
+                )
+
+            return wrapper
+
+        raise TypeError(
+            f"Invalid target type for PathGuard.file: {type(target)}"
+        )
+
+    @staticmethod
+    def _get_unique_candidate(path: Path | str) -> Path:
+        """Internal logic: Appends counter until a free filename is found."""
+
+        path = Path(path)
+        if not path.exists():
+            return path
+
+        counter = 1
+
+        suffixes: str = "".join(path.suffixes)
+        original_stem: str = (
+            path.name[: -len(suffixes)] if suffixes else path.name
+        )
+
+        parent: Path = path.parent
+
+        # Safety loop to find free slot
+        while True:
+            new_name = f"{original_stem}_{counter}{suffixes}"
+            candidate: Path = parent / new_name
+            if not candidate.exists():
+                return candidate
+            counter += 1
+
     @overload
     @staticmethod
     def unique(target: Path) -> Path:
         """If you pass a Path, you get a Path back."""
         ...
-
-    # TASK: for later, outsource type defs to .pyi file
 
     @overload
     @staticmethod
@@ -228,44 +306,28 @@ class PathGuard:
 
     @staticmethod
     def unique(
-        target: Union[Callable[P, Path], Path],
-    ) -> Union[Callable[P, Path], Path]:
+        target: Callable[P, Path] | Path,
+    ) -> Callable[P, Path] | Path:
         """Hybrid: Ensures the returned path does NOT exist,
         If it exists, auto-increments suffix (file_1.txt, file_2.txt)"""
 
+        # Case 1: Direct call (PathGuard.unique(path))
         if isinstance(target, Path):
-            # Case 1: Direct call (PathGuard.unique(path))
             return PathGuard._get_unique_candidate(target)
 
-        # AI: this was the second fix, looks solid?
+        # Case 2: Bare Decorator (@PathGuard.unique)
+        if callable(target):
 
-        # Case 2: Used as Decorator (@PathGuard.unique)
-        @functools.wraps(target)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
-            path: Path = target(*args, **kwargs)
-            return PathGuard._get_unique_candidate(path)
+            @functools.wraps(target)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
+                path: Path = target(*args, **kwargs)
+                return PathGuard._get_unique_candidate(path)
 
-        return wrapper
+            return wrapper
 
-    @staticmethod
-    def _get_unique_candidate(path: Path) -> Path:
-        """Internal logic: Appends counter until a free filename is found."""
-        path = Path(path)
-        if not path.exists():
-            return path
-
-        counter = 1
-        original_stem = path.stem
-        suffix = path.suffix
-        parent = path.parent
-
-        # Safety loop to find free slot
-        while True:
-            new_name = f"{original_stem}_{counter}{suffix}"
-            candidate = parent / new_name
-            if not candidate.exists():
-                return candidate
-            counter += 1
+        raise TypeError(
+            f"Invalid target type for PathGuard.unique: {type(target)}"
+        )
 
     @staticmethod
     def find_sequence(base_target: Path) -> list[Path]:
@@ -277,11 +339,20 @@ class PathGuard:
         if not parent.exists():
             return []
 
-        stem_esc: str = re.escape(base.stem)
+        # Same logic as in _get_unique_candidate
+        suffixes: str = "".join(base.suffixes)
+        original_stem: str = (
+            base.name[: -len(suffixes)] if suffixes else base.name
+        )
+
         #  re.escape to ensure special chars  don't break regex
-        suffix_esc: str = re.escape(base.suffix)
+        suffix_esc: str = re.escape(suffixes)
+        stem_esc: str = re.escape(original_stem)
+
         # regex matches "stem.suffix" OR "stem_digits.suffix"
-        pattern: re.Pattern[str] = re.compile(rf"^{stem_esc}(_\d+)?{suffix_esc}$")
+        pattern: re.Pattern[str] = re.compile(
+            rf"^{stem_esc}(_\d+)?{suffix_esc}$"
+        )
 
         sequence: list[Path] = [
             item for item in parent.iterdir() if pattern.match(item.name)
@@ -317,7 +388,9 @@ class PathGuard:
         return deleted_paths
 
     @staticmethod
-    def rotate(source: Path, target: Path, reset: bool = False) -> Path:
+    def rotate(
+        source: Path | str, target: Path | str, reset: bool = False
+    ) -> Path:
         """Moves source (file or dir) to target, handles unique naming collisions,
         if reset=True, recreates empty file or directory at original 'source' location"""
         source = Path(source)
@@ -328,20 +401,18 @@ class PathGuard:
 
         # Store type for reset logic later
         is_directory = source.is_dir()
-        # Ensure destination parent exists
-        PathGuard._ensure_dir_logic(target.parent)
 
+        PathGuard._ensure_dir_logic(target.parent)
         final_target: Path = PathGuard.unique(target)
 
         shutil.move(str(source), str(final_target))
 
-        try:
+        try:  # use relative path for log, if possible
             log_src = source.resolve().relative_to(Path.cwd())
             log_dst = final_target.resolve().relative_to(Path.cwd())
         except ValueError:
             log_src = source.name
             log_dst = final_target.name
-
         logger.debug(f"Rotated: {log_src} -> {log_dst}")
 
         if reset:

@@ -27,6 +27,8 @@ class Paths(BasePaths):
     pass
 
 
+# TODO: example where config manager gets override?
+
 config: ConfigManager[ProjectSettings, Names, Defaults, Paths] = ConfigManager(
     settings_cls=ProjectSettings,
     paths_cls=Paths,

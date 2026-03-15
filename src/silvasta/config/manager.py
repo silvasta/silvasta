@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 from typing import Generic, TypeVar, cast
 
 from loguru import logger
@@ -21,6 +22,8 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         paths_cls: type[TPaths],
         save_defaults_to_file: bool = True,
     ):
+        self._starttime: datetime = datetime.now()
+
         self._settings_cls: type[TSettings] = settings_cls
         self._paths_cls: type[TPaths] = paths_cls
 
@@ -49,6 +52,14 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
     def defaults(self) -> TDefaults:
         """Explicit return of Generic type with dot access"""
         return cast(TDefaults, self.settings.defaults)
+
+    @property
+    def starttime(self) -> str:
+        return self._starttime.strftime(self.names.timestamp_format)
+
+    @property
+    def duration(self) -> timedelta:  # NOTE: how and where to apply a format?
+        return datetime.now() - self._starttime
 
     def _load_user_prefs(self) -> bool:
         try:
