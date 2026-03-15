@@ -6,5 +6,10 @@ dist/
 wheels/
 *.egg-info
 
-# Virtual environments
+# Virtual Environments
 .venv
+
+# Input and Output Data 
+/data
+logs
+plots

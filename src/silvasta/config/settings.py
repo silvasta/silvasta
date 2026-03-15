@@ -7,24 +7,26 @@ from pydantic_settings import BaseSettings
 from silvasta.utils.path import PathGuard, find_project_root
 
 
-class BasePaths(BaseSettings):
-    @property
-    def project_root(self) -> Path:
-        return find_project_root()
+class BasePaths:
+    """Resolves Path objects using the provided Names"""
+
+    def __init__(self, names: "BaseNames"):
+        self._names = names  # Store the reference to names
+        self.project_root = find_project_root()
 
     @property
     def user_setting_file(self) -> Path:
-        return self.data_dir / BaseNames.user_setting_file
+        return self.data_dir / self._names.user_setting_file
 
     @property
     @PathGuard.dir
     def data_dir(self) -> Path:
-        return self.project_root / BaseNames.data_dir
+        return self.project_root / self._names.data_dir
 
     @property
     @PathGuard.dir
     def plot_dir(self) -> Path:
-        return self.project_root / BaseNames.plot_dir
+        return self.project_root / self._names.plot_dir
 
     @PathGuard.dir  # REMOVE: probably, is this needed in baseclass?
     def data(self, module: str) -> Path:
@@ -44,9 +46,9 @@ class BaseNames(BaseSettings):
 
     # --- Schema CSV-File Name --- #
 
-    # TODO: adapt
-    # Store the pattern, not the logic
+    # MOVE: create this in custom class, somehow adapter here?
     schema_file_pattern: str = "{name}_schema_columns.csv"
+    # Store the pattern, not the logic
     schema_config_pattern: str = "{name}_schema_config.json"
 
     # REMOVE:
@@ -91,15 +93,9 @@ class BaseDefaults(BaseSettings):
     # Used in CLI to parse input dates
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]
 
-    # AI: so far sparse, but this will heavily be customized
-
 
 class Settings(BaseSettings):
     """Main settings collector"""
 
-    # AI: in project:
-    # class ProjectSettings(Setting):
-    #   ...override or extend  what needed
     names: BaseNames = Field(default_factory=BaseNames)
-    paths: BasePaths = Field(default_factory=BasePaths)
     defaults: BaseDefaults = Field(default_factory=BaseDefaults)

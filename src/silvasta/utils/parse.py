@@ -12,6 +12,12 @@ class PatternNamer:  # TEST: together with silvasta.config.settings.Names
     # filename = namer.format("robot") # Returns: "robot_schema_columns.csv"
     # extracted = namer.extract(Path("some/dir/robot_schema_columns.csv")) # Returns: "robot"
 
+    # TASK: generalize Pattern Handling!
+    # - something like metaclass or some factory for key/pattern pair
+    # - create class that holds schema to create instances of pairs:
+    # keys: list[str]=[k1,k2,..] and pattern:str=r"what_ever_{k2}_{k1}-bla_{kn}.{k_suffix}"
+    # - template string / t"string"?
+
     def __init__(self, pattern: str):
         self.pattern = pattern
         # Simple regex to extract the {name} part dynamically
@@ -25,14 +31,14 @@ class PatternNamer:  # TEST: together with silvasta.config.settings.Names
 
     def extract(self, path: Path) -> str:
         """Path input -> returns extracted name string"""
-        match = self._regex.match(path.name)
+        match: re.Match[str] | None = self._regex.match(path.name)
         if not match:
             raise ValueError(f"Path {path.name} does not match pattern {self.pattern}")
         return match.group(1)
 
 
 class RegexMatch:
-    r"""Store and compare regex pattern, example usage:
+    r"""Store and compare regex pattern. Example usage:
     match line:
         case RegexMatch(r".*\[DEBUG\].*") as m:
             print(f"Debug found: {m.match.group(0)}")
@@ -40,7 +46,8 @@ class RegexMatch:
 
     def __init__(self, pattern: str):
         self.pattern: str = pattern
-        self._compiled: re.Pattern[str] = re.compile(pattern)  # pre-compile for speed
+        # Pre-compile for speed: useful for high-frequency, don't hurt for low-frequency
+        self._compiled: re.Pattern[str] = re.compile(pattern)
         self.match: re.Match | None = None
 
     def __repr__(self):
