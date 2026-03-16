@@ -23,10 +23,11 @@ all = ["silvasta[tui,viz]"]
 silvasta-tail = "silvasta.cli.monitor:main"
 
 [tool.silvasta.logging]
-level = "INFO"
+log_dir = "logs"
 file_name = "utils.log"
-rotation = "10 MB"
+level = "INFO"
 retention = "1 month"
+rotation = "10 MB"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -36,13 +37,14 @@ pythonpath = ["src"]
 line-length = 80
 
 [tool.ruff.lint]
-# E: pycodestyle errors
-# F: Pyflakes
-# I: isort (import sorting)
-# UP: pyupgrade (modernize syntax)
-# B: flake8-bugbear (finds likely bugs)
-# N: pep8-naming
-select = ["E", "F", "I", "UP", "B", "N"]
+select = [
+  "E",  # E: pycodestyle errors
+  "F",  # F: Pyflakes
+  "I",  # I: isort (import sorting)
+  "UP", # UP: pyupgrade (modernize syntax)
+  "B",  # B: flake8-bugbear (finds likely bugs) 
+  "N",  # N: pep8-naming
+]
 ignore = [
-  "E501",
-] # Ignore long lines if you want Ruff to only format them, not error on them
+  "E501", # Ignore long lines: only format, not error on them
+]

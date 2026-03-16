@@ -3,13 +3,14 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from ..utils.path import find_project_root, pyproject_log_section
+from .path import PathGuard
 
 try:
     from loguru import logger
 except ImportError:
-    raise ImportError(
+    raise ImportError(  # TODO: better message / handling of optinal dependency
         "Loguru is required for this module. Install with: 'silvasta[log|cli|tui]'"
-    )  # TODO: better message / handling of optinal dependency
+    )
 
 
 _is_configured = False
@@ -38,16 +39,19 @@ def setup_logging(
     try:  # Parse config from pyproject.toml file
         log_config: SimpleNamespace = pyproject_log_section()
         # Values
-        log_level = log_config.level
-        log_filename = log_config.file_name
-        rotation = log_config.rotation
-        retention = log_config.retention
+        log_dir: str = log_config.log_dir
+        log_filename: str = log_config.file_name
+        log_level: str = log_config.level
+        retention: str = log_config.retention
+        rotation: str = log_config.rotation
 
     except AttributeError:
-        log_level = "INFO"
-        rotation = "5 MB"
-        retention = "1 week"
+        # TODO: separate single? 1 fail, all fail now...
+        log_dir = "logs"
         log_filename = "debug.log"
+        log_level = "INFO"
+        retention = "1 week"
+        rotation = "5 MB"
 
     if log_level_override is not None:
         log_level: str = log_level_override
@@ -63,10 +67,12 @@ def setup_logging(
         )
 
     if log_to_file:
-        log_dir: Path = project_root / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_path: Path = log_dir / log_filename
-
+        log_path = PathGuard.file(
+            project_root / log_dir / log_filename,
+            raise_error=False,
+            default_content="",  # create empty file
+        )
+        print(log_path)
         logger.add(
             log_path,
             level="DEBUG",  # Always keep debug detail in files

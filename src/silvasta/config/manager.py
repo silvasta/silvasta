@@ -31,7 +31,7 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         self.paths: TPaths = self._paths_cls(names=self.settings.names)
 
         if self._user_file.exists() and self._load_user_prefs():
-            logger.info("Settings loaded from file")
+            # logger.info("Settings loaded from file")
             # Rebuild to get the new reference (in case of changes)
             self.paths: TPaths = self._paths_cls(names=self.settings.names)
         else:

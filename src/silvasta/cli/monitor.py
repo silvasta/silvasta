@@ -3,11 +3,11 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from rich.console import Console
-from rich.panel import Panel
+from loguru import logger
 
-from ..utils.parse import RegexMatch, LogPatterns
-from ..utils.path import find_project_root, pyproject_log_section
+from silvasta.utils import PathGuard, printer
+from silvasta.utils.parse import LogPatterns, RegexMatch
+from silvasta.utils.path import find_project_root, pyproject_log_section
 
 
 def main(log_path: Path | None = None):
@@ -16,38 +16,37 @@ def main(log_path: Path | None = None):
     if log_path is None:
         root: Path = find_project_root("pyproject.toml")
         log_config: SimpleNamespace = pyproject_log_section()
-        log_path: Path = root / "logs" / log_config.file_name
-
-    console = Console()
+        log_path: Path = PathGuard.file(
+            root / log_config.log_dir / log_config.file_name,
+            raise_error=False,
+        )
 
     if not log_path.exists():
         if not log_path.parent.exists():
-            # Avoid creating entire directories when the issue is most likely a wrong input path
-            console.print(
-                f"[bold red]Error:[/bold red] Log file {log_path} not found and no parent folder avaliable!"
-            )
+            printer("no log path parent")
+            # Avoid creating directories when the issue is most likely failed path
+            logger.error(f"No file found at: {log_path=}")
+            logger.info("Parent folder not avaliable -> no empty file created!")
+
             sys.exit(1)
 
         log_path.touch()
-        console.print(f"[dim]Created missing log file: {log_path}[/dim]")
+        logger.warning(f"Created missing log file at: {log_path=}")
 
     try:
         launch_tail_log_console(log_path)
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]Stopped tailing.[/yellow]")
+        printer.warn("Log file tailing stopped", style="yellow")
         sys.exit(0)
 
 
 def launch_tail_log_console(log_path: Path):
     """Launch console with live log prints from file assuming it is valid"""
 
-    console = Console()
-    console.print(
-        Panel(  # TODO: move to printer, use Panel in default printer! title etc
-            f"Tailing [bold cyan]{log_path}[/bold cyan] ...",
-            title="Loguru Monitor",
-        )
+    printer.panel(
+        f"Tailing [bold cyan]{log_path}[/bold cyan] ...",
+        title="Loguru Monitor",
     )
     log_styles: dict[RegexMatch, str] = {
         LogPatterns.DEBUG: "bold yellow",
@@ -56,7 +55,7 @@ def launch_tail_log_console(log_path: Path):
         LogPatterns.ERROR: "bold red",
         LogPatterns.SUCCESS: "bold green",
     }
-    with open(log_path, "r") as f:
+    with open(log_path) as f:
         f.seek(0, 2)  # Move to end of file
 
         while True:
@@ -76,7 +75,7 @@ def launch_tail_log_console(log_path: Path):
                 case _:
                     style = None
 
-            console.print(line.strip(), style=style)
+            printer(line.strip(), style=style)
 
 
 if __name__ == "__main__":

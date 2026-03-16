@@ -1,4 +1,3 @@
-from functools import singledispatchmethod
 from pathlib import Path
 
 from pydantic import Field
@@ -15,7 +14,9 @@ class BasePaths:
         self.project_root = find_project_root()
 
     @property
-    def user_setting_file(self) -> Path:  # TODO: global config file to read from
+    def user_setting_file(
+        self,
+    ) -> Path:  # TODO: global config file to read from
         return self.data_dir / self._names.user_setting_file
 
     @property
@@ -35,7 +36,9 @@ class BaseNames(BaseSettings):
     # - move timestamp to defaults? probably
     # - factory for timestamp applied to custom name?
     #   - maybe here but solve first TASK below
-    timestamp_format: str = "%Y-%m-%d_%H-%M-%S"  # This is to create names and write
+    timestamp_format: str = (
+        "%Y-%m-%d_%H-%M-%S"  # This is to create names and write
+    )
     data_dir: str = "data"
     plot_dir: str = "plots"
     user_setting_file: str = "user_settings.json"  # NOTE: think about naming
