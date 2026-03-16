@@ -84,10 +84,9 @@ class Printer:
         # self.custom_theme.styles contains all registered styles
         for style in self.custom_theme.styles.keys():
             # Print sample text applying the specific style
-            self.print(f" Style Preview: [ {style} ] ", style=style, justify="center")
+            self.print(
+                f" Style Preview: [ {style} ] ", style=style, justify="center"
+            )
 
 
 printer = Printer()
-
-# TODO: delete for new project
-printer._preview_themes()
