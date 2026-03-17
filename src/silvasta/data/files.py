@@ -17,8 +17,8 @@ class File(BaseModel):
     """Local file for upload and usage in prompt"""
 
     name: str  # TODO: define excact meaning
-    category: str  # WARN: under development, may change soon
-    topic: str  # WARN: under development, may change soon
+    # category: str  # WARN: under development, may change soon
+    # topic: str  # WARN: under development, may change soon
     # TODO: status: str|Enum|something_else?
     # TODO: local_path: Path  # relative from local filedir
 
