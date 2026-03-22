@@ -34,14 +34,12 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         self._paths_cls: type[TPaths] = paths_cls
 
         self.settings: TSettings = self._settings_cls()
-        self.paths: TPaths = self._paths_cls(
-            names=self.settings.names, defaults=self.settings.defaults
-        )
+        # LATER: load setting independent of paths
+        self.paths: TPaths = self._load_paths()
 
-        if self._user_file.exists() and self._load_user_prefs():
-            self.paths: TPaths = self._paths_cls(  # Rebuild in case of changes
-                names=self.settings.names, defaults=self.settings.defaults
-            )
+        if self._load_user_prefs_from_file():
+            # Rebuild paths in case of changes
+            self.paths: TPaths = self._load_paths()
             logger.info("Settings loaded from file")
         else:
             if save_defaults_to_file:
@@ -50,6 +48,7 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
 
     @property
     def _user_file(self):
+        # REMOVE: separate paths/user_setting_file
         return self.paths.user_setting_file
 
     @property
@@ -86,7 +85,10 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
             raise ValueError("Login credentials not found in .env file")
         return var
 
-    def _load_user_prefs(self) -> bool:
+    def _load_user_prefs_from_file(self) -> bool:
+        if not self._user_file.exists():
+            logger.info("No user_setting_file found")
+            return False
         try:
             data = json.loads(self._user_file.read_text(encoding="utf-8"))
             self.settings: TSettings = self._settings_cls.model_validate(data)
@@ -94,6 +96,11 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         except Exception as e:
             logger.error(f"Failed to load settings: {e}")
             return False
+
+    def _load_paths(self) -> TPaths:
+        return self._paths_cls(
+            names=self.settings.names, defaults=self.settings.defaults
+        )
 
     def save(self):
         json_str: str = self.settings.model_dump_json(

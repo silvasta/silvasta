@@ -1,14 +1,17 @@
-from loguru import logger
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from functools import wraps
 
-# INFO: check if file names can cause problems
+from loguru import logger
 
 
 @dataclass
 class DateRange:
     # IMPORTANT: how to extend this to be universal useful?
+    # - TimeRange, DateRange, DateTimeRange?
+    # - or simply 1 class that provides all?
+    # TASK:
+    # - Add some functions and checks here! (duration, interval, ...)
 
     start: datetime | date = date(2026, 1, 1)
     end: datetime | date = date(2026, 12, 31)

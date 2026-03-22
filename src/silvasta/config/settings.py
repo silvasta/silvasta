@@ -10,12 +10,13 @@ from silvasta.utils.path import PathGuard, XdgHomes, find_project_root
 class BasePaths:
     """Resolves Path objects using the provided Names"""
 
-    # TASK: make this own file? manager>paths>settings?
+    # INFO: TNames, TDefaults most likely needed
+
     def __init__(self, names: "BaseNames", defaults: "BaseDefaults"):
-        # WARN: TNames, TDefaults most likely needed
         self._names = names  # Store the reference to names
         self._defaults = defaults
         self.project_root = find_project_root()  # WARN: error not catched
+
         # TODO: self.project_root:
         # - if not avaliable -> swich to global
         # - if anyway global, don't search
@@ -39,35 +40,35 @@ class BasePaths:
     @property
     @PathGuard.dir
     def config_home(self) -> Path:
-        match self._defaults.home:
+        match self._defaults.home_setup:
             case "local":
                 return self.local_home_dir / "config"
             case "global":
-                return XdgHomes.CONFIG.path / self._names.project_name
+                return XdgHomes.CONFIG.path / self._names.project
             case _:
-                raise AttributeError(f"Invalid: {self._defaults.home=}")
+                raise AttributeError(f"Invalid: {self._defaults.home_setup=}")
 
     @property
     @PathGuard.dir
     def data_home(self) -> Path:
-        match self._defaults.home:
+        match self._defaults.home_setup:
             case "local":
                 return self.local_home_dir / "share"
             case "global":
-                return XdgHomes.DATA.path / self._names.project_name
+                return XdgHomes.DATA.path / self._names.project
             case _:
-                raise AttributeError(f"Invalid: {self._defaults.home=}")
+                raise AttributeError(f"Invalid: {self._defaults.home_setup=}")
 
     @property
     @PathGuard.dir
     def state_home(self) -> Path:
-        match self._defaults.home:
+        match self._defaults.home_setup:
             case "local":
                 return self.local_home_dir / "state"
             case "global":
-                return XdgHomes.STATE.path / self._names.project_name
+                return XdgHomes.STATE.path / self._names.project
             case _:
-                raise AttributeError(f"Invalid: {self._defaults.home=}")
+                raise AttributeError(f"Invalid: {self._defaults.home_setup=}")
 
     @property
     def dot_env(self) -> Path:
@@ -83,21 +84,18 @@ class BasePaths:
 
 
 class BaseNames(BaseSettings):
+    timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
     # NOTE: maybe hold start time for unique naming of CLI run?
     # - no, better directly in ConfigManager!
     # - move timestamp to defaults? probably
     # - factory for timestamp applied to custom name?
     #   - maybe here but solve first TASK below
-    timestamp_format: str = (
-        "%Y-%m-%d_%H-%M-%S"  # This is to create names and write
-    )
     data_dir: str = "data"
     plot_dir: str = "plots"
     user_setting_file: str = "user_settings.json"  # NOTE: think about naming
 
-    # TODO: no default!
-    # error for not setting, set by arg?
-    project_name: str = "DefineProjectName"
+    project: str = "DefineProjectName"  # TODO: error for not setting?
+
     # --- Schema CSV-File Name --- #
 
     # TASK: create bidirectional name/path in custom class,
@@ -113,7 +111,7 @@ class BaseDefaults(BaseSettings):
     """Main settings — import this everywhere"""
 
     dot_env_content: str = ""
-    home: Literal["local", "global"] = "local"  # LATER: make Enum?
+    home_setup: Literal["local", "global"] = "local"  # LATER: make Enum?
     # Use in CLI to parse input dates
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]
 

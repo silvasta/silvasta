@@ -1,7 +1,7 @@
 import re
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, Iterable
 
 
 class PatternNamer:  # TEST: together with silvasta.config.settings.Names
@@ -33,7 +33,9 @@ class PatternNamer:  # TEST: together with silvasta.config.settings.Names
         """Path input -> returns extracted name string"""
         match: re.Match[str] | None = self._regex.match(path.name)
         if not match:
-            raise ValueError(f"Path {path.name} does not match pattern {self.pattern}")
+            raise ValueError(
+                f"Path {path.name} does not match pattern {self.pattern}"
+            )
         return match.group(1)
 
 
@@ -74,7 +76,9 @@ class LogPatterns:
     SUCCESS = RegexMatch(r".*\[SUCCESS\].*")
 
 
-def grep_from_list(pattern: str, lines: Iterable[str]) -> Generator[str, None, None]:
+def grep_from_list(
+    pattern: str, lines: Iterable[str]
+) -> Generator[str, None, None]:
     """Yield line if it matches the pattern, works with lists or file objects"""
 
     regex = RegexMatch(pattern)

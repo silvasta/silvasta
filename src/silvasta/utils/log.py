@@ -7,10 +7,11 @@ from .path import PathGuard
 
 try:
     from loguru import logger
+
+    _loguru_loaded = True
 except ImportError:
-    raise ImportError(  # TODO: better message / handling of optinal dependency
-        "Loguru is required for this module. Install with: 'silvasta[log|cli|tui]'"
-    )
+    # Delay crash in case logger is anyway not needed
+    _loguru_loaded = False
 
 
 _is_configured = False
@@ -24,6 +25,11 @@ def setup_logging(
 ):
     """Configure Loguru based on pyproject.toml settings"""
 
+    if not _loguru_loaded:
+        raise ImportError(
+            "Loguru is required for this module. Install with: 'silvasta[log|cli|tui]'"
+        )
+
     global _is_configured
     if _is_configured:
         return logger
@@ -31,6 +37,7 @@ def setup_logging(
     # TODO: parameter input
     # - figure out how it should work without toml
     # - per argument? env variable? new config file type?
+    # -> combine with config/pydantic_settings
 
     if project_root is None:
         # For now: let it crash without valid project_root and toml
@@ -46,7 +53,7 @@ def setup_logging(
         rotation: str = log_config.rotation
 
     except AttributeError:
-        # TODO: separate single? 1 fail, all fail now...
+        # TODO: 1 fail, all fail now... separate somehow?
         log_dir = "logs"
         log_filename = "debug.log"
         log_level = "INFO"
