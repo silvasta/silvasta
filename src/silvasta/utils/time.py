@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from functools import wraps
@@ -32,11 +33,10 @@ class DateRange:
 def timer(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        start: datetime = datetime.now()
+        start: float = time.perf_counter()
         result = func(*args, **kwargs)
-        end: datetime = datetime.now()
-        logger.info(f"'{func.__name__}' took {end - start}")
-
+        end: float = time.perf_counter()
+        logger.info(f"Duration for '{func.__name__}': {end - start:.6f}s")
         return result
 
     return wrapper
