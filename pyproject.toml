@@ -5,11 +5,7 @@ description = "Collection of frequently used generalized utils, functions and to
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.11"
-dependencies = [
-    "pick>=2.6.0",
-    "pydantic>=2.12.5",
-    "pydantic-settings>=2.13.1",
-]
+dependencies = ["pick>=2.6.0", "pydantic>=2.12.5", "pydantic-settings>=2.13.1"]
 
 [build-system]
 requires = ["uv_build>=0.10.9,<0.11.0"]
@@ -27,9 +23,9 @@ all = ["silvasta[tui,viz]"]
 silvasta-tail = "silvasta.cli.monitor:main"
 
 [tool.silvasta.logging]
-log_dir = "logs"
-file_name = "utils.log"
 level = "INFO"
+file_name = "utils.log"
+log_dir = "logs"
 retention = "1 month"
 rotation = "10 MB"
 
@@ -38,7 +34,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.ruff]
-line-length = 80
+line-length = 79
 
 [tool.ruff.lint]
 select = [

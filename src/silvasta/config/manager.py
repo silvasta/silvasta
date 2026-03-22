@@ -1,8 +1,12 @@
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Generic, TypeVar, cast
 
+from dotenv import load_dotenv
 from loguru import logger
+
+from silvasta.utils import day_count
 
 from .settings import BaseDefaults, BaseNames, BasePaths, Settings
 
@@ -16,6 +20,8 @@ TPaths = TypeVar("TPaths", bound=BasePaths)
 class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
     """Provide singleton with all settings and factories"""
 
+    _env_loaded = False
+
     def __init__(
         self,
         settings_cls: type[TSettings],
@@ -28,16 +34,19 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         self._paths_cls: type[TPaths] = paths_cls
 
         self.settings: TSettings = self._settings_cls()
-        self.paths: TPaths = self._paths_cls(names=self.settings.names)
+        self.paths: TPaths = self._paths_cls(
+            names=self.settings.names, defaults=self.settings.defaults
+        )
 
         if self._user_file.exists() and self._load_user_prefs():
-            # logger.info("Settings loaded from file")
-            # Rebuild to get the new reference (in case of changes)
-            self.paths: TPaths = self._paths_cls(names=self.settings.names)
+            self.paths: TPaths = self._paths_cls(  # Rebuild in case of changes
+                names=self.settings.names, defaults=self.settings.defaults
+            )
+            logger.info("Settings loaded from file")
         else:
-            logger.info("Using default settings created from scratch")
             if save_defaults_to_file:
                 self.save()
+            logger.info("Using default settings created from scratch")
 
     @property
     def _user_file(self):
@@ -54,12 +63,28 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         return cast(TDefaults, self.settings.defaults)
 
     @property
+    def dom(self) -> int:
+        return day_count()
+
+    @property
     def starttime(self) -> str:
         return self._starttime.strftime(self.names.timestamp_format)
 
     @property
-    def duration(self) -> timedelta:  # NOTE: how and where to apply a format?
+    def duration(self) -> timedelta:
+        # LATER: how and where to apply a format?
         return datetime.now() - self._starttime
+
+    def from_env(self, key: str):
+        """get variable from environment, log failure, raise error"""
+        if not self._env_loaded:
+            load_dotenv(self.paths.dot_env)
+            self._env_loaded = True
+        var: str = os.getenv(key, "fail")
+        if var == "fail":
+            logger.error(f"failed to load credentials! ({key})")
+            raise ValueError("Login credentials not found in .env file")
+        return var
 
     def _load_user_prefs(self) -> bool:
         try:
