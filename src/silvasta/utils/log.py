@@ -10,7 +10,8 @@ try:
 
     _loguru_loaded = True
 except ImportError:
-    # Delay crash in case logger is anyway not needed
+    # Delay crash for case:
+    # - this file gets loaded but logger not needed
     _loguru_loaded = False
 
 

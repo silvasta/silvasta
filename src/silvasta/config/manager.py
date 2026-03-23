@@ -1,20 +1,15 @@
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Generic, TypeVar, cast
+from typing import Generic, cast
 
 from dotenv import load_dotenv
 from loguru import logger
 
 from silvasta.utils import day_count
 
-from .settings import BaseDefaults, BaseNames, BasePaths, Settings
-
-# Define specific TypeVars for everything
-TSettings = TypeVar("TSettings", bound=Settings)
-TNames = TypeVar("TNames", bound=BaseNames)
-TDefaults = TypeVar("TDefaults", bound=BaseDefaults)
-TPaths = TypeVar("TPaths", bound=BasePaths)
+from .paths import TPaths
+from .settings import TDefaults, TNames, TSettings
 
 
 class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
@@ -35,6 +30,8 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
 
         self.settings: TSettings = self._settings_cls()
         # LATER: load setting independent of paths
+        # IDEA: load paths with settings?
+        # - Paths gets anyway names and defaults!
         self.paths: TPaths = self._load_paths()
 
         if self._load_user_prefs_from_file():

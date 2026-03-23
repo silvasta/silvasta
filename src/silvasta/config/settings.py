@@ -1,100 +1,36 @@
+from enum import StrEnum, auto
 from pathlib import Path
-from typing import Literal
+from typing import TypeVar
 
+from loguru import logger
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from silvasta.utils.path import PathGuard, XdgHomes, find_project_root
-
-
-class BasePaths:
-    """Resolves Path objects using the provided Names"""
-
-    # INFO: TNames, TDefaults most likely needed
-
-    def __init__(self, names: "BaseNames", defaults: "BaseDefaults"):
-        self._names = names  # Store the reference to names
-        self._defaults = defaults
-        self.project_root = find_project_root()  # WARN: error not catched
-
-        # TODO: self.project_root:
-        # - if not avaliable -> swich to global
-        # - if anyway global, don't search
-        # check as well other cases and implement
-
-    @property
-    @PathGuard.dir
-    def data_dir(self) -> Path:
-        return self.project_root / self._names.data_dir
-
-    @property
-    @PathGuard.dir
-    def plot_dir(self) -> Path:
-        return self.project_root / self._names.plot_dir
-
-    @property
-    @PathGuard.dir
-    def local_home_dir(self) -> Path:
-        return self.data_dir / "homes"  # PARAM: makes sense in Names?
-
-    @property
-    @PathGuard.dir
-    def config_home(self) -> Path:
-        match self._defaults.home_setup:
-            case "local":
-                return self.local_home_dir / "config"
-            case "global":
-                return XdgHomes.CONFIG.path / self._names.project
-            case _:
-                raise AttributeError(f"Invalid: {self._defaults.home_setup=}")
-
-    @property
-    @PathGuard.dir
-    def data_home(self) -> Path:
-        match self._defaults.home_setup:
-            case "local":
-                return self.local_home_dir / "share"
-            case "global":
-                return XdgHomes.DATA.path / self._names.project
-            case _:
-                raise AttributeError(f"Invalid: {self._defaults.home_setup=}")
-
-    @property
-    @PathGuard.dir
-    def state_home(self) -> Path:
-        match self._defaults.home_setup:
-            case "local":
-                return self.local_home_dir / "state"
-            case "global":
-                return XdgHomes.STATE.path / self._names.project
-            case _:
-                raise AttributeError(f"Invalid: {self._defaults.home_setup=}")
-
-    @property
-    def dot_env(self) -> Path:
-        path: Path = self.config_home / ".env"
-        return PathGuard.file(
-            path, default_content=self._defaults.dot_env_content
-        )
-
-    @property
-    def user_setting_file(self) -> Path:
-        # TODO: global config file to read from
-        return self.data_dir / self._names.user_setting_file
+from silvasta.utils.path import XdgHomes
 
 
 class BaseNames(BaseSettings):
+    """Default names and name factories for files and project"""
+
     timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
     # NOTE: maybe hold start time for unique naming of CLI run?
     # - no, better directly in ConfigManager!
     # - move timestamp to defaults? probably
     # - factory for timestamp applied to custom name?
     #   - maybe here but solve first TASK below
+
+    # Directories in project root
     data_dir: str = "data"
     plot_dir: str = "plots"
+    # Directories in data_dir
+    local_home_dir: str = "homes"
+    # File names
     user_setting_file: str = "user_settings.json"  # NOTE: think about naming
 
-    project: str = "DefineProjectName"  # TODO: error for not setting?
+    # TODO: error for not setting?
+    # - or load from pyproject_toml?
+    # what if both exist? priority user_setting_file,except for default
+    project: str = "DefineProjectName"
 
     # --- Schema CSV-File Name --- #
 
@@ -107,17 +43,50 @@ class BaseNames(BaseSettings):
     # NOTE: see file-analyzer for singledispatchmethod example
 
 
-class BaseDefaults(BaseSettings):
-    """Main settings — import this everywhere"""
+class HomeSetup(StrEnum):
+    LOCAL = auto()
+    GLOBAL = auto()
 
+    def get_path(
+        self,
+        target: str,
+        root: Path | None = None,
+        project_name: str | None = None,
+    ) -> Path:
+        """Generate path for target={config|state|share}"""
+        match self:
+            case HomeSetup.LOCAL:
+                if root is None:
+                    raise ValueError("Root for local home dir not defined!")
+                return root / target
+            case HomeSetup.GLOBAL:
+                if root is not None:
+                    # REMOVE: after test
+                    logger.warning(f"Global home ignores: {root=}")
+                if project_name is None:
+                    raise ValueError("Need project_name for XdgHomes!")
+                return XdgHomes(target).path / project_name
+
+
+class BaseDefaults(BaseSettings):
+    """Default configurations for project handling"""
+
+    # Used for writing default content if no .env found
     dot_env_content: str = ""
-    home_setup: Literal["local", "global"] = "local"  # LATER: make Enum?
+    # Setup for path generation
+    project_root_indicator: str = "pyproject.toml"
+    home_setup: HomeSetup = HomeSetup.LOCAL
     # Use in CLI to parse input dates
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]
 
 
 class Settings(BaseSettings):
-    """Main settings collector"""
+    """Default settings and names, written to and loaded from file"""
 
     names: BaseNames = Field(default_factory=BaseNames)
     defaults: BaseDefaults = Field(default_factory=BaseDefaults)
+
+
+TSettings = TypeVar("TSettings", bound=Settings)
+TNames = TypeVar("TNames", bound=BaseNames)
+TDefaults = TypeVar("TDefaults", bound=BaseDefaults)

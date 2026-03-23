@@ -5,28 +5,34 @@ import re
 import shutil
 import tomllib
 from collections.abc import Callable
-from enum import Enum, auto
+from enum import StrEnum, auto
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
 from typing import ParamSpec, overload
 
+# TASK: how to "export" the logs to new project?
 logger: logging.Logger = logging.getLogger(__name__)
 
 P = ParamSpec("P")
 
 
-class XdgHomes(Enum):
+class XdgHomes(StrEnum):  # TEST: StrEnum?
     DATA = auto()
     STATE = auto()
     CONFIG = auto()
 
     @property
     def path(self) -> Path:
-        env_var_key = f"XDG_{self.name}_HOME"
-        return Path(os.getenv(env_var_key, self._default_path()))
+        return Path(
+            os.getenv(
+                key=f"XDG_{self.name}_HOME",
+                default=self._default_path(),
+            )
+        )
 
     def _default_path(self) -> Path:
+        """Default to user home and default location"""
         mapping: dict = {
             XdgHomes.DATA: ".local/share",
             XdgHomes.STATE: ".local/state",
@@ -187,6 +193,7 @@ class PathGuard:
                 logger.info(f"Created default file: {path}")
             if raise_error:
                 raise FileNotFoundError(f"Critical file missing: {path}")
+            # WARN: return path for non-existing file? usage?
         return path
 
     # TASK: for later, check outsourcing type defs to .pyi file
@@ -275,20 +282,21 @@ class PathGuard:
         if not path.exists():
             return path
 
-        counter = 1
-
+        # prevent f.e. my_archive.tar_1.gz
         suffixes: str = "".join(path.suffixes)
         original_stem: str = (
             path.name[: -len(suffixes)] if suffixes else path.name
         )
 
         parent: Path = path.parent
+        counter = 1
 
         # Safety loop to find free slot
         while True:
             new_name = f"{original_stem}_{counter}{suffixes}"
             candidate: Path = parent / new_name
             if not candidate.exists():
+                logger.info(f"New unique path: {candidate}")
                 return candidate
             counter += 1
 
