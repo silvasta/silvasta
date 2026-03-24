@@ -1,4 +1,5 @@
 from functools import wraps
+from pathlib import Path
 
 import typer
 from loguru import logger
@@ -22,30 +23,38 @@ def logger_catch(func):
     return wrapper
 
 
-def main_callback(ctx: typer.Context, verbose: bool, quiet: bool):
+def main_callback(
+    ctx: typer.Context, verbose: bool, quiet: bool, config: Path | None = None
+):
     """Setup logging (data, etc...) for app executed as main app"""
 
-    printer.title(f"Start of: {ctx.info_name}!")  # TEST: check apps and subapps
-    # print(dir(ctx))
+    printer.title(f"Welcome to {ctx.info_name}!")
 
-    # TODO: extend with data setup of sachmet
-    # - check if and how data should or will be attached,
-    # if in callback, this here and below is useless
+    printer.title("Setup Config and Logging", style="cyan")
+
+    if config:
+        print(config)
 
     # Setup logging
     level: str | None = "DEBUG" if verbose else None
     setup_logging(log_level_override=level, quiet=quiet)
 
+    # LATER: check if config here makes sense
 
-def sub_callback(name: str):
+
+def sub_callback(ctx: typer.Context):
     """Provide information for subapps that help users to navigate"""
-    printer.title(f"Start of: {name}!")  # TEST: check apps and subapps
+
+    printer.title(
+        f"Launching sub command: {ctx.info_name}!",
+        style="cyan",
+    )
 
 
-def attach_callback(app: typer.Typer):
+def attach_callback(
+    app: typer.Typer, config: Path | None = None
+):  # LATER: config_path=?
     """Register  single dispatcher callback to the app"""
-
-    # TASK: rethink strategy
 
     @app.callback()
     def dispatcher(
@@ -57,7 +66,12 @@ def attach_callback(app: typer.Typer):
             False, "--quiet", "-q", help="Terminal output"
         ),
     ):
+        # INFO: use for debug
+        # printer(dir(ctx.parent))
+        # printer(vars(ctx))
+        # printer(ctx.info_name)
+
         if ctx.parent is None:
-            main_callback(ctx, verbose, quiet)
+            main_callback(ctx, verbose, quiet, config)
         else:
-            sub_callback(f"{ctx.parent}")  # TEST: check apps and subapps
+            sub_callback(ctx)

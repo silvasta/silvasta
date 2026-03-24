@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class Course(BaseModel):
     """Course with all client information"""
 
+    # NEXT: check with sachmis and shmoodle
     name: str  # Clean name without year, e.g. "Game Theory and Control"
     id: int = 0  # unique? course ID
     semester: str = ""  # e.g. "HS25"
@@ -23,5 +24,5 @@ class File(BaseModel):
     # TODO: local_path: Path  # relative from local filedir
 
     # Timestamps
-    added_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
     # updated_at: datetime = Field(default_factory=datetime.now) #TODO: how to save?

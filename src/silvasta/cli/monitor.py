@@ -26,7 +26,9 @@ def main(log_path: Path | None = None):
             printer("no log path parent")
             # Avoid creating directories when the issue is most likely failed path
             logger.error(f"No file found at: {log_path=}")
-            logger.info("Parent folder not avaliable -> no empty file created!")
+            logger.info(
+                "Parent folder not avaliable -> no empty file created!"
+            )
 
             sys.exit(1)
 
