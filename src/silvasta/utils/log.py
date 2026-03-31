@@ -3,13 +3,14 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from ..utils.path import find_project_root, pyproject_log_section
-from .path import PathGuard
+from .pathguard import PathGuard
 
 try:
     from loguru import logger
 
     _loguru_loaded = True
 except ImportError:
+    # TASK: this but for entire silvasta.utils
     # Delay crash for case:
     # - this file gets loaded but logger not needed
     _loguru_loaded = False

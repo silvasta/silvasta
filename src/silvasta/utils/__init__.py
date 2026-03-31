@@ -1,5 +1,5 @@
 from .log import setup_logging
-from .path import PathGuard
+from .pathguard import PathGuard
 from .print import printer
 from .time import day_count
 
