@@ -3,12 +3,13 @@ from typing import Generic, TypeVar, cast
 
 from loguru import logger
 
-from silvasta.utils.path import PathGuard, recursive_root
+from silvasta.utils import PathGuard
+from silvasta.utils.path import pyproject_name, recursive_root
 
-from .settings import BaseDefaults, BaseNames, HomeSetup, TDefaults, TNames
+from .settings import HomeSetup, SstDefaults, SstNames, TDefaults, TNames
 
 
-class BasePaths(Generic[TNames, TDefaults]):
+class SstPaths(Generic[TNames, TDefaults]):
     """Resolves Path objects using the provided Names"""
 
     def __init__(
@@ -16,63 +17,86 @@ class BasePaths(Generic[TNames, TDefaults]):
         names: TNames | None = None,
         defaults: TDefaults | None = None,
     ):
-        self._names: TNames = names or cast(TNames, BaseNames())
         # WARN: class Paths(BasePaths[TNames, TDefaults])
-        # -> badly assigned types here will cause problems, hidden to type checker
-        self._defaults: TDefaults = defaults or cast(TDefaults, BaseDefaults())
+        # - badly assigned types here will cause problems
+        # - errors and warnings of type checker will be shadowed
 
-        self.project_root: Path = self._set_local_root()
+        self._names: TNames = names or cast(TNames, SstNames())
+        self._defaults: TDefaults = defaults or cast(TDefaults, SstDefaults())
 
-    def _set_local_root(self) -> Path:
-        if root := recursive_root(
+        self.project_root: Path = self._check_local_root()
+        project_name: str = self._check_project_name()
+
+        self._defaults.home_setup.boot(
+            local_home_root=self.local_home_dir,
+            project_name=project_name,
+        )
+
+    def _check_project_name(self) -> str:
+
+        name_from_settings: str = self._names.project
+        name_from_toml: str = (
+            "" if self._recursive_root is None else pyproject_name()
+        )
+        if name_from_settings and name_from_toml:
+            logger.warning(f"{name_from_settings=} differs {name_from_toml=}")
+
+        if name_from_settings:
+            logger.debug(f"Using project_name: {name_from_settings=}")
+            return name_from_settings
+
+        if name_from_toml:
+            logger.debug(f"Using project_name: {name_from_toml=}")
+            self._names.project: str = name_from_toml
+            return name_from_toml
+
+        logger.warning("No project_name defined!")
+        return "DefineProjectName"
+
+    def _check_local_root(self) -> Path:
+        self._recursive_root: Path | None = recursive_root(
             path=Path.cwd(),
             indicator=self._defaults.project_root_indicator,
-        ):
-            return root
+        )
+        if self._recursive_root is not None:
+            return self._recursive_root
 
+        # TEST: home swich
         if self._defaults.home_setup == HomeSetup.LOCAL:
+            logger.warning("No project root found -> defaut to: 'global'")
             self._defaults.home_setup: HomeSetup = HomeSetup.GLOBAL
-            logger.warning("No project root found -> defaut: 'global' ")
+
         return Path.cwd()
 
     @property
     @PathGuard.dir
     def data_dir(self) -> Path:
-        # TODO: handle no project root
         return self.project_root / self._names.data_dir
 
     @property
     @PathGuard.dir
     def plot_dir(self) -> Path:
-        # TODO: handle no project root
         return self.project_root / self._names.plot_dir
 
     @property
     @PathGuard.dir
     def local_home_dir(self) -> Path:
-        # TODO: handle no project root
         return self.data_dir / self._names.local_home_dir
 
     @property
     @PathGuard.dir
     def data_home(self) -> Path:
-        return self._defaults.home_setup.get_path(
-            target="share", root=self.local_home_dir
-        )  # INFO: root ignored for global, more explicit?
+        return self._defaults.home_setup.data_home
 
     @property
     @PathGuard.dir
     def state_home(self) -> Path:
-        return self._defaults.home_setup.get_path(
-            target="state", root=self.local_home_dir
-        )  # INFO: root ignored for global, more explicit?
+        return self._defaults.home_setup.state_home
 
     @property
     @PathGuard.dir
     def config_home(self) -> Path:
-        return self._defaults.home_setup.get_path(
-            target="config", root=self.local_home_dir
-        )  # INFO: root ignored for global, more explicit?
+        return self._defaults.home_setup.config_home
 
     @property
     def dot_env(self) -> Path:
@@ -82,9 +106,10 @@ class BasePaths(Generic[TNames, TDefaults]):
         )
 
     @property
-    def user_setting_file(self) -> Path:
-        # TODO: global config file to read from
-        return self.data_dir / self._names.user_setting_file
+    def setting_file(self) -> Path:
+        # LATER: iterate over possible config locations at init?
+        # maybe some execution here but control from ConfigManager
+        return self.config_home / self._names.setting_file
 
 
-TPaths = TypeVar("TPaths", bound=BasePaths)
+TPaths = TypeVar("TPaths", bound=SstPaths)

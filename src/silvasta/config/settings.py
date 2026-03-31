@@ -6,33 +6,21 @@ from loguru import logger
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
+from silvasta.utils import PathGuard
 from silvasta.utils.path import XdgHomes
 
 
-class BaseNames(BaseSettings):
+class SstNames(BaseSettings):
     """Default names and name factories for files and project"""
 
-    timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
-    # NOTE: maybe hold start time for unique naming of CLI run?
-    # - no, better directly in ConfigManager!
-    # - move timestamp to defaults? probably
-    # - factory for timestamp applied to custom name?
-    #   - maybe here but solve first TASK below
-
+    project: str = ""
     # Directories in project root
     data_dir: str = "data"
     plot_dir: str = "plots"
     # Directories in data_dir
     local_home_dir: str = "homes"
     # File names
-    user_setting_file: str = "user_settings.json"  # NOTE: think about naming
-
-    # TODO: error for not setting?
-    # - or load from pyproject_toml?
-    # what if both exist? priority user_setting_file,except for default
-    project: str = "DefineProjectName"
-
-    # --- Schema CSV-File Name --- #
+    setting_file: str = "settings.json"
 
     # TASK: create bidirectional name/path in custom class,
     # somehow integrate here?
@@ -40,37 +28,65 @@ class BaseNames(BaseSettings):
     # schema_file_pattern: str = "{name}_schema_columns.csv"
     # # Store the pattern, not the logic
     # schema_config_pattern: str = "{name}_schema_config.json"
-    # NOTE: see file-analyzer for singledispatchmethod example
+    # -> see file-analyzer for singledispatchmethod example
 
 
 class HomeSetup(StrEnum):
     LOCAL = auto()
     GLOBAL = auto()
 
-    def get_path(
+    # TEST: homesetup
+
+    def boot(
         self,
-        target: str,
-        root: Path | None = None,
+        local_home_root: Path | None = None,
         project_name: str | None = None,
-    ) -> Path:
+    ):
+        self.local_home_root: Path | None = local_home_root
+        self.project_name: str | None = project_name
+
+        match self:
+            case HomeSetup.LOCAL:
+                if self.local_home_root is None:
+                    raise ValueError("Need local home root for local homes!")
+            case HomeSetup.GLOBAL:
+                if self.project_name is None:
+                    raise ValueError("Need project_name for XdgHomes!")
+        logger.debug("HomeSetup booted successfully")
+
+    def get_path(self, target: str) -> Path:
         """Generate path for target={config|state|share}"""
         match self:
             case HomeSetup.LOCAL:
-                if root is None:
-                    raise ValueError("Root for local home dir not defined!")
-                return root / target
+                if self.local_home_root:
+                    return self.local_home_root / target
+                msg = "not able to connect to local_home_root"
             case HomeSetup.GLOBAL:
-                if root is not None:
-                    # REMOVE: after test
-                    logger.warning(f"Global home ignores: {root=}")
-                if project_name is None:
-                    raise ValueError("Need project_name for XdgHomes!")
-                return XdgHomes(target).path / project_name
+                if self.project_name:
+                    return XdgHomes(target).path / self.project_name
+                msg = "not able to connect project_name to XdgHomes"
+        raise AttributeError(msg)
+
+    @property
+    @PathGuard.dir
+    def data_home(self) -> Path:
+        return self.get_path(target="share")
+
+    @property
+    @PathGuard.dir
+    def state_home(self) -> Path:
+        return self.get_path(target="state")
+
+    @property
+    @PathGuard.dir
+    def config_home(self) -> Path:
+        return self.get_path(target="config")
 
 
-class BaseDefaults(BaseSettings):
+class SstDefaults(BaseSettings):
     """Default configurations for project handling"""
 
+    timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
     # Used for writing default content if no .env found
     dot_env_content: str = ""
     # Setup for path generation
@@ -80,13 +96,13 @@ class BaseDefaults(BaseSettings):
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]
 
 
-class Settings(BaseSettings):
+class SstSettings(BaseSettings):
     """Default settings and names, written to and loaded from file"""
 
-    names: BaseNames = Field(default_factory=BaseNames)
-    defaults: BaseDefaults = Field(default_factory=BaseDefaults)
+    names: SstNames = Field(default_factory=SstNames)
+    defaults: SstDefaults = Field(default_factory=SstDefaults)
 
 
-TSettings = TypeVar("TSettings", bound=Settings)
-TNames = TypeVar("TNames", bound=BaseNames)
-TDefaults = TypeVar("TDefaults", bound=BaseDefaults)
+TSettings = TypeVar("TSettings", bound=SstSettings)
+TNames = TypeVar("TNames", bound=SstNames)
+TDefaults = TypeVar("TDefaults", bound=SstDefaults)

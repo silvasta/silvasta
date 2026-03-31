@@ -29,24 +29,14 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         self._paths_cls: type[TPaths] = paths_cls
 
         self.settings: TSettings = self._settings_cls()
-        # LATER: load setting independent of paths
-        # IDEA: load paths with settings?
-        # - Paths gets anyway names and defaults!
         self.paths: TPaths = self._load_paths()
 
-        if self._load_user_prefs_from_file():
-            # Rebuild paths in case of changes
-            self.paths: TPaths = self._load_paths()
-            logger.info("Settings loaded from file")
-        else:
+        if not self._load_settings_from_file():
+            logger.info("Using default settings created from scratch")
             if save_defaults_to_file:
                 self.save()
-            logger.info("Using default settings created from scratch")
-
-    @property
-    def _user_file(self):
-        # REMOVE: separate paths/user_setting_file
-        return self.paths.user_setting_file
+        else:
+            logger.info("Settings loaded from file")
 
     @property
     def names(self) -> TNames:
@@ -64,12 +54,16 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
 
     @property
     def starttime(self) -> str:
-        return self._starttime.strftime(self.names.timestamp_format)
+        return self._starttime.strftime(self.defaults.timestamp_format)
 
     @property
     def duration(self) -> timedelta:
         # LATER: how and where to apply a format?
         return datetime.now() - self._starttime
+
+    @property
+    def timestamp(self) -> str:
+        return datetime.now().strftime(self.defaults.timestamp_format)
 
     def from_env(self, key: str):
         """get variable from environment, log failure, raise error"""
@@ -82,14 +76,18 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
             raise ValueError("Login credentials not found in .env file")
         return var
 
-    def _load_user_prefs_from_file(self) -> bool:
-        if not self._user_file.exists():
-            logger.info("No user_setting_file found")
+    def _load_settings_from_file(self) -> bool:
+
+        if not (setting_file := self.paths.setting_file).exists():
+            logger.info(f"Nothing found at: {setting_file=}")
             return False
         try:
-            data = json.loads(self._user_file.read_text(encoding="utf-8"))
-            self.settings: TSettings = self._settings_cls.model_validate(data)
+            self.settings: TSettings = self._settings_cls.model_validate(
+                json.loads(setting_file.read_text(encoding="utf-8"))
+            )
+            self.paths: TPaths = self._load_paths()  # Reload for changes
             return True
+
         except Exception as e:
             logger.error(f"Failed to load settings: {e}")
             return False
@@ -104,5 +102,5 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
             exclude_defaults=False,
             indent=2,
         )
-        self._user_file.write_text(json_str, encoding="utf-8")
-        logger.info(f"Settings saved to: {self._user_file}")
+        self.paths.setting_file.write_text(json_str, encoding="utf-8")
+        logger.info(f"Settings saved to: {self.paths.setting_file}")

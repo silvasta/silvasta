@@ -1,12 +1,12 @@
 from silvasta.config.manager import ConfigManager
 
-from .paths import BasePaths
-from .settings import BaseDefaults, BaseNames, Settings
+from .paths import SstPaths
+from .settings import SstDefaults, SstNames, SstSettings
 
 __all__: list = [
     ConfigManager,
-    BasePaths,
-    Settings,
-    BaseDefaults,
-    BaseNames,
+    SstPaths,
+    SstSettings,
+    SstDefaults,
+    SstNames,
 ]
