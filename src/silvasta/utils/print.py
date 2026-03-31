@@ -12,7 +12,7 @@ class Printer:
 
     _raw_theme: dict[str, str] = {
         "info": "black on white",
-        "normal": "white on black",
+        "normal": "white",
         "title": "bold white on cyan",
         "warning": "bold white on yellow",
         "success": "bold white on green",
@@ -20,6 +20,8 @@ class Printer:
     }
     _fallback_to_standard_print = False
 
+    # IMPORTANT: style counter!
+    # - count which default/not default used and improve
     def __init__(
         self,
         custom_theme: dict[str, str] | None = None,
@@ -95,7 +97,7 @@ class Printer:
         kwargs = defaults | kwargs
         self.panel(text, *args, **kwargs)
 
-    def fail(self, text, *args, **kwargs):
+    def danger(self, text, *args, **kwargs):
         defaults: dict[str, str] = {
             "style": "danger",
             # "justify": "center", # INFO: no longer possible/needed after swich from Markdown to Panel
@@ -118,7 +120,9 @@ class Printer:
 
         self.title("Theme Preview")
         for style in self._rich_theme.styles.keys():
-            self(f" Style Preview: [ {style} ] ", style=style, justify="center")
+            self(
+                f" Style Preview: [ {style} ] ", style=style, justify="center"
+            )
 
     def set_project_name(self, name: str | None = None):
         try:
