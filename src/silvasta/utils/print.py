@@ -65,7 +65,9 @@ class Printer:
         self(
             Panel(
                 renderable=text,
-                title=title or self.project_name,
+                # NEXT: fix version number
+                title=title
+                or f"{self.project_name} - v0.4.0b1",  # REMOVE: hardcoded
                 title_align=title_align,
                 style=style,
             )
@@ -127,6 +129,8 @@ class Printer:
     def set_project_name(self, name: str | None = None):
         try:
             self.project_name: str = pyproject_name()
+            # NEXT: fix this for any location
+            # - add version number
         except FileNotFoundError:
             logger.warning("No pyproject.toml found to set project_name")
             self.project_name: str = "ModifyConfigDefaults"  # TODO: add this to config.settings.defaults

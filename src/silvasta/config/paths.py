@@ -34,21 +34,31 @@ class SstPaths(Generic[TNames, TDefaults]):
 
     def _check_project_name(self) -> str:
 
-        name_from_settings: str = self._names.project
-        name_from_toml: str = (
+        # MOVE: to config.manager? see INFO below
+
+        project_name_from_settings: str = self._names.project
+        project_name_from_toml: str = (
             "" if self._recursive_root is None else pyproject_name()
         )
-        if name_from_settings and name_from_toml:
-            logger.warning(f"{name_from_settings=} differs {name_from_toml=}")
+        msg = f"{project_name_from_settings=}, {project_name_from_toml=}"
 
-        if name_from_settings:
-            logger.debug(f"Using project_name: {name_from_settings=}")
-            return name_from_settings
+        if project_name_from_settings != project_name_from_toml:
+            logger.warning(msg)
+        else:
+            logger.debug(msg)
 
-        if name_from_toml:
-            logger.debug(f"Using project_name: {name_from_toml=}")
-            self._names.project: str = name_from_toml
-            return name_from_toml
+        if project_name_from_settings:
+            logger.debug(
+                f"Using project_project_name: {project_name_from_settings=}"
+            )
+            return project_name_from_settings
+
+        if project_name_from_toml:
+            logger.debug(
+                f"Using project_project_name: {project_name_from_toml=}"
+            )
+            self._names.project: str = project_name_from_toml
+            return project_name_from_toml
 
         logger.warning("No project_name defined!")
         return "DefineProjectName"
@@ -113,3 +123,12 @@ class SstPaths(Generic[TNames, TDefaults]):
 
 
 TPaths = TypeVar("TPaths", bound=SstPaths)
+
+
+def get_setting_file_path() -> Path:
+    # INFO: used for cli.setup with the idea not to load entire config
+    # - problems: still booting home setup, move to config.manager?
+    # still issue when boot changes the path that printed with this function
+    # - probably fine as it is now, maybe REMOVE this function if somehow possible,
+    # directly import SstPaths and ().setting_file?
+    return SstPaths().setting_file

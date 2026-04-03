@@ -28,6 +28,7 @@ def pick_from_folder(
     """Show elements from folder, select 1 and get path name"""
 
     # TODO: merge with multiple, 1 func for path-to-folder
+    # WARN: throws bad explaining exception for empty folder!
     elements: list = sorted(e.name for e in path.glob(pattern))
     option: str = picker(elements, pattern=pattern, title=title)
 

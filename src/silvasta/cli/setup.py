@@ -4,6 +4,8 @@ from pathlib import Path
 import typer
 from loguru import logger
 
+import silvasta.config.paths as sst
+
 from ..utils.log import setup_logging
 from ..utils.print import printer
 
@@ -32,8 +34,7 @@ def main_callback(
 
     printer.title("Setup Config and Logging", style="cyan")
 
-    if config:
-        print(config)
+    print(config or sst.get_setting_file_path())
 
     # Setup logging
     level: str | None = "DEBUG" if verbose else None

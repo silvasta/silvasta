@@ -52,7 +52,7 @@ class HomeSetup(StrEnum):
             case HomeSetup.GLOBAL:
                 if self.project_name is None:
                     raise ValueError("Need project_name for XdgHomes!")
-        logger.debug("HomeSetup booted successfully")
+        logger.debug(f"HomeSetup '{self}' booted successfully")
 
     def get_path(self, target: str) -> Path:
         """Generate path for target={config|state|share}"""
