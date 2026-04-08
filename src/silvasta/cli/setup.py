@@ -25,6 +25,32 @@ def logger_catch(func):
     return wrapper
 
 
+def attach_callback(
+    app: typer.Typer, config: Path | None = None
+):  # LATER: config_path=?
+    """Register  single dispatcher callback to the app"""
+
+    @app.callback()
+    def dispatcher(
+        ctx: typer.Context,
+        verbose: bool = typer.Option(
+            False, "--verbose", "-v", help="Show debug logs"
+        ),
+        quiet: bool = typer.Option(
+            False, "--quiet", "-q", help="Terminal output"
+        ),
+    ):
+        # INFO: use for debug
+        # printer(dir(ctx.parent))
+        # printer(vars(ctx))
+        # printer(ctx.info_name)
+
+        if ctx.parent is None:
+            main_callback(ctx, verbose, quiet, config)
+        else:
+            sub_callback(ctx)
+
+
 def main_callback(
     ctx: typer.Context, verbose: bool, quiet: bool, config: Path | None = None
 ):
@@ -50,29 +76,3 @@ def sub_callback(ctx: typer.Context):
         f"Launching sub command: {ctx.info_name}!",
         style="cyan",
     )
-
-
-def attach_callback(
-    app: typer.Typer, config: Path | None = None
-):  # LATER: config_path=?
-    """Register  single dispatcher callback to the app"""
-
-    @app.callback()
-    def dispatcher(
-        ctx: typer.Context,
-        verbose: bool = typer.Option(
-            False, "--verbose", "-v", help="Show debug logs"
-        ),
-        quiet: bool = typer.Option(
-            False, "--quiet", "-q", help="Terminal output"
-        ),
-    ):
-        # INFO: use for debug
-        # printer(dir(ctx.parent))
-        # printer(vars(ctx))
-        # printer(ctx.info_name)
-
-        if ctx.parent is None:
-            main_callback(ctx, verbose, quiet, config)
-        else:
-            sub_callback(ctx)

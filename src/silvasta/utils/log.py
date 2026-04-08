@@ -8,9 +8,11 @@ from .pathguard import PathGuard
 try:
     from loguru import logger
 
+    # TASK: this but for entire silvasta.utils
+    # IMPORTANT: logger management
+
     _loguru_loaded = True
 except ImportError:
-    # TASK: this but for entire silvasta.utils
     # Delay crash for case:
     # - this file gets loaded but logger not needed
     _loguru_loaded = False

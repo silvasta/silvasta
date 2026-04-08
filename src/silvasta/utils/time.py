@@ -8,26 +8,27 @@ from loguru import logger
 
 @dataclass
 class DateRange:
-    # IMPORTANT: how to extend this to be universal useful?
-    # - TimeRange, DateRange, DateTimeRange?
-    # - or simply 1 class that provides all?
-    # TASK:
-    # - Add some functions and checks here! (duration, interval, ...)
-
     start: datetime | date = date(2026, 1, 1)
     end: datetime | date = date(2026, 12, 31)
 
-    @property
-    def date_type(self) -> type[datetime] | type[date]:
-        return type(self.start)
-
-    # TODO: check for start < end? otherwise..
-    # - could work that range is opposed
     def __post_init__(self):
         if type(self.start) is not type(self.end):
             raise TypeError(
                 f"start: {type(self.start)} must equal end:{type(self.end)}"
             )
+        if self.start > self.end:  # TEST: fine without error?
+            logger.warning("Start of daterange is after end, range inverted!")
+
+    @property
+    def date_type(self) -> type[datetime] | type[date]:
+        return type(self.start)
+
+    @property
+    def duration(self) -> timedelta:
+        return self.end - self.start
+
+    # @property
+    # LATER: string_duration, interval, others?
 
 
 def timer(func):

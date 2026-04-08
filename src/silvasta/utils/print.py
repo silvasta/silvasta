@@ -4,7 +4,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.theme import Theme
 
-from .path import pyproject_name
+from .path import pyproject_name, pyproject_version
 
 
 class Printer:
@@ -16,24 +16,27 @@ class Printer:
         "title": "bold white on cyan",
         "warning": "bold white on yellow",
         "success": "bold white on green",
-        "danger": "bold black on red",  # Idea: "danger3": "bold red on black",
+        "danger": "bold black on red",
     }
     _fallback_to_standard_print = False
 
-    # IMPORTANT: style counter!
+    # IDEA: style counter!
     # - count which default/not default used and improve
+
     def __init__(
         self,
         custom_theme: dict[str, str] | None = None,
         name: str | None = None,
+        version: str | None = None,
     ):
         self.update_theme_load_console(custom_theme)
         self.set_project_name(name)
+        self.set_project_version(version)
 
     def __call__(self, *args, **kwargs):
         """Rich console print, printer.mute(): swich to regular print"""
         if self._fallback_to_standard_print:
-            print(args[0] or "Something went wrong in defaulting: printer()")
+            print(args[0] or "Something went wrong in muting printer...")
         else:
             self.console.print(*args, **kwargs)
 
@@ -42,7 +45,7 @@ class Printer:
         self._fallback_to_standard_print = True
 
     def unmute(self):
-        """Swich to Rich console print"""
+        """Swich to Rich Console Printer"""
         self._fallback_to_standard_print = False
 
     def md(self, text, *args, header: int = 0, **kwargs):
@@ -65,9 +68,8 @@ class Printer:
         self(
             Panel(
                 renderable=text,
-                # NEXT: fix version number
-                title=title
-                or f"{self.project_name} - v0.4.0b1",  # REMOVE: hardcoded
+                # TEST: fix version number
+                title=title or f"{self.project_name} - {self.project_version}",
                 title_align=title_align,
                 style=style,
             )
@@ -127,13 +129,27 @@ class Printer:
             )
 
     def set_project_name(self, name: str | None = None):
-        try:
-            self.project_name: str = pyproject_name()
-            # NEXT: fix this for any location
-            # - add version number
-        except FileNotFoundError:
-            logger.warning("No pyproject.toml found to set project_name")
-            self.project_name: str = "ModifyConfigDefaults"  # TODO: add this to config.settings.defaults
+        if name is not None:
+            self.project_name: str = name
+        else:
+            try:
+                self.project_name: str = pyproject_name()
+            except FileNotFoundError:
+                logger.warning("No pyproject.toml found to set project_name")
+                self.project_name: str = "ModifyConfigDefaults"  # TODO: add this to config.settings.defaults?
+
+    # NEXT: fix this for any location,
+    # without pyproject.toml, on pypi
+
+    def set_project_version(self, version: str | None = None):
+        if version is not None:
+            self.project_version: str = version
+        else:
+            try:
+                self.project_version: str = pyproject_version()
+            except FileNotFoundError:
+                logger.warning("No pyproject.toml found to set project_name")
+                self.project_version: str = "ModifyConfigDefaults"  # TODO: add this to config.settings.defaults?
 
 
 printer = Printer()

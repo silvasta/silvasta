@@ -7,6 +7,7 @@ class Course(BaseModel):
     """Course with all client information"""
 
     # NEXT: check with sachmis and shmoodle
+    # REMOVE: place this here when actually used somewhere else
     name: str  # Clean name without year, e.g. "Game Theory and Control"
     id: int = 0  # unique? course ID
     semester: str = ""  # e.g. "HS25"
@@ -14,7 +15,7 @@ class Course(BaseModel):
     is_active: bool = True
 
 
-class File(BaseModel):
+class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
     name: str  # TODO: define excact meaning

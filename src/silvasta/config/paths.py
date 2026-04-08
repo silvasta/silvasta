@@ -47,13 +47,13 @@ class SstPaths(Generic[TNames, TDefaults]):
         else:
             logger.debug(msg)
 
-        if project_name_from_settings:
+        if project_name_from_settings:  # Priority 1
             logger.debug(
                 f"Using project_project_name: {project_name_from_settings=}"
             )
             return project_name_from_settings
 
-        if project_name_from_toml:
+        if project_name_from_toml:  # Priority 2
             logger.debug(
                 f"Using project_project_name: {project_name_from_toml=}"
             )
@@ -118,7 +118,7 @@ class SstPaths(Generic[TNames, TDefaults]):
     @property
     def setting_file(self) -> Path:
         # LATER: iterate over possible config locations at init?
-        # maybe some execution here but control from ConfigManager
+        # maybe display here but control and execution from ConfigManager
         return self.config_home / self._names.setting_file
 
 

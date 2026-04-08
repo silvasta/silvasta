@@ -19,7 +19,7 @@ class PatternNamer:  # TEST: together with silvasta.config.settings.Names
     # - template string / t"string"?
 
     def __init__(self, pattern: str):
-        self.pattern = pattern
+        self.pattern: str = pattern
         # Simple regex to extract the {name} part dynamically
         # "{name}_schema.csv" -> r"^(.*)_schema\.csv$"
         regex_pattern = pattern.replace("{name}", "(.*)").replace(".", r"\.")

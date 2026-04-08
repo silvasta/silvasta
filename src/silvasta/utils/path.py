@@ -105,7 +105,13 @@ def dict_to_sns(data: dict):
 def pyproject_name(pyproject_toml_path: Path | None = None) -> str:
     """Fetches project metadata from: [project] in pyproject.toml"""
     pyproject_file: SimpleNamespace = pyproject_sns(pyproject_toml_path)
-    return pyproject_file.project.name  # WARNING: error not catched
+    return pyproject_file.project.name
+
+
+def pyproject_version(pyproject_toml_path: Path | None = None) -> str:
+    """Fetches project metadata from: [project] in pyproject.toml"""
+    pyproject_file: SimpleNamespace = pyproject_sns(pyproject_toml_path)
+    return pyproject_file.project.version
 
 
 def pyproject_log_section(

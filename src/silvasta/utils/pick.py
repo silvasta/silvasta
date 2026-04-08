@@ -2,19 +2,67 @@ from pathlib import Path
 
 from pick import pick
 
-# WARN: name/path/stem confusing, find best configurability
 # TODO: logger
-# TASK: finally create pick modul
-# - check with template and with sachmet
+
+
+class Picker:
+    """Instance for 1 formating set or for 1 picking???"""
+
+    # INFO:
+    # 1 formating set, hold title etc
+    # 1 picking, hold result
+
+    def __init__(
+        self,
+        elements,
+        pattern="*",
+        title="Choose an element:",
+        multi_selection: bool = False,
+        min_selection_count: int = 1,
+    ):
+        self.elements: list = elements
+        self.pattern: str = pattern
+        self.title: str = title
+        self.multi_selection: bool = multi_selection
+        self.min_selection_count: int = min_selection_count
+
+    @classmethod
+    def from_folder(
+        cls,
+        path: Path,
+        pattern: str = "*",
+        title: str | None = None,
+        multi_selection: bool = False,
+        min_selection_count: int = 1,
+    ) -> "Picker":
+
+        if not path.is_dir():
+            raise FileNotFoundError
+
+        elements: list = sorted(e.name for e in path.glob(pattern))
+        picky: Picker = cls(
+            elements, pattern, title, multi_selection, min_selection_count
+        )
+        picky()
+
+        return picky
+
+    def __call__(self):
+        option, index = pick(self.elements, self.title)
+
+        # NEXT: create 2 pickers?
+        options_with_index: list[tuple[str, int]] = pick(
+            self.elements,
+            self.title,
+            multiselect=True,
+            min_selection_count=self.min_selection_count,
+        )
 
 
 def picker(
     elements: list[str], pattern: str = "*", title: str | None = None
 ) -> str:
     """Show elements from list, select 1 and get name back"""
-
-    if title is None:
-        title = "Choose an element:"
 
     option, _ = pick(elements, title)
     print(f"You chose {option}")
@@ -38,7 +86,7 @@ def pick_from_folder(
 def pick_multiple(
     elements: list,
     title: str = "Choose all elements to process:",
-    # TODO: forward arguments not completed, look for better solution!
+    # WARN: forward arguments not completed, look for better solution!
     min_selection_count=1,
     quiet=False,
 ) -> list[tuple[str, int]]:
