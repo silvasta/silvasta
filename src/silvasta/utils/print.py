@@ -65,11 +65,11 @@ class Printer:
         self(Markdown(f"{prefix}{text}"), *args, **kwargs)
 
     def panel(self, text: str, title=None, title_align="right", style="info"):
+        title: str = title or f"{self.project_name} v{self.project_version}"
         self(
             Panel(
                 renderable=text,
-                # TEST: fix version number
-                title=title or f"{self.project_name} - {self.project_version}",
+                title=title,
                 title_align=title_align,
                 style=style,
             )
@@ -108,6 +108,18 @@ class Printer:
         }
         kwargs = defaults | kwargs
         self.panel(text, *args, **kwargs)
+
+    def lines_from_list(
+        self,
+        lines: list,
+        header: str | None = "",
+        title: str = "",
+        # TODO: style, or kwargs
+    ):
+        """Print header as title followed by lines in panel"""
+        if header is not None:
+            self.title(header)
+        self.panel(text="\n".join(lines), title=title)
 
     def update_theme_load_console(
         self, custom_theme: dict[str, str] | None = None
