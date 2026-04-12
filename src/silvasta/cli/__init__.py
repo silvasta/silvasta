@@ -1,13 +1,10 @@
-from collections.abc import Callable
-
+from . import args as sargs
 from .monitor import main as monitor
 from .setup import attach_callback, logger_catch
 
-# LATER: import args as entire block?
-
-__all__: list[Callable] = [
-    monitor,
-    # TEST: setup stuff fine here?
-    logger_catch,
-    attach_callback,
+__all__: list = [
+    "monitor",
+    "logger_catch",
+    "attach_callback",
+    "sargs",
 ]

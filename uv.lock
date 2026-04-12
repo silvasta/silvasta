@@ -884,32 +884,24 @@ name = "silvasta"
 version = "0.2.0a3"
 source = { editable = "." }
 dependencies = [
+    { name = "loguru" },
     { name = "pick" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "rich" },
 ]
 
 [package.optional-dependencies]
 all = [
-    { name = "loguru" },
     { name = "matplotlib" },
-    { name = "rich" },
     { name = "seaborn" },
     { name = "textual" },
     { name = "typer" },
 ]
 cli = [
-    { name = "loguru" },
-    { name = "rich" },
     { name = "typer" },
 ]
-log = [
-    { name = "loguru" },
-    { name = "rich" },
-]
 tui = [
-    { name = "loguru" },
-    { name = "rich" },
     { name = "textual" },
     { name = "typer" },
 ]
@@ -920,20 +912,19 @@ viz = [
 
 [package.metadata]
 requires-dist = [
-    { name = "loguru", marker = "extra == 'log'" },
+    { name = "loguru", specifier = ">=0.7.3" },
     { name = "matplotlib", marker = "extra == 'viz'" },
     { name = "pick", specifier = ">=2.6.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
-    { name = "rich", marker = "extra == 'log'" },
+    { name = "rich", specifier = ">=14.3.3" },
     { name = "seaborn", marker = "extra == 'viz'" },
     { name = "silvasta", extras = ["cli"], marker = "extra == 'tui'" },
-    { name = "silvasta", extras = ["log"], marker = "extra == 'cli'" },
     { name = "silvasta", extras = ["tui", "viz"], marker = "extra == 'all'" },
     { name = "textual", marker = "extra == 'tui'" },
     { name = "typer", marker = "extra == 'cli'" },
 ]
-provides-extras = ["log", "cli", "tui", "viz", "all"]
+provides-extras = ["cli", "tui", "viz", "all"]
 
 [[package]]
 name = "six"

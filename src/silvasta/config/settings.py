@@ -1,4 +1,3 @@
-from enum import StrEnum, auto
 from pathlib import Path
 from typing import TypeVar
 
@@ -9,91 +8,8 @@ from pydantic_settings import BaseSettings
 from silvasta.utils import PathGuard
 from silvasta.utils.path import XdgHomes
 
-
-class SstNames(BaseSettings):
-    """Default names and name factories for files and project"""
-
-    project: str = ""
-    # Directories in project root
-    data_dir: str = "data"
-    plot_dir: str = "plots"
-    # Directories in data_dir
-    local_home_dir: str = "homes"
-    # File names
-    setting_file: str = "settings.json"
-
-    # TASK: create bidirectional name/path in custom class,
-    # somehow integrate here?
-    # - list of patterns and keys?
-    # schema_file_pattern: str = "{name}_schema_columns.csv"
-    # # Store the pattern, not the logic
-    # schema_config_pattern: str = "{name}_schema_config.json"
-    # -> see file-analyzer for singledispatchmethod example
-
-
-class HomeSetup(StrEnum):
-    LOCAL = auto()
-    GLOBAL = auto()
-
-    # TEST: homesetup
-
-    def boot(
-        self,
-        local_home_root: Path | None = None,
-        project_name: str | None = None,
-    ):
-        self.local_home_root: Path | None = local_home_root
-        self.project_name: str | None = project_name
-
-        match self:
-            case HomeSetup.LOCAL:
-                if self.local_home_root is None:
-                    raise ValueError("Need local home root for local homes!")
-            case HomeSetup.GLOBAL:
-                if self.project_name is None:
-                    raise ValueError("Need project_name for XdgHomes!")
-        logger.debug(f"HomeSetup '{self}' booted successfully")
-
-    def get_path(self, target: str) -> Path:
-        """Generate path for target={config|state|share}"""
-        match self:
-            case HomeSetup.LOCAL:
-                if self.local_home_root:
-                    return self.local_home_root / target
-                msg = "not able to connect to local_home_root"
-            case HomeSetup.GLOBAL:
-                if self.project_name:
-                    return XdgHomes(target).path / self.project_name
-                msg = "not able to connect project_name to XdgHomes"
-        raise AttributeError(msg)
-
-    @property
-    @PathGuard.dir
-    def data_home(self) -> Path:
-        return self.get_path(target="share")
-
-    @property
-    @PathGuard.dir
-    def state_home(self) -> Path:
-        return self.get_path(target="state")
-
-    @property
-    @PathGuard.dir
-    def config_home(self) -> Path:
-        return self.get_path(target="config")
-
-
-class SstDefaults(BaseSettings):
-    """Default configurations for project handling"""
-
-    timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
-    # Used for writing default content if no .env found
-    dot_env_content: str = ""
-    # Setup for path generation
-    project_root_indicator: str = "pyproject.toml"
-    home_setup: HomeSetup = HomeSetup.LOCAL
-    # Use in CLI to parse input dates
-    input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]
+from .defaults import SstDefaults
+from .names import SstNames
 
 
 class SstSettings(BaseSettings):
@@ -102,7 +18,70 @@ class SstSettings(BaseSettings):
     names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
 
+    @classmethod
+    def default_json_content(cls) -> str:
+        """Get unmodified dumped content of all class members"""
+        return cls().model_dump_json(
+            exclude_defaults=False,
+            indent=2,
+        )
+
+    @classmethod
+    def ensure_master_setting_file(
+        cls, write_new_file_if_missing: bool
+    ) -> Path:
+        """If file not exists, {write default content and} get Error"""
+
+        master_file_path: Path = cls._master_file_path()
+        content: str | None = (
+            cls.default_json_content() if write_new_file_if_missing else None
+        )
+        try:
+            PathGuard.file(
+                target=master_file_path,
+                default_content=content,
+                raise_error=True,
+            )
+            logger.debug("master_setting_file ensured")
+            return master_file_path
+
+        except FileNotFoundError:
+            if not write_new_file_if_missing:
+                raise FileNotFoundError(
+                    "Place master_setting_file at location or write default!"
+                ) from None  # TEST: how does the error look in cli?
+
+        logger.info("New master_setting_file written from default Settings")
+        return (
+            cls.ensure_master_setting_file(  # Again to check if write worked
+                write_new_file_if_missing=False,  # False to avoid loop
+            )
+        )
+
+    @classmethod
+    def _master_file_path(cls) -> Path:
+        """Generate immutable path to load Settings or finding setting_file!"""
+        tmp_names: SstNames = cls().names
+        return (
+            XdgHomes("config").path
+            / tmp_names.project
+            / tmp_names.setting_file
+        )
+
+    def save_to_path(self, path: Path):
+        """Save current status to json"""
+        path.write_text(self.json_content(), encoding="utf-8")
+
+    def save_to_master_setting_file(self):
+        self.save_to_path(self._master_file_path())
+        logger.debug("saved to master_file_path")
+
+    def json_content(self) -> str:
+        """Dump content of all class members"""
+        return self.model_dump_json(
+            exclude_defaults=False,
+            indent=2,
+        )
+
 
 TSettings = TypeVar("TSettings", bound=SstSettings)
-TNames = TypeVar("TNames", bound=SstNames)
-TDefaults = TypeVar("TDefaults", bound=SstDefaults)

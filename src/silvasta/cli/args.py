@@ -1,11 +1,20 @@
-# WARNING: Find proper generalized annotations
-# - avoid just put in everything
-# - handle every annotation as if you had to carry it forever
-# - check over:
+from typing import Annotated
+
+import typer
+
+# TASK: Find proper generalized annotations
+# - check:
 #   - sachmis
 #   - grab
-#   - file-analyter
+#   - file-analyzer
 #   - tyrus
-#   - format/main/writer..
-#   - and from SysCo
+#   - SysCo
 
+
+DryRun = Annotated[
+    bool,
+    typer.Option(
+        "--dry",
+        help="Simulate pipeline without execution",
+    ),
+]

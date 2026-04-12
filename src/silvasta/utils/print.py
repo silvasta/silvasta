@@ -4,11 +4,12 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.theme import Theme
 
-from .path import pyproject_name, pyproject_version
-
 
 class Printer:
     """Customized Rich Console setup for easy acces"""
+
+    # IDEA: style counter!
+    # - count which default/not default used and improve
 
     _raw_theme: dict[str, str] = {
         "info": "black on white",
@@ -20,18 +21,11 @@ class Printer:
     }
     _fallback_to_standard_print = False
 
-    # IDEA: style counter!
-    # - count which default/not default used and improve
+    project_name: str = "App"
+    project_version: str = "unknown"
 
-    def __init__(
-        self,
-        custom_theme: dict[str, str] | None = None,
-        name: str | None = None,
-        version: str | None = None,
-    ):
+    def __init__(self, custom_theme: dict[str, str] | None = None):
         self.update_theme_load_console(custom_theme)
-        self.set_project_name(name)
-        self.set_project_version(version)
 
     def __call__(self, *args, **kwargs):
         """Rich console print, printer.mute(): swich to regular print"""
@@ -82,8 +76,6 @@ class Printer:
         }
         kwargs = defaults | kwargs  # override defaults
         self.panel(text, *args, **kwargs)
-
-    # TODO: check defaults, check again Markdown H=1 as title
 
     def warn(self, text, *args, **kwargs):
         defaults: dict[str, str] = {
@@ -139,29 +131,6 @@ class Printer:
             self(
                 f" Style Preview: [ {style} ] ", style=style, justify="center"
             )
-
-    def set_project_name(self, name: str | None = None):
-        if name is not None:
-            self.project_name: str = name
-        else:
-            try:
-                self.project_name: str = pyproject_name()
-            except FileNotFoundError:
-                logger.warning("No pyproject.toml found to set project_name")
-                self.project_name: str = "ModifyConfigDefaults"  # TODO: add this to config.settings.defaults?
-
-    # NEXT: fix this for any location,
-    # without pyproject.toml, on pypi
-
-    def set_project_version(self, version: str | None = None):
-        if version is not None:
-            self.project_version: str = version
-        else:
-            try:
-                self.project_version: str = pyproject_version()
-            except FileNotFoundError:
-                logger.warning("No pyproject.toml found to set project_name")
-                self.project_version: str = "ModifyConfigDefaults"  # TODO: add this to config.settings.defaults?
 
 
 printer = Printer()

@@ -1,13 +1,11 @@
 from functools import wraps
-from pathlib import Path
 
 import typer
 from loguru import logger
 
-import silvasta.config.paths as sst
-
-from ..utils.log import setup_logging
-from ..utils.print import printer
+from silvasta.config import ConfigManager
+from silvasta.utils import printer, setup_logging
+from silvasta.utils.log import LogParam
 
 
 def logger_catch(func):
@@ -26,8 +24,8 @@ def logger_catch(func):
 
 
 def attach_callback(
-    app: typer.Typer, config: Path | None = None
-):  # LATER: config_path=?
+    app: typer.Typer, param: dict[str, str | LogParam] | None = None
+):
     """Register  single dispatcher callback to the app"""
 
     @app.callback()
@@ -40,19 +38,17 @@ def attach_callback(
             False, "--quiet", "-q", help="Terminal output"
         ),
     ):
-        # INFO: use for debug
-        # printer(dir(ctx.parent))
-        # printer(vars(ctx))
-        # printer(ctx.info_name)
-
         if ctx.parent is None:
-            main_callback(ctx, verbose, quiet, config)
+            main_callback(ctx, verbose, quiet, param)
         else:
             sub_callback(ctx)
 
 
 def main_callback(
-    ctx: typer.Context, verbose: bool, quiet: bool, config: Path | None = None
+    ctx: typer.Context,
+    verbose: bool,
+    quiet: bool,
+    param: dict[str, str | LogParam] | None = None,
 ):
     """Setup logging (data, etc...) for app executed as main app"""
 
@@ -60,13 +56,13 @@ def main_callback(
 
     printer.title("Setup Config and Logging", style="cyan")
 
-    print(config or sst.get_setting_file_path())
+    if param is None:
+        logger.warning("setup backup config manager for param")
+        config: ConfigManager = ConfigManager.default_setup()
+        param: dict[str, str | LogParam] = config.compose_setup_param()
 
-    # Setup logging
     level: str | None = "DEBUG" if verbose else None
-    setup_logging(log_level_override=level, quiet=quiet)
-
-    # LATER: check if config here makes sense
+    setup_logging(log_level_override=level, quiet=quiet, param=param)
 
 
 def sub_callback(ctx: typer.Context):
