@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-class PatternNamer:  # TEST: together with silvasta.config.settings.Names
+class PatternNamer:  # LATER: combine with silvasta.config.Names
     """Factory for bidirectional connection of path and name"""
 
     # Usage:
@@ -90,7 +90,7 @@ def grep_from_list(
 
 def sanitize(text: str) -> str:
     """Clean text and prepare for further process"""
-    # TODO: collect ideas for cleanup with options
+    # LATER: collect ideas for cleanup with options
     # - remove non-printable chars
     # - create different sets for different purposes
     # -> define later, when known for what to use

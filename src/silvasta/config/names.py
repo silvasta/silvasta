@@ -11,13 +11,13 @@ class SstNames(BaseSettings):
 
     project: str
 
-    # Values for master config file!
-    setting_file: str = "settings.json"  # needed?
-    _log_file_name: str = ""
-    # Directories in project root
+    # Master config file
+    setting_file: str = "settings.json"
+    # Directories in local root
     data_dir: str = "data"
     plot_dir: str = "plots"
     log_dir: str = "plots"
+    _log_file_name: str = ""
     # Directories in data_dir
     local_home_dir: str = "homes"
 

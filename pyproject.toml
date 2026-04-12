@@ -1,7 +1,9 @@
 [project]
+license = { text = "Apache License 2.0", "License :: OSI Approved :: GNU Affero General Public License v3"}
 name = "silvasta"
-version = "0.2.0a3"
-description = "Collection of frequently used generalized utils, functions and tools"
+version = "0.2.0b1"
+classifiers = ["Development Status :: 4 - Beta"]
+description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.11"
@@ -12,6 +14,9 @@ dependencies = [
   "pydantic-settings>=2.13.1",
   "rich>=14.3.3",
 ]
+
+[project.urls]
+Repository = "https://github.com/silvasta/silvasta"
 
 [build-system]
 requires = ["uv_build>=0.10.9,<0.11.0"]

@@ -6,4 +6,7 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 
-__all__: list = ["__version__"]
+__all__: list[str] = [
+    "__version__",
+    "PathGuard",
+]
