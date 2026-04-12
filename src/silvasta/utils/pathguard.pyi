@@ -8,20 +8,29 @@ class PathGuard:
     """Centralized path enforcement toolkit"""
 
     @staticmethod
-    def _ensure_dir_logic(path: Path) -> Path: ...
+    def _ensure_input(
+        path: Path | str,
+        resolve: bool = False,
+        check_exists: bool = False,
+        must_exists: bool = False,
+    ) -> Path: ...
+    @staticmethod
+    def _ensure_dir_logic(path: Path | str) -> Path: ...
     @overload
     @staticmethod
-    def dir(target: Path) -> Path: ...
+    def dir(target: Path | str) -> Path: ...
     @overload
     @staticmethod
     def dir(target: Callable[P, Path]) -> Callable[P, Path]: ...
     @staticmethod
-    def dir(target: Callable[P, Path] | Path) -> Callable[P, Path] | Path: ...
+    def dir(
+        target: Callable[P, Path] | Path | str,
+    ) -> Callable[P, Path] | Path: ...
     @staticmethod
     def _ensure_file_logic(
-        path: Path,
-        raise_error: bool = True,
-        default_content: str | None = None,
+        path: Path | str,
+        raise_error: bool,
+        default_content: str | None,
     ) -> Path: ...
     @overload
     @staticmethod
@@ -34,7 +43,7 @@ class PathGuard:
     @overload
     @staticmethod
     def file(
-        target: Path,
+        target: Path | str,
         raise_error: bool = True,
         default_content: str | None = None,
     ) -> Path: ...
@@ -43,7 +52,7 @@ class PathGuard:
     def file(target: Callable[P, Path]) -> Callable[P, Path]: ...
     @staticmethod
     def file(
-        target: Callable[P, Path] | Path | None = None,
+        target: Callable[P, Path] | Path | str | None = None,
         raise_error: bool = True,
         default_content: str | None = None,
     ) -> (
@@ -52,22 +61,71 @@ class PathGuard:
         | Callable[[Callable[P, Path]], Callable[P, Path]]
     ): ...
     @staticmethod
-    def _get_unique_candidate(path: Path | str) -> Path: ...
+    def _get_unique_candidate(
+        path: Path | str, ensure_parent: bool
+    ) -> Path: ...
+
+    # CASE 1: Decorator with args -> @PathGuard.unique(ensure_parent=True)
     @overload
     @staticmethod
-    def unique(target: Path) -> Path: ...
+    def unique(
+        target: None = None,
+        *,
+        ensure_parent: bool = False,
+    ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
+
+    # CASE 2: Direct call -> PathGuard.unique(path)
+    @overload
+    @staticmethod
+    def unique(target: Path | str, ensure_parent: bool = False) -> Path: ...
+
+    # CASE 3: Bare Decorator -> @PathGuard.unique
     @overload
     @staticmethod
     def unique(target: Callable[P, Path]) -> Callable[P, Path]: ...
     @staticmethod
     def unique(
-        target: Callable[P, Path] | Path,
-    ) -> Callable[P, Path] | Path: ...
+        target: Callable[P, Path] | Path | str | None = None,
+        ensure_parent: bool = False,
+    ) -> (
+        Path
+        | Callable[P, Path]
+        | Callable[[Callable[P, Path]], Callable[P, Path]]
+    ): ...
     @staticmethod
-    def find_sequence(base_target: Path) -> list[Path]: ...
+    def find_sequence(base_target: Path | str) -> list[Path]: ...
     @staticmethod
-    def prune(base_target: Path, remaining: int = 5) -> list[Path]: ...
+    def prune(base_target: Path | str, remaining: int = 5) -> list[Path]: ...
     @staticmethod
     def rotate(
         source: Path | str, target: Path | str, reset: bool = False
     ) -> Path: ...
+    @staticmethod
+    def get_relative_or_name(
+        target: Path | str,
+        root: Path | str | None = None,
+        check_exists: bool = False,
+        must_exists: bool = False,
+    ) -> str: ...
+    @staticmethod
+    def find_relative(
+        target: Path | str,
+        root: Path | str | None = None,
+        check_exists: bool = False,
+        must_exists: bool = False,
+    ) -> Path | None: ...
+    @staticmethod
+    def compute_relative(
+        target: Path | str,
+        root: Path | str | None = None,
+        check_exists: bool = False,
+        must_exists: bool = False,
+    ) -> Path: ...
+    @staticmethod
+    def relative_duo(
+        path1: Path | str,
+        path2: Path | str,
+        check_exists: bool = False,
+        must_exists: bool = False,
+    ) -> Path | None: ...
+

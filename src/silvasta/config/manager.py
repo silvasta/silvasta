@@ -1,12 +1,14 @@
 import json
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Generic, cast
 
 from dotenv import load_dotenv
 from loguru import logger
 
 from silvasta.utils import day_count
+from silvasta.utils.path import XdgHomes
 
 from .paths import TPaths
 from .settings import TDefaults, TNames, TSettings
@@ -28,6 +30,7 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         self._settings_cls: type[TSettings] = settings_cls
         self._paths_cls: type[TPaths] = paths_cls
 
+        self.setting_file: Path = self.find_setting_file()
         self.settings: TSettings = self._settings_cls()
         self.paths: TPaths = self._load_paths()
 
