@@ -1,6 +1,7 @@
 [project]
 name = "silvasta"
-version = "0.2.0a3"
+version = "0.2.0b1"
+classifiers = ["Development Status :: 4 - Beta"]
 description = "Collection of frequently used generalized utils, functions and tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
