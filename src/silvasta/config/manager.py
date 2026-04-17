@@ -1,9 +1,9 @@
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Generic, TypeAlias, cast
+from typing import Self, cast
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -12,18 +12,23 @@ from silvasta.utils import day_count
 from silvasta.utils.log import LogParam
 from silvasta.utils.print import Printer
 
-from .defaults import TDefaults
-from .names import TNames
-from .paths import SstPaths, TPaths
-from .settings import SstSettings, TSettings
+from .defaults import SstDefaults
+from .names import SstNames
+from .paths import SstPaths
+from .settings import SstSettings
 
-ConfigTypes: TypeAlias = TDefaults | TNames | TPaths | TSettings
+type ConfigTypes = SstDefaults | SstNames | SstPaths | SstSettings
 
 # TASK: check utc, maybe for entire project sstutils
 # self.completed_at = datetime.now(timezone.utc)
 
 
-class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
+class ConfigManager[
+    TSettings: SstSettings,
+    TNames: SstNames,
+    TDefaults: SstDefaults,
+    TPaths: SstPaths,
+]:
     """Provide singleton with all settings and factories"""
 
     _env_loaded = False
@@ -34,7 +39,7 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
         paths_cls: type[TPaths],
         write_new_master_setting_file_if_missing: bool = True,
     ):
-        self._starttime: datetime = datetime.now()
+        self._starttime: datetime = datetime.now(UTC)
 
         self._settings_cls: type[TSettings] = settings_cls
         self._paths_cls: type[TPaths] = paths_cls
@@ -62,10 +67,10 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
     @classmethod
     def default_setup(
         cls, write_new_master_setting_file_if_missing=False
-    ) -> "ConfigManager[TSettings, TNames, TDefaults, TPaths]":
+    ) -> Self:
         return cls(
-            settings_cls=cast(type[TSettings], SstSettings),
-            paths_cls=cast(type[TPaths], SstPaths),
+            settings_cls=SstSettings,
+            paths_cls=SstPaths,
             write_new_master_setting_file_if_missing=write_new_master_setting_file_if_missing,
         )
 
@@ -193,11 +198,11 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
     @property
     def duration(self) -> timedelta:
         # LATER: where and how to apply format?
-        return datetime.now() - self._starttime
+        return datetime.now(UTC) - self._starttime
 
     @property
     def timestamp(self) -> str:
-        return datetime.now().strftime(self.defaults.timestamp_format)
+        return datetime.now(UTC).strftime(self.defaults.timestamp_format)
 
     def from_env(self, key: str):
         """get variable from environment, log failure, raise error"""

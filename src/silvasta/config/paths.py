@@ -1,16 +1,16 @@
 from pathlib import Path
-from typing import Generic, TypeVar, cast
+from typing import cast
 
 from loguru import logger
 
 from silvasta.utils import PathGuard
 from silvasta.utils.path import recursive_root
 
-from .defaults import HomeSetup, SstDefaults, TDefaults
-from .names import SstNames, TNames
+from .defaults import HomeSetup, SstDefaults
+from .names import SstNames
 
 
-class SstPaths(Generic[TNames, TDefaults]):
+class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     """Generates paths with the provided Names and Defaults"""
 
     def __init__(
@@ -18,12 +18,8 @@ class SstPaths(Generic[TNames, TDefaults]):
         names: TNames | None = None,
         defaults: TDefaults | None = None,
     ):
-        # WARN: badly assigned types here cause problems
-        # - double check: class Paths(BasePaths[TNames, TDefaults])
-        # - errors and warnings of type checker will be shadowed
-
-        self._names: TNames = names or cast(TNames, SstNames())
         self._defaults: TDefaults = defaults or cast(TDefaults, SstDefaults())
+        self._names: TNames = names or cast(TNames, SstNames())
 
         self.project_root: Path = self._check_local_root()
 
@@ -35,6 +31,7 @@ class SstPaths(Generic[TNames, TDefaults]):
         )
         if root is not None:
             self.project_root_found = True
+
             return root
 
         if self._defaults.home_setup == HomeSetup.LOCAL:  # TEST: home swich
@@ -42,6 +39,7 @@ class SstPaths(Generic[TNames, TDefaults]):
             self._defaults.home_setup: HomeSetup = HomeSetup.GLOBAL
 
         self.project_root_found = False
+
         return Path.cwd()
 
     @property
@@ -90,6 +88,3 @@ class SstPaths(Generic[TNames, TDefaults]):
         return PathGuard.file(
             path, default_content=self._defaults.dot_env_content
         )
-
-
-TPaths = TypeVar("TPaths", bound=SstPaths)

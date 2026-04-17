@@ -85,6 +85,3 @@ class SstSettings(BaseSettings):
             exclude_defaults=False,
             indent=2,
         )
-
-
-TSettings = TypeVar("TSettings", bound=SstSettings)

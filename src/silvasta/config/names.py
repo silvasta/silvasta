@@ -1,5 +1,3 @@
-from typing import TypeVar
-
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
@@ -9,7 +7,7 @@ class SstNames(BaseSettings):
 
     model_config = ConfigDict(extra="allow")
 
-    project: str  # INFO: must be overwritten!
+    project: str = ""  # INFO: must be overwritten!?
 
     # Master config file
     setting_file: str = "settings.json"
@@ -36,6 +34,3 @@ class SstNames(BaseSettings):
     # # Store the pattern, not the logic
     # schema_config_pattern: str = "{name}_schema_config.json"
     # -> see file-analyzer for singledispatchmethod example
-
-
-TNames = TypeVar("TNames", bound=SstNames)

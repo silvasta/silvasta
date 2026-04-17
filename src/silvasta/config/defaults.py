@@ -90,6 +90,3 @@ class SstDefaults(BaseSettings):
 
     # LATER: check this, as well with cli.args input parser
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]
-
-
-TDefaults = TypeVar("TDefaults", bound=SstDefaults)

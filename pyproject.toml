@@ -4,7 +4,7 @@ version = "0.2.1a1"
 description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 license = { text = "Apache-2.0" } # <-- fixed
 keywords = [
   "utilities",
@@ -16,7 +16,6 @@ keywords = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",
