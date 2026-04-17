@@ -117,7 +117,10 @@ class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
 
     def _check_project_name(self) -> str:
         """Get project_name explicitly from Names, fallback to Defaults"""
-        try:
+        try:  # HACK: should never come up to here? without proper Names???
+            # TODO: assign SstNames.project=""
+            # - here check, if self.names.project:
+            # else use default
             project_name: str = self.names.project
             logger.debug(f"using {project_name=}")
             return project_name

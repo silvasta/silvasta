@@ -9,7 +9,7 @@ class SstNames(BaseSettings):
 
     model_config = ConfigDict(extra="allow")
 
-    project: str
+    project: str  # INFO: must be overwritten!
 
     # Master config file
     setting_file: str = "settings.json"
@@ -17,6 +17,7 @@ class SstNames(BaseSettings):
     data_dir: str = "data"
     plot_dir: str = "plots"
     log_dir: str = "logs"
+    _log_file_name: str = ""
     # Directories in data_dir
     local_home_dir: str = "homes"
 

@@ -9,11 +9,14 @@ from silvasta.config import (
     SstPaths,
     SstSettings,
 )
+from silvasta.utils import printer
 
 
 class Names(SstNames):
     """Define new custom names or override default names,
     used in Paths and to acces them by config.{some_name}"""
+
+    project: str = "sstcore"
 
     # Use same folder as example file to show usage
     data_dir: str = Path(__file__).resolve().parent.name
@@ -44,3 +47,5 @@ x = config.defaults.print_value
 
 for i in range(config.defaults.print_value):
     print(f"Success {i}")
+
+printer(config.settings)

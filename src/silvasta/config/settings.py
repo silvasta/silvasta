@@ -61,7 +61,10 @@ class SstSettings(BaseSettings):
     @classmethod
     def _master_file_path(cls) -> Path:
         """Generate immutable path to load Settings or finding setting_file!"""
-        tmp_names: SstNames = cls().names
+        # IDEA: _master_file_path : Path|None = None
+        # if _master_file_path:
+        #   return _master_file_path
+        tmp_names: SstNames = cls().names  # HACK: somehow strange
         return (
             XdgHomes("config").path
             / tmp_names.project
