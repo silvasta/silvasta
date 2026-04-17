@@ -1,11 +1,17 @@
-from pydantic import Field
-from silvasta.config.settings import BaseDefaults, BaseNames, BasePaths, Settings
 from pathlib import Path
 
-from silvasta.config.manager import ConfigManager
+from pydantic import Field
+
+from silvasta.config import (
+    ConfigManager,
+    SstDefaults,
+    SstNames,
+    SstPaths,
+    SstSettings,
+)
 
 
-class Names(BaseNames):
+class Names(SstNames):
     """Define new custom names or override default names,
     used in Paths and to acces them by config.{some_name}"""
 
@@ -14,25 +20,23 @@ class Names(BaseNames):
     user_setting_file: str = "example_settings.json"
 
 
-class Defaults(BaseDefaults):
+class Defaults(SstDefaults):
     print_value: int = 5
 
 
-class ProjectSettings(Settings):
+class ProjectSettings(SstSettings):
     names: Names = Field(default_factory=Names)
     defaults: Defaults = Field(default_factory=Defaults)
 
 
-class Paths(BasePaths):
+class Paths(SstPaths):
     pass
 
-
-# TODO: example where config manager gets override?
 
 config: ConfigManager[ProjectSettings, Names, Defaults, Paths] = ConfigManager(
     settings_cls=ProjectSettings,
     paths_cls=Paths,
-    save_defaults_to_file=True,
+    write_new_master_setting_file_if_missing=True,
 )
 
 # do you see: 'x: int'? (where ': int' comes from type checker)

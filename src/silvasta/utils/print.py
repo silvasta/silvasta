@@ -1,4 +1,3 @@
-from loguru import logger
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -8,9 +7,6 @@ from rich.theme import Theme
 class Printer:
     """Customized Rich Console setup for easy acces"""
 
-    # IDEA: style counter!
-    # - count which default/not default used and improve
-
     _raw_theme: dict[str, str] = {
         "info": "black on white",
         "normal": "white",
@@ -19,10 +15,13 @@ class Printer:
         "success": "bold white on green",
         "danger": "bold black on red",
     }
-    _fallback_to_standard_print = False
+    # IDEA: style counter!
+    # - count which default/not default used and improve
 
     project_name: str = "App"
     project_version: str = "unknown"
+
+    _fallback_to_standard_print = False
 
     def __init__(self, custom_theme: dict[str, str] | None = None):
         self.update_theme_load_console(custom_theme)
@@ -106,12 +105,12 @@ class Printer:
         lines: list,
         header: str | None = "",
         title: str = "",
-        # TODO: style, or kwargs
+        style: str | None = None,
     ):
         """Print header as title followed by lines in panel"""
         if header is not None:
             self.title(header)
-        self.panel(text="\n".join(lines), title=title)
+        self.panel(text="\n".join(lines), title=title, style=style)
 
     def update_theme_load_console(
         self, custom_theme: dict[str, str] | None = None

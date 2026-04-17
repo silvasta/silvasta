@@ -60,6 +60,11 @@ class SstPaths(Generic[TNames, TDefaults]):
         return self.project_root / self._names.log_dir
 
     @property
+    @PathGuard.file(default_content="", raise_error=False)
+    def log_file(self) -> Path:
+        return self.log_dir / self._names.log_file
+
+    @property
     @PathGuard.dir
     def local_home_dir(self) -> Path:
         return self.data_dir / self._names.local_home_dir

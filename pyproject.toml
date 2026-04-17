@@ -1,10 +1,18 @@
 [project]
 name = "silvasta"
 version = "0.2.0b1"
-description = "Collection of frequently used generalized utils, functions and tools"
+description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" } # <-- fixed
+keywords = [
+  "utilities",
+  "config-management",
+  "path-handling",
+  "logging",
+  "pydantic",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -22,6 +30,9 @@ dependencies = [
   "pydantic-settings>=2.13.1",
   "rich>=14.3.3",
 ]
+
+[project.urls]
+Repository = "https://github.com/silvasta/silvasta"
 
 [build-system]
 requires = ["uv_build>=0.10.9,<0.11.0"]
