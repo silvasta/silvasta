@@ -410,7 +410,7 @@ class PathGuard:
         check_exists: bool = False,
         must_exists: bool = False,
     ) -> Path | None:
-        """Find relative path from one of both directions or None"""
+        """Find relative path from any of both directions or get None"""
         match (
             PathGuard.find_relative(path1, path2, check_exists, must_exists),
             PathGuard.find_relative(path2, path1, check_exists, must_exists),
