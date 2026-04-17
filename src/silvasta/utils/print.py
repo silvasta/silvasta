@@ -1,7 +1,12 @@
+from collections import defaultdict
+
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.theme import Theme
+from rich.tree import Tree
+
+from silvasta.utils.simple_tree import SimpleTreeNode
 
 
 class Printer:
@@ -130,6 +135,49 @@ class Printer:
             self(
                 f" Style Preview: [ {style} ] ", style=style, justify="center"
             )
+
+    def tree_graph(
+        self,
+        simple_tree: SimpleTreeNode,
+        max_depth: int | None = None,
+        root_style: str = "bold green",
+        node_style: str = "cyan",
+    ) -> None:
+        """Visualizes a SimpleTreeNode model as a nested Rich Tree"""
+
+        root_label: str = (
+            f"[{root_style}]{simple_tree.name}[/{root_style}]"
+            if root_style
+            else simple_tree.name
+        )
+        visual_tree = Tree(
+            root_label,
+            # guide_style="bold black",  # Makes the branching lines dark grey
+            hide_root=True,  # Makes the branching lines dark grey
+            # style="on white",  # Applies a background color to the whole tree area
+        )
+
+        def build_branch(
+            node: SimpleTreeNode,
+            current_visual_branch: Tree,
+            current_depth: int,
+        ):
+            if max_depth is not None and current_depth >= max_depth:
+                return
+
+            for child in node.next:
+                child_label = (
+                    f"[{node_style}]{child.name}[/{node_style}]"
+                    if node_style
+                    else child.name
+                )
+                child_branch: Tree = current_visual_branch.add(child_label)
+
+                build_branch(child, child_branch, current_depth + 1)
+
+        build_branch(simple_tree, visual_tree, current_depth=1)
+
+        self(visual_tree)
 
 
 printer = Printer()

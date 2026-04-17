@@ -1,6 +1,6 @@
 [project]
 name = "silvasta"
-version = "0.2.0b1"
+version = "0.2.1a1"
 description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
@@ -42,7 +42,6 @@ build-backend = "uv_build"
 cli = ["typer"]
 tui = ["textual", "silvasta[cli]"]
 viz = ["matplotlib", "seaborn"]
-# the bundle
 all = ["silvasta[tui,viz]"]
 
 [project.scripts]
