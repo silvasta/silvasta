@@ -19,6 +19,9 @@ from .settings import SstSettings, TSettings
 
 ConfigTypes: TypeAlias = TDefaults | TNames | TPaths | TSettings
 
+# TASK: check utc, maybe for entire project sstutils
+# self.completed_at = datetime.now(timezone.utc)
+
 
 class ConfigManager(Generic[TSettings, TNames, TDefaults, TPaths]):
     """Provide singleton with all settings and factories"""

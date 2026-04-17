@@ -17,7 +17,7 @@ class SstNames(BaseSettings):
     # Directories in project root
     data_dir: str = "data"
     plot_dir: str = "plots"
-    log_dir: str = "plots"
+    log_dir: str = "logs"
     # Directories in data_dir
     local_home_dir: str = "homes"
 

@@ -176,6 +176,7 @@ class PathGuard:
                     logger.info(msg + "parent ensured!")
                 else:
                     logger.warning(f"{msg} take care before write! {path=}")
+
             return path
 
         # prevent f.e. my_archive.tar_1.gz
@@ -187,14 +188,17 @@ class PathGuard:
         parent: Path = path.parent
         counter = 1
 
-        # Safety loop to find free slot
-        while True:
+        while True:  # Safety loop to find free slot
             new_name = f"{original_stem}_{counter}{suffixes}"
             candidate: Path = parent / new_name
             if not candidate.exists():
                 logger.info(f"New unique path: {candidate}")
-                return candidate
+                break
             counter += 1
+
+        logger.info(f"Incremented path by {counter}: {candidate}")
+
+        return candidate
 
     @staticmethod
     def unique(
