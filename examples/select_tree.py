@@ -2,7 +2,11 @@ import typer
 
 from silvasta.tui.tree_selector import TreeSelectorApp
 from silvasta.utils import printer
-from silvasta.utils.simple_tree import SimpleTreeNode, get_example_tree
+from silvasta.utils.simple_tree import (
+    SimpleTreeNode,
+    get_big_example_tree,
+    get_example_tree,
+)
 
 example_tree: SimpleTreeNode = get_example_tree()
 
@@ -17,9 +21,12 @@ def process_tree(
     interactive: bool = typer.Option(
         False, "--interactive", "-i", help="Use TUI picker"
     ),
+    big: bool = False,
 ):
     """Process a specific node in the forest."""
 
+    if big:
+        example_tree: SimpleTreeNode = get_big_example_tree()
     if interactive:
         tui = TreeSelectorApp(tree_data=example_tree)
         selected_node: str | None = tui.run()

@@ -140,22 +140,30 @@ class Printer:
         self,
         simple_tree: SimpleTreeNode,
         max_depth: int | None = None,
-        root_style: str = "bold green",
-        node_style: str = "cyan",
+        root_style: str = "bold magenta",
+        # node_style: str = "cyan",
+        guide_style="bold white",
+        hide_root=False,
     ) -> None:
         """Visualizes a SimpleTreeNode model as a nested Rich Tree"""
 
         root_label: str = (
-            f"[{root_style}]{simple_tree.name}[/{root_style}]"
+            f"[{root_style}]{simple_tree.name}[/]"
             if root_style
             else simple_tree.name
         )
         visual_tree = Tree(
             root_label,
-            # guide_style="bold black",  # Makes the branching lines dark grey
-            hide_root=True,  # Makes the branching lines dark grey
+            guide_style=guide_style,  # Makes the branching lines dark grey
+            hide_root=hide_root,  # Makes the branching lines dark grey
             # style="on white",  # Applies a background color to the whole tree area
         )
+
+        node_styles: dict[int, str] = {
+            1: "green",
+            2: "yellow",
+            3: "white",
+        }
 
         def build_branch(
             node: SimpleTreeNode,
@@ -166,8 +174,9 @@ class Printer:
                 return
 
             for child in node.next:
-                child_label = (
-                    f"[{node_style}]{child.name}[/{node_style}]"
+                node_style: str = node_styles.get(current_depth, "red")
+                child_label: str = (
+                    f"[{node_style}]{child.name}[/]"
                     if node_style
                     else child.name
                 )

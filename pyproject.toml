@@ -44,8 +44,6 @@ tui = ["textual", "silvasta[cli]"]
 viz = ["matplotlib", "seaborn"]
 all = ["silvasta[tui,viz]"]
 
-[project.scripts]
-silvasta-tail = "silvasta.cli.monitor:main"
 
 [tool.silvasta.logging]
 level = "INFO"

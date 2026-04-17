@@ -21,7 +21,10 @@ class TreeSelectorApp(App[str]):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         # The 'data' argument is the hidden payload we will return later
-        tree: Tree[str] = Tree(self.tree_data.name, data=self.tree_data.name)
+        tree: Tree[str] = Tree(
+            label=self.tree_data.name,
+            data=self.tree_data.name,  # HACK: data?
+        )
         tree.root.expand()
         yield tree
         yield Footer()
