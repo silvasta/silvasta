@@ -1,5 +1,8 @@
 import random
+from collections import defaultdict, deque
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Self
 
 
@@ -7,10 +10,10 @@ from typing import Self
 class SimpleTreeNode:
     name: str
     id: str | None = None
-    next: list[Self] = field(default_factory=list)
+    branches: Sequence[Self] = field(default_factory=list)
 
     @property
-    def display_label(self):
+    def display_label(self) -> str:
         return self.name
 
     @property
@@ -18,45 +21,118 @@ class SimpleTreeNode:
         return self.id
 
 
-def snapshot_pydantic_tree(pydantic_node) -> SimpleTreeNode:
-    # NEXT: attach to registry
-    # MOVE: data or Project
+@dataclass(frozen=True)
+class PathTreeNode(SimpleTreeNode):
+    path: Path = field(default_factory=Path)
 
-    # 1. Extract what you need from the heavy model
-    node_name = pydantic_node.title_or_name_or_whatever
+    @property
+    def identifier(self):
+        return self.path
 
-    # 2. Recursively snapshot the children
-    simple_children = [
-        snapshot_pydantic_tree(child) for child in pydantic_node.children
-    ]
+    @classmethod
+    def create(
+        cls, path: Path, branches: Sequence[Self] | None = None
+    ) -> Self:
+        if branches is None:
+            branches: Sequence[Self] = []
 
-    # 3. Return the lightweight dataclass
-    return SimpleTreeNode(name=node_name, next=simple_children)
+        return cls(name=path.name, path=path, branches=branches)
+
+
+def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
+    """Build Tree from raw paths with stacked nodes at empty directories"""
+
+    path_parts: list[deque[str]] = [deque(path.parts) for path in paths]
+
+    return recursive_tree(path_parts, current_node_name=root_name)
+
+
+def pop_left(path_parts: list[deque]) -> dict[str, list[deque]]:
+    """Squash all top path elements to branched dict, filter finished path path segments"""
+
+    current_nodes: dict[str, list[deque]] = defaultdict(list)
+
+    for path_queue in path_parts:
+        if len(path_queue) == 0:
+            continue
+        path_segment: str = path_queue.popleft()
+        current_nodes[path_segment].append(path_queue)
+
+    return current_nodes
+
+
+def recursive_tree(
+    path_parts: list[deque[str]],
+    current_node_name: str = "",
+    current_node_path: Path = Path(),
+) -> PathTreeNode:
+
+    branches: dict[str, list[deque[str]]] = pop_left(path_parts)
+    branches_nodes: list[PathTreeNode] = []
+
+    for name, branches_path_parts in branches.items():
+        path: Path = current_node_path / name
+
+        if len(branches) == 1:
+            if len(branches_path_parts) == 0:
+                return PathTreeNode(name=name, path=path)
+
+            # Stack names to avoid unneccesary Nodes
+            if current_node_name == "/":
+                branches_name: str = f"/{name}"
+            elif current_node_name:
+                branches_name: str = f"{current_node_name}/{name}"
+            else:
+                branches_name: str = name
+
+            return recursive_tree(
+                path_parts=branches_path_parts,
+                current_node_name=branches_name,
+                current_node_path=path,
+            )
+        branches_nodes.append(
+            recursive_tree(
+                path_parts=branches_path_parts,
+                current_node_name=name,
+                current_node_path=path,
+            )
+        )
+    return PathTreeNode(
+        name=current_node_name,
+        path=current_node_path,
+        branches=branches_nodes,
+    )
 
 
 def get_example_tree():
-    tree1 = SimpleTreeNode("tree1", next=[], id="1")
-    tree2 = SimpleTreeNode("tree2", next=[], id="2")
-    tree3 = SimpleTreeNode("tree3", next=[], id="3")
-    tree4 = SimpleTreeNode("tree4", next=[], id="4")
-    tree5 = SimpleTreeNode("tree5", next=[], id="5")
-    tree6 = SimpleTreeNode("tree6", next=[], id="6")
-    tree7 = SimpleTreeNode("tree7", next=[], id="7")
-    tree8 = SimpleTreeNode("tree8", next=[], id="8")
-    tree9 = SimpleTreeNode("tree9", next=[], id="9")
-    tree10 = SimpleTreeNode("tree10", next=[], id="10")
-    tree11 = SimpleTreeNode("tree11", next=[], id="11")
-    tree12 = SimpleTreeNode("tree12", next=[], id="12")
+    tree1 = SimpleTreeNode("tree1", branches=[], id="1")
+    tree2 = SimpleTreeNode("tree2", branches=[], id="2")
+    tree3 = SimpleTreeNode("tree3", branches=[], id="3")
+    tree4 = SimpleTreeNode("tree4", branches=[], id="4")
+    tree5 = SimpleTreeNode("tree5", branches=[], id="5")
+    tree6 = SimpleTreeNode("tree6", branches=[], id="6")
+    tree7 = SimpleTreeNode("tree7", branches=[], id="7")
+    tree8 = SimpleTreeNode("tree8", branches=[], id="8")
+    tree9 = SimpleTreeNode("tree9", branches=[], id="9")
+    tree10 = SimpleTreeNode("tree10", branches=[], id="10")
+    tree11 = SimpleTreeNode("tree11", branches=[], id="11")
+    tree12 = SimpleTreeNode("tree12", branches=[], id="12")
 
-    forest1 = SimpleTreeNode("forest1", next=[tree1, tree2], id="13")
-    forest2 = SimpleTreeNode("forest2", next=[tree3, tree4, tree5], id="14")
-    forest3 = SimpleTreeNode("forest3", next=[tree6, tree7, tree8], id="15")
-    forest4 = SimpleTreeNode("forest4", next=[tree9, tree10, tree11], id="16")
-    forest5 = SimpleTreeNode("forest5", next=[tree12], id="17")
+    forest1 = SimpleTreeNode("forest1", branches=[tree1, tree2], id="13")
+    forest2 = SimpleTreeNode(
+        "forest2", branches=[tree3, tree4, tree5], id="14"
+    )
+    forest3 = SimpleTreeNode(
+        "forest3", branches=[tree6, tree7, tree8], id="15"
+    )
+    forest4 = SimpleTreeNode(
+        "forest4", branches=[tree9, tree10, tree11], id="16"
+    )
+    forest5 = SimpleTreeNode("forest5", branches=[tree12], id="17")
 
     biome = SimpleTreeNode(
         "biome",
-        next=[
+        branches=[
             forest1,
             forest2,
             forest3,
@@ -73,29 +149,31 @@ def get_big_example_tree():
 
     id: int = 0
 
-    def next_id() -> str:
+    def branches_id() -> str:
         nonlocal id
         id += 1
         return str(id)
 
     return SimpleTreeNode(
         "biome",
-        id=next_id(),
-        next=[
+        id=branches_id(),
+        branches=[
             SimpleTreeNode(
                 "forest",
-                next=[
+                branches=[
                     SimpleTreeNode(
                         "tree",
-                        next=[
-                            SimpleTreeNode("sprout", next=[], id=next_id())
+                        branches=[
+                            SimpleTreeNode(
+                                "sprout", branches=[], id=branches_id()
+                            )
                             for _sprout in range(random.randint(2, 12))
                         ],
-                        id=next_id(),
+                        id=branches_id(),
                     )
                     for _tree in range(random.randint(6, 8))
                 ],
-                id=next_id(),
+                id=branches_id(),
             )
             for _forest in range(random.randint(4, 8))
         ],

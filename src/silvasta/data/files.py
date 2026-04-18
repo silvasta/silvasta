@@ -1,27 +1,23 @@
-from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import ParamSpec
 
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
-from ..utils import PathGuard
-from ..utils.filter import FilterSet
-from ..utils.scanner import FolderScanner
+from ..utils import FilterSet, FolderScanner, PathGuard, ProjectFilter
 
 
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
-    local_path: Path  # relative from local filedir # NOTE: confirm?
     # IDEA: original name at load
     # - then slugify?
     # - possible to get name changes due to duplicated names but from different files
     # -> test first in sachmis
+
+    local_path: Path  # relative from local filedir # NOTE: confirm?
     keywords: set = Field(default_factory=set)
 
-    # TODO: timezone
     first_tracked: datetime = Field(default_factory=datetime.now(UTC))
     last_updated: datetime = Field(default_factory=datetime.now(UTC))
 
@@ -60,42 +56,90 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
         return target.keywords
 
 
-semester_filter = SstFileFilter(
-    exclude=set(["exam"]),
-    require_any=set(["lecture", "exercise"]),
-)
-
-file = SstFile(local_path=Path("mpc/lecture_4.pdf"))
-
-print(semester_filter(file))
-
-
 class FileRegistry[FilesT: SstFile](BaseModel):
     """Registry for Local Files"""
 
-    file_constructor: Callable[ParamSpec[Path], FilesT]  # NOTE: unsure
-
     local_root: Path
+    _scanner: FolderScanner | None = PrivateAttr(default=None)
 
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
 
-    def relative_to_local_root(self, path: Path) -> Path:
-        return PathGuard.compute_relative(target=path, root=self.local_root)
-
-    def attach_from_path(self, path) -> FilesT:
-        local_path: Path = self.relative_to_local_root(path)
-        logger.debug(f"attach new file: {local_path=}")
-        file: FilesT = self._create_local_file(local_path)
-        self._attach(file)
-        return file
+    # file_type: type[FilesT] = cast(type[FilesT], SstFiles)
+    file_type: type[SstFile] = (
+        SstFile  # FIX: type (checker) issue, SstFile/FilesT
+    )
 
     def _attach(self, file: FilesT):
         self.files.append(file)
 
     def _create_local_file(self, path: Path) -> FilesT:
-        return self.file_constructor(  # NOTE: unsure if creation here
-            local_path=self.relative_to_local_root(path)
+        if path.is_absolute():
+            path: Path = self.relative_to_local_root(path)
+        return self.file_type(local_path=self.relative_to_local_root(path))
+
+    def attach_from_path(self, path) -> FilesT:
+        if path.is_absolute():
+            path: Path = self.relative_to_local_root(path)
+        logger.debug(f"attach new file: {path=}")
+        file: FilesT = self._create_local_file(path)
+        self._attach(file)
+        return file
+
+    def relative_to_local_root(self, path: Path) -> Path:
+        relative_path: Path = PathGuard.compute_relative(
+            # TODO: check if not better with PathGuard.find_relative()
+            target=path,
+            root=self.local_root,
         )
+        logger.debug(f"Created {relative_path=} from:\n{path=}")
+        return relative_path
+
+    def attach_new_files_from_local_folder(self) -> list[FilesT]:
+        """Load files to registry that are not already attached"""
+
+        new_files: list[FilesT] = []
+        # FIX: type (checker) issue, SstFile/FilesT
+        existing: set[Path] = self.local_file_paths
+
+        for path in self.scan_local_dir():
+            if path not in existing:
+                new_file: FilesT = self.attach_from_path(path)
+                # FIX: type (checker) issue, SstFile/FilesT
+                new_files.append(new_file)
+
+        return new_files
+
+    def update_files_from_local_folder(self) -> None:
+        """Load new files and update files in registry if they changed"""
+        raise NotImplementedError  # LATER: changed? date? keywords? hash?
+
+    def reload_all_files_from_local_folder(self):
+        """Load files to registry and remove files with same path"""
+
+        new_files: list[FilesT] = []
+
+        for path in self.scan_local_dir():
+            for file in self.get_files_by_path(path):
+                logger.debug(f"removing: {file}")
+                self.files.remove(file)
+
+            new_file: FilesT = self.attach_from_path(path)
+            new_files.append(new_file)
+
+        return new_files
+
+    def scan_local_dir(self) -> list[Path]:
+        scanner: FolderScanner = self.get_scanner()
+        return scanner.scan_local_files(get_absolute_paths=False)
+
+    def get_scanner(self) -> FolderScanner:
+        if not self._scanner:
+            return self.setup_scanner(path_filter=ProjectFilter())
+        return self._scanner
+
+    def setup_scanner(self, path_filter: FilterSet) -> FolderScanner:
+        self._scanner = FolderScanner(self.local_root, path_filter=path_filter)
+        return self._scanner
 
     @property
     def local_file_paths(self) -> set[Path]:
@@ -145,46 +189,27 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def get_files_by_name(self, name: str) -> list[FilesT]:
         return [file for file in self.files if file.name == name]
 
-    def attach_new_files_from_local_folder(self) -> list[FilesT]:
-        """Load files to registry that are not already attached"""
+    def get_files_by_filter(self, file_filter: SstFileFilter) -> list[FilesT]:
+        """Get all files filtered by keywords setup in file_filter"""
+        return [file for file in self.files if file_filter(file)]
 
-        new_files: list[FilesT] = []
-        local_file_paths: set[Path] = self.local_file_paths
+    def get_files_by_keyword(self, keywords: str | list[str]) -> list[FilesT]:
+        """Get all files that have at least 1 of the required keywords"""
+        if isinstance(keywords, str):
+            keywords: list[str] = [keywords]
 
-        for path in self._scan_local_dir():
-            local_path: Path = self.relative_to_local_root(path)
+        keyword_filter: SstFileFilter = SstFileFilter(
+            require_any=set(keywords)
+        )
+        return [file for file in self.files if keyword_filter(file)]
 
-            if local_path in local_file_paths:
-                logger.debug(f"skipping {path=}")  # REMOVE: after tests
-            else:
-                new_file: FilesT = self.attach_from_path(path)
-                new_files.append(new_file)
+    def get_files_with_all_keywords(self, keywords: list[str]) -> list[FilesT]:
+        """Get all files that have all of the required keywords"""
 
-        return new_files
-
-    def update_files_from_local_folder(self) -> None:
-        """Load new files and update files in registry if they changed"""
-        raise NotImplementedError  # LATER: changed? date? keywords? hash?
-
-    def reload_all_files_from_local_folder(self):
-        """Load files to registry and remove files with same path"""
-
-        new_files: list[FilesT] = []
-
-        for path in self._scan_local_dir():
-            local_path: Path = self.relative_to_local_root(path)
-
-            for file in self.get_files_by_path(local_path):
-                logger.debug(f"removing: {file}")
-                self.files.remove(file)
-
-            new_file: FilesT = self.attach_from_path(path)
-            new_files.append(new_file)
-
-        return new_files
-
-    def _scan_local_dir(self) -> list[Path]:
-        return FolderScanner.scan_local_files(self.local_root)
+        keyword_filter: SstFileFilter = SstFileFilter(
+            require_all=set(keywords)
+        )
+        return [file for file in self.files if keyword_filter(file)]
 
 
 class FileSystemManager:
