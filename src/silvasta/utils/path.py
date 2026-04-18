@@ -1,9 +1,13 @@
 import os
+from loguru import logger
 import tomllib
+from collections.abc import Iterator
 from enum import StrEnum, auto
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
+
+from silvasta.utils.filter import FilterSet
 
 
 class XdgHomes(StrEnum):
@@ -123,3 +127,33 @@ def pyproject_log_section(
         pyproject.tool, pyproject_name(pyproject_toml_path)
     )
     return tool_project_section.logging
+
+
+class PathFilter(FilterSet):
+    def _create_target_set(self, target: Path) -> set[str]:
+        return set(target.parts) | {target.suffix}
+
+
+def walk_directory(
+    root_path: Path, path_filter: PathFilter | None = None
+) -> Iterator[Path]:
+    """Yield files downwards from folder, filter with black/white-list"""
+
+    path_filter: PathFilter = path_filter or PathFilter()
+
+    for item in root_path.iterdir():
+        if item.is_dir():
+            dir_set: set[str] = set(item.parts)
+            if path_filter.exclude and not dir_set.isdisjoint(
+                path_filter.exclude
+            ):
+                continue
+
+            yield from walk_directory(item, path_filter)
+
+        if not path_filter(item):
+            continue
+
+        logger.info(f"using {item=}")
+
+        yield item

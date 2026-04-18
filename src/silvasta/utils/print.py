@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -141,46 +139,46 @@ class Printer:
         simple_tree: SimpleTreeNode,
         max_depth: int | None = None,
         root_style: str = "bold magenta",
-        # node_style: str = "cyan",
+        node_style: str = "by_level",
         guide_style="bold white",
         hide_root=False,
     ) -> None:
         """Visualizes a SimpleTreeNode model as a nested Rich Tree"""
 
-        root_label: str = (
-            f"[{root_style}]{simple_tree.name}[/]"
-            if root_style
-            else simple_tree.name
-        )
-        visual_tree = Tree(
-            root_label,
-            guide_style=guide_style,  # Makes the branching lines dark grey
-            hide_root=hide_root,  # Makes the branching lines dark grey
-            # style="on white",  # Applies a background color to the whole tree area
-        )
-
-        node_styles: dict[int, str] = {
+        _node_styles: dict[int, str] = {
             1: "green",
             2: "yellow",
             3: "white",
         }
 
+        def _apply_style(node_label: str, color: str | int = ""):
+            if isinstance(color, int):
+                color: str = _node_styles.get(color, "red")
+            return f"[{color}]{node_label}[/]" if color else node_label
+
+        visual_tree = Tree(
+            label=_apply_style(simple_tree.name, color=root_style),
+            guide_style=guide_style,
+            hide_root=hide_root,
+            # style="on white",  # Applies a background color to the whole tree area
+        )
+
         def build_branch(
             node: SimpleTreeNode,
-            current_visual_branch: Tree,
+            current_branch: Tree,
             current_depth: int,
         ):
             if max_depth is not None and current_depth >= max_depth:
                 return
 
+            nonlocal node_style
+            color: str | int = (
+                current_depth if node_style == "by_level" else node_style
+            )
+
             for child in node.next:
-                node_style: str = node_styles.get(current_depth, "red")
-                child_label: str = (
-                    f"[{node_style}]{child.name}[/]"
-                    if node_style
-                    else child.name
-                )
-                child_branch: Tree = current_visual_branch.add(child_label)
+                child_label: str = _apply_style(child.name, color=color)
+                child_branch: Tree = current_branch.add(child_label)
 
                 build_branch(child, child_branch, current_depth + 1)
 

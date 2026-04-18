@@ -9,8 +9,17 @@ class SimpleTreeNode:
     id: str | None = None
     next: list[Self] = field(default_factory=list)
 
+    @property
+    def display_label(self):
+        return self.name
+
+    @property
+    def identifier(self):
+        return self.id
+
 
 def snapshot_pydantic_tree(pydantic_node) -> SimpleTreeNode:
+    # NEXT: attach to registry
     # MOVE: data or Project
 
     # 1. Extract what you need from the heavy model
@@ -60,6 +69,7 @@ def get_example_tree():
 
 
 def get_big_example_tree():
+    """Random node generator for around 300 nodes (up to 700+)"""
 
     id: int = 0
 

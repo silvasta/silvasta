@@ -1,14 +1,14 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import ParamSpec, TypeVar
+from typing import ParamSpec
 
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from silvasta.utils import PathGuard
-
-from .scanner import FolderScanner
+from ..utils import PathGuard
+from ..utils.filter import FilterSet
+from ..utils.scanner import FolderScanner
 
 
 class SstFile(BaseModel):
@@ -55,7 +55,19 @@ class SstFile(BaseModel):
     # LATER: check for changes, hash, etc
 
 
-FilesT = TypeVar("FilesT", bound=SstFile)
+class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
+    def _create_target_set(self, target: SstFile) -> set[str]:
+        return target.keywords
+
+
+semester_filter = SstFileFilter(
+    exclude=set(["exam"]),
+    require_any=set(["lecture", "exercise"]),
+)
+
+file = SstFile(local_path=Path("mpc/lecture_4.pdf"))
+
+print(semester_filter(file))
 
 
 class FileRegistry[FilesT: SstFile](BaseModel):
@@ -66,9 +78,6 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     local_root: Path
 
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
-
-    _blacklist: set[str] = Field(default_factory=set)  # REFACTOR:
-    _whitelist: set[str] = Field(default_factory=set)  # REFACTOR:
 
     def relative_to_local_root(self, path: Path) -> Path:
         return PathGuard.compute_relative(target=path, root=self.local_root)
@@ -84,8 +93,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         self.files.append(file)
 
     def _create_local_file(self, path: Path) -> FilesT:
-        # NOTE: unsure
-        return self.file_constructor(
+        return self.file_constructor(  # NOTE: unsure if creation here
             local_path=self.relative_to_local_root(path)
         )
 
@@ -113,6 +121,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         self, local_dir: Path | None = None
     ) -> list[FilesT]:
         local_dir: Path = local_dir or self.local_root
+
         return [
             file  # all files with valid path
             for file in self.files
@@ -123,6 +132,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         self, local_dir: Path | None = None
     ) -> list[FilesT]:
         local_dir: Path = local_dir or self.local_root
+
         return [
             file  # all files without valid path
             for file in self.files
@@ -137,79 +147,44 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def attach_new_files_from_local_folder(self) -> list[FilesT]:
         """Load files to registry that are not already attached"""
+
         new_files: list[FilesT] = []
         local_file_paths: set[Path] = self.local_file_paths
-        # REFACTOR: scan outside, hete just attach?
+
         for path in self._scan_local_dir():
             local_path: Path = self.relative_to_local_root(path)
+
             if local_path in local_file_paths:
                 logger.debug(f"skipping {path=}")  # REMOVE: after tests
             else:
                 new_file: FilesT = self.attach_from_path(path)
                 new_files.append(new_file)
+
         return new_files
 
     def update_files_from_local_folder(self) -> None:
         """Load new files and update files in registry if they changed"""
-        # LATER: changed? date? keywords? hash?
-        raise NotImplementedError
+        raise NotImplementedError  # LATER: changed? date? keywords? hash?
 
     def reload_all_files_from_local_folder(self):
         """Load files to registry and remove files with same path"""
+
         new_files: list[FilesT] = []
-        # REFACTOR: scan outside, hete just attach?
+
         for path in self._scan_local_dir():
             local_path: Path = self.relative_to_local_root(path)
+
             for file in self.get_files_by_path(local_path):
                 logger.debug(f"removing: {file}")
                 self.files.remove(file)
+
             new_file: FilesT = self.attach_from_path(path)
             new_files.append(new_file)
+
         return new_files
 
     def _scan_local_dir(self) -> list[Path]:
-        # REFACTOR: use Scanner for this? Controlled by owner?
-        return list(
-            FolderScanner.walk_directory(
-                self.local_root,
-                self._blacklist,
-                self._whitelist,
-            )
-        )
-
-    def filter_by_keywords(
-        self,
-        require_all: set[str] | None = None,
-        require_any: set[str] | None = None,
-        exclude: set[str] | None = None,
-    ) -> list[FilesT]:
-        """Filter files based on keywords"""
-
-        # REMOVE: redundant?
-        require_all: set[str] = require_all or set()
-        require_any: set[str] = require_any or set()
-        exclude: set[str] = exclude or set()
-
-        filtered_files: list[FilesT] = []
-
-        for file in self.files:
-            # Condition 1: Must NOT have any excluded keywords
-            # isdisjoint returns True if the two sets have null intersection
-            if exclude and not file.keywords.isdisjoint(exclude):
-                continue
-
-            # Condition 2: Must have ALL required keywords
-            # issubset checks if all elements of require_all are in file.keywords
-            if require_all and not require_all.issubset(file.keywords):
-                continue
-
-            # Condition 3: Must have AT LEAST ONE required_any keyword
-            if require_any and file.keywords.isdisjoint(require_any):
-                continue
-
-            filtered_files.append(file)
-
-        return filtered_files
+        return FolderScanner.scan_local_files(self.local_root)
 
 
 class FileSystemManager:
