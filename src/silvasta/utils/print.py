@@ -1,3 +1,6 @@
+from contextlib import contextmanager
+from enum import Enum, auto
+
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -24,6 +27,13 @@ class Printer:
     project_name: str = "App"
     project_version: str = "unknown"
 
+    class Status(Enum):
+        RICH = auto()
+        REGULAR = auto()
+        NULL = auto()
+
+    status: Status = Status.RICH
+
     _fallback_to_standard_print = False
 
     def __init__(self, custom_theme: dict[str, str] | None = None):
@@ -31,18 +41,34 @@ class Printer:
 
     def __call__(self, *args, **kwargs):
         """Rich console print, printer.mute(): swich to regular print"""
-        if self._fallback_to_standard_print:
-            print(args[0] or "Something went wrong in muting printer...")
-        else:
-            self.console.print(*args, **kwargs)
-
-    def mute(self):
-        """Swich to regular Python print"""
-        self._fallback_to_standard_print = True
+        match self.status:
+            case self.Status.RICH:
+                self.console.print(*args, **kwargs)
+            case self.Status.REGULAR:
+                if self._fallback_to_standard_print:
+                    print(args[0] or "something went wrong...")
+            case self.Status.NULL:
+                pass
 
     def unmute(self):
         """Swich to Rich Console Printer"""
-        self._fallback_to_standard_print = False
+        self.status: Printer.Status = self.Status.RICH
+
+    def print_regular(self):
+        """Swich to regular Python print"""
+        self.status: Printer.Status = self.Status.REGULAR
+
+    def mute(self):
+        """Send all prints to nowhere"""
+        self.status: Printer.Status = self.Status.NULL
+
+    @contextmanager
+    def muted(self):
+        try:
+            self.mute()
+            yield
+        finally:
+            self.unmute()
 
     def md(self, text, *args, header: int = 0, **kwargs):
         """Markdown printer, modify first line with header section depth"""
@@ -177,7 +203,9 @@ class Printer:
             )
 
             for child in node.next:
-                child_label: str = _apply_style(child.name, color=color)
+                child_label: str = _apply_style(
+                    child.display_label, color=color
+                )
                 child_branch: Tree = current_branch.add(child_label)
 
                 build_branch(child, child_branch, current_depth + 1)
