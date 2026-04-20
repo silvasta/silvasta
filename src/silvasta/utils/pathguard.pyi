@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from pathlib import Path
-from typing import ParamSpec, overload
+from typing import Any, ParamSpec, overload
 
 P = ParamSpec("P")
 
@@ -64,8 +64,6 @@ class PathGuard:
     def _get_unique_candidate(
         path: Path | str, ensure_parent: bool
     ) -> Path: ...
-
-    # CASE 1: Decorator with args -> @PathGuard.unique(ensure_parent=True)
     @overload
     @staticmethod
     def unique(
@@ -73,13 +71,9 @@ class PathGuard:
         *,
         ensure_parent: bool = False,
     ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
-
-    # CASE 2: Direct call -> PathGuard.unique(path)
     @overload
     @staticmethod
     def unique(target: Path | str, ensure_parent: bool = False) -> Path: ...
-
-    # CASE 3: Bare Decorator -> @PathGuard.unique
     @overload
     @staticmethod
     def unique(target: Callable[P, Path]) -> Callable[P, Path]: ...
@@ -128,4 +122,17 @@ class PathGuard:
         check_exists: bool = False,
         must_exists: bool = False,
     ) -> Path | None: ...
-
+    @overload
+    @staticmethod
+    def split_read_print_path(
+        target: list[Path], local_root: Path | None = None
+    ) -> list[tuple[Path, Path]]: ...
+    @overload
+    @staticmethod
+    def split_read_print_path(
+        target: Path, local_root: Path | None = None
+    ) -> tuple[Path, Path]: ...
+    @staticmethod
+    def split_read_print_path(
+        target: Any, local_root: Path | None = None
+    ) -> list[tuple[Path, Path]] | tuple[Path, Path]: ...

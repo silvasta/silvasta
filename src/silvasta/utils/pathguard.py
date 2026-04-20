@@ -379,6 +379,46 @@ class PathGuard:
             logger.debug(f"failed for:\n{target_path}\n{root_path}")
             return None
 
+    @functools.singledispatch
+    @staticmethod
+    # TODO: stubs file adabt
+    def split_read_print_path(target, local_root: Path | None = None):
+        raise NotImplementedError(
+            f"unsupported: {type(target)=}, path(s): {target=} and {local_root=}"
+        )
+
+    @split_read_print_path.register
+    @staticmethod
+    # TODO: stubs file adabt
+    def _(
+        target: list, local_root: Path | None = None
+    ) -> list[tuple[Path, Path]]:
+        return [
+            PathGuard.split_read_print_path(path, local_root)
+            for path in target
+        ]
+
+    @split_read_print_path.register
+    @staticmethod
+    # TODO: stubs file adabt
+    def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
+
+        if target.is_absolute():
+            read_path: Path = target
+            print_path: Path = (
+                target
+                if local_root is None
+                else PathGuard.compute_relative(target, local_root)
+            )
+        else:  # Relative target
+            if local_root is None:
+                raise ValueError(
+                    f"Can't construct proper Path with {local_root=} for: {target=}"
+                )
+            read_path: Path = local_root / target
+            print_path: Path = target
+        return read_path, print_path
+
     @staticmethod
     def compute_relative(
         target: Path | str,
