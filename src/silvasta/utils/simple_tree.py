@@ -77,7 +77,7 @@ def recursive_tree(
             if len(branches_path_parts) == 0:
                 return PathTreeNode(name=name, path=path)
 
-            # Stack names to avoid unneccesary Nodes
+            # Stack names to avoid unnecessary Nodes
             if current_node_name == "/":
                 branches_name: str = f"/{name}"
             elif current_node_name:

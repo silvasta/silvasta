@@ -11,7 +11,7 @@ from silvasta.utils.simple_tree import SimpleTreeNode
 
 
 class Printer:
-    """Customized Rich Console setup for easy acces"""
+    """Customized Rich Console setup for easy access"""
 
     _raw_theme: dict[str, str] = {
         "info": "black on white",
@@ -40,7 +40,7 @@ class Printer:
         self.update_theme_load_console(custom_theme)
 
     def __call__(self, *args, **kwargs):
-        """Rich console print, printer.mute(): swich to regular print"""
+        """Rich console print, printer.mute(): switch to regular print"""
         match self.status:
             case self.Status.RICH:
                 self.console.print(*args, **kwargs)
@@ -51,11 +51,11 @@ class Printer:
                 pass
 
     def unmute(self):
-        """Swich to Rich Console Printer"""
+        """Switch to Rich Console Printer"""
         self.status: Printer.Status = self.Status.RICH
 
     def print_regular(self):
-        """Swich to regular Python print"""
+        """Switch to regular Python print"""
         self.status: Printer.Status = self.Status.REGULAR
 
     def mute(self):
@@ -100,7 +100,6 @@ class Printer:
     def title(self, text, *args, **kwargs):
         defaults: dict[str, str] = {
             "style": "title",
-            # "justify": "center", # INFO: no longer possible/needed after swich from Markdown to Panel
         }
         kwargs = defaults | kwargs  # override defaults
         self.panel(text, *args, **kwargs)
@@ -108,7 +107,6 @@ class Printer:
     def warn(self, text, *args, **kwargs):
         defaults: dict[str, str] = {
             "style": "warning",
-            # "justify": "center", # INFO: no longer possible/needed after swich from Markdown to Panel
         }
         kwargs = defaults | kwargs  # override defaults
         self.panel(text, *args, **kwargs)
@@ -116,7 +114,6 @@ class Printer:
     def success(self, text, *args, **kwargs):
         defaults: dict[str, str] = {
             "style": "success",
-            # "justify": "center", # INFO: no longer possible/needed after swich from Markdown to Panel
         }
         kwargs = defaults | kwargs
         self.panel(text, *args, **kwargs)
@@ -124,7 +121,6 @@ class Printer:
     def danger(self, text, *args, **kwargs):
         defaults: dict[str, str] = {
             "style": "danger",
-            # "justify": "center", # INFO: no longer possible/needed after swich from Markdown to Panel
         }
         kwargs = defaults | kwargs
         self.panel(text, *args, **kwargs)

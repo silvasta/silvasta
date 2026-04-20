@@ -34,8 +34,8 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
             return root
 
-        if self._defaults.home_setup == HomeSetup.LOCAL:  # TEST: home swich
-            logger.warning("No project root found -> defaut to: 'global'")
+        if self._defaults.home_setup == HomeSetup.LOCAL:  # TEST: home switch
+            logger.warning("No project root found -> default to: 'global'")
             self._defaults.home_setup: HomeSetup = HomeSetup.GLOBAL
 
         self.project_root_found = False

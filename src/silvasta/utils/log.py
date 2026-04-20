@@ -103,7 +103,7 @@ def _check_log_file_args(
     log_to_file: bool,
     log_param: LogParam,
 ) -> Path | None:
-    """Use direct file path if avaliable, otherwise create composed path"""
+    """Use direct file path if available, otherwise create composed path"""
 
     if log_file:
         log_file_path: Path = log_file

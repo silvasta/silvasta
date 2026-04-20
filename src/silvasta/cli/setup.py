@@ -9,7 +9,7 @@ from silvasta.utils.log import LogParam
 
 
 def logger_catch(func):
-    """Typer decorater BELOW 'app.command()', catch errors and log them via Loguru.
+    """Typer decorator BELOW 'app.command()', catch errors and log them via Loguru.
     Ensures metadata is preserved and errors are handled globally."""
 
     @wraps(func)

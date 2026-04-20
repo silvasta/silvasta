@@ -115,7 +115,7 @@ class ConfigManager[
         self, write_new_master_setting_file_if_missing: bool
     ):
         """TSettings ensured existence or generated default"""
-        # REMOVE: not storing as atribute? only ensure here?
+        # REMOVE: not storing as attribute? only ensure here?
         self.master_setting_file: Path = self._settings_cls.ensure_master_setting_file(
             write_new_file_if_missing=write_new_master_setting_file_if_missing
         )

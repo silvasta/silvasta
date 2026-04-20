@@ -78,7 +78,7 @@ class LogPatterns:
 
 def grep_from_list(
     pattern: str, lines: Iterable[str]
-) -> Generator[str, None, None]:
+) -> Generator[str]:
     """Yield line if it matches the pattern, works with lists or file objects"""
 
     regex = RegexMatch(pattern)

@@ -85,13 +85,13 @@ def load_toml(toml_path: Path) -> dict:
 
 
 def pyproject_sns(pyproject_toml_path: Path | None = None) -> SimpleNamespace:
-    """Transform pyproject.toml into SimpleNamespace with dot acces"""
+    """Transform pyproject.toml into SimpleNamespace with dot access"""
     toml: dict = pyproject_toml(pyproject_toml_path)
     return dict_to_sns(toml)
 
 
 def dict_to_sns(data: dict):
-    """Transform nested dict to SimpleNamespace with dot acces"""
+    """Transform nested dict to SimpleNamespace with dot access"""
     if isinstance(data, dict):
         # Recursive conversion of dict to unpack all nested values
         return SimpleNamespace(**{k: dict_to_sns(v) for k, v in data.items()})

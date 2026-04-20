@@ -100,7 +100,7 @@ class PathGuard:
             if raise_error:
                 msg = f"Critical file missing: {path}"
             else:
-                warn = "Surpress error only allowed for case of writing file with default content!"
+                warn = "Suppress error only allowed for case of writing file with default content!"
                 logger.warning(warn)
                 msg = f"Wrong input, can't confirm:\n{path}"
 
