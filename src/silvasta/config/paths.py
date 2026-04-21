@@ -3,7 +3,7 @@ from typing import cast
 
 from loguru import logger
 
-from silvasta.utils import PathGuard
+from silvasta.utils import PathGuard, day_count
 from silvasta.utils.path import recursive_root
 
 from .defaults import HomeSetup, SstDefaults
@@ -87,4 +87,10 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         path: Path = self.config_home / ".env"
         return PathGuard.file(
             path, default_content=self._defaults.dot_env_content
+        )
+
+    @PathGuard.unique(ensure_parent=True)
+    def summary_file(self, suffix: str = "md") -> Path:
+        return self.data_dir / self._names.summary_file(
+            {"day": str(day_count()), "suffix": suffix}
         )

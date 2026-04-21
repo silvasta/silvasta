@@ -1,5 +1,95 @@
-from pydantic import ConfigDict
+import re
+from functools import singledispatchmethod
+from pathlib import Path
+from typing import Annotated, Any, Self
+
+from loguru import logger
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    model_validator,
+)
 from pydantic_settings import BaseSettings
+
+from silvasta.utils.parse import PatternNamer
+
+
+class ParsedName(BaseModel):
+    pattern: str
+    keys: list[str] = Field(default_factory=list)
+
+    _namer: PatternNamer = PrivateAttr()
+
+    @model_validator(mode="after")
+    def _sync_namer_and_keys(self) -> Self:
+        """Runs automatically whenever the model is instantiated or updated."""
+        self._namer = PatternNamer(self.pattern)
+
+        if self.keys and set(self.keys) != set(self._namer.keys):
+            logger.error(
+                f"Configured pattern '{self.pattern}' changed expected keys! "
+                f"Expected: {self.keys}, Found: {self._namer.keys}. "
+                f"Paths generated with this pattern might contain 'UNKNOWN' placeholders."
+            )
+
+        # Sync to the actual keys requested by the pattern
+        self.keys: list[str] = self._namer.keys
+
+        return self
+
+    @singledispatchmethod
+    def __call__(self, target):
+        raise NotImplementedError(f"Cannot process {type(target)=}, {target=}")
+
+    @__call__.register
+    def _(self, target: dict) -> str:
+        """Forwwards parsing key value pairs to name"""
+
+        # Ensure every key required by the pattern exists in the target dict
+        safe_target: dict[str, str] = {}
+
+        for key in self.keys:
+            if key not in target:
+                logger.error(
+                    f"Missing key '{key}' for pattern '{self.pattern}'. Using fallback."
+                )
+                safe_target[key] = f"UNKNOWN_{key.upper()}"
+            else:
+                safe_target[key] = target[key]
+
+        return self._namer.format(**safe_target)
+
+    @__call__.register
+    def _(self, target: str | Path) -> dict:
+        """Backwards parsing name to key value pairs"""
+
+        formatted_string: str = (
+            str(target.name) if isinstance(target, Path) else str(target)
+        )
+        # Strip the PathGuard increment (e.g., "_1", "_42") before the extension
+        clean_string = re.sub(r"_\d+(?=\.|$)", "", formatted_string)
+
+        return self._namer.extract(clean_string)
+
+    @classmethod
+    def from_pattern(
+        cls, pattern: str, expected_keys: list[str] | None = None
+    ) -> Self:
+        return cls(pattern=pattern, keys=expected_keys or [])
+
+
+def parse_name_validator(value: Any) -> ParsedName:
+    if isinstance(value, str):
+        return ParsedName.from_pattern(value)
+    return value
+
+
+type AutoParsedName = Annotated[
+    ParsedName, BeforeValidator(parse_name_validator)
+]
 
 
 class SstNames(BaseSettings):
@@ -19,18 +109,13 @@ class SstNames(BaseSettings):
     # Directories in data_dir
     local_home_dir: str = "homes"
 
+    # Patterns
+    summary_file: AutoParsedName = Field(
+        default_factory=lambda: ParsedName(
+            pattern="{day}_summary.{suffix}", keys=["day", "suffix"]
+        )
+    )
+
     @property
     def log_file(self) -> str:
-        return (
-            self._log_file_name
-            if self._log_file_name
-            else f"{self.project}.log"
-        )
-
-    # TASK: create bidirectional name/path in custom class,
-    # somehow integrate here?
-    # - list of patterns and keys?
-    # schema_file_pattern: str = "{name}_schema_columns.csv"
-    # # Store the pattern, not the logic
-    # schema_config_pattern: str = "{name}_schema_config.json"
-    # -> see file-analyzer for singledispatchmethod example
+        return self._log_file_name or f"{self.project}.log" or "debug.log"

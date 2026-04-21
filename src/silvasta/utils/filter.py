@@ -28,6 +28,8 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
     require_all: set[SetType] = field(default_factory=set)
     require_any: set[SetType] = field(default_factory=set)
 
+    allow_hidden_files: bool = False
+
     # Get complementary negative set, instead get all matching, get all others
     return_if_not_hit: bool = False
 
@@ -151,6 +153,9 @@ class ProjectFilter(PathFilter):
 
     def __call__(self, target: Path) -> bool:
         target_set: set[str] = self._create_target_set(target)
+
+        if not self.allow_hidden_files and target.name.startswith("."):
+            return False
 
         if target.is_dir():
             return self.fulfills_exclude(target_set)

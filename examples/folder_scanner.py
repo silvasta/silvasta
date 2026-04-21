@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from silvasta.config import get_config
 from silvasta.utils import (
     FolderScanner,
     PathGuard,
@@ -19,7 +20,7 @@ def main():
     # scan_dir()
     # tree_dir_absolute()
     # tree_dir_relative()
-    # write_summary()
+    write_summary()
 
     print("done")
 
@@ -64,20 +65,21 @@ def tree_dir_relative():
     printer.tree_graph(tree)
 
 
-def write_summary(output_filename: str = "summary.md"):
+def write_summary(print_debug_logs=False):
+
+    output_file: str = get_config().paths.summary_file()
 
     scanner: FolderScanner = FolderScanner(
         scan_root=SCAN_ROOT,
         path_filter=ProjectFilter(
-            # print_debug_logs=True,
+            _debug=print_debug_logs,
             require_any={
-                "file_scanner",
-                "simple_tree",
-                "print",
+                "paths",
+                "names",
             },
         ),
     )
-    scanner.write_summary_with_name(output_filename)
+    scanner.write_summary_with_name(output_file)
 
 
 if __name__ == "__main__":

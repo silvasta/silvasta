@@ -5,6 +5,8 @@ from functools import wraps
 
 from loguru import logger
 
+# TASK: check utc for entire project, maybe other library
+
 
 @dataclass
 class DateRange:
@@ -16,7 +18,7 @@ class DateRange:
             raise TypeError(
                 f"start: {type(self.start)} must equal end:{type(self.end)}"
             )
-        if self.start > self.end:  # TEST: fine without error?
+        if self.start > self.end:
             logger.warning("Start of daterange is after end, range inverted!")
 
     @property

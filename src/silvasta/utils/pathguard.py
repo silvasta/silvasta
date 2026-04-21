@@ -381,7 +381,6 @@ class PathGuard:
 
     @functools.singledispatch
     @staticmethod
-    # TODO: stubs file adabt
     def split_read_print_path(target, local_root: Path | None = None):
         raise NotImplementedError(
             f"unsupported: {type(target)=}, path(s): {target=} and {local_root=}"
@@ -389,7 +388,6 @@ class PathGuard:
 
     @split_read_print_path.register
     @staticmethod
-    # TODO: stubs file adabt
     def _(
         target: list, local_root: Path | None = None
     ) -> list[tuple[Path, Path]]:
@@ -400,7 +398,6 @@ class PathGuard:
 
     @split_read_print_path.register
     @staticmethod
-    # TODO: stubs file adabt
     def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
 
         if target.is_absolute():

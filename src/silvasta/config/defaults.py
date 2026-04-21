@@ -76,7 +76,7 @@ class SstDefaults(BaseSettings):
 
     model_config = ConfigDict(extra="allow")
 
-    project_name: str = "silvasta"  # REMOVE:
+    project_name: str = "silvasta"
     project_version_fallback: str = "0.1.0"
     log: LogDefaults = Field(default_factory=LogDefaults)
     # Used for writing default content if no .env found

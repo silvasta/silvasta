@@ -19,9 +19,6 @@ from .settings import SstSettings
 
 type ConfigTypes = SstDefaults | SstNames | SstPaths | SstSettings
 
-# TASK: check utc, maybe for entire project sstutils
-# self.completed_at = datetime.now(timezone.utc)
-
 
 class ConfigManager[
     TSettings: SstSettings,
@@ -121,16 +118,12 @@ class ConfigManager[
         )
 
     def _check_project_name(self) -> str:
-        """Get project_name explicitly from Names, fallback to Defaults"""
-        try:  # HACK: should never come up to here? without proper Names???
-            # TODO: assign SstNames.project=""
-            # - here check, if self.names.project:
-            # else use default
+        """Get project_name from Names or fallback to Defaults"""
+        if self.names.project:
             project_name: str = self.names.project
             logger.debug(f"using {project_name=}")
             return project_name
-
-        except (NotImplementedError, AttributeError):
+        else:
             default_name: str = self.defaults.project_name
             logger.warning(f"No project_name defined, using: {default_name=}")
             return default_name
