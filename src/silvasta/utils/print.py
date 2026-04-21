@@ -25,7 +25,7 @@ class Printer:
     # - count which default/not default used and improve
 
     project_name: str = "App"
-    project_version: str = "unknown"
+    project_version: str = "0.0.0"
 
     class Status(Enum):
         RICH = auto()
@@ -130,12 +130,22 @@ class Printer:
         lines: list,
         header: str | None = "",
         title: str = "",
-        style: str | None = None,
+        style: str = "info",
     ):
         """Print header as title followed by lines in panel"""
-        if header is not None:
+        # TODO: autoformat, f.e. list[Path]->list[str]
+        if header is not None:  # Mute header banner with header=None
             self.title(header)
         self.panel(text="\n".join(lines), title=title, style=style)
+
+    def _lines_from_list_len(self, name, lines: list, style: str = "info"):
+        # TODO:: better naming, selector for different formats, by args?
+        self.lines_from_list(
+            header=f"{name}: {len(lines)}",
+            title=name,
+            lines=lines,
+            style=style,
+        )
 
     def update_theme_load_console(
         self, custom_theme: dict[str, str] | None = None
@@ -198,13 +208,13 @@ class Printer:
                 current_depth if node_style == "by_level" else node_style
             )
 
-            for child in node.next:
+            for branch in node.branches:
                 child_label: str = _apply_style(
-                    child.display_label, color=color
+                    branch.display_label, color=color
                 )
                 child_branch: Tree = current_branch.add(child_label)
 
-                build_branch(child, child_branch, current_depth + 1)
+                build_branch(branch, child_branch, current_depth + 1)
 
         build_branch(simple_tree, visual_tree, current_depth=1)
 

@@ -1,41 +1,54 @@
+from pathlib import Path
+
 import typer
 
 from silvasta.tui.tree_selector import TreeSelectorApp
-from silvasta.utils import printer
+from silvasta.utils import FolderScanner, printer
+from silvasta.utils.path import find_project_root
 from silvasta.utils.simple_tree import (
     SimpleTreeNode,
     get_big_example_tree,
     get_example_tree,
 )
 
-example_tree: SimpleTreeNode = get_example_tree()
+SCAN_ROOT: Path = find_project_root()
+
+
+def select_example_tree(
+    task=2,  # TODO: select loaded tree here
+) -> SimpleTreeNode:
+
+    trees: list[SimpleTreeNode] = [
+        get_example_tree(),
+        get_big_example_tree(),
+        FolderScanner.tree(root=SCAN_ROOT),
+    ]
+    return trees[task]
+
 
 app = typer.Typer()
 
 
 @app.command()
 def process_tree(
-    target_node: str = typer.Argument(
+    target_node: str | None = typer.Option(
         None, help="The exact ID/name of the node to process"
     ),
     interactive: bool = typer.Option(
         False, "--interactive", "-i", help="Use TUI picker"
     ),
-    big: bool = False,
 ):
     """Process a specific node in the forest."""
 
-    if big:
-        example_tree: SimpleTreeNode = get_big_example_tree()
     if interactive:
-        tui = TreeSelectorApp(tree_data=example_tree)
-        selected_node: str | None = tui.run()
+        tui = TreeSelectorApp(sst_tree=select_example_tree())
+        selected_nodes: list | None = tui.run()
 
-        if not selected_node:
+        if not selected_nodes:
             printer.warn("Action cancelled by user.")
             raise typer.Exit()
 
-        target_node: str = selected_node
+        target_node: list = selected_nodes
 
     elif target_node is None:
         printer.danger(

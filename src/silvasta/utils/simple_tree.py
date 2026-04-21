@@ -48,7 +48,8 @@ def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
 
 
 def pop_left(path_parts: list[deque]) -> dict[str, list[deque]]:
-    """Squash all top path elements to branched dict, filter finished path path segments"""
+    """Squash all top left path elements into branched dict, filter empty path path segments,
+    returns dict with 1-n keys each with list of 0-k shortened deque elements"""
 
     current_nodes: dict[str, list[deque]] = defaultdict(list)
 

@@ -667,7 +667,7 @@ wheels = [
 
 [[package]]
 name = "silvasta"
-version = "0.2.1a1"
+version = "0.2.1a2"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
