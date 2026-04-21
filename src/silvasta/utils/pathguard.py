@@ -348,36 +348,91 @@ class PathGuard:
         must_exists: bool = False,
     ) -> str:
         """Get relative path string to root|CWD if exists or path.name"""
-        relative_path: Path | None = PathGuard.find_relative(
-            target, root, check_exists, must_exists
+        path: Path = PathGuard._ensure_input(
+            path=target,
+            check_exists=check_exists,
+            must_exists=must_exists,
         )
-        return str(relative_path) if relative_path else Path(target).name
+        try:
+            return str(PathGuard.relative(path, root))
+        except ValueError:
+            return Path(target).name
 
     @staticmethod
-    def find_relative(
+    def relative(
         target: Path | str,
         root: Path | str | None = None,
+        strict: bool = True,
         check_exists: bool = False,
         must_exists: bool = False,
-    ) -> Path | None:
+    ) -> Path:
         """Find relative path starting at root|CWD downwards to target"""
+
         target_path: Path = PathGuard._ensure_input(
-            target,
+            path=target,
             resolve=True,
             check_exists=check_exists,
             must_exists=must_exists,
         )
         root_path: Path = PathGuard._ensure_input(
-            root or Path.cwd(),
+            path=root or Path.cwd(),
             resolve=True,
             check_exists=check_exists,
             must_exists=must_exists,
         )
+        if strict:
+            try:
+                return target_path.relative_to(root_path)
+            except ValueError as e:
+                msg = f"{target_path=} not found in {root_path=}"
+                raise ValueError(msg) from e
+        else:
+            import os
+
+            return Path(os.path.relpath(target_path, root_path))
+
+    @staticmethod
+    def relative_duo(
+        path1: Path | str,
+        path2: Path | str,
+        check_exists: bool = False,
+        must_exists: bool = False,
+    ) -> Path | None:
+        """Find relative path from any of both directions or get None"""
+
+        path1: Path = PathGuard._ensure_input(
+            path=path1,
+            check_exists=check_exists,
+            must_exists=must_exists,
+        )
+        path2: Path = PathGuard._ensure_input(
+            path=path2,
+            check_exists=check_exists,
+            must_exists=must_exists,
+        )
         try:
-            return target_path.relative_to(root_path)
+            rel21 = PathGuard.relative(path1, path2, strict=True)
         except ValueError:
-            logger.debug(f"failed for:\n{target_path}\n{root_path}")
-            return None
+            rel21 = None
+
+        try:
+            rel12 = PathGuard.relative(path2, path1, strict=True)
+        except ValueError:
+            rel12 = None
+
+        match (rel21, rel12):
+            case (None, None):
+                logger.info("No relative path found in both directions...")
+                return None
+
+            case (Path() as p, None) | (None, Path() as p):
+                logger.debug(f"found relative path: {p}")
+                return p
+
+            case _:
+                logger.info("It happened, how is that possible?")
+                logger.error(f"Found: {rel21} and {rel12}?")
+                return None
 
     @functools.singledispatch
     @staticmethod
@@ -405,7 +460,7 @@ class PathGuard:
             print_path: Path = (
                 target
                 if local_root is None
-                else PathGuard.compute_relative(target, local_root)
+                else PathGuard.relative(target, local_root)
             )
         else:  # Relative target
             if local_root is None:
@@ -415,55 +470,3 @@ class PathGuard:
             read_path: Path = local_root / target
             print_path: Path = target
         return read_path, print_path
-
-    @staticmethod
-    def compute_relative(
-        target: Path | str,
-        root: Path | str | None = None,
-        check_exists: bool = False,
-        must_exists: bool = False,
-    ) -> Path:
-        """Get relative path from root walking upwards and downwards"""
-        import os
-
-        target_path: Path = PathGuard._ensure_input(
-            target,
-            resolve=True,
-            check_exists=check_exists,
-            must_exists=must_exists,
-        )
-        root_path: Path = PathGuard._ensure_input(
-            root or Path.cwd(),
-            resolve=True,
-            check_exists=check_exists,
-            must_exists=must_exists,
-        )
-        return Path(os.path.relpath(target_path, root_path))
-
-    @staticmethod
-    def relative_duo(
-        path1: Path | str,
-        path2: Path | str,
-        check_exists: bool = False,
-        must_exists: bool = False,
-    ) -> Path | None:
-        """Find relative path from any of both directions or get None"""
-        match (
-            PathGuard.find_relative(path1, path2, check_exists, must_exists),
-            PathGuard.find_relative(path2, path1, check_exists, must_exists),
-        ):
-            case (None, None):
-                logger.info("No relative path found in both directions...")
-                return None
-
-            case (Path() as rel21, None):
-                logger.debug(f"found relative path with root: {path2}")
-                return rel21
-
-            case (None, Path() as rel12):
-                logger.debug(f"found relative path with root: {path1}")
-                return rel12
-
-            case (Path() as rel21, Path() as rel12):
-                logger.error(f"Found: {rel21} and {rel12}?")
-                return None

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -64,10 +65,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
 
-    # file_type: type[FilesT] = cast(type[FilesT], SstFiles)
-    file_type: type[SstFile] = (
-        SstFile  # FIX: type (checker) issue, SstFile/FilesT
-    )
+    file_factory: Callable[..., FilesT] = Field(exclude=True)
 
     def _attach(self, file: FilesT):
         self.files.append(file)
@@ -75,21 +73,18 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def _create_local_file(self, path: Path) -> FilesT:
         if path.is_absolute():
             path: Path = self.relative_to_local_root(path)
-        return self.file_type(local_path=self.relative_to_local_root(path))
+        logger.debug(f"create new file: {path=}")
+        return self.file_factory(local_path=path)
 
     def attach_from_path(self, path) -> FilesT:
-        if path.is_absolute():
-            path: Path = self.relative_to_local_root(path)
-        logger.debug(f"attach new file: {path=}")
         file: FilesT = self._create_local_file(path)
         self._attach(file)
         return file
 
-    def relative_to_local_root(self, path: Path) -> Path:
-        relative_path: Path = PathGuard.compute_relative(
-            # TODO: check if not better with PathGuard.find_relative()
-            target=path,
-            root=self.local_root,
+    def relative_to_local_root(self, path: Path, strict: bool = True) -> Path:
+        """Get path if inside local root, strict=False tries: ../../file.txt"""
+        relative_path: Path = PathGuard.relative(
+            target=path, root=self.local_root, strict=strict
         )
         logger.debug(f"Created {relative_path=} from:\n{path=}")
         return relative_path
@@ -98,13 +93,11 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         """Load files to registry that are not already attached"""
 
         new_files: list[FilesT] = []
-        # FIX: type (checker) issue, SstFile/FilesT
         existing: set[Path] = self.local_file_paths
 
         for path in self.scan_local_dir():
             if path not in existing:
                 new_file: FilesT = self.attach_from_path(path)
-                # FIX: type (checker) issue, SstFile/FilesT
                 new_files.append(new_file)
 
         return new_files
@@ -151,6 +144,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     @property
     def global_file_paths(self) -> set[Path]:
+        # TODO: naming to absolute_...?
         return set(self.local_root / file.local_path for file in self.files)
 
     @property
@@ -214,3 +208,5 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
 class FileSystemManager:
     """Manager for operations on Local Files"""
+
+    # LATER: define what can be added to general lib

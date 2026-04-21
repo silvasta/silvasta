@@ -102,16 +102,10 @@ class PathGuard:
         must_exists: bool = False,
     ) -> str: ...
     @staticmethod
-    def find_relative(
+    def relative(
         target: Path | str,
         root: Path | str | None = None,
-        check_exists: bool = False,
-        must_exists: bool = False,
-    ) -> Path | None: ...
-    @staticmethod
-    def compute_relative(
-        target: Path | str,
-        root: Path | str | None = None,
+        strict: bool = True,
         check_exists: bool = False,
         must_exists: bool = False,
     ) -> Path: ...

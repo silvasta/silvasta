@@ -70,7 +70,7 @@ class FolderScanner:
         return [
             path
             if get_absolute_paths
-            else PathGuard.compute_relative(target=path, root=self.scan_root)
+            else PathGuard.relative(target=path, root=self.scan_root)
             for path in self.walk(
                 self.scan_root, self.path_filter, debug=self._debug
             )
@@ -116,6 +116,10 @@ class FolderScanner:
             root_name=root.name,
         )
 
+    # IMPORTANT: make easy function with input: list[Path]
+    # - recognize target from output_file
+    # - as much as possible in 1 step
+
     @staticmethod
     def assemble_summary_file(
         paths: list[Path],
@@ -127,6 +131,10 @@ class FolderScanner:
 
         for path_pair in PathGuard.split_read_print_path(paths, scan_root):
             read_path, print_path = path_pair
+
+            if read_path.is_dir():
+                logger.debug(f"ignoring dir: {print_path}")
+                continue
 
             with suppress(UnicodeDecodeError):
                 content: str = read_path.read_text(encoding="utf-8")
@@ -161,6 +169,11 @@ class FolderScanner:
     @classmethod
     def _name_from_target(cls, target) -> Path:
         return cls.output_dir / f"{cls.output_stem}.{target.value}"
+
+    @classmethod
+    def target_from_path(cls, output_file: Path) -> TargetFileType:
+        # MERGE: into create/assemble file
+        return TargetFileType(output_file.suffix.strip("."))
 
     def write_summary_with_name(self, filename: str):
         output_file: Path = self.output_dir / filename

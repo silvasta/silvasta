@@ -70,8 +70,8 @@ def setup_logging(
             Console().print(param)
 
         to_print: list = [
-            param.get("config_file", "config file lost..."),
-            param.get("log_file", "log file lost..."),
+            f"Config File: {param.get('config_file', 'lost...')}",
+            f"Log File: {param.get('log_file', 'lost...')}",
         ]
         title: str = param.get("log_param", "Log to File")  # ty:ignore
 

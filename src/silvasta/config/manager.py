@@ -208,6 +208,7 @@ class ConfigManager[
             raise ValueError("Value not found in os.env or with loaded .env")
         return var
 
+    # TODO: naming, cli_param?
     def compose_setup_param(self) -> dict[str, str | LogParam]:
         return {
             # utils.setup_logging
