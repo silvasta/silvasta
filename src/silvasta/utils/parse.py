@@ -12,6 +12,7 @@ class PatternNamer:
         self.pattern: str = pattern
         self.keys: list[str] = []
 
+        # Attach values to self.keys as well
         regex_parts: list[str] = self.create_regex_parts(pattern, self.keys)
 
         self._regex: re.Pattern = re.compile("".join(regex_parts))

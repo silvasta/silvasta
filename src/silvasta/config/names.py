@@ -23,6 +23,10 @@ class ParsedName(BaseModel):
 
     _namer: PatternNamer = PrivateAttr()
 
+    @property
+    def n_keys(self) -> int:
+        return len(self.keys)
+
     @model_validator(mode="after")
     def _sync_namer_and_keys(self) -> Self:
         """Runs automatically whenever the model is instantiated or updated."""
@@ -46,7 +50,7 @@ class ParsedName(BaseModel):
 
     @__call__.register
     def _(self, target: dict) -> str:
-        """Forwwards parsing key value pairs to name"""
+        """Forwards parsing key value pairs to name"""
 
         # Ensure every key required by the pattern exists in the target dict
         safe_target: dict[str, str] = {}
@@ -63,6 +67,32 @@ class ParsedName(BaseModel):
         return self._namer.format(**safe_target)
 
     @__call__.register
+    def _(self, target: list) -> str:
+        """Forwards parsing key value pairs to name"""
+
+        # Ensure every key required by the pattern exists in the target dict
+        safe_target: dict[str, str] = {}
+        n_values: int = len(target)
+
+        for i, key in enumerate(self.keys):
+            if i < n_values:
+                safe_target[key] = target[i]
+
+            # Error Case 1: less values provided than keys
+            if i >= n_values:
+                msg: str = f"Missing value for {key=}! Using fallback for {self.pattern=}."
+                logger.error(msg)
+                safe_target[key] = f"UNKNOWN_{i}"
+
+        # Error Case 2: more values provided than keys
+        if n_values > self.n_keys:
+            ignoring: list[str] = target[i + 1 :]
+            msg: str = f"Got {n_values=} for {self.n_keys=}! {ignoring=}."
+            logger.error(msg)
+
+        return self._namer.format(**safe_target)
+
+    @__call__.register
     def _(self, target: str | Path) -> dict:
         """Backwards parsing name to key value pairs"""
 
@@ -75,15 +105,42 @@ class ParsedName(BaseModel):
         return self._namer.extract(clean_string)
 
     @classmethod
-    def from_pattern(
+    def only_from_pattern(
         cls, pattern: str, expected_keys: list[str] | None = None
     ) -> Self:
         return cls(pattern=pattern, keys=expected_keys or [])
 
+    @classmethod
+    def with_predefined_keys(
+        cls, key_indexes: list[int] | None = None
+    ) -> Self:
+        """Create keys and pattern factory in derived class, fill before assignment"""
+
+        keys: list[str] = cls._load_predefined_keys()
+
+        if key_indexes is not None:
+            keys: list[str] = [keys[key_index] for key_index in key_indexes]
+
+        pattern: str = cls._generate_predefined_pattern(keys)
+
+        return cls(pattern=pattern, keys=keys)
+
+    @classmethod
+    def _load_predefined_keys(cls) -> list[str]:
+        """Provide keys for constructor: with_predefined_keys"""
+        raise NotImplementedError("Needed for ParsedName.with_predefined_keys")
+
+    @classmethod
+    def _generate_predefined_pattern(
+        cls, keys: list[str], join_symbol: str = "_"
+    ) -> str:
+        """Some default that sometimes might be used"""
+        return join_symbol.join(keys)
+
 
 def parse_name_validator(value: Any) -> ParsedName:
     if isinstance(value, str):
-        return ParsedName.from_pattern(value)
+        return ParsedName.only_from_pattern(value)
     return value
 
 
@@ -110,10 +167,15 @@ class SstNames(BaseSettings):
     local_home_dir: str = "homes"
 
     # Patterns
-    summary_file: AutoParsedName = Field(
-        default_factory=lambda: ParsedName(
-            pattern="{day}_summary.{suffix}", keys=["day", "suffix"]
-        )
+
+    # WARN: test if this works
+    # summary_file: AutoParsedName = Field(
+    #     default_factory=lambda: ParsedName(
+    # WARN: test if this works
+    #     )
+    summary_file: AutoParsedName = ParsedName(
+        pattern="{day}_summary.{suffix}",
+        keys=["day", "suffix"],
     )
 
     @property

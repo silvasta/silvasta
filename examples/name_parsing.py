@@ -13,7 +13,7 @@ def main():
 
 def parsed_name():
     pattern: str = "{day}_summary.{suffix}"
-    summary_file: ParsedName = ParsedName.from_pattern(pattern=pattern)
+    summary_file: ParsedName = ParsedName.only_from_pattern(pattern=pattern)
     print(summary_file)
 
     # Fine

@@ -14,7 +14,7 @@ from silvasta.utils import printer
 
 class Names(SstNames):
     """Define new custom names or override default names,
-    used in Paths and to acces them by config.{some_name}"""
+    used in Paths and to access them by config.{some_name}"""
 
     project: str = "sstcore"
 
