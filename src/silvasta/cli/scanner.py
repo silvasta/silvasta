@@ -3,17 +3,17 @@ from pathlib import Path
 import typer
 from loguru import logger
 
-from silvasta.config import get_config
-from silvasta.tui.tree_selector import TreeSelectorApp
-from silvasta.utils import (
+from ..config import get_config
+from ..tui.tree_selector import TreeSelectorApp
+from ..utils import (
     FolderScanner,
     PathGuard,
     PathTreeNode,
     ProjectFilter,
     printer,
 )
-from silvasta.utils.path import find_project_root
-from silvasta.utils.scanner import TargetFileType
+from ..utils.path import find_project_root
+from ..utils.scanner import TargetFileType
 
 
 def main(

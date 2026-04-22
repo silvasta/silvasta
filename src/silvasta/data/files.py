@@ -5,6 +5,8 @@ from pathlib import Path
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
+from silvasta.config import ConfigManager, get_config
+
 from ..utils import FilterSet, FolderScanner, PathGuard, ProjectFilter
 
 
@@ -19,8 +21,8 @@ class SstFile(BaseModel):
     local_path: Path  # relative from local filedir # NOTE: confirm?
     keywords: set = Field(default_factory=set)
 
-    first_tracked: datetime = Field(default_factory=datetime.now(UTC))
-    last_updated: datetime = Field(default_factory=datetime.now(UTC))
+    first_tracked: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def is_temp_file(self) -> bool:

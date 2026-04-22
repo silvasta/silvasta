@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 from loguru import logger
@@ -16,6 +17,7 @@ class SstSettings(BaseSettings):
 
     names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
+    last_updated: datetime = datetime.now(UTC)
 
     @classmethod
     def default_json_content(cls) -> str:
@@ -72,6 +74,7 @@ class SstSettings(BaseSettings):
 
     def save_to_path(self, path: Path):
         """Save current status to json"""
+        self.last_updated: datetime = datetime.now(UTC)
         path.write_text(self.json_content(), encoding="utf-8")
 
     def save_to_master_setting_file(self):

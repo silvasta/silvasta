@@ -84,6 +84,7 @@ class FolderScanner:
         path_filter: FilterSet = path_filter or ProjectFilter()
 
         for item in root.iterdir():
+            # LATER: use new path.walk() -> dirpath, dirnames, filenames?
             if not path_filter(item):
                 if debug:
                     logger.debug(f"ignoring: {item=}")
