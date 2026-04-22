@@ -143,7 +143,7 @@ class TreeSelectorApp(App[list]):
             ui_node.label: str = self.format_label(
                 node_id, self.original_labels[node_id]
             )
-            # Recurse down to select all sub-elements in folder
+            # Recursive down to select all sub-elements in folder
             for child in ui_node.children:
                 update_node_and_children(child)
 
@@ -160,7 +160,7 @@ class TreeSelectorApp(App[list]):
         else:
             tree: MultiSelectTree = self.query_one(MultiSelectTree)
             if tree.cursor_node and tree.cursor_node.data:
-                # No Selection return identifier of current curser position
+                # No Selection return identifier of current cursor position
                 self.exit(result=[tree.cursor_node.data])
             else:
                 self.exit(result=[])  # or nothing if nothing found there

@@ -30,7 +30,7 @@ def scan_dir():
     relative_paths: list[Path] = []
     for abs_path in FolderScanner.walk(root=SCAN_ROOT):
         absolute_paths.append(abs_path)
-        rel_path = PathGuard.compute_relative(target=abs_path, root=SCAN_ROOT)
+        rel_path = PathGuard.relative(target=abs_path, root=SCAN_ROOT)
         relative_paths.append(rel_path)
 
     printer._lines_from_list_len(
