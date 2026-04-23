@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from functools import singledispatchmethod
 from pathlib import Path
 from typing import Annotated, Any, Self
@@ -30,6 +31,7 @@ class ParsedName(BaseModel):
     @model_validator(mode="after")
     def _sync_namer_and_keys(self) -> Self:
         """Runs automatically whenever the model is instantiated or updated."""
+
         self._namer = PatternNamer(self.pattern)
 
         if self.keys and set(self.keys) != set(self._namer.keys):
@@ -44,34 +46,70 @@ class ParsedName(BaseModel):
 
         return self
 
+    def _forward_parsing(
+        self,
+        clean_target: dict[str, str],  # , *args, **kwargs
+    ) -> str:
+        """Used for override and intercept in StyledName"""
+        return self._namer.format(**clean_target)
+
+    def forward_parsing(
+        self,
+        safe_target: dict[
+            str, str | datetime  # maybe | Path ?
+        ],
+    ) -> str:
+        """Final cleanup of string befor extracting keys with PatternNamer"""
+
+        clean_target: dict[str, str] = {}
+
+        for key, val in safe_target.items():
+            if isinstance(val, datetime):
+                # MOVE: how to apply? seperate function, attribute?
+                val = f"{val:%Y-%m-%d_%H-%M-%S}"
+
+            # TODO: what else? apply any checkup here,
+            # maybe as easily overridable function
+
+            clean_target[key] = val
+
+        return self._forward_parsing(clean_target)
+
+    def backwards_parsing(self, formatted_string: str) -> dict:
+        """Final cleanup of string befor extracting pattern with PatternNamer"""
+
+        # Strip PathGuard increments (e.g., "_1", "_42") before the extension
+        clean_string: str = re.sub(r"_\d+(?=\.|$)", "", formatted_string)
+
+        return self._namer.extract(clean_string)
+
     @singledispatchmethod
     def __call__(self, target):
         raise NotImplementedError(f"Cannot process {type(target)=}, {target=}")
 
     @__call__.register
     def _(self, target: dict) -> str:
-        """Forwards parsing key value pairs to name"""
+        """Forward parsing, key value pairs to safe dict"""
 
         # Ensure every key required by the pattern exists in the target dict
-        safe_target: dict[str, str] = {}
+        safe_target: dict = {}
 
         for key in self.keys:
             if key not in target:
-                logger.error(
-                    f"Missing key '{key}' for pattern '{self.pattern}'. Using fallback."
-                )
-                safe_target[key] = f"UNKNOWN_{key.upper()}"
+                msg: str = f"Missing value for {key=}! Using fallback for: {self.pattern=}"
+                logger.error(msg)
+                safe_target[key] = f"UNKNOWN-{key.upper()}"
             else:
                 safe_target[key] = target[key]
 
-        return self._namer.format(**safe_target)
+        return self.forward_parsing(safe_target)
 
     @__call__.register
     def _(self, target: list) -> str:
-        """Forwards parsing key value pairs to name"""
+        """Forward parsing, value list to safe dict"""
 
         # Ensure every key required by the pattern exists in the target dict
-        safe_target: dict[str, str] = {}
+        safe_target: dict = {}
         n_values: int = len(target)
 
         for i, key in enumerate(self.keys):
@@ -80,9 +118,9 @@ class ParsedName(BaseModel):
 
             # Error Case 1: less values provided than keys
             if i >= n_values:
-                msg: str = f"Missing value for {key=}! Using fallback for {self.pattern=}."
+                msg: str = f"Missing value for {key=}! Using fallback for: {self.pattern=}"
                 logger.error(msg)
-                safe_target[key] = f"UNKNOWN_{i}"
+                safe_target[key] = f"UNKNOWN-STYLE{i}"
 
         # Error Case 2: more values provided than keys
         if n_values > self.n_keys:
@@ -90,19 +128,19 @@ class ParsedName(BaseModel):
             msg: str = f"Got {n_values=} for {self.n_keys=}! {ignoring=}."
             logger.error(msg)
 
-        return self._namer.format(**safe_target)
+        return self.forward_parsing(safe_target)
 
     @__call__.register
-    def _(self, target: str | Path) -> dict:
+    def _(self, target: Path) -> dict:
         """Backwards parsing name to key value pairs"""
 
-        formatted_string: str = (
-            str(target.name) if isinstance(target, Path) else str(target)
-        )
-        # Strip the PathGuard increment (e.g., "_1", "_42") before the extension
-        clean_string = re.sub(r"_\d+(?=\.|$)", "", formatted_string)
+        return self.backwards_parsing(target.name)
 
-        return self._namer.extract(clean_string)
+    @__call__.register
+    def _(self, target: str) -> dict:
+        """Backwards parsing name to key value pairs"""
+
+        return self.backwards_parsing(str(target))
 
     @classmethod
     def only_from_pattern(
@@ -110,18 +148,27 @@ class ParsedName(BaseModel):
     ) -> Self:
         return cls(pattern=pattern, keys=expected_keys or [])
 
+    @staticmethod
+    # TODO: dispach with list
+    def format_brackets(key: str) -> str:
+        return f"{{{key}}}"  # needed for proper {key}
+
     @classmethod
     def with_predefined_keys(
         cls, key_indexes: list[int] | None = None
     ) -> Self:
         """Create keys and pattern factory in derived class, fill before assignment"""
 
-        keys: list[str] = cls._load_predefined_keys()
+        raw_keys: list[str] = cls._load_predefined_keys()
 
-        if key_indexes is not None:
-            keys: list[str] = [keys[key_index] for key_index in key_indexes]
+        if key_indexes is None:
+            keys: list[str] = raw_keys
+        else:
+            keys: list[str] = [raw_keys[i] for i in key_indexes]
 
         pattern: str = cls._generate_predefined_pattern(keys)
+
+        logger.debug(f"{pattern=}, {keys=}")
 
         return cls(pattern=pattern, keys=keys)
 
@@ -135,13 +182,68 @@ class ParsedName(BaseModel):
         cls, keys: list[str], join_symbol: str = "_"
     ) -> str:
         """Some default that sometimes might be used"""
-        return join_symbol.join(keys)
+
+        # TODO: dispach with list
+        bracket_keys: list[str] = [cls.format_brackets(key) for key in keys]
+
+        return join_symbol.join(bracket_keys)
 
 
 def parse_name_validator(value: Any) -> ParsedName:
     if isinstance(value, str):
         return ParsedName.only_from_pattern(value)
     return value
+
+
+class StyledName(ParsedName):
+    style_pattern: str
+    styles: list[str]
+
+    _styler: PatternNamer = PrivateAttr()
+    _styled: bool = PrivateAttr(default=False)
+
+    def _sync_styler_and_styles(self):
+        """Runs automatically whenever the model is instantiated or updated."""
+
+        rich_template: str = self.style_pattern
+
+        for i, style in enumerate(self.styles, start=1):
+            rich_template: str = rich_template.replace(f"{{style{i}}}", style)
+
+        self._styler = PatternNamer(rich_template)
+        logger.info(f"{self._styler=}")
+
+    def _forward_parsing(self, clean_target: dict[str, str]) -> str:
+        """Used for override and intercept in StyledName"""
+
+        if self._styled:
+            return self._styler.format(**clean_target)
+        else:
+            return self._namer.format(**clean_target)
+
+    def styled(self, target: dict | list) -> str:
+
+        self._styled = True
+        self._sync_styler_and_styles()
+
+        rich_string: str = self(target)
+
+        return rich_string
+
+    @classmethod
+    def parse_style(
+        cls, style_pattern: str, keys: list[str], styles: list[str]
+    ) -> Self:
+        """Use transfromed style_pattern as base pattern for regex parser setup"""
+
+        pattern: str = re.sub(r"\[.*?\]", "", style_pattern)
+
+        return cls(
+            pattern=pattern,
+            keys=keys,
+            style_pattern=style_pattern,
+            styles=styles,
+        )
 
 
 type AutoParsedName = Annotated[
@@ -167,15 +269,14 @@ class SstNames(BaseSettings):
     local_home_dir: str = "homes"
 
     # Patterns
-
-    # WARN: test if this works
-    # summary_file: AutoParsedName = Field(
-    #     default_factory=lambda: ParsedName(
-    # WARN: test if this works
-    #     )
     summary_file: AutoParsedName = ParsedName(
         pattern="{day}_summary.{suffix}",
         keys=["day", "suffix"],
+    )
+    sstfile_dates: StyledName = StyledName.parse_style(
+        style_pattern="[{style1}]{name}[/]: [{style2}]{first_tracked}[/] - [{style3}]{last_updated}[/]",
+        keys=["name", "first_tracked", "last_updated"],
+        styles=["blue", "dim", "white"],
     )
 
     @property

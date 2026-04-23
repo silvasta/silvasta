@@ -1,14 +1,30 @@
 from contextlib import suppress
+from datetime import datetime
 
-from silvasta.config.names import ParsedName
-from silvasta.utils import day_count
+from silvasta.config.names import ParsedName, StyledName
+from silvasta.utils import day_count, printer
 from silvasta.utils.parse import PatternNamer
 
 
 def main():
     print("Start of name_parsing")
     # pattern_namer()
-    parsed_name()
+    # parsed_name()
+    # predefined_keys()
+    styled_name()
+
+
+def styled_name():
+
+    sstfile_dates: StyledName = StyledName.parse_style(
+        style_pattern="[{style1}]{name}[/]: [{style2}]{first_tracked}[/] - [{style3}]{last_updated}[/]",
+        keys=["name", "first_tracked", "last_updated"],
+        styles=["blue", "red", "white"],
+    )
+
+    print(sstfile_dates)
+    print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
+    printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
 
 
 def parsed_name():

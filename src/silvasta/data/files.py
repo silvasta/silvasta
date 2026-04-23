@@ -29,6 +29,13 @@ class SstFile(BaseModel):
         return self.local_path == Path()  # TODO: check if needed
 
     @property
+    def description(self) -> str:
+        config: ConfigManager = get_config()
+        return config.names.sstfile_dates.styled(
+            [self.name, self.first_tracked, self.last_updated]
+        )
+
+    @property
     def name(self) -> str:
         return self.local_path.name
 
