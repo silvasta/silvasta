@@ -133,9 +133,10 @@ class Printer:
         style: str = "info",
     ):
         """Print header as title followed by lines in panel"""
-        # TODO: autoformat, f.e. list[Path]->list[str]
         if header is not None:  # Mute header banner with header=None
             self.title(header)
+        # other formating to apply?
+        lines: list[str] = [str(line) for line in lines]
         self.panel(text="\n".join(lines), title=title, style=style)
 
     def _lines_from_list_len(self, name, lines: list, style: str = "info"):

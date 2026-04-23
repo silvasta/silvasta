@@ -1,3 +1,4 @@
+from silvasta.config import ConfigManager, get_config
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -73,8 +74,11 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     _scanner: FolderScanner | None = PrivateAttr(default=None)
 
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
-
     file_factory: Callable[..., FilesT] = Field(exclude=True)
+
+    @property
+    def n_files(self):
+        return len(self.files)
 
     def _attach(self, file: FilesT):
         self.files.append(file)
@@ -218,4 +222,40 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 class FileSystemManager:
     """Manager for operations on Local Files"""
 
-    # LATER: define what can be added to general lib
+    @staticmethod
+    def registry_sync(source: FileRegistry, target: FileRegistry):
+        """Attach file from source to target"""  # TODO: how handle overlap?
+
+        # TASK:
+        # - copy mode
+        # - move mode
+        # For existing:
+        # - for now, ignore
+        # - later mode:forced_override
+        # - later check for changes in file, the override
+        # probably needs some param set
+        # - as well SelectTree inbetween
+        # Handle overrides
+        # - copy mainly override
+        # - move mainly new unique path
+        # -> depends on files itself
+
+        existing_local_paths: set[Path] = target.local_file_paths
+        new_files: list[SstFile] = []
+
+        for file in source.files:
+            if file in existing_local_paths:
+                logger.warning(f"ignoring {file.description}")
+            else:
+                source_file: Path = PathGuard.file(
+                    source.local_root / file.local_path
+                )
+                target_file: Path = PathGuard.unique(
+                    target.local_root / file.local_path, ensure_parent=True
+                )
+                source_file.copy(target_file)
+                target._attach(file)
+                logger.info(f"moved: {file.description}")
+                new_files.append(file)
+
+        return new_files

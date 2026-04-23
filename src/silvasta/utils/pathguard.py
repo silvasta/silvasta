@@ -319,11 +319,11 @@ class PathGuard:
         # Store type for reset logic later
         is_directory: bool = source.is_dir()
 
-        final_target: Path = PathGuard._get_unique_candidate(
+        unique_target: Path = PathGuard._get_unique_candidate(
             target, ensure_parent=True
         )
 
-        shutil.move(str(source), str(final_target))
+        source.move(unique_target)
 
         log_src: str = PathGuard.get_relative_or_name(source)
         log_dst: str = PathGuard.get_relative_or_name(target)
@@ -338,7 +338,7 @@ class PathGuard:
                 source.touch()
                 logger.debug(f"Reset empty file: {source}")
 
-        return final_target
+        return unique_target
 
     @staticmethod
     def get_relative_or_name(
