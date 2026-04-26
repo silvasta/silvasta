@@ -42,7 +42,7 @@ def recursive_root(path: Path, indicator: str) -> Path | None:
 
 def recursive_parent(path: Path, parent_dir_name: str) -> Path | None:
     """Find closest parent dir with name by iterating upwards"""
-    if path.parent.name == parent_dir_name:
+    if path.name == parent_dir_name:
         return path
     elif path == path.parent:
         return None

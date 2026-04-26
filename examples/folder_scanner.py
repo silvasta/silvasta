@@ -17,10 +17,10 @@ SCAN_ROOT: Path = find_project_root()
 
 def main():
     """Task selector"""
-    # scan_dir()
+    scan_dir()
     # tree_dir_absolute()
     # tree_dir_relative()
-    write_summary()
+    # write_summary()
 
     print("done")
 
@@ -33,15 +33,15 @@ def scan_dir():
         rel_path = PathGuard.relative(target=abs_path, root=SCAN_ROOT)
         relative_paths.append(rel_path)
 
-    printer._lines_from_list_len(
+    printer.lines_with_len(
         name="Absolute Paths",
-        lines=[str(path) for path in absolute_paths],
+        lines=absolute_paths,
         style="normal",
     )
 
-    printer._lines_from_list_len(
+    printer.lines_with_len(
         name="Relative Paths",
-        lines=[str(path) for path in relative_paths],
+        lines=relative_paths,
     )
 
 

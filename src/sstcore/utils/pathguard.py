@@ -155,10 +155,6 @@ class PathGuard:
 
             return decorator
 
-        raise TypeError(
-            f"Invalid target type for PathGuard.file: {type(target)}"
-        )
-
     @staticmethod
     def _get_unique_candidate(path: Path | str, ensure_parent: bool) -> Path:
         """Internal logic: Appends counter until a free filename is found."""

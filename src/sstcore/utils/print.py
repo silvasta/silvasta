@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.theme import Theme
 from rich.tree import Tree
 
-from ..utils.simple_tree import SimpleTreeNode
+from sstcore.utils.simple_tree import SimpleTreeNode
 
 
 class Printer:
@@ -21,8 +21,6 @@ class Printer:
         "success": "bold white on green",
         "danger": "bold black on red",
     }
-    # IDEA: style counter!
-    # - count which default/not default used and improve
 
     project_name: str = "App"
     project_version: str = "0.0.0"
@@ -125,7 +123,7 @@ class Printer:
         kwargs = defaults | kwargs
         self.panel(text, *args, **kwargs)
 
-    def lines_from_list(
+    def lines(
         self,
         lines: list,
         header: str | None = "",
@@ -135,13 +133,14 @@ class Printer:
         """Print header as title followed by lines in panel"""
         if header is not None:  # Mute header banner with header=None
             self.title(header)
-        # other formating to apply?
+
         lines: list[str] = [str(line) for line in lines]
+        # LATER: other formating to apply?
+
         self.panel(text="\n".join(lines), title=title, style=style)
 
-    def lines_from_list_with_len(self, name, lines: list, style: str = "info"):
-        # TODO:: better naming, selector for different formats, by args?
-        self.lines_from_list(
+    def lines_with_len(self, name, lines: list, style: str = "info"):
+        self.lines(
             header=f"{name}: {len(lines)}",
             title=name,
             lines=lines,
@@ -223,3 +222,6 @@ class Printer:
 
 
 printer = Printer()
+
+if __name__ == "__main__":
+    printer.preview_themes()

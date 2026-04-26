@@ -256,7 +256,7 @@ class SstNames(BaseSettings):
 
     model_config = ConfigDict(extra="allow")
 
-    project: str = ""  # INFO: must be overwritten!?
+    project: str = "sstcore"
 
     # Master config file
     setting_file: str = "settings.json"

@@ -43,7 +43,7 @@ def process_tree(task: Tasks = Tasks.SCAN):
         printer.warn("Action cancelled by user.")
         raise typer.Exit()
 
-    printer.lines_from_list_with_len(
+    printer.lines_with_len(
         name="Successfully selected nodes",
         lines=selected_nodes,
     )

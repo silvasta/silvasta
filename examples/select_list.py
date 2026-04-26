@@ -1,7 +1,7 @@
 import typer
 
 from sstcore import printer
-from sstcore.tui.list_selector import ListSelectorApp
+from sstcore.tui import ListSelectorApp
 
 app = typer.Typer()
 
@@ -32,7 +32,7 @@ def process_list(
         printer.warn("Action cancelled by user.")
         raise typer.Exit()
 
-    printer._lines_from_list_len("Select", lines=selected_items)
+    printer.lines_with_len("Select", lines=selected_items)
 
 
 if __name__ == "__main__":

@@ -154,7 +154,7 @@ class FolderScanner:
 
         files: list[Path] = self.scan_local_files()
 
-        printer.lines_from_list(
+        printer.lines(
             header="Files for Summary",
             title="FolderScanner",
             lines=[str(path) for path in files],

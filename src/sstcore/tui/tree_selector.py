@@ -12,18 +12,10 @@ class MultiSelectTree(Tree[str]):
     """A custom Tree that uses Vim navigation and disables default selection keys"""
 
     BINDINGS: list[Binding] = [
-        Binding(
-            "j", "cursor_down", "Down", show=False
-        ),  # REMOVE: do it automatically
-        Binding(
-            "k", "cursor_up", "Up", show=False
-        ),  # REMOVE: do it automatically
-        Binding(
-            "h", "collapse_parent", "Collapse/Up", show=False
-        ),  # REMOVE: do it automatically
-        Binding(
-            "l", "expand_child", "Expand/Down", show=False
-        ),  # REMOVE: do it automatically
+        Binding("j", "cursor_down", "Down", show=True),
+        Binding("k", "cursor_up", "Up", show=True),
+        Binding("h", "collapse_parent", "Collapse/Up", show=True),
+        Binding("l", "expand_child", "Expand/Down", show=True),
         Binding("space", "toggle_select", "Select Node"),
         Binding("enter", "submit", "Submit Selection"),
     ]
@@ -92,8 +84,7 @@ class TreeSelectorApp(App[list]):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.title = "Select a Node"
-        self.sub_title = "j/k: Navigate | h/l: Collapse/Expand | Space: Select | Enter: Submit"  # REMOVE: do it automatically
+        self.title = "Select Branches or Single Nodes"
 
         tree: MultiSelectTree = self.query_one(MultiSelectTree)
         self.build_ui_tree(sst_node=self.sst_tree, current_tui_node=tree.root)
