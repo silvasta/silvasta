@@ -5,7 +5,7 @@ from textual.message import Message
 from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
 
-from silvasta.utils.simple_tree import SimpleTreeNode
+from ..utils.simple_tree import SimpleTreeNode
 
 
 class MultiSelectTree(Tree[str]):

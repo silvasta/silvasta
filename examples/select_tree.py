@@ -1,12 +1,12 @@
+from enum import Enum
 from pathlib import Path
 
 import typer
 
-from silvasta.tui.tree_selector import TreeSelectorApp
-from silvasta.utils import FolderScanner, printer
-from silvasta.utils.path import find_project_root
-from silvasta.utils.simple_tree import (
-    SimpleTreeNode,
+from sstcore.tui.tree_selector import TreeSelectorApp
+from sstcore.utils import FolderScanner, SimpleTreeNode, printer
+from sstcore.utils.path import find_project_root
+from sstcore.utils.simple_tree import (
     get_big_example_tree,
     get_example_tree,
 )
@@ -14,49 +14,39 @@ from silvasta.utils.simple_tree import (
 SCAN_ROOT: Path = find_project_root()
 
 
-def select_example_tree(
-    task=2,  # TODO: select loaded tree here
-) -> SimpleTreeNode:
+class Tasks(Enum):
+    Example_Tree = "tree"
+    BIG_Example_Tree = "big"
+    SCAN = "scan"
 
-    trees: list[SimpleTreeNode] = [
-        get_example_tree(),
-        get_big_example_tree(),
-        FolderScanner.tree(root=SCAN_ROOT),
-    ]
-    return trees[task]
+    def tree(self) -> SimpleTreeNode:
+        match self:
+            case Tasks.Example_Tree:
+                return get_example_tree()
+            case Tasks.BIG_Example_Tree:
+                return get_big_example_tree()
+            case Tasks.SCAN:
+                return FolderScanner.tree(root=SCAN_ROOT)
 
 
 app = typer.Typer()
 
 
 @app.command()
-def process_tree(
-    target_node: str | None = typer.Option(
-        None, help="The exact ID/name of the node to process"
-    ),
-    interactive: bool = typer.Option(
-        False, "--interactive", "-i", help="Use TUI picker"
-    ),
-):
+def process_tree(task: Tasks = Tasks.SCAN):
     """Process a specific node in the forest."""
 
-    if interactive:
-        tui = TreeSelectorApp(sst_tree=select_example_tree())
-        selected_nodes: list | None = tui.run()
+    tui = TreeSelectorApp(sst_tree=task.tree())
+    selected_nodes: list | None = tui.run()
 
-        if not selected_nodes:
-            printer.warn("Action cancelled by user.")
-            raise typer.Exit()
+    if not selected_nodes:
+        printer.warn("Action cancelled by user.")
+        raise typer.Exit()
 
-        target_node: list = selected_nodes
-
-    elif target_node is None:
-        printer.danger(
-            "You must provide a target_node or use the --interactive flag!"
-        )
-        raise typer.Exit(code=1)
-
-    printer.success(f"Successfully selected node: {target_node}")
+    printer.lines_from_list_with_len(
+        name="Successfully selected nodes",
+        lines=selected_nodes,
+    )
 
 
 if __name__ == "__main__":

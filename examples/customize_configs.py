@@ -2,14 +2,14 @@ from pathlib import Path
 
 from pydantic import Field
 
-from silvasta.config import (
+from sstcore.config import (
     ConfigManager,
     SstDefaults,
     SstNames,
     SstPaths,
     SstSettings,
 )
-from silvasta.utils import printer
+from sstcore.utils import printer
 
 
 class Names(SstNames):

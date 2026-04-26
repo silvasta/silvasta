@@ -15,7 +15,7 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
-from silvasta.utils.parse import PatternNamer
+from ..utils.parse import PatternNamer
 
 
 class ParsedName(BaseModel):

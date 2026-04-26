@@ -1,9 +1,8 @@
 from contextlib import suppress
 from datetime import datetime
 
-from silvasta.config.names import ParsedName, StyledName
-from silvasta.utils import day_count, printer
-from silvasta.utils.parse import PatternNamer
+from sstcore.config import ParsedName, StyledName
+from sstcore.utils import PatternNamer, day_count, printer
 
 
 def main():

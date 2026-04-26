@@ -224,8 +224,8 @@ wheels = [
 ]
 
 [[package]]
-name = "silvasta"
-version = "0.2.1a4"
+name = "sstcore"
+version = "0.2.2a1"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
@@ -252,9 +252,9 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "rich", specifier = ">=14.3.3" },
-    { name = "silvasta", extras = ["cli"], marker = "extra == 'all'" },
-    { name = "silvasta", extras = ["tui"], marker = "extra == 'all'" },
-    { name = "textual", marker = "extra == 'tui'", specifier = ">=0.50.0" },
+    { name = "sstcore", extras = ["cli"], marker = "extra == 'all'" },
+    { name = "sstcore", extras = ["tui"], marker = "extra == 'all'" },
+    { name = "textual", marker = "extra == 'tui'" },
     { name = "typer", marker = "extra == 'cli'" },
 ]
 provides-extras = ["cli", "tui", "all"]

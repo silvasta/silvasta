@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 from loguru import logger
 
-from silvasta.utils import PathGuard, printer
-from silvasta.utils.parse import LogPatterns, RegexMatch
-from silvasta.utils.path import find_project_root, pyproject_log_section
+from ..utils import PathGuard, printer
+from ..utils.parse import LogPatterns, RegexMatch
+from ..utils.path import find_project_root, pyproject_log_section
 
 
 def main(log_path: Path | None = None):

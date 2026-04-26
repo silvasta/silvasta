@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.theme import Theme
 from rich.tree import Tree
 
-from silvasta.utils.simple_tree import SimpleTreeNode
+from ..utils.simple_tree import SimpleTreeNode
 
 
 class Printer:
@@ -139,7 +139,7 @@ class Printer:
         lines: list[str] = [str(line) for line in lines]
         self.panel(text="\n".join(lines), title=title, style=style)
 
-    def _lines_from_list_len(self, name, lines: list, style: str = "info"):
+    def lines_from_list_with_len(self, name, lines: list, style: str = "info"):
         # TODO:: better naming, selector for different formats, by args?
         self.lines_from_list(
             header=f"{name}: {len(lines)}",

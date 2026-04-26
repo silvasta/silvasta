@@ -90,7 +90,7 @@ def pyproject_sns(pyproject_toml_path: Path | None = None) -> SimpleNamespace:
     return dict_to_sns(toml)
 
 
-def dict_to_sns(data: dict):
+def dict_to_sns(data):
     """Transform nested dict to SimpleNamespace with dot access"""
     if isinstance(data, dict):
         # Recursive conversion of dict to unpack all nested values
@@ -117,7 +117,7 @@ def pyproject_version(pyproject_toml_path: Path | None = None) -> str:
 def pyproject_log_section(
     pyproject_toml_path: Path | None = None,
 ) -> SimpleNamespace:
-    """Fetches from: [tool.silvasta.logging] in pyproject.toml"""
+    """Fetches from: [tool.sstcore.logging] in pyproject.toml"""
     pyproject: SimpleNamespace = pyproject_sns()
     tool_project_section: SimpleNamespace = getattr(
         pyproject.tool, pyproject_name(pyproject_toml_path)

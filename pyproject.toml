@@ -1,11 +1,11 @@
 [project]
-name = "silvasta"
-version = "0.2.1a4"
+name = "sstcore"
+version = "0.2.2a1"
 description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.14"
-license = { text = "Apache-2.0" } # <-- FIX:ed
+license = { text = "Apache-2.0" }
 keywords = [
   "utilities",
   "config-management",
@@ -39,10 +39,10 @@ build-backend = "uv_build"
 [project.optional-dependencies]
 cli = ["typer"]
 tui = ["textual"]
-all = ["silvasta[cli]", "silvasta[tui]"]
+all = ["sstcore[cli]", "sstcore[tui]"]
 
 
-[tool.silvasta.logging]
+[tool.sstcore.logging]
 level = "INFO"
 file_name = "utils.log"
 log_dir = "logs"

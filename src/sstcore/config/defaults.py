@@ -5,8 +5,8 @@ from loguru import logger
 from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
 
-from silvasta.utils import PathGuard
-from silvasta.utils.path import XdgHomes
+from ..utils import PathGuard
+from ..utils.path import XdgHomes
 
 
 class HomeSetup(StrEnum):

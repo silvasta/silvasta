@@ -1,5 +1,6 @@
 from .filter import FilterSet, PathFilter, ProjectFilter
 from .log import setup_logging
+from .parse import PatternNamer
 from .pathguard import PathGuard
 from .print import Printer, printer
 from .scanner import FolderScanner
@@ -18,4 +19,5 @@ __all__: list = [
     "FolderScanner",
     "SimpleTreeNode",
     "PathTreeNode",
+    "PatternNamer",
 ]

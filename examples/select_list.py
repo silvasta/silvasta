@@ -1,7 +1,7 @@
 import typer
 
-from silvasta.tui.list_selector import ListSelectorApp
-from silvasta.utils import printer
+from sstcore import printer
+from sstcore.tui.list_selector import ListSelectorApp
 
 app = typer.Typer()
 

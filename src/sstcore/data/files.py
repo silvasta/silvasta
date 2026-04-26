@@ -1,4 +1,3 @@
-from silvasta.config import ConfigManager, get_config
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -6,8 +5,7 @@ from pathlib import Path
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
-from silvasta.config import ConfigManager, get_config
-
+from ..config import ConfigManager, get_config
 from ..utils import FilterSet, FolderScanner, PathGuard, ProjectFilter
 
 

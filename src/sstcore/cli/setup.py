@@ -3,9 +3,9 @@ from functools import wraps
 import typer
 from loguru import logger
 
-from silvasta.config import ConfigManager
-from silvasta.utils import printer, setup_logging
-from silvasta.utils.log import LogParam
+from ..config import ConfigManager
+from ..utils import printer, setup_logging
+from ..utils.log import LogParam
 
 
 def logger_catch(func):

@@ -1,17 +1,17 @@
 from pathlib import Path
 
-from silvasta.config import get_config
-from silvasta.utils import (
+from sstcore.config import get_config
+from sstcore.utils import (
     FolderScanner,
     PathGuard,
     PathTreeNode,
     ProjectFilter,
     printer,
 )
-from silvasta.utils.path import find_project_root
-from silvasta.utils.simple_tree import build_path_tree
+from sstcore.utils.path import find_project_root
+from sstcore.utils.simple_tree import build_path_tree
 
-# SCAN_ROOT: Path = find_project_root() / "src/silvasta"
+# SCAN_ROOT: Path = find_project_root() / "src/sstcore"
 SCAN_ROOT: Path = find_project_root()
 
 
