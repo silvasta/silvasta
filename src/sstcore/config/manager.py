@@ -32,7 +32,7 @@ class ConfigManager[
         self,
         settings_cls: type[TSettings],
         paths_cls: type[TPaths],
-        write_new_master_setting_file_if_missing: bool = True,
+        write_new_master_setting_file_if_missing: bool = False,
     ):
         self._starttime: datetime = datetime.now(UTC)
 

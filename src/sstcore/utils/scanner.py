@@ -57,7 +57,7 @@ class FolderScanner:
 
     scan_root: Path
 
-    path_filter: PathFilter[str | Path] = field(default_factory=ProjectFilter)
+    path_filter: PathFilter = field(default_factory=ProjectFilter)
 
     # Used to create local summary file
     output_dir: Path = field(default_factory=Path.cwd)

@@ -116,7 +116,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
 
 
 @dataclass
-class PathFilter(FilterSet):
+class PathFilter(FilterSet[str, Path]):
     def _create_target_set(self, target: Path) -> set[str]:
         return set(target.parts) | {target.stem} | {target.suffix}
 
