@@ -65,14 +65,13 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
         return target.keywords
 
 
-class FileRegistry[FilesT: SstFile](BaseModel):
+class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
     """Registry for Local Files"""
 
     local_root: Path
     _scanner: FolderScanner | None = PrivateAttr(default=None)
 
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
-    file_factory: Callable[..., FilesT] = Field(exclude=True)
 
     @property
     def n_files(self):
@@ -81,11 +80,8 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def _attach(self, file: FilesT):
         self.files.append(file)
 
-    def _create_local_file(self, path: Path) -> FilesT:
-        if path.is_absolute():
-            path: Path = self.relative_to_local_root(path)
-        logger.debug(f"create new file: {path=}")
-        return self.file_factory(local_path=path)
+    def _create_local_file(self, *_args, **_kwargs) -> FilesT:
+        raise NotImplementedError("Derive from class to set file constructor")
 
     def attach_from_path(self, path) -> FilesT:
         file: FilesT = self._create_local_file(path)
@@ -215,6 +211,16 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             require_all=set(keywords)
         )
         return [file for file in self.files if keyword_filter(file)]
+
+
+class SstFileRegistry(FileRegistry[SstFile]):
+    """Registry with SstFile as constructor for new files"""
+
+    def _create_local_file(self, path: Path) -> SstFile:
+        if path.is_absolute():
+            path: Path = self.relative_to_local_root(path)
+        logger.debug(f"create new file: {path=}")
+        return SstFile(local_path=path)
 
 
 class FileSystemManager:
