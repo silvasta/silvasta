@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -244,6 +243,18 @@ class FileSystemManager:
         # - move mainly new unique path
         # -> depends on files itself
 
+        import sys  # HACK: for temporary avaliability in Python3.13
+
+        if sys.version_info < (3, 14, 0):
+            import shutil
+
+            def move_func(source: Path, target: Path):
+                shutil.copy(source, target)
+        else:
+
+            def move_func(source: Path, target: Path):
+                source.copy(target)
+
         existing_local_paths: set[Path] = target.local_file_paths
         new_files: list[SstFile] = []
 
@@ -257,7 +268,8 @@ class FileSystemManager:
                 target_file: Path = PathGuard.unique(
                     target.local_root / file.local_path, ensure_parent=True
                 )
-                source_file.copy(target_file)
+
+                move_func(source_file, target_file)
                 target._attach(file)
                 logger.info(f"moved: {file.description}")
                 new_files.append(file)

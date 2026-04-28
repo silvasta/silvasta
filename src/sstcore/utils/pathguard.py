@@ -240,9 +240,6 @@ class PathGuard:
                 return wrapper
 
             return decorator
-        raise TypeError(
-            f"Invalid target type for PathGuard.unique: {type(target)}"
-        )
 
     @staticmethod
     def find_sequence(base_target: Path | str) -> list[Path]:
@@ -319,7 +316,14 @@ class PathGuard:
             target, ensure_parent=True
         )
 
-        source.move(unique_target)
+        import sys  # HACK: for temporary avaliability in Python3.13
+
+        if sys.version_info < (3, 14, 0):
+            import shutil
+
+            shutil.move(source, unique_target)
+        else:
+            source.move(unique_target)
 
         log_src: str = PathGuard.get_relative_or_name(source)
         log_dst: str = PathGuard.get_relative_or_name(target)

@@ -11,7 +11,7 @@ from ..utils.simple_tree import SimpleTreeNode
 class MultiSelectTree(Tree[str]):
     """A custom Tree that uses Vim navigation and disables default selection keys"""
 
-    BINDINGS: list[Binding] = [
+    BINDINGS = [
         Binding("j", "cursor_down", "Down", show=True),
         Binding("k", "cursor_up", "Up", show=True),
         Binding("h", "collapse_parent", "Collapse/Up", show=True),
