@@ -1,4 +1,5 @@
 import re
+from contextlib import contextmanager
 from datetime import datetime
 from functools import singledispatchmethod
 from pathlib import Path
@@ -15,6 +16,7 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
+from ..exceptions import NotImplementedDispachError
 from ..utils.parse import PatternNamer
 
 
@@ -46,13 +48,6 @@ class ParsedName(BaseModel):
 
         return self
 
-    def _forward_parsing(
-        self,
-        clean_target: dict[str, str],  # , *args, **kwargs
-    ) -> str:
-        """Used for override and intercept in StyledName"""
-        return self._namer.format(**clean_target)
-
     def forward_parsing(
         self,
         safe_target: dict[
@@ -65,15 +60,17 @@ class ParsedName(BaseModel):
 
         for key, val in safe_target.items():
             if isinstance(val, datetime):
-                # MOVE: how to apply? seperate function, attribute?
-                val = f"{val:%Y-%m-%d_%H-%M-%S}"
-
-            # TODO: what else? apply any checkup here,
-            # maybe as easily overridable function
+                val = f"{val:%Y-%m-%d_%H-%M-%S}"  # MOVE: how to apply? seperate function, attribute?
 
             clean_target[key] = val
 
+        # TODO: what else? apply any checkup here, extendable to subclasses
+
         return self._forward_parsing(clean_target)
+
+    def _forward_parsing(self, clean_target: dict[str, str]) -> str:
+        """Used for override and interception in StyledName"""
+        return self._namer.format(**clean_target)
 
     def backwards_parsing(self, formatted_string: str) -> dict:
         """Final cleanup of string befor extracting pattern with PatternNamer"""
@@ -85,7 +82,7 @@ class ParsedName(BaseModel):
 
     @singledispatchmethod
     def __call__(self, target):
-        raise NotImplementedError(f"Cannot process {type(target)=}, {target=}")
+        raise NotImplementedDispachError(target)
 
     @__call__.register
     def _(self, target: dict) -> str:
@@ -116,13 +113,13 @@ class ParsedName(BaseModel):
             if i < n_values:
                 safe_target[key] = target[i]
 
-            # Error Case 1: less values provided than keys
+            # Error Case 1: less values provided than keys -> Fill
             if i >= n_values:
                 msg: str = f"Missing value for {key=}! Using fallback for: {self.pattern=}"
                 logger.error(msg)
                 safe_target[key] = f"UNKNOWN-STYLE{i}"
 
-        # Error Case 2: more values provided than keys
+        # Error Case 2: more values provided than keys -> Crop
         if n_values > self.n_keys:
             ignoring: list[str] = target[i + 1 :]
             msg: str = f"Got {n_values=} for {self.n_keys=}! {ignoring=}."
@@ -148,12 +145,26 @@ class ParsedName(BaseModel):
     ) -> Self:
         return cls(pattern=pattern, keys=expected_keys or [])
 
+    @singledispatchmethod
     @staticmethod
-    # TODO: dispach with list
-    def format_brackets(key: str) -> str:
+    def format_brackets(target: str | list[str]):  # -> str | list[str]:
+        raise NotImplementedDispachError(target)
+
+    @staticmethod
+    def _format_brackets(key: str) -> str:
         return f"{{{key}}}"  # needed for proper {key}
 
-    @classmethod
+    @format_brackets.register
+    @staticmethod
+    def _(target: str) -> str:
+        return ParsedName._format_brackets(key=target)
+
+    @format_brackets.register
+    @staticmethod
+    def _(target: list[str]) -> list[str]:
+        return [ParsedName._format_brackets(key) for key in target]
+
+    @classmethod  # LATER: cls or staticmethod?
     def with_predefined_keys(
         cls, key_indexes: list[int] | None = None
     ) -> Self:
@@ -172,21 +183,17 @@ class ParsedName(BaseModel):
 
         return cls(pattern=pattern, keys=keys)
 
-    @classmethod
+    @classmethod  # LATER: cls or staticmethod?
     def _load_predefined_keys(cls) -> list[str]:
         """Provide keys for constructor: with_predefined_keys"""
         raise NotImplementedError("Needed for ParsedName.with_predefined_keys")
 
-    @classmethod
+    @classmethod  # LATER: cls or staticmethod?
     def _generate_predefined_pattern(
         cls, keys: list[str], join_symbol: str = "_"
     ) -> str:
-        """Some default that sometimes might be used"""
-
-        # TODO: dispach with list
-        bracket_keys: list[str] = [cls.format_brackets(key) for key in keys]
-
-        return join_symbol.join(bracket_keys)
+        """Some Defaults that might be used sometimes"""
+        return join_symbol.join(cls.format_brackets(keys))
 
 
 def parse_name_validator(value: Any) -> ParsedName:
@@ -199,12 +206,11 @@ class StyledName(ParsedName):
     style_pattern: str
     styles: list[str]
 
-    _styler: PatternNamer = PrivateAttr()
+    _styler: PatternNamer | None = PrivateAttr(default=None)
     _styled: bool = PrivateAttr(default=False)
 
     def _sync_styler_and_styles(self):
         """Runs automatically whenever the model is instantiated or updated."""
-
         rich_template: str = self.style_pattern
 
         for i, style in enumerate(self.styles, start=1):
@@ -217,16 +223,26 @@ class StyledName(ParsedName):
         """Used for override and intercept in StyledName"""
 
         if self._styled:
-            return self._styler.format(**clean_target)
-        else:
-            return self._namer.format(**clean_target)
+            if self._styler is None:
+                self._sync_styler_and_styles()
+
+            if self._styler is not None:
+                return self._styler.format(**clean_target)
+
+        return self._namer.format(**clean_target)
+
+    @contextmanager
+    def style_mode(self):
+        self._styled = True
+        try:
+            yield self
+        finally:
+            self._styled = False
 
     def styled(self, target: dict | list) -> str:
 
-        self._styled = True
-        self._sync_styler_and_styles()
-
-        rich_string: str = self(target)
+        with self.style_mode():
+            rich_string: str = self(target)
 
         return rich_string
 
