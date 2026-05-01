@@ -95,12 +95,11 @@ class PathGuard:
         source: Path | str, target: Path | str, reset: bool = False
     ) -> Path: ...
     @staticmethod
-    def get_relative_or_name(
-        target: Path | str,
-        root: Path | str | None = None,
-        check_exists: bool = False,
-        must_exists: bool = False,
-    ) -> str: ...
+    def copy(
+        source: Path | str, target: Path | str, reset: bool = False
+    ) -> Path: ...
+    @staticmethod
+    def relative_string(source: Path, target: Path) -> str: ...
     @staticmethod
     def relative(
         target: Path | str,

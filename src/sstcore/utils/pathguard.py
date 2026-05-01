@@ -1,13 +1,76 @@
 import functools
 import re
-import shutil
+from abc import abstractmethod
 from collections.abc import Callable
 from pathlib import Path
 from typing import ParamSpec, cast
 
 from loguru import logger
 
+from sstcore.exceptions import NotImplementedDispachError
+
 P = ParamSpec("P")
+
+
+class _TemporaryPythonVersionDispacher:
+    """Intended to group commands by Python 3.14 or smaller"""
+
+    @abstractmethod
+    @staticmethod
+    def move(source: Path, target: Path):
+        raise NotImplementedError
+
+    @abstractmethod
+    @staticmethod
+    def copy(source: Path, target: Path):
+        raise NotImplementedError
+
+
+_fs_operator: _TemporaryPythonVersionDispacher | None = None
+
+
+def _get_fs_operator() -> _TemporaryPythonVersionDispacher:
+
+    global _fs_operator
+    if _fs_operator is None:
+        import sys
+
+        _fs_operator = _load_fs_operator(sys.version_info)
+
+    return _fs_operator
+
+
+def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispacher:
+
+    if version < (3, 14, 0):
+        import shutil
+
+        class _PythonOld(_TemporaryPythonVersionDispacher):
+            @abstractmethod
+            @staticmethod
+            def move(source: Path, target: Path):
+                shutil.move(source, target)
+
+            @abstractmethod
+            @staticmethod
+            def copy(source: Path, target: Path):
+                shutil.copy(source, target)
+
+        return _PythonOld()
+    else:
+
+        class _Python314plus(_TemporaryPythonVersionDispacher):
+            @abstractmethod
+            @staticmethod
+            def move(source: Path, target: Path):
+                source.move(target)  # ty:ignore
+
+            @abstractmethod
+            @staticmethod
+            def copy(source: Path, target: Path):
+                source.copy(target)  # ty:ignore
+
+        return _Python314plus()
 
 
 class PathGuard:
@@ -288,6 +351,8 @@ class PathGuard:
         for path in to_delete:
             try:
                 if path.is_dir():
+                    import shutil  # LATER: upgrade with pathlib?
+
                     shutil.rmtree(path)
                     logger.info(f"Pruned old dir: {path.name}")
                 else:
@@ -315,20 +380,10 @@ class PathGuard:
         unique_target: Path = PathGuard._get_unique_candidate(
             target, ensure_parent=True
         )
-
-        import sys  # HACK: for temporary avaliability in Python3.13
-
-        if sys.version_info < (3, 14, 0):
-            import shutil
-
-            shutil.move(source, unique_target)
-        else:
-            source.move(unique_target)
-
-        log_src: str = PathGuard.get_relative_or_name(source)
-        log_dst: str = PathGuard.get_relative_or_name(target)
-
-        logger.debug(f"Rotated: {log_src} -> {log_dst}")
+        _get_fs_operator().move(source, unique_target)
+        logger.debug(
+            f"Rotated: {PathGuard.relative_string(source, unique_target)}"
+        )
 
         if reset:
             if is_directory:
@@ -341,22 +396,29 @@ class PathGuard:
         return unique_target
 
     @staticmethod
-    def get_relative_or_name(
-        target: Path | str,
-        root: Path | str | None = None,
-        check_exists: bool = False,
-        must_exists: bool = False,
-    ) -> str:
-        """Get relative path string to root|CWD if exists or path.name"""
-        path: Path = PathGuard._ensure_input(
-            path=target,
-            check_exists=check_exists,
-            must_exists=must_exists,
+    def copy(source: Path | str, target: Path | str) -> Path:
+        """Copy source (file or dir) to target, handles unique naming collisions"""
+
+        source: Path = PathGuard._ensure_input(source, must_exists=True)
+        target: Path = PathGuard._ensure_input(target)
+
+        unique_target: Path = PathGuard._get_unique_candidate(
+            target, ensure_parent=True
         )
-        try:
-            return str(PathGuard.relative(path, root))
-        except ValueError:
-            return Path(target).name
+        _get_fs_operator().copy(source, unique_target)
+
+        logger.debug(
+            f"Copied: {PathGuard.relative_string(source, unique_target)}"
+        )
+        return unique_target
+
+    @staticmethod
+    def relative_string(source: Path, target: Path):
+        relative: Path | None = PathGuard.relative_duo(source, target)
+        relative: Path = relative or PathGuard.relative(
+            target=target, root=source, strict=False
+        )
+        return f"{source.name} -> {relative}"
 
     @staticmethod
     def relative(
@@ -367,7 +429,6 @@ class PathGuard:
         must_exists: bool = False,
     ) -> Path:
         """Find relative path starting at root|CWD downwards to target"""
-
         target_path: Path = PathGuard._ensure_input(
             path=target,
             resolve=True,
@@ -437,9 +498,7 @@ class PathGuard:
     @functools.singledispatch
     @staticmethod
     def split_read_print_path(target, local_root: Path | None = None):
-        raise NotImplementedError(
-            f"unsupported: {type(target)=}, path(s): {target=} and {local_root=}"
-        )
+        raise NotImplementedDispachError(target, local_root)
 
     @split_read_print_path.register
     @staticmethod
