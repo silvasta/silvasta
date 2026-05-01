@@ -1,37 +1,50 @@
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal, Self
 
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
 from ..config import ConfigManager, get_config
-from ..utils import FilterSet, FolderScanner, PathGuard, ProjectFilter
+from ..exceptions import RegistrySyncError
+from ..utils import (
+    FilterSet,
+    FolderScanner,
+    PathFilter,
+    PathGuard,
+    ProjectFilter,
+)
 
 
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
-    # IDEA: original name at load
-    # - then slugify?
-    # - possible to get name changes due to duplicated names but from different files
-    # -> test first in sachmis
-
-    local_path: Path  # relative from local filedir # NOTE: confirm?
+    local_path: Path  # relative from local filedir
     keywords: set = Field(default_factory=set)
 
     first_tracked: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
-    def is_temp_file(self) -> bool:
-        return self.local_path == Path()  # TODO: check if needed
+    def is_temp_file(self) -> bool:  # LATER: check if needed
+        return self.local_path == Path()
 
     @property
     def description(self) -> str:
+        """Extensive description formated with Rich Color String"""
         config: ConfigManager = get_config()
-        return config.names.sstfile_dates.styled(
-            [self.name, self.first_tracked, self.last_updated]
-        )
+        return config.names.sstfile_dates.styled(self._description)
+
+    @property
+    def _description(self) -> list[str | datetime | Path]:
+        """Constructor for (raw) description text blocks"""
+        return [self.name, self.first_tracked, self.last_updated]
+
+    @property
+    def raw_description(self) -> str:
+        """Raw description without any coloring"""
+        config: ConfigManager = get_config()
+        return config.names.sstfile_dates(self._description)
 
     @property
     def name(self) -> str:
@@ -47,6 +60,7 @@ class SstFile(BaseModel):
 
     def confirm_local_status(self, local_dir: Path) -> bool:
         file_path: Path = local_dir / self.local_path
+
         if not file_path.is_file():
             if not file_path.exists():
                 msg: str = f"Nothing found at: {file_path=}"
@@ -54,6 +68,7 @@ class SstFile(BaseModel):
                 msg: str = f"No file found but exists: {file_path=}"
             logger.warning(msg)
             return False
+
         return True
 
     # LATER: check for changes, hash, etc
@@ -64,8 +79,9 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
         return target.keywords
 
 
-class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
-    """Registry for Local Files"""
+class FileRegistry[FilesT: SstFile](BaseModel):
+    """Local Registry with Files relative to Root, provides
+    basic operations to handle files and groups of files"""
 
     local_root: Path
     _scanner: FolderScanner | None = PrivateAttr(default=None)
@@ -76,70 +92,6 @@ class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
     def n_files(self):
         return len(self.files)
 
-    def _attach(self, file: FilesT):
-        self.files.append(file)
-
-    def _create_local_file(self, *_args, **_kwargs) -> FilesT:
-        raise NotImplementedError("Derive from class to set file constructor")
-
-    def attach_from_path(self, path) -> FilesT:
-        file: FilesT = self._create_local_file(path)
-        self._attach(file)
-        return file
-
-    def relative_to_local_root(self, path: Path, strict: bool = True) -> Path:
-        """Get path if inside local root, strict=False tries: ../../file.txt"""
-        relative_path: Path = PathGuard.relative(
-            target=path, root=self.local_root, strict=strict
-        )
-        logger.debug(f"Created {relative_path=} from:\n{path=}")
-        return relative_path
-
-    def attach_new_files_from_local_folder(self) -> list[FilesT]:
-        """Load files to registry that are not already attached"""
-
-        new_files: list[FilesT] = []
-        existing: set[Path] = self.local_file_paths
-
-        for path in self.scan_local_dir():
-            if path not in existing:
-                new_file: FilesT = self.attach_from_path(path)
-                new_files.append(new_file)
-
-        return new_files
-
-    def update_files_from_local_folder(self) -> None:
-        """Load new files and update files in registry if they changed"""
-        raise NotImplementedError  # LATER: changed? date? keywords? hash?
-
-    def reload_all_files_from_local_folder(self):
-        """Load files to registry and remove files with same path"""
-
-        new_files: list[FilesT] = []
-
-        for path in self.scan_local_dir():
-            for file in self.get_files_by_path(path):
-                logger.debug(f"removing: {file}")
-                self.files.remove(file)
-
-            new_file: FilesT = self.attach_from_path(path)
-            new_files.append(new_file)
-
-        return new_files
-
-    def scan_local_dir(self) -> list[Path]:
-        scanner: FolderScanner = self.get_scanner()
-        return scanner.scan_local_files(get_absolute_paths=False)
-
-    def get_scanner(self) -> FolderScanner:
-        if not self._scanner:
-            return self.setup_scanner(path_filter=ProjectFilter())
-        return self._scanner
-
-    def setup_scanner(self, path_filter: FilterSet) -> FolderScanner:
-        self._scanner = FolderScanner(self.local_root, path_filter=path_filter)
-        return self._scanner
-
     @property
     def local_file_paths(self) -> set[Path]:
         return set(file.local_path for file in self.files)
@@ -148,9 +100,10 @@ class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
     def has_duplicated_file_paths(self) -> bool:
         return len(self.local_file_paths) < len(self.files)
 
+    # LATER: has_incremented_file_paths
+
     @property
-    def global_file_paths(self) -> set[Path]:
-        # TODO: naming to absolute_...?
+    def absolute_file_paths(self) -> set[Path]:
         return set(self.local_root / file.local_path for file in self.files)
 
     @property
@@ -159,13 +112,12 @@ class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
 
     @property
     def has_duplicated_file_names(self) -> bool:
-        return len(self.file_names) < len(self.files)
+        return len(self.file_names) < self.n_files
 
     def get_confirmed_files(
         self, local_dir: Path | None = None
     ) -> list[FilesT]:
         local_dir: Path = local_dir or self.local_root
-
         return [
             file  # all files with valid path
             for file in self.files
@@ -176,14 +128,14 @@ class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
         self, local_dir: Path | None = None
     ) -> list[FilesT]:
         local_dir: Path = local_dir or self.local_root
-
         return [
             file  # all files without valid path
             for file in self.files
             if not file.confirm_local_status(local_dir)
         ]
 
-    def get_files_by_path(self, local_path: Path) -> list[FilesT]:
+    def get_files_by_path(self, path: Path) -> list[FilesT]:
+        local_path: Path = self.relative_to_local_root(path)
         return [file for file in self.files if file.local_path == local_path]
 
     def get_files_by_name(self, name: str) -> list[FilesT]:
@@ -211,67 +163,206 @@ class FileRegistry[FilesT: SstFile](BaseModel):  # AI: why is here SstFile??
         )
         return [file for file in self.files if keyword_filter(file)]
 
+    def relative_to_local_root(self, path: Path, strict: bool = True) -> Path:
+        """Create relative path from local_root, just forward already relative,
+        strict=False tries to create paths like: ../../file.txt"""
+
+        if not path.is_absolute():
+            logger.debug(f"Forwarding relative {path=} for {self.local_root=}")
+            return path
+
+        relative_path: Path = PathGuard.relative(
+            target=path, root=self.local_root, strict=strict
+        )
+
+        logger.debug(f"Created {relative_path=} from: {path=}")
+        return relative_path
+
+    def ensure_local_path(self, path: Path) -> Path:
+        """Transform and confirm absolute path into relative, confirm relative path"""
+        if path.is_absolute():
+            try:
+                return self.relative_to_local_root(path, strict=True)
+            except ValueError:
+                spec = "Absolute"
+        else:
+            try:
+                return PathGuard.file(target=self.local_root / path)
+            except FileNotFoundError:
+                spec = "Relative"
+
+        raise RegistrySyncError(
+            f" Invalid {spec} {path=}! Not inside {self.local_root=}!"
+        )
+
+    def create_local_file(self, path: Path) -> FilesT:
+        """Ensure file is inside local_root, create instance with abstract constructor"""
+        local_path: Path = self.ensure_local_path(path)
+        file: FilesT = self._create_local_file(local_path)
+        logger.debug(f"New file created: {file.local_path=}")
+        return file
+
+    def _create_local_file(self, *_args, **_kwargs) -> FilesT:
+        raise NotImplementedError("Derive from class to set file constructor")
+
+    def attach(self, file: FilesT, strict=True):
+        """Check if File is valid local file and attach to Registry"""
+
+        if not file.confirm_local_status(self.local_root):
+            logger.error(f"Cannot attach file: {file.raw_description}")
+            if strict:
+                raise RegistrySyncError("File missing on local disk")
+            logger.warning(f"Ignoring: {file.raw_description}")
+
+        self._attach(file)
+
+    def _attach(self, file: FilesT):
+        """Override _attach to handle other types than list[FilesT]"""
+        self.files.append(file)
+
+    def attach_from_path(self, path) -> FilesT:
+        """Attach File that is already inside local_root"""
+        file: FilesT = self.create_local_file(path)
+        self.attach(file)
+        return file
+
+    def attach_new_files_from_local_folder(self) -> list[FilesT]:
+        """Load files to registry that are not already attached"""
+
+        new_files: list[FilesT] = []
+        existing: set[Path] = self.local_file_paths
+
+        for path in self.scan_local_dir():
+            if path not in existing:
+                new_file: FilesT = self.attach_from_path(path)
+                new_files.append(new_file)
+
+        return new_files
+
+    def update_files_from_local_folder(self) -> None:
+        """Load new files and update files in registry if they changed"""
+        raise NotImplementedError  # LATER: changed? date? keywords? hash?
+
+    def reload_all_files_from_local_folder(self, *, clear_all=False):
+        """Load all files inside local_root to registry,
+        Override existing registry Files, clear_all: start from empty status"""
+
+        if clear_all:
+            logger.info(f"Removing {self.n_files} files...")
+            self.files.clear()
+
+        new_files: list[FilesT] = []
+
+        for path in self.scan_local_dir():
+            new_file: FilesT = self.attach_from_path(path)
+
+            if not clear_all:
+                for file in self.get_files_by_path(path):
+                    logger.debug(f"removing: {file}")
+                    self.files.remove(file)
+
+            new_files.append(new_file)
+
+        return new_files
+
+    def mirror_from_path(self, source: Path) -> list[FilesT]:
+        """Copy external file or files from dir into local_root and registry"""
+
+        return self.sync_from_path(source, mode="mirror")
+
+    def absorb_from_path(self, source: Path) -> list[FilesT]:
+        """Move external file or files from dir into local_root and registry"""
+
+        return self.sync_from_path(source, mode="absorb")
+
+    def sync_from_path(
+        self, source: Path, mode: Literal["absorb", "mirror"] = "mirror"
+    ) -> list[FilesT]:
+        """Mirror or Absorb external file source, dispach file or dir"""
+
+        if source.is_dir():
+            temp_registry: FileRegistry = FileRegistry(local_root=source)
+            temp_registry.attach_new_files_from_local_folder()
+            return self.sync_registry(
+                external_registry=temp_registry, mode=mode
+            )
+        if source.is_file():
+            return [self._fetch_external_file(source, mode=mode)]
+
+        logger.error(f"Empty {mode.capitalize()}! Invalid path: {source=}")
+        return []
+
+    def sync_registry(
+        self,
+        external_registry: Self,
+        mode: Literal["absorb", "mirror"] = "mirror",
+    ) -> list[FilesT]:
+        """Attach data from external registry"""
+
+        new_files: list[FilesT] = []
+
+        for file in external_registry.files:
+            source: Path = external_registry.local_root / file.local_path
+
+            file: FilesT = self._fetch_external_file(
+                source, new_local_path=file.local_path, mode=mode
+            )
+
+            self.attach(file)
+            new_files.append(file)
+
+        return new_files
+
+    def _fetch_external_file(
+        self,
+        source: Path,
+        new_local_path: Path | str | None = None,
+        mode: Literal["absorb", "mirror"] = "mirror",
+    ) -> FilesT:
+        """Copy or Move file into local_root and load new File into registry"""
+
+        new_local_path: Path | str = new_local_path or source.name  # PARAM:
+        target: Path = self.local_root / new_local_path
+
+        # LATER: flag for:
+        # - ignore if target exists
+        # - override target
+        # now is just create new file with incremented unique of target
+
+        match mode:
+            case "mirror":
+                unique_target: Path = PathGuard.copy(source, target)
+            case "absorb":
+                unique_target: Path = PathGuard.rotate(source, target)
+
+        if target != unique_target:
+            logger.warning(f"Incremented source to {unique_target.name=}")
+
+        file: FilesT = self.attach_from_path(path=unique_target)
+        logger.debug(f"{mode}ed: {file.description}")
+
+        return self.attach_from_path(unique_target)
+
+    def scan_local_dir(self) -> list[Path]:
+        scanner: FolderScanner = self.get_scanner()
+        return scanner.scan_local_files(get_absolute_paths=False)
+
+    def get_scanner(self) -> FolderScanner:
+        if not self._scanner:
+            return self.setup_scanner(path_filter=ProjectFilter())
+        return self._scanner
+
+    def setup_scanner(self, path_filter: PathFilter) -> FolderScanner:
+        self._scanner = FolderScanner(self.local_root, path_filter=path_filter)
+        return self._scanner
+
 
 class SstFileRegistry(FileRegistry[SstFile]):
     """Registry with SstFile as constructor for new files"""
 
     def _create_local_file(self, path: Path) -> SstFile:
-        if path.is_absolute():
-            path: Path = self.relative_to_local_root(path)
-        logger.debug(f"create new file: {path=}")
         return SstFile(local_path=path)
 
 
 class FileSystemManager:
     """Manager for operations on Local Files"""
-
-    @staticmethod
-    def registry_sync(source: FileRegistry, target: FileRegistry):
-        """Attach file from source to target"""  # TODO: how handle overlap?
-
-        # TASK:
-        # - copy mode
-        # - move mode
-        # For existing:
-        # - for now, ignore
-        # - later mode:forced_override
-        # - later check for changes in file, the override
-        # probably needs some param set
-        # - as well SelectTree inbetween
-        # Handle overrides
-        # - copy mainly override
-        # - move mainly new unique path
-        # -> depends on files itself
-
-        import sys  # HACK: for temporary avaliability in Python3.13
-
-        if sys.version_info < (3, 14, 0):
-            import shutil
-
-            def move_func(source: Path, target: Path):
-                shutil.copy(source, target)
-        else:
-
-            def move_func(source: Path, target: Path):
-                source.copy(target)
-
-        existing_local_paths: set[Path] = target.local_file_paths
-        new_files: list[SstFile] = []
-
-        for file in source.files:
-            if file in existing_local_paths:
-                logger.warning(f"ignoring {file.description}")
-            else:
-                source_file: Path = PathGuard.file(
-                    source.local_root / file.local_path
-                )
-                target_file: Path = PathGuard.unique(
-                    target.local_root / file.local_path, ensure_parent=True
-                )
-
-                move_func(source_file, target_file)
-                target._attach(file)
-                logger.info(f"moved: {file.description}")
-                new_files.append(file)
-
-        return new_files
