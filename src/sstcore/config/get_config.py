@@ -11,7 +11,7 @@ def get_config() -> ConfigManager:
     global _config_instance
 
     if _config_instance is None:
-        logger.info("Setup Sachmis ConfigManager...")
+        logger.info("Setup ConfigManager...")
 
         _config_instance = ConfigManager(
             settings_cls=SstSettings,
