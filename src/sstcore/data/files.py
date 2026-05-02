@@ -1,17 +1,22 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import singledispatchmethod
 from pathlib import Path
-from typing import Literal, Self, Any
+from typing import Any, Self
 
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
+from sstcore.utils.simple_tree import build_path_tree
+
 from ..config import ConfigManager, get_config
-from ..exceptions import RegistrySyncError
+from ..exceptions import NotImplementedDispachError, RegistrySyncError
 from ..utils import (
     FilterSet,
     FolderScanner,
     PathFilter,
     PathGuard,
+    PathTreeNode,
     ProjectFilter,
 )
 
@@ -135,6 +140,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         ]
 
     def get_files_by_path(self, path: Path) -> list[FilesT]:
+        # LATER: get_file_by_path that handles case 0,1,_ already here?
         local_path: Path = self.relative_to_local_root(path)
         return [file for file in self.files if file.local_path == local_path]
 
@@ -268,16 +274,6 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
         return new_files
 
-    def mirror_from_path(self, source: Path) -> list[FilesT]:
-        """Copy external file or files from dir into local_root and registry"""
-
-        return self.sync_from_path(source, mode="mirror")
-
-    def absorb_from_path(self, source: Path) -> list[FilesT]:
-        """Move external file or files from dir into local_root and registry"""
-
-        return self.sync_from_path(source, mode="absorb")
-
     def clone_empty_registry(
         self,
         local_root,
@@ -295,39 +291,92 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         )
         return type(self)(local_root=local_root, **cloned_data)
 
-    def sync_from_path(
-        self, source: Path, mode: Literal["absorb", "mirror"] = "mirror"
+    def mirror_from_path(self, source: Path | list[Path]) -> list[FilesT]:
+        """Copy external files from into local_root and add to registry"""
+        return self._sync_external_files(
+            source, transfer_strategy=PathGuard.copy
+        )
+
+    def absorb_from_path(self, source: Path | list[Path]) -> list[FilesT]:
+        """Move external files from into local_root and add to registry"""
+        return self._sync_external_files(
+            source, transfer_strategy=PathGuard.rotate
+        )
+
+    def mirror_from_registry(self, external_registry: Self) -> list[FilesT]:
+        """Copy files of external registry into local_root and add to registry"""
+        return self._sync_registry(
+            external_registry, transfer_strategy=PathGuard.copy
+        )
+
+    def absorb_from_registry(self, external_registry: Self) -> list[FilesT]:
+        """Move files of external registry into local_root and add to registry"""
+        return self._sync_registry(
+            external_registry, transfer_strategy=PathGuard.rotate
+        )
+
+    @singledispatchmethod
+    def _sync_external_files(
+        self,
+        source: Path | list[Path],
+        transfer_strategy: Callable[[Path, Path], Path],
+    ) -> list[FilesT]:
+        """Mirror or Absorb external file source, dispach file or dir"""
+        raise NotImplementedDispachError(source, transfer_strategy)
+
+    @_sync_external_files.register
+    def _(
+        self, source: list, transfer_strategy: Callable[[Path, Path], Path]
+    ) -> list[FilesT]:
+        """Concat multiple file sources"""
+        return [
+            file
+            for path in source
+            for file in self._sync_external_files(
+                source=path, transfer_strategy=transfer_strategy
+            )
+        ]
+
+    @_sync_external_files.register
+    def _(
+        self, source: Path, transfer_strategy: Callable[[Path, Path], Path]
     ) -> list[FilesT]:
         """Mirror or Absorb external file source, dispach file or dir"""
 
         if source.is_dir():
             temp_registry: Self = self.clone_empty_registry(local_root=source)
             temp_registry.attach_new_files_from_local_folder()
-            return self.sync_registry(
-                external_registry=temp_registry, mode=mode
+            return self._sync_registry(
+                external_registry=temp_registry,
+                transfer_strategy=transfer_strategy,
             )
         if source.is_file():
-            return [self._fetch_external_file(source, mode=mode)]
+            return [
+                self._fetch_external_file(
+                    source, transfer_strategy=transfer_strategy
+                )
+            ]
 
-        logger.error(f"Empty {mode.capitalize()}! Invalid path: {source=}")
+        action: str = getattr(transfer_strategy, "__name__", "Task")
+        logger.error(f"Nothing to do for {action}! Invalid path: {source=}")
         return []
 
-    def sync_registry(
+    def _sync_registry(
         self,
         external_registry: Self,
-        mode: Literal["absorb", "mirror"] = "mirror",
+        transfer_strategy: Callable[[Path, Path], Path],
     ) -> list[FilesT]:
         """Attach data from external registry"""
-
         new_files: list[FilesT] = []
 
         for file in external_registry.files:
             source: Path = external_registry.local_root / file.local_path
 
             file: FilesT = self._fetch_external_file(
-                source, new_local_path=file.local_path, mode=mode
+                source,
+                new_local_path=file.local_path,
+                transfer_strategy=transfer_strategy,
             )
-
             self.attach(file)
             new_files.append(file)
 
@@ -336,32 +385,28 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def _fetch_external_file(
         self,
         source: Path,
+        transfer_strategy: Callable[[Path, Path], Path],
         new_local_path: Path | str | None = None,
-        mode: Literal["absorb", "mirror"] = "mirror",
     ) -> FilesT:
         """Copy or Move file into local_root and load new File into registry"""
-
-        new_local_path: Path | str = new_local_path or source.name  # PARAM:
-        target: Path = self.local_root / new_local_path
-
         # LATER: flag for:
         # - ignore if target exists
         # - override target
         # now is just create new file with incremented unique of target
+        new_local_path: Path | str = new_local_path or source.name  # PARAM:
 
-        match mode:
-            case "mirror":
-                unique_target: Path = PathGuard.copy(source, target)
-            case "absorb":
-                unique_target: Path = PathGuard.rotate(source, target)
+        target: Path = self.local_root / new_local_path
+        unique_target: Path = transfer_strategy(source, target)
 
         if target != unique_target:
             logger.warning(f"Incremented source to {unique_target.name=}")
 
         file: FilesT = self.attach_from_path(path=unique_target)
-        logger.debug(f"{mode}ed: {file.description}")
 
-        return self.attach_from_path(unique_target)
+        action: str = getattr(transfer_strategy, "__name__", "Task")
+        logger.debug(f"{action} completed: {file.description}")
+
+        return file
 
     def scan_local_dir(self) -> list[Path]:
         scanner: FolderScanner = self.get_scanner()
@@ -375,6 +420,23 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def setup_scanner(self, path_filter: PathFilter) -> FolderScanner:
         self._scanner = FolderScanner(self.local_root, path_filter=path_filter)
         return self._scanner
+
+    def tree(
+        self,  # LATER: create SstFileTree?
+        root_name: str | None = None,
+        file_filter: SstFileFilter | None = None,
+    ) -> PathTreeNode:
+        if root_name is None:
+            root_name: str = self.local_root.name
+        files: list[Path] = (
+            [file.local_path for file in self.get_files_by_filter(file_filter)]
+            if file_filter
+            else list(self.local_file_paths)
+        )
+        return build_path_tree(
+            paths=files,
+            root_name=root_name,
+        )
 
 
 class SstFileRegistry(FileRegistry[SstFile]):
