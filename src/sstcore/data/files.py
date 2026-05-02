@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal, Self, Any
 
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
@@ -203,16 +203,19 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         return file
 
     def _create_local_file(self, *_args, **_kwargs) -> FilesT:
-        raise NotImplementedError("Derive from class to set file constructor")
+        """Derive class and override this to set file constructor"""
+        msg = f"{self.__class__.__name__} has no implementation of _create_local_file!"
+        raise NotImplementedError(msg)
 
     def attach(self, file: FilesT, strict=True):
         """Check if File is valid local file and attach to Registry"""
 
         if not file.confirm_local_status(self.local_root):
             logger.error(f"Cannot attach file: {file.raw_description}")
-            if strict:
+            if not strict:
+                logger.warning(f"Ignoring: {file.raw_description}")
+            else:
                 raise RegistrySyncError("File missing on local disk")
-            logger.warning(f"Ignoring: {file.raw_description}")
 
         self._attach(file)
 
@@ -275,13 +278,30 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
         return self.sync_from_path(source, mode="absorb")
 
+    def clone_empty_registry(
+        self,
+        local_root,
+        exclude: set[str] | None = None,
+        add_to_exclude: set[str] | None = None,
+        exclude_unset=False,
+    ) -> Self:
+        """Get registry with same configuration, new local_root and No files"""
+        if exclude is None:
+            exclude: set[str] = {"files", "local_root"}
+        if add_to_exclude:
+            exclude: set[str] = exclude | add_to_exclude
+        cloned_data: dict[str, Any] = self.model_dump(
+            exclude=exclude, exclude_unset=exclude_unset, mode="python"
+        )
+        return type(self)(local_root=local_root, **cloned_data)
+
     def sync_from_path(
         self, source: Path, mode: Literal["absorb", "mirror"] = "mirror"
     ) -> list[FilesT]:
         """Mirror or Absorb external file source, dispach file or dir"""
 
         if source.is_dir():
-            temp_registry: FileRegistry = FileRegistry(local_root=source)
+            temp_registry: Self = self.clone_empty_registry(local_root=source)
             temp_registry.attach_new_files_from_local_folder()
             return self.sync_registry(
                 external_registry=temp_registry, mode=mode

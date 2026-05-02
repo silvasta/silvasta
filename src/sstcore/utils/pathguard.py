@@ -15,12 +15,10 @@ P = ParamSpec("P")
 class _TemporaryPythonVersionDispacher:
     """Intended to group commands by Python 3.14 or smaller"""
 
-    @abstractmethod
     @staticmethod
     def move(source: Path, target: Path):
         raise NotImplementedError
 
-    @abstractmethod
     @staticmethod
     def copy(source: Path, target: Path):
         raise NotImplementedError

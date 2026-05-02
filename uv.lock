@@ -240,7 +240,7 @@ wheels = [
 
 [[package]]
 name = "sstcore"
-version = "0.2.2b3"
+version = "0.2.3b2"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },

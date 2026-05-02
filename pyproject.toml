@@ -1,6 +1,6 @@
 [project]
 name = "sstcore"
-version = "0.2.3b1"
+version = "0.2.3b2"
 description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]

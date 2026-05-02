@@ -161,7 +161,7 @@ class ParsedName(BaseModel):
 
     @format_brackets.register
     @staticmethod
-    def _(target: list[str]) -> list[str]:
+    def _(target: list) -> list[str]:
         return [ParsedName._format_brackets(key) for key in target]
 
     @classmethod  # LATER: cls or staticmethod?
