@@ -3,9 +3,10 @@ from functools import wraps
 import typer
 from loguru import logger
 
-from ..config import ConfigManager
-from ..utils import printer, setup_logging
-from ..utils.log import LogParam
+from sstcore.config.manager import ConfigSetupParam
+
+from ..utils import Printer, printer
+from ..utils.log import LogParam, LogSetupResult, setup_logging
 
 
 def logger_catch(func):
@@ -23,9 +24,7 @@ def logger_catch(func):
     return wrapper
 
 
-def attach_callback(
-    app: typer.Typer, param: dict[str, str | LogParam] | None = None
-):
+def attach_callback(app: typer.Typer, param: ConfigSetupParam | None = None):
     """Register  single dispatcher callback to the app"""
 
     @app.callback()
@@ -48,21 +47,31 @@ def main_callback(
     ctx: typer.Context,
     verbose: bool,
     quiet: bool,
-    param: dict[str, str | LogParam] | None = None,
+    param: ConfigSetupParam | None = None,
 ):
     """Setup logging (data, etc...) for app executed as main app"""
 
-    printer.title(f"Welcome to {ctx.info_name}!")
+    Printer.project_name = param.project_name if param else ""
+    Printer.project_version = param.project_version if param else ""
 
+    printer.title(f"Welcome to {ctx.info_name}!")
     printer.title("Setup Config and Logging", style="cyan")
 
-    if param is None:
-        logger.warning("setup backup config manager for param")
-        config: ConfigManager = ConfigManager.default_setup()
-        param: dict[str, str | LogParam] = config.compose_setup_param()
-
+    log_param: LogParam | None = param.log if param else None
     level: str | None = "DEBUG" if verbose else None
-    setup_logging(log_level_override=level, quiet=quiet, param=param)
+
+    result: LogSetupResult = setup_logging(
+        log_level_override=level, quiet=quiet, param=log_param
+    )
+    if param:
+        printer.title(f"Config File: {param.config_file}", style="cyan")
+    else:
+        printer.warn("Config File: Not provided by 'ConfigSetupParam'")
+
+    printer.title(f"Log File: {result.log_file}", style="cyan")
+
+    if result.selected_param.print_log_param:
+        printer(result.selected_param)  # REMOVE: print: print_log_param = True
 
 
 def sub_callback(ctx: typer.Context):

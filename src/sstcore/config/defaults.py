@@ -69,6 +69,7 @@ class LogDefaults(BaseSettings):
     level: str = "INFO"
     retention: str = "1 month"
     rotation: str = "10 MB"
+    print_log_param: bool = False
 
 
 class SstDefaults(BaseSettings):

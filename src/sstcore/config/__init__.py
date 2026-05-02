@@ -1,6 +1,6 @@
 from .defaults import HomeSetup, SstDefaults
 from .get_config import get_config
-from .manager import ConfigManager, ConfigTypes
+from .manager import ConfigManager, ConfigSetupParam, ConfigTypes
 from .names import AutoParsedName, ParsedName, SstNames, StyledName
 from .paths import SstPaths
 from .settings import SstSettings
@@ -17,4 +17,5 @@ __all__: list = [
     "StyledName",
     "SstDefaults",
     "HomeSetup",
+    "ConfigSetupParam",
 ]

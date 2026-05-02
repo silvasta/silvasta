@@ -7,6 +7,7 @@ from typing import Self, cast
 
 from dotenv import load_dotenv
 from loguru import logger
+from pydantic import BaseModel
 
 from ..utils import Printer, day_count
 from ..utils.log import LogParam
@@ -16,6 +17,15 @@ from .paths import SstPaths
 from .settings import SstSettings
 
 type ConfigTypes = SstDefaults | SstNames | SstPaths | SstSettings
+
+
+class ConfigSetupParam(BaseModel):
+    """Used to hand-over trough CLI setup pipeline, app.main -> callback -> setup logging"""
+
+    config_file: str | Path
+    log: LogParam | None
+    project_name: str = ""
+    project_version: str = ""
 
 
 class ConfigManager[
@@ -206,17 +216,18 @@ class ConfigManager[
             raise ValueError("Value not found in os.env or with loaded .env")
         return var
 
-    # TODO: naming, cli_param?
-    def compose_setup_param(self) -> dict[str, str | LogParam]:
-        return {
-            # utils.setup_logging
-            "log": LogParam(
+    def compose_setup_param(self) -> ConfigSetupParam:
+        return ConfigSetupParam(
+            config_file=self.setting_file,
+            log=LogParam(
+                # LATER: move all names|defaults args to log param as part of defaults?
                 log_dir=self.names.log_dir,
                 log_filename=self.names.log_file,
                 log_level=self.defaults.log.level,
                 retention=self.defaults.log.retention,
                 rotation=self.defaults.log.rotation,
+                print_log_param=self.defaults.log.print_log_param,
             ),
-            # cli.setup
-            "config_file": str(self.setting_file),
-        }
+            project_name=self.project_name,
+            project_version=self.project_version,
+        )

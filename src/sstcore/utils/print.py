@@ -68,6 +68,18 @@ class Printer:
         finally:
             self.unmute()
 
+    @property
+    def name_and_version(self) -> str:
+        parts: list[str] = []
+        if self.project_name:
+            parts.append(self.project_name)
+        if self.project_version:
+            if self.project_version.startswith("v"):
+                parts.append(self.project_version)
+            else:
+                parts.append(f"v{self.project_version}")
+        return " ".join(parts) if parts else ""
+
     def md(self, text, *args, header: int = 0, **kwargs):
         """Markdown printer, modify first line with header section depth"""
 
@@ -85,7 +97,7 @@ class Printer:
         self(Markdown(f"{prefix}{text}"), *args, **kwargs)
 
     def panel(self, text: str, title=None, title_align="right", style="info"):
-        title: str = title or f"{self.project_name} v{self.project_version}"
+        title: str | None = title or self.name_and_version or None
         self(
             Panel(
                 renderable=text,

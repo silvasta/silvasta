@@ -4,23 +4,30 @@ from types import SimpleNamespace
 
 from loguru import logger
 from pydantic import BaseModel
-from rich.console import Console
-from rich.panel import Panel
 
 from ..utils.path import (
     pyproject_log_section,
     recursive_root,
 )
 
-_is_configured = False
-
 
 class LogParam(BaseModel):
-    log_dir: str
-    log_filename: str
-    log_level: str
-    retention: str
-    rotation: str
+    log_dir: str = "logs"
+    log_filename: str = "debug.log"
+    log_level: str = "INFO"
+    retention: str = "1 week"
+    rotation: str = "5 MB"
+    print_log_param: bool = False
+
+
+class LogSetupResult(BaseModel):
+    config_source: str
+    log_file: Path | None
+    selected_param: LogParam
+
+
+# Result cache to prevent multiple calls from re-run
+_setup_result: "LogSetupResult | None" = None
 
 
 def setup_logging(
@@ -28,21 +35,28 @@ def setup_logging(
     quiet: bool = False,
     log_file: Path | None = None,
     log_to_file: bool = True,
-    param: dict[str, str | LogParam] | None = None,
-    show_log_param: bool = False,
-):
-    """Setup Loguru with pyproject.toml, param=config.compose_setup_param()
+    param: LogParam | None = None,
+) -> LogSetupResult:
+    """Setup Loguru with pyproject.toml, param=config.compose_setup_param().log
     log_file path overrides project_root concat path and sets log_to_file=True,
     if all options are unused or fail, defaults are applied.
     """
 
-    global _is_configured
-    if _is_configured:
-        return logger
+    global _setup_result
+    if _setup_result is not None:
+        return _setup_result
 
-    param: dict[str, str | LogParam] = param or {}
+    # Priority 1
+    if log_param := _load_from_toml():
+        log_config_source = "toml_log_param"
 
-    log_param: LogParam = _select_log_param(param)
+    # Priority 2
+    elif log_param := param:
+        log_config_source = "config_log_param"
+
+    else:  # fallback
+        log_config_source = "default_log_param"
+        log_param = LogParam()
 
     if log_level_override is not None:
         log_param.log_level: str = log_level_override
@@ -55,30 +69,14 @@ def setup_logging(
             "<level>{level: <8}</level>",  # LATER: check size of level
             "<cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
         ]
-        format: str = " | ".join(format_parts)
         logger.add(
             sys.stderr,
             level=log_param.log_level,
-            format=format,
+            format=" | ".join(format_parts),
             colorize=True,
         )
 
     if log_file_path := _check_log_file_args(log_file, log_to_file, log_param):
-        param["log_file"] = str(log_file_path)
-
-        if show_log_param:
-            Console().print(param)
-
-        to_print: list = [
-            f"Config File: {param.get('config_file', 'lost...')}",
-            f"Log File: {param.get('log_file', 'lost...')}",
-        ]
-        title: str = param.get("log_param", "Log to File")  # ty:ignore
-
-        Console(style="yellow").print(
-            Panel("\n".join(to_print), title=title, title_align="right")
-        )
-
         logger.add(
             log_file_path,
             level="DEBUG",  # Always keep debug detail in files
@@ -93,9 +91,13 @@ def setup_logging(
     if not quiet and not log_to_file:
         print("Warning: Logging is completely disabled.")
 
-    _is_configured = True
+    _setup_result = LogSetupResult(
+        config_source=log_config_source,
+        log_file=log_file_path,
+        selected_param=log_param,
+    )
 
-    return logger
+    return _setup_result
 
 
 def _check_log_file_args(
@@ -126,32 +128,6 @@ def _check_log_file_args(
         log_file_path.touch()
 
     return log_file_path
-
-
-def _select_log_param(param: dict) -> LogParam:
-    """Try extract pyproject.toml, then config, then use defaults"""
-
-    if toml_log_param := _load_from_toml():
-        log_param_text = "toml_log_param"
-        log_param: LogParam = toml_log_param
-
-    elif param:
-        log_param_text = "config_log_param"
-        log_param: LogParam = param.pop("log")
-
-    else:
-        log_param_text = "default_log_param"
-        log_param = LogParam(
-            log_dir="logs",
-            log_filename="debug.log",
-            log_level="INFO",
-            retention="1 week",
-            rotation="5 MB",
-        )
-
-    param["log_param"] = f"Using {log_param_text}"
-
-    return log_param
 
 
 def _load_from_toml():
