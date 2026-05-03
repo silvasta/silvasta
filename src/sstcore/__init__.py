@@ -13,3 +13,13 @@ __all__: list[str] = [
     "PathGuard",
     "printer",
 ]
+
+# TODO: quick improvements
+# - ProjectFilter, default args -> config.json
+# - FolderScanner, methods and args, summaryfile->targetenum
+# - TreeSelector, remember past selection(s)
+
+# TASK:
+# - time management, UTC, maybe new lib
+# - exceptions
+# - DiffFileManager, together with hardlink
