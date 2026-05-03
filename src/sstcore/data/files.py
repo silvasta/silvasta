@@ -105,7 +105,9 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def has_duplicated_file_paths(self) -> bool:
         return len(self.local_file_paths) < len(self.files)
 
-    # LATER: has_incremented_file_paths
+    # TODO: here or in SstFile? (same for confirm_local_status)
+    # - maybe both in both directions? arg: path <-> File
+    # def has_incremented_file_paths(self):
 
     @property
     def absolute_file_paths(self) -> set[Path]:
@@ -140,7 +142,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         ]
 
     def get_files_by_path(self, path: Path) -> list[FilesT]:
-        # LATER: get_file_by_path that handles case 0,1,_ already here?
+        # LATER: get_file_by_path  that handles case 0,1,_ already here? (only -> FilesT)
         local_path: Path = self.relative_to_local_root(path)
         return [file for file in self.files if file.local_path == local_path]
 
@@ -393,6 +395,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         # - ignore if target exists
         # - override target
         # now is just create new file with incremented unique of target
+        # - maybe do this inside transfer_strategy?
         new_local_path: Path | str = new_local_path or source.name  # PARAM:
 
         target: Path = self.local_root / new_local_path

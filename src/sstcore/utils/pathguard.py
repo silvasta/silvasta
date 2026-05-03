@@ -3,7 +3,7 @@ import re
 from abc import abstractmethod
 from collections.abc import Callable
 from pathlib import Path
-from typing import ParamSpec, cast
+from typing import ParamSpec, cast, Any
 
 from loguru import logger
 
@@ -236,9 +236,9 @@ class PathGuard:
 
             return path
 
-        # prevent f.e. my_archive.tar_1.gz
+        # Same logic as in find_sequence, consider when adapt!
         suffixes: str = "".join(path.suffixes)
-        original_stem: str = (
+        original_stem: str = (  # prevent f.e. my_archive.tar_1.gz
             path.name[: -len(suffixes)] if suffixes else path.name
         )
 
@@ -312,9 +312,9 @@ class PathGuard:
         if not (parent := base.parent).exists():
             return []
 
-        # Same logic as in _get_unique_candidate
+        # Same logic as in _get_unique_candidate, consider when adapt!
         suffixes: str = "".join(base.suffixes)
-        original_stem: str = (
+        original_stem: str = (  # TODO: what if stem has already _NUM ?
             base.name[: -len(suffixes)] if suffixes else base.name
         )
 
@@ -330,37 +330,70 @@ class PathGuard:
         sequence: list[Path] = [
             item for item in parent.iterdir() if pattern.match(item.name)
         ]
+        # LATER: make sort strategy or flag, check as well how to use in PathGuard.prune
         sequence.sort(key=lambda p: p.stat().st_mtime, reverse=True)
 
         return sequence
 
     @staticmethod
-    def prune(base_target: Path | str, remaining: int = 5) -> list[Path]:
+    def prune(
+        base_target: Path | str, remaining: int = 5, trash=False
+    ) -> list[Path]:
         """Remove oldest files/dirs from sequence (name_NUM{.*}) until remaining"""
 
-        candidates: list[Path] = PathGuard.find_sequence(base_target)
-
-        if len(candidates) <= remaining:
+        if remaining >= len(sequence := PathGuard.find_sequence(base_target)):
             return []
 
-        to_delete = candidates[remaining:]
-        deleted_paths = []
+        paths_to_delete: list[Path] = sequence[remaining:]
 
-        for path in to_delete:
-            try:
-                if path.is_dir():
-                    import shutil  # LATER: upgrade with pathlib?
+        _prune: Callable[[Path], bool] = (
+            PathGuard.trash if trash else PathGuard.remove
+        )
+        return [path for path in paths_to_delete if _prune(path)]
 
-                    shutil.rmtree(path)
-                    logger.info(f"Pruned old dir: {path.name}")
-                else:
-                    path.unlink()
-                    logger.info(f"Pruned old file: {path.name}")
-                deleted_paths.append(path)
-            except OSError as e:
-                logger.error(f"Failed to prune {path}: {e}")
+    @staticmethod
+    def remove(target: Path | str) -> bool:
+        """Remove file or folder at target location"""
 
-        return deleted_paths
+        def _remove(path: Path):
+            if path.is_dir():
+                import shutil  # LATER: upgrade with pathlib?
+
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+
+        return PathGuard._clear_file_or_folder(target, clear_strategy=_remove)
+
+    @staticmethod
+    def trash(target: Path | str) -> bool:
+        """Move file or folder at target location to system trash"""
+
+        def _trash(path: Path):
+            from send2trash import send2trash
+
+            send2trash(path)
+
+        return PathGuard._clear_file_or_folder(target, clear_strategy=_trash)
+
+    @staticmethod
+    def _clear_file_or_folder(
+        target: Path | str, clear_strategy: Callable[[Path], Any]
+    ) -> bool:
+        """Handle args, logs and errors for deleting files or folders"""
+        _clear: str = getattr(clear_strategy, "__name__", "_clear")
+        clear: str = _clear.strip("_").capitalize()
+        try:
+            target: Path = PathGuard._ensure_input(target, must_exists=True)
+            clear_strategy(target)
+            logger.success(f"{clear}: {target}")
+            return True
+
+        except FileNotFoundError:
+            logger.error(f"Nothing to {clear}: missing {target=}")
+        except OSError as e:
+            logger.error(f"OSError for {clear}: {target=}\n{e}")
+        return False
 
     @staticmethod
     def rotate(
@@ -407,6 +440,49 @@ class PathGuard:
 
         logger.debug(
             f"Copied: {PathGuard.relative_string(source, unique_target)}"
+        )
+        return unique_target
+
+    @staticmethod
+    def hardlink(source: Path | str, target: Path | str) -> Path:
+        """Create a hardlink of source to target, handles unique naming collisions"""
+
+        source: Path = PathGuard._ensure_input(source, must_exists=True)
+        target: Path = PathGuard._ensure_input(target)
+
+        unique_target: Path = PathGuard._get_unique_candidate(
+            target, ensure_parent=True
+        )
+
+        try:
+            unique_target.hardlink_to(source)
+            logger.debug(
+                f"Hardlinked: {PathGuard.relative_string(source, unique_target)}"
+            )
+        except OSError as e:
+            logger.error("Hardlink failed! Source and Target on same drive?")
+            logger.error(f"{source=}, {target=}")
+            raise e
+
+        return unique_target
+
+    @staticmethod
+    def symlink(source: Path | str, target: Path | str) -> Path:
+        """Create absolute symlink of source to target, handles unique naming collisions"""
+
+        # Important: Resolve source to absolute path, link breaks otherwise
+        source: Path = PathGuard._ensure_input(
+            source, must_exists=True, resolve=True
+        )
+        target: Path = PathGuard._ensure_input(target)
+
+        unique_target: Path = PathGuard._get_unique_candidate(
+            target, ensure_parent=True
+        )
+
+        unique_target.symlink_to(source)
+        logger.debug(
+            f"Symlinked: {PathGuard.relative_string(source, unique_target)}"
         )
         return unique_target
 
