@@ -1,5 +1,5 @@
 from .base import (
-    NotImplementedDispachError,
+    NotImplementedDispatchError,
     RegistrySyncError,
     SstError,
 )
@@ -7,5 +7,5 @@ from .base import (
 __all__: list[str] = [
     "SstError",
     "RegistrySyncError",
-    "NotImplementedDispachError",
+    "NotImplementedDispatchError",
 ]

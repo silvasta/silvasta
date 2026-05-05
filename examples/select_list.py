@@ -8,7 +8,7 @@ app = typer.Typer()
 
 @app.command()
 def process_list(
-    multi_selct: bool = typer.Option(
+    multi_select: bool = typer.Option(
         False, "--multi", "-m", help="Select multiple items"
     ),
     example: int = typer.Option(
@@ -25,7 +25,7 @@ def process_list(
         case _:
             options = {"id1": "Alpha Database", "id2": "Beta Database"}
 
-    tui = ListSelectorApp(items=options, multi_select=multi_selct)
+    tui = ListSelectorApp(items=options, multi_select=multi_select)
     selected_items: list | None = tui.run()
 
     if not selected_items:

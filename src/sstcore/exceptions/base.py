@@ -9,7 +9,7 @@ class RegistrySyncError(FileNotFoundError, SstError):
     """Raised when the FileRegistry state does not match the physical local disk."""
 
 
-class NotImplementedDispachError(NotImplementedError, SstError):
+class NotImplementedDispatchError(NotImplementedError, SstError):
     """Raised when singledispatchmethod don't provide target type"""
 
     def __init__(self, *args: Any):

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, PrivateAttr
 from sstcore.utils.simple_tree import build_path_tree
 
 from ..config import ConfigManager, get_config
-from ..exceptions import NotImplementedDispachError, RegistrySyncError
+from ..exceptions import NotImplementedDispatchError, RegistrySyncError
 from ..utils import (
     FilterSet,
     FolderScanner,
@@ -36,7 +36,7 @@ class SstFile(BaseModel):
 
     @property
     def description(self) -> str:
-        """Extensive description formated with Rich Color String"""
+        """Extensive description formatted with Rich Color String"""
         config: ConfigManager = get_config()
         return config.names.sstfile_dates.styled(self._description)
 
@@ -323,8 +323,8 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         source: Path | list[Path],
         transfer_strategy: Callable[[Path, Path], Path],
     ) -> list[FilesT]:
-        """Mirror or Absorb external file source, dispach file or dir"""
-        raise NotImplementedDispachError(source, transfer_strategy)
+        """Mirror or Absorb external file source, dispatch file or dir"""
+        raise NotImplementedDispatchError(source, transfer_strategy)
 
     @_sync_external_files.register
     def _(
@@ -343,7 +343,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def _(
         self, source: Path, transfer_strategy: Callable[[Path, Path], Path]
     ) -> list[FilesT]:
-        """Mirror or Absorb external file source, dispach file or dir"""
+        """Mirror or Absorb external file source, dispatch file or dir"""
 
         if source.is_dir():
             temp_registry: Self = self.clone_empty_registry(local_root=source)

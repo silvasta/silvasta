@@ -6,12 +6,12 @@ from typing import Any, ParamSpec, cast
 
 from loguru import logger
 
-from sstcore.exceptions import NotImplementedDispachError
+from sstcore.exceptions import NotImplementedDispatchError
 
 P = ParamSpec("P")
 
 
-class _TemporaryPythonVersionDispacher:
+class _TemporaryPythonVersionDispatcher:
     """Intended to group commands by Python 3.14 or smaller"""
 
     @staticmethod
@@ -23,10 +23,10 @@ class _TemporaryPythonVersionDispacher:
         raise NotImplementedError
 
 
-_fs_operator: _TemporaryPythonVersionDispacher | None = None
+_fs_operator: _TemporaryPythonVersionDispatcher | None = None
 
 
-def _get_fs_operator() -> _TemporaryPythonVersionDispacher:
+def _get_fs_operator() -> _TemporaryPythonVersionDispatcher:
     global _fs_operator
     if _fs_operator is None:
         import sys
@@ -36,11 +36,11 @@ def _get_fs_operator() -> _TemporaryPythonVersionDispacher:
     return _fs_operator
 
 
-def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispacher:
+def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispatcher:
     if version < (3, 14, 0):
         import shutil
 
-        class _PythonOld(_TemporaryPythonVersionDispacher):
+        class _PythonOld(_TemporaryPythonVersionDispatcher):
             @staticmethod
             def move(source: Path, target: Path):
                 shutil.move(source, target)
@@ -52,7 +52,7 @@ def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispacher:
         return _PythonOld()
     else:
 
-        class _Python314plus(_TemporaryPythonVersionDispacher):
+        class _Python314plus(_TemporaryPythonVersionDispatcher):
             @staticmethod
             def move(source: Path, target: Path):
                 source.move(target)  # ty:ignore
@@ -564,7 +564,7 @@ class PathGuard:
     @functools.singledispatch
     @staticmethod
     def split_read_print_path(target, local_root: Path | None = None):
-        raise NotImplementedDispachError(target, local_root)
+        raise NotImplementedDispatchError(target, local_root)
 
     @split_read_print_path.register
     @staticmethod

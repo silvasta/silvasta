@@ -16,7 +16,7 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings
 
-from ..exceptions import NotImplementedDispachError
+from ..exceptions import NotImplementedDispatchError
 from ..utils.parse import PatternNamer
 
 
@@ -54,13 +54,13 @@ class ParsedName(BaseModel):
             str, str | datetime  # maybe | Path ?
         ],
     ) -> str:
-        """Final cleanup of string befor extracting keys with PatternNamer"""
+        """Final cleanup of string before extracting keys with PatternNamer"""
 
         clean_target: dict[str, str] = {}
 
         for key, val in safe_target.items():
             if isinstance(val, datetime):
-                val = f"{val:%Y-%m-%d_%H-%M-%S}"  # MOVE: how to apply? seperate function, attribute?
+                val = f"{val:%Y-%m-%d_%H-%M-%S}"  # MOVE: how to apply? separate function, attribute?
 
             clean_target[key] = val
 
@@ -73,7 +73,7 @@ class ParsedName(BaseModel):
         return self._namer.format(**clean_target)
 
     def backwards_parsing(self, formatted_string: str) -> dict:
-        """Final cleanup of string befor extracting pattern with PatternNamer"""
+        """Final cleanup of string before extracting pattern with PatternNamer"""
 
         # Strip PathGuard increments (e.g., "_1", "_42") before the extension
         clean_string: str = re.sub(r"_\d+(?=\.|$)", "", formatted_string)
@@ -82,7 +82,7 @@ class ParsedName(BaseModel):
 
     @singledispatchmethod
     def __call__(self, target):
-        raise NotImplementedDispachError(target)
+        raise NotImplementedDispatchError(target)
 
     @__call__.register
     def _(self, target: dict) -> str:
@@ -148,7 +148,7 @@ class ParsedName(BaseModel):
     @singledispatchmethod
     @staticmethod
     def format_brackets(target: str | list[str]):  # -> str | list[str]:
-        raise NotImplementedDispachError(target)
+        raise NotImplementedDispatchError(target)
 
     @staticmethod
     def _format_brackets(key: str) -> str:
@@ -250,7 +250,7 @@ class StyledName(ParsedName):
     def parse_style(
         cls, style_pattern: str, keys: list[str], styles: list[str]
     ) -> Self:
-        """Use transfromed style_pattern as base pattern for regex parser setup"""
+        """Use transformed style_pattern as base pattern for regex parser setup"""
 
         pattern: str = re.sub(r"\[.*?\]", "", style_pattern)
 

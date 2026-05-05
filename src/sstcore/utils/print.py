@@ -147,7 +147,7 @@ class Printer:
             self.title(header)
 
         lines: list[str] = [str(line) for line in lines]
-        # LATER: other formating to apply?
+        # LATER: other formatting to apply?
 
         self.panel(text="\n".join(lines), title=title, style=style)
 

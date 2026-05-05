@@ -66,7 +66,7 @@ class ListSelectorApp(App[list]):
     def on_mount(self) -> None:
         mode_text = "Multi-Select" if self.multi_select else "Single-Select"
         self.title = f"Select Item(s) [{mode_text}]"
-        # self.sub_title = "j/k: Navigate | Space: Toggle | Enter: Submit" # REMOVE: after test of autmatic labels
+        # self.sub_title = "j/k: Navigate | Space: Toggle | Enter: Submit" # REMOVE: after test of automatic labels
 
     # --- Actions ---
     def on_list_view_selected(self, event: ListView.Selected) -> None:
