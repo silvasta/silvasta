@@ -13,13 +13,16 @@ from .simple_tree import PathTreeNode, build_path_tree
 
 
 class TargetFileType(StrEnum):
+    # NEXT: TargetFileType -> SummaryFile
+    # - collect everything independen of scan
+    # - build easy execution in scan
     MD = auto()
     XML = auto()
     TXT = auto()
 
     def start_part(self) -> str:
         return {
-            TargetFileType.MD: "# Code Base",
+            TargetFileType.MD: "## Code Base",
             TargetFileType.XML: "<codebase>",
             TargetFileType.TXT: "",
         }[self]
@@ -43,12 +46,12 @@ class TargetFileType(StrEnum):
     @staticmethod
     def format_for_md(path: Path, content: str) -> str:
         match path.suffix:
-            case ".py":
+            case ".py" | ".pyi":
                 return f"```python\n# {path}\n{content}\n```"
             case ".rs":
                 return f"```rust\n// {path}\n{content}\n```"
             case _:
-                return f"{path}\n```\n{content}\n```"
+                return f"`{path}`\n```\n{content}\n```"
 
 
 @dataclass
@@ -104,6 +107,7 @@ class FolderScanner:
                 yield item
 
     def filesystem_tree(self) -> PathTreeNode:
+        # TODO: Explain
         return build_path_tree(
             paths=self.scan_local_files(), root_name=self.scan_root.name
         )
@@ -112,20 +116,23 @@ class FolderScanner:
     def tree(
         cls, root: Path, path_filter: FilterSet | None = None
     ) -> PathTreeNode:
+        # TODO: Explain
         return build_path_tree(
             paths=list(cls.walk(root=root, path_filter=path_filter)),
             root_name=root.name,
         )
 
-    # IMPORTANT: make easy function with input: list[Path]
+    # LATER: make easy function with input: list[Path]
     # - recognize target from output_file
-    # - as much as possible in 1 step
+    # - combine as much as possible in 1 step
+    # TASK: arg strategy
+    # - avoid TargetFileType, try from output_file
 
     @staticmethod
-    def assemble_summary_file(
+    def assemble_summary_file(  # MOVE: to TargetFileType=SummaryFile
         paths: list[Path],
-        target: TargetFileType,
-        scan_root: Path | None = None,
+        target: TargetFileType,  # TODO: str? then try parse?
+        scan_root: Path | None = None,  # singledispach?
     ) -> str:
 
         parts: list[str] = [target.start_part()]
@@ -144,6 +151,18 @@ class FolderScanner:
         parts += [target.end_part()]
 
         return "\n\n".join(parts) if parts else "\n\n"
+
+    @staticmethod
+    def _summary_file(
+        local_root: Path, files: list[Path], output_file: Path
+    ) -> Path:
+        # REMOVE:  after unify with outhers
+        target: TargetFileType = FolderScanner.target_from_path(output_file)
+        data: str = FolderScanner.assemble_summary_file(
+            paths=files, scan_root=local_root, target=target
+        )
+        (summary_file := PathGuard.unique(output_file)).write_text(data)
+        return summary_file
 
     def create_summary_file(
         self,
@@ -165,6 +184,7 @@ class FolderScanner:
             files, target, scan_root=self.scan_root
         )
 
+        # IMPORTANT: access this easy! simplify rest
         PathGuard.unique(output_file).write_text(data)
 
     @classmethod
@@ -173,7 +193,6 @@ class FolderScanner:
 
     @classmethod
     def target_from_path(cls, output_file: Path) -> TargetFileType:
-        # MERGE: into create/assemble file
         return TargetFileType(output_file.suffix.strip("."))
 
     def write_summary_with_name(self, filename: str):

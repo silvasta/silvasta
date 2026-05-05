@@ -67,7 +67,7 @@ def tree_dir_relative():
 
 def write_summary(print_debug_logs=False):
 
-    output_file: str = get_config().paths.summary_file()
+    output_name: str = get_config().paths.summary_file().name
 
     scanner: FolderScanner = FolderScanner(
         scan_root=SCAN_ROOT,
@@ -79,7 +79,7 @@ def write_summary(print_debug_logs=False):
             },
         ),
     )
-    scanner.write_summary_with_name(output_file)
+    scanner.write_summary_with_name(output_name)
 
 
 if __name__ == "__main__":

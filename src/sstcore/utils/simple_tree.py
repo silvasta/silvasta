@@ -101,7 +101,7 @@ def recursive_tree(
     return PathTreeNode(
         name=current_node_name,
         path=current_node_path,
-        branches=branches_nodes,
+        branches=branches_nodes,  # TODO: sort!
     )
 
 
