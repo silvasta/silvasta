@@ -1,6 +1,6 @@
 [project]
 name = "sstcore"
-version = "0.2.4b1"
+version = "0.2.4b2"
 description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
@@ -29,6 +29,9 @@ dependencies = [
   "rich>=14.3.3",
   "send2trash>=2.1.0",
 ]
+
+[dependency-groups]
+dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.34"]
 
 [project.urls]
 Repository = "https://github.com/silvasta/silvasta"
@@ -63,7 +66,7 @@ select = [
   "F",  # F: Pyflakes
   "I",  # I: isort (import sorting)
   "UP", # UP: pyupgrade (modernize syntax)
-  "B",  # B: flake8-bugbear (finds likely bugs) 
+  "B",  # B: flake8-bugbear (finds likely bugs)
   "N",  # N: pep8-naming
 ]
 ignore = [

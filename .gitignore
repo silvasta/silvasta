@@ -9,7 +9,7 @@ wheels/
 # Virtual Environments
 .venv
 
-# Input and Output Data 
+# Input and Output Data
 /data
 logs
 plots
