@@ -1,9 +1,8 @@
 import functools
 import re
-from abc import abstractmethod
 from collections.abc import Callable
 from pathlib import Path
-from typing import ParamSpec, cast, Any
+from typing import Any, ParamSpec, cast
 
 from loguru import logger
 
@@ -28,7 +27,6 @@ _fs_operator: _TemporaryPythonVersionDispacher | None = None
 
 
 def _get_fs_operator() -> _TemporaryPythonVersionDispacher:
-
     global _fs_operator
     if _fs_operator is None:
         import sys
@@ -39,17 +37,14 @@ def _get_fs_operator() -> _TemporaryPythonVersionDispacher:
 
 
 def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispacher:
-
     if version < (3, 14, 0):
         import shutil
 
         class _PythonOld(_TemporaryPythonVersionDispacher):
-            @abstractmethod
             @staticmethod
             def move(source: Path, target: Path):
                 shutil.move(source, target)
 
-            @abstractmethod
             @staticmethod
             def copy(source: Path, target: Path):
                 shutil.copy(source, target)
@@ -58,12 +53,10 @@ def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispacher:
     else:
 
         class _Python314plus(_TemporaryPythonVersionDispacher):
-            @abstractmethod
             @staticmethod
             def move(source: Path, target: Path):
                 source.move(target)  # ty:ignore
 
-            @abstractmethod
             @staticmethod
             def copy(source: Path, target: Path):
                 source.copy(target)  # ty:ignore
@@ -249,11 +242,10 @@ class PathGuard:
             new_name = f"{original_stem}_{counter}{suffixes}"
             candidate: Path = parent / new_name
             if not candidate.exists():
-                logger.info(f"New unique path: {candidate}")
                 break
             counter += 1
 
-        logger.info(f"Incremented path by {counter}: {candidate}")
+        logger.info(f"Incremented: {candidate.name}")
 
         return candidate
 
@@ -412,7 +404,7 @@ class PathGuard:
             target, ensure_parent=True
         )
         _get_fs_operator().move(source, unique_target)
-        logger.debug(
+        logger.info(
             f"Rotated: {PathGuard.relative_string(source, unique_target)}"
         )
 
@@ -587,7 +579,6 @@ class PathGuard:
     @split_read_print_path.register
     @staticmethod
     def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
-
         if target.is_absolute():
             read_path: Path = target
             print_path: Path = (
