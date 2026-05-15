@@ -1,9 +1,11 @@
 from contextlib import contextmanager
 from enum import Enum, auto
+from pathlib import Path
 
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.table import Table
 from rich.theme import Theme
 from rich.tree import Tree
 
@@ -177,6 +179,52 @@ class Printer:
             self(
                 f" Style Preview: [ {style} ] ", style=style, justify="center"
             )
+
+    def path_exists_table(self, paths: list[Path], title=None, header="Path"):
+        """Check if Paths exist and visualize in Table"""
+
+        table = Table(title=title)
+        table.add_column("Status", justify="center")
+        table.add_column(header, style="cyan")
+
+        for path in paths:
+            status: str = "✅" if path.exists() else ""
+            table.add_row(status, str(path))
+
+        self(table)
+
+    def dict_table(
+        self,
+        target: dict,
+        header="Dict Inspection",
+        key_type=True,
+        value_type=True,
+    ):
+        """Debug Dict"""
+
+        if header is not None:  # Mute header with header=None
+            self.title(header, title="Dict Inspection", style="green")
+
+        table = Table(style="cyan")
+
+        table.add_column("Key", justify="left", style="green")
+        if key_type:
+            table.add_column("Type Key", justify="center", style="magenta")
+
+        table.add_column("Value", style="blue", justify="left")
+        if value_type:
+            table.add_column("Type Value", style="magenta")
+
+        for key, value in target.items():
+            to_print: list[key] = [str(key)]
+            if key_type:
+                to_print.append(str(type(key)))
+            to_print.append(str(value))
+            if value_type:
+                to_print.append(str(type(value)))
+            table.add_row(*to_print)
+
+        self(table)
 
     def tree_graph(
         self,
