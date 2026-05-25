@@ -1,4 +1,7 @@
+import filecmp
+import hashlib
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime
 from functools import singledispatchmethod
 from pathlib import Path
@@ -19,6 +22,8 @@ from ..utils import (
     PathTreeNode,
     ProjectFilter,
 )
+
+# IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
 
 
 class SstFile(BaseModel):
@@ -63,6 +68,11 @@ class SstFile(BaseModel):
         self.last_updated: datetime = datetime.now(UTC)
         return self.last_updated
 
+    @property
+    def added_at(self) -> str:
+        # LATER: pendulum,arrow,dateutil or custom + timestamp_format back to Defaults
+        return self.first_tracked.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+
     def confirm_local_status(self, local_dir: Path) -> bool:
         file_path: Path = local_dir / self.local_path
 
@@ -76,7 +86,28 @@ class SstFile(BaseModel):
 
         return True
 
-    # LATER: check for changes, hash, etc
+    def _is_identical_to(self, other_path: Path, local_dir: Path) -> bool:
+        """UNTESTED: Fast structural comparison without reading full contents into memory"""
+        my_path = local_dir / self.local_path
+        if not my_path.exists() or not other_path.exists():
+            return False
+
+        # Shallow=False forces content comparison if stat signatures match
+        return filecmp.cmp(my_path, other_path, shallow=False)
+
+    # TASK: hash for the files itself
+
+    def _compute_hash(self, local_dir: Path, algorithm: str = "sha256") -> str:
+        """UNTESTED: Compute file hash efficiently via chunking (useful for databases/remotes)"""
+        my_path = local_dir / self.local_path
+        if not my_path.is_file():
+            return ""
+
+        hasher = hashlib.new(algorithm)
+        with my_path.open("rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hasher.update(chunk)
+        return hasher.hexdigest()
 
 
 class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
@@ -90,8 +121,22 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     local_root: Path
     _scanner: FolderScanner | None = PrivateAttr(default=None)
+    # TODO: mode MODIFY: dont delete or move the file, but override changes in tracker?
+    # - create sync function in SstFile
+    _sync_mode: PathGuard.SyncMode = (
+        PrivateAttr(  # LATER: make this public str?
+            default=PathGuard.SyncMode.INCREMENT
+        )
+    )
 
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
+
+    @classmethod
+    def setup_at(cls, local_root: Path) -> Self:
+        registry: Self = cls(local_root=local_root)
+        registry.attach_new_files_from_local_folder()
+        logger.debug(f"created with {registry.n_files=}")
+        return registry
 
     @property
     def n_files(self):
@@ -225,6 +270,14 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             else:
                 raise RegistrySyncError("File missing on local disk")
 
+        match self._sync_mode:  # LATER: consider moving check here
+            case PathGuard.SyncMode.INCREMENT:
+                pass
+            case PathGuard.SyncMode.OVERRIDE:
+                self._clear_files_by_path(file.local_path)
+            case PathGuard.SyncMode.IGNORE:
+                pass
+
         self._attach(file)
 
     def _attach(self, file: FilesT):
@@ -233,6 +286,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def attach_from_path(self, path) -> FilesT:
         """Attach File that is already inside local_root"""
+
         file: FilesT = self.create_local_file(path)
         self.attach(file)
         return file
@@ -252,11 +306,19 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def update_files_from_local_folder(self) -> None:
         """Load new files and update files in registry if they changed"""
-        raise NotImplementedError  # LATER: changed? date? keywords? hash?
+        # LATER: changed? date? keywords? hash?
+        raise NotImplementedError
+
+    def _clear_files_by_path(self, files_to_clear: Path):
+        for file in self.get_files_by_path(files_to_clear):
+            logger.info(f"removing: {file}")
+            self.files.remove(file)
 
     def reload_all_files_from_local_folder(self, *, clear_all=False):
         """Load all files inside local_root to registry,
         Override existing registry Files, clear_all: start from empty status"""
+
+        # TODO: better SyncMode
 
         if clear_all:
             logger.info(f"Removing {self.n_files} files...")
@@ -268,9 +330,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             new_file: FilesT = self.attach_from_path(path)
 
             if not clear_all:
-                for file in self.get_files_by_path(path):
-                    logger.debug(f"removing: {file}")
-                    self.files.remove(file)
+                self._clear_files_by_path(files_to_clear=path)
 
             new_files.append(new_file)
 
@@ -288,31 +348,52 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             exclude: set[str] = {"files", "local_root"}
         if add_to_exclude:
             exclude: set[str] = exclude | add_to_exclude
+        # TODO: check and compare SyncMode
         cloned_data: dict[str, Any] = self.model_dump(
             exclude=exclude, exclude_unset=exclude_unset, mode="python"
         )
         return type(self)(local_root=local_root, **cloned_data)
 
-    def mirror_from_path(self, source: Path | list[Path]) -> list[FilesT]:
+    def mirror_from_path(
+        self,
+        source: Path | list[Path],
+        sync_mode: PathGuard.SyncMode | str = "ignore",
+    ) -> list[FilesT]:
         """Copy external files from into local_root and add to registry"""
+        self._sync_mode = PathGuard.SyncMode(sync_mode)
         return self._sync_external_files(
             source, transfer_strategy=PathGuard.copy
         )
 
-    def absorb_from_path(self, source: Path | list[Path]) -> list[FilesT]:
+    def absorb_from_path(
+        self,
+        source: Path | list[Path],
+        sync_mode: PathGuard.SyncMode | str = "increment",
+    ) -> list[FilesT]:
         """Move external files from into local_root and add to registry"""
+        self._sync_mode = PathGuard.SyncMode(sync_mode)
         return self._sync_external_files(
             source, transfer_strategy=PathGuard.rotate
         )
 
-    def mirror_from_registry(self, external_registry: Self) -> list[FilesT]:
+    def mirror_from_registry(
+        self,
+        external_registry: Self,
+        sync_mode: PathGuard.SyncMode | str = "ignore",
+    ) -> list[FilesT]:
         """Copy files of external registry into local_root and add to registry"""
+        self._sync_mode = PathGuard.SyncMode(sync_mode)
         return self._sync_registry(
             external_registry, transfer_strategy=PathGuard.copy
         )
 
-    def absorb_from_registry(self, external_registry: Self) -> list[FilesT]:
+    def absorb_from_registry(
+        self,
+        external_registry: Self,
+        sync_mode: PathGuard.SyncMode | str = "increment",
+    ) -> list[FilesT]:
         """Move files of external registry into local_root and add to registry"""
+        self._sync_mode = PathGuard.SyncMode(sync_mode)
         return self._sync_registry(
             external_registry, transfer_strategy=PathGuard.rotate
         )
@@ -321,27 +402,32 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def _sync_external_files(
         self,
         source: Path | list[Path],
-        transfer_strategy: Callable[[Path, Path], Path],
+        transfer_strategy: Callable[[Path, Path, str], Path],
     ) -> list[FilesT]:
         """Mirror or Absorb external file source, dispatch file or dir"""
         raise NotImplementedDispatchError(source, transfer_strategy)
 
     @_sync_external_files.register
     def _(
-        self, source: list, transfer_strategy: Callable[[Path, Path], Path]
+        self,
+        source: list,
+        transfer_strategy: Callable[[Path, Path], Path],
     ) -> list[FilesT]:
         """Concat multiple file sources"""
         return [
             file
             for path in source
             for file in self._sync_external_files(
-                source=path, transfer_strategy=transfer_strategy
+                source=path,
+                transfer_strategy=transfer_strategy,
             )
         ]
 
     @_sync_external_files.register
     def _(
-        self, source: Path, transfer_strategy: Callable[[Path, Path], Path]
+        self,
+        source: Path,
+        transfer_strategy: Callable[[Path, Path, str], Path],
     ) -> list[FilesT]:
         """Mirror or Absorb external file source, dispatch file or dir"""
 
@@ -353,11 +439,11 @@ class FileRegistry[FilesT: SstFile](BaseModel):
                 transfer_strategy=transfer_strategy,
             )
         if source.is_file():
-            return [
-                self._fetch_external_file(
-                    source, transfer_strategy=transfer_strategy
-                )
-            ]
+            if file := self._fetch_external_file(
+                source,
+                transfer_strategy=transfer_strategy,
+            ):
+                return [file]
 
         action: str = getattr(transfer_strategy, "__name__", "Task")
         logger.error(f"Nothing to do for {action}! Invalid path: {source=}")
@@ -366,47 +452,57 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def _sync_registry(
         self,
         external_registry: Self,
-        transfer_strategy: Callable[[Path, Path], Path],
+        transfer_strategy: Callable[[Path, Path, str], Path],
     ) -> list[FilesT]:
+        # TODO: return Result: new,increment,override,ignore
+        # - multiple lists to handle
         """Attach data from external registry"""
+
         new_files: list[FilesT] = []
+        logger.info(f"Files before: {external_registry.n_files=}")
 
         for file in external_registry.files:
             source: Path = external_registry.local_root / file.local_path
 
-            file: FilesT = self._fetch_external_file(
+            if new_file := self._fetch_external_file(
                 source,
                 new_local_path=file.local_path,
                 transfer_strategy=transfer_strategy,
-            )
-            self.attach(file)
-            new_files.append(file)
+            ):
+                new_files.append(new_file)
 
+        logger.info(f"Files attached: {len(new_files)=}")
         return new_files
 
     def _fetch_external_file(
         self,
         source: Path,
-        transfer_strategy: Callable[[Path, Path], Path],
+        transfer_strategy: Callable[[Path, Path, str], Path],
         new_local_path: Path | str | None = None,
-    ) -> FilesT:
+    ) -> FilesT | None:
         """Copy or Move file into local_root and load new File into registry"""
-        # LATER: flag for:
-        # - ignore if target exists
-        # - override target
-        # now is just create new file with incremented unique of target
-        # - maybe do this inside transfer_strategy?
-        new_local_path: Path | str = new_local_path or source.name  # PARAM:
-
-        target: Path = self.local_root / new_local_path
-        unique_target: Path = transfer_strategy(source, target)
-
-        if target != unique_target:
-            logger.warning(f"Incremented source to {unique_target.name=}")
-
-        file: FilesT = self.attach_from_path(path=unique_target)
-
         action: str = getattr(transfer_strategy, "__name__", "Task")
+        sync_mode: PathGuard.SyncMode = self._sync_mode
+
+        new_local_path: Path | str = new_local_path or source.name  # PARAM:
+        file_to_sync: Path = self.local_root / new_local_path
+
+        if sync_mode == PathGuard.SyncMode("ignore"):
+
+            def _sync_mode_ignore_exception(file_to_sync: Path) -> Path | None:
+                with suppress(FileExistsError):
+                    return transfer_strategy(source, file_to_sync, sync_mode)
+
+            if (target := _sync_mode_ignore_exception(file_to_sync)) is None:
+                logger.debug(f"skipping existing file: {file_to_sync.name}")
+                return None
+        else:
+            target: Path = transfer_strategy(source, file_to_sync, sync_mode)
+
+        if self._sync_mode == PathGuard.SyncMode.OVERRIDE:
+            self._clear_files_by_path(files_to_clear=target)
+
+        file: FilesT = self.attach_from_path(path=target)
         logger.debug(f"{action} completed: {file.description}")
 
         return file

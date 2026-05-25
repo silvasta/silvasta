@@ -11,62 +11,7 @@ from sstcore.exceptions import NotImplementedDispatchError
 
 P = ParamSpec("P")
 
-
-# REMOVE: but save somewhere where one can find it...
-class _TemporaryPythonVersionDispatcher:
-    """Intended to group commands by Python 3.14 or smaller"""
-
-    @staticmethod
-    def move(source: Path, target: Path):
-        raise NotImplementedError
-
-    @staticmethod
-    def copy(source: Path, target: Path):
-        raise NotImplementedError
-
-
-# REMOVE: but save somewhere where one can find it...
-_fs_operator: _TemporaryPythonVersionDispatcher | None = None
-
-
-# REMOVE: but save somewhere where one can find it...
-def _get_fs_operator() -> _TemporaryPythonVersionDispatcher:
-    global _fs_operator
-    if _fs_operator is None:
-        import sys
-
-        _fs_operator = _load_fs_operator(sys.version_info)
-
-    return _fs_operator
-
-
-# REMOVE: but save somewhere where one can find it...
-def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispatcher:
-    if version < (3, 14, 0):
-        import shutil
-
-        class _PythonOld(_TemporaryPythonVersionDispatcher):
-            @staticmethod
-            def move(source: Path, target: Path):
-                shutil.move(source, target)
-
-            @staticmethod
-            def copy(source: Path, target: Path):
-                shutil.copy(source, target)
-
-        return _PythonOld()
-    else:
-        # PLUG: and check oter pathlib 3.14 stuff
-        class _Python314plus(_TemporaryPythonVersionDispatcher):
-            @staticmethod
-            def move(source: Path, target: Path):
-                source.move(target)  # ty:ignore
-
-            @staticmethod
-            def copy(source: Path, target: Path):
-                source.copy(target)  # ty:ignore
-
-        return _Python314plus()
+# IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
 
 
 class PathGuard:
@@ -75,21 +20,24 @@ class PathGuard:
     class SyncMode(StrEnum):
         INCREMENT = auto()
         OVERRIDE = auto()
+        IGNORE = auto()
 
         def check_conflict(self, target: Path) -> Path:
             if not target.exists():
                 PathGuard._ensure_dir_logic(target.parent)
                 return target
+
             match self:
-                case PathGuard.SyncMode("increment"):
+                case PathGuard.SyncMode.OVERRIDE:
+                    logger.warning(f"Overriding existing File at {target=}")
+                    return target
+                case PathGuard.SyncMode.INCREMENT:
                     return PathGuard._get_unique_candidate(
                         path=target, ensure_parent=True
                     )
-                case PathGuard.SyncMode("override"):
-                    logger.warning(f"Overriding existing File at {target=}")
-                    return target
-
-            raise ValueError(f"Issue for {target=} and {self=}")
+                case PathGuard.SyncMode.IGNORE:
+                    logger.debug(f"ignoring existing file: {target=}")
+                    raise FileExistsError("Catch error for SyncMode('ignore')")
 
     @staticmethod
     def _ensure_input(
@@ -413,25 +361,24 @@ class PathGuard:
 
     @staticmethod
     def rotate(
-        source: Path | str, target: Path | str, reset: bool = False
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "increment",
+        reset: bool = False,
     ) -> Path:
         """Moves source (file or dir) to target, handles unique naming collisions,
         if reset=True, recreates empty file or directory at original 'source' location"""
 
         source: Path = PathGuard._ensure_input(source, must_exists=True)
         target: Path = PathGuard._ensure_input(target)
+        sync_mode = PathGuard.SyncMode(sync_mode)
 
         # Store type for reset logic later
         is_directory: bool = source.is_dir()
 
-        # LATER: sync?
-        unique_target: Path = PathGuard._get_unique_candidate(
-            target, ensure_parent=True
-        )
-        _get_fs_operator().move(source, unique_target)
-        logger.info(
-            f"Rotated: {PathGuard.relative_string(source, unique_target)}"
-        )
+        source.move(inspected_target := sync_mode.check_conflict(target))
+        relative: str = PathGuard.relative_string(source, inspected_target)
+        logger.info(f"Rotated: {relative}")
 
         if reset:
             if is_directory:
@@ -441,7 +388,7 @@ class PathGuard:
                 source.touch()
                 logger.debug(f"Reset empty file: {source}")
 
-        return unique_target
+        return inspected_target
 
     @staticmethod
     def copy(
@@ -454,13 +401,10 @@ class PathGuard:
         target: Path = PathGuard._ensure_input(target)
         sync_mode = PathGuard.SyncMode(sync_mode)
 
-        inspected_target: Path = sync_mode.check_conflict(target)
+        source.copy(inspected_target := sync_mode.check_conflict(target))
+        relative: str = PathGuard.relative_string(source, inspected_target)
+        logger.debug(f"Copied: {relative}")
 
-        _get_fs_operator().copy(source, inspected_target)
-
-        logger.debug(
-            f"Copied: {PathGuard.relative_string(source, inspected_target)}"
-        )
         return inspected_target
 
     @staticmethod
@@ -479,13 +423,13 @@ class PathGuard:
 
         try:
             inspected_target.hardlink_to(source)
-            logger.debug(
-                f"Hardlinked: {PathGuard.relative_string(source, inspected_target)}"
-            )
         except OSError as e:
             logger.error("Hardlink failed! Source and Target on same drive?")
             logger.error(f"{source=}, {target=}")
             raise e
+
+        relative: str = PathGuard.relative_string(source, inspected_target)
+        logger.debug(f"Hardlinked: {relative}")
 
         return inspected_target
 
@@ -497,7 +441,6 @@ class PathGuard:
     ) -> Path:
         """Create absolute symlink of source to target, handles unique naming collisions"""
 
-        # Important: Resolve source to absolute path, link breaks otherwise
         source: Path = PathGuard._ensure_input(
             source, must_exists=True, resolve=True
         )
@@ -507,9 +450,9 @@ class PathGuard:
         inspected_target: Path = sync_mode.check_conflict(target)
         inspected_target.symlink_to(source)
 
-        logger.debug(
-            f"Symlinked: {PathGuard.relative_string(source, inspected_target)}"
-        )
+        relative: str = PathGuard.relative_string(source, inspected_target)
+        logger.debug(f"Symlinked: {relative}")
+
         return inspected_target
 
     @staticmethod
@@ -586,9 +529,9 @@ class PathGuard:
                 logger.info("No relative path found in both directions...")
                 return None
 
-            case (Path() as p, None) | (None, Path() as p):
-                logger.debug(f"found relative path: {p}")
-                return p
+            case (Path() as _p, None) | (None, Path() as _p):
+                logger.debug(f"found relative path: {_p}")
+                return _p
 
             case _:
                 logger.info("It happened, how is that possible?")

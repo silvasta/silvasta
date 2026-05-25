@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, ParamSpec, overload
 
@@ -6,6 +7,13 @@ P = ParamSpec("P")
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
+
+    class SyncMode(StrEnum):
+        INCREMENT = ...
+        OVERRIDE = ...
+        IGNORE = ...
+
+        def check_conflict(self, target: Path) -> Path: ...
 
     @staticmethod
     def _ensure_input(
@@ -97,15 +105,34 @@ class PathGuard:
     @staticmethod
     def trash(target: Path | str) -> bool: ...
     @staticmethod
+    def _clear_file_or_folder(
+        target: Path | str, clear_strategy: Callable[[Path], Any]
+    ) -> bool: ...
+    @staticmethod
     def rotate(
-        source: Path | str, target: Path | str, reset: bool = False
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "increment",
+        reset: bool = False,
     ) -> Path: ...
     @staticmethod
-    def copy(source: Path | str, target: Path | str) -> Path: ...
+    def copy(
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "increment",
+    ) -> Path: ...
     @staticmethod
-    def hardlink(source: Path | str, target: Path | str) -> Path: ...
+    def hardlink(
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "override",
+    ) -> Path: ...
     @staticmethod
-    def symlink(source: Path | str, target: Path | str) -> Path: ...
+    def symlink(
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "increment",
+    ) -> Path: ...
     @staticmethod
     def relative_string(source: Path, target: Path) -> str: ...
     @staticmethod

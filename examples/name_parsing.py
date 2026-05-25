@@ -10,7 +10,32 @@ def main():
     # pattern_namer()
     # parsed_name()
     # predefined_keys()
-    styled_name()
+    # styled_name()
+    show_error()
+
+
+def show_error():
+    summary_name: ParsedName = ParsedName.only_from_pattern(
+        pattern="{day}_summary.{suffix}"
+    )
+    printer(summary_name)
+
+    printer(f"{(summary_name([22, 'md']))=}")
+
+    summary_fail = "hello_summary-tar-gz"
+    try:
+        _fail_name_parts: dict = summary_name(summary_fail)
+    except ValueError:
+        printer.danger(f"Failed for {summary_fail=}")
+
+    summary_file = "422_summary.tar.gz"
+    fail_key = "hello"
+    try:
+        printer(f"{(name_parts:= summary_name(summary_file))=}")
+        printer(f"{name_parts["suffix"]=}")
+        printer(f"{name_parts[fail_key]=}")
+    except KeyError:
+        printer.danger(f"Failed with {fail_key=} for {summary_file=}")
 
 
 def styled_name():
