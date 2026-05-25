@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from enum import Enum, auto
 from pathlib import Path
 
+from loguru import logger
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -16,8 +17,8 @@ class Printer:
     """Customized Rich Console setup for easy access"""
 
     _raw_theme: dict[str, str] = {
+        "normal": "bold white",
         "info": "black on white",
-        "normal": "white",
         "title": "bold white on cyan",
         "warning": "bold white on yellow",
         "success": "bold white on green",
@@ -27,40 +28,37 @@ class Printer:
     project_name: str = "App"
     project_version: str = "0.0.0"
 
-    class Status(Enum):
+    def __init__(self, custom_theme: dict[str, str] | None = None):
+        self.setup_theme(custom_theme)
+
+    class Modus(Enum):
         RICH = auto()
-        REGULAR = auto()
+        STANDARD = auto()
         NULL = auto()
 
-    status: Status = Status.RICH
-
-    _fallback_to_standard_print = False
-
-    def __init__(self, custom_theme: dict[str, str] | None = None):
-        self.update_theme_load_console(custom_theme)
+    modus: Modus = Modus.RICH
 
     def __call__(self, *args, **kwargs):
         """Rich console print, printer.mute(): switch to regular print"""
-        match self.status:
-            case self.Status.RICH:
+        match self.modus:
+            case self.Modus.RICH:
                 self.console.print(*args, **kwargs)
-            case self.Status.REGULAR:
-                if self._fallback_to_standard_print:
-                    print(args[0] or "something went wrong...")
-            case self.Status.NULL:
+            case self.Modus.STANDARD:
+                print(args[0] or "something went wrong...")
+            case self.Modus.NULL:
                 pass
 
     def unmute(self):
         """Switch to Rich Console Printer"""
-        self.status: Printer.Status = self.Status.RICH
+        self.modus: self.Modus = self.Modus.RICH
 
-    def print_regular(self):
-        """Switch to regular Python print"""
-        self.status: Printer.Status = self.Status.REGULAR
+    def to_standard_print(self):
+        """Switch to standard Python print"""
+        self.modus: self.Modus = self.Modus.STANDARD
 
     def mute(self):
         """Send all prints to nowhere"""
-        self.status: Printer.Status = self.Status.NULL
+        self.status: self.Modus = self.Modus.NULL
 
     @contextmanager
     def muted(self):
@@ -70,7 +68,11 @@ class Printer:
         finally:
             self.unmute()
 
-    @property
+    def setup_theme(self, custom_theme: dict[str, str] | None = None):
+        self._raw_theme |= custom_theme or []
+        self._rich_theme = Theme(self._raw_theme)
+        self.console = Console(theme=self._rich_theme)
+
     def name_and_version(self) -> str:
         parts: list[str] = []
         if self.project_name:
@@ -98,8 +100,8 @@ class Printer:
 
         self(Markdown(f"{prefix}{text}"), *args, **kwargs)
 
-    def panel(self, text: str, title=None, title_align="right", style="info"):
-        title: str | None = title or self.name_and_version or None
+    def panel(self, text: str, title=None, title_align="right", style=""):
+        title: str | None = title or self.name_and_version() or None
         self(
             Panel(
                 renderable=text,
@@ -110,66 +112,62 @@ class Printer:
         )
 
     def title(self, text, *args, **kwargs):
-        defaults: dict[str, str] = {
-            "style": "title",
-        }
-        kwargs = defaults | kwargs  # override defaults
-        self.panel(text, *args, **kwargs)
+        self.panel(text, *args, **({"style": "title"} | kwargs))
 
     def warn(self, text, *args, **kwargs):
-        defaults: dict[str, str] = {
-            "style": "warning",
-        }
-        kwargs = defaults | kwargs  # override defaults
-        self.panel(text, *args, **kwargs)
+        self.panel(text, *args, **({"style": "warning"} | kwargs))
 
     def success(self, text, *args, **kwargs):
-        defaults: dict[str, str] = {
-            "style": "success",
-        }
-        kwargs = defaults | kwargs
-        self.panel(text, *args, **kwargs)
+        self.panel(text, *args, **({"style": "success"} | kwargs))
 
     def danger(self, text, *args, **kwargs):
-        defaults: dict[str, str] = {
-            "style": "danger",
-        }
-        kwargs = defaults | kwargs
-        self.panel(text, *args, **kwargs)
+        self.panel(text, *args, **({"style": "danger"} | kwargs))
 
-    def lines(
-        self,
-        lines: list,
-        header: str | None = "",
-        title: str = "",
-        style: str = "info",
-    ):
+    def _format(self, target) -> str:
+        if isinstance(target, Path):
+            if target.is_dir():
+                # LATER: fix for relative paths called from different location
+                dir_path = f"[bold blue]{target}/[/]"
+                file_name = ""
+            elif target.parent != Path():
+                dir_path = f"[bold blue]{target.parent}/[/]"
+                file_name: str = target.name
+            else:
+                dir_path = ""
+                file_name: str = target.name
+            return f"{dir_path}{file_name}"  # LATER: color files by type?
+
+        return str(target)
+
+    _inverted_themes: dict[str, str] = {  # TEST: works well?
+        "info": "white",
+        "title": "cyan",
+        "warning": "yellow",
+        "success": "green",
+        "danger": "red",
+    }
+
+    def _match_inverted_style(self, style: str) -> tuple[str, str]:
+        if not style:
+            return "", ""
+        if (header_style := style.lower()) == style:
+            return "", style
+        if not (line_style := self._inverted_themes.get(header_style)):
+            logger.warning(f"No inverted style avaliable: {style=}")
+            line_style: str = header_style
+        return line_style, header_style
+
+    def lines(self, lines: list, style="", title: str = "", header: str = ""):
         """Print header as title followed by lines in panel"""
-        if header is not None:  # Mute header banner with header=None
-            self.title(header)
-
-        lines: list[str] = [str(line) for line in lines]
-        # LATER: other formatting to apply?
-
+        if header:
+            style, header_style = self._match_inverted_style(style)
+            self.panel(header, style=header_style)
+        lines: list[str] = [self._format(line) for line in lines]
         self.panel(text="\n".join(lines), title=title, style=style)
 
-    def lines_with_len(self, name, lines: list, style: str = "info"):
-        self.lines(
-            header=f"{name}: {len(lines)}",
-            title=name,
-            lines=lines,
-            style=style,
-        )
-
-    def update_theme_load_console(
-        self, custom_theme: dict[str, str] | None = None
-    ):
-        """Override current theme with custom_theme and attach to console"""
-        if custom_theme:
-            self._raw_theme |= custom_theme
-
-        self._rich_theme = Theme(self._raw_theme)
-        self.console = Console(theme=self._rich_theme)
+    def lines_with_len(self, name, lines: list, style: str = "title"):
+        header = f"{name}: {len(lines)}"
+        self.lines(header=header, title=name, lines=lines, style=style)
 
     def preview_themes(self):
         """Displays all styles in the current theme to visually preview them."""
@@ -189,7 +187,7 @@ class Printer:
 
         for path in paths:
             status: str = "✅" if path.exists() else ""
-            table.add_row(status, str(path))
+            table.add_row(status, self._format(path))  # TEST:
 
         self(table)
 
@@ -216,12 +214,12 @@ class Printer:
             table.add_column("Type Value", style="magenta")
 
         for key, value in target.items():
-            to_print: list[key] = [str(key)]
+            to_print: list[key] = [self._format(key)]
             if key_type:
-                to_print.append(str(type(key)))
-            to_print.append(str(value))
+                to_print.append(self._format(type(key)))
+            to_print.append(self._format(value))
             if value_type:
-                to_print.append(str(type(value)))
+                to_print.append(self._format(type(value)))
             table.add_row(*to_print)
 
         self(table)

@@ -8,6 +8,9 @@ from sstcore.config.manager import ConfigSetupParam
 from ..utils import Printer, printer
 from ..utils.log import LogParam, LogSetupResult, setup_logging
 
+# TASK: setup config
+# NEXT: general config setup, working over distributed projects!
+
 
 def logger_catch(func):
     """Typer decorator BELOW 'app.command()', catch errors and log them via Loguru.

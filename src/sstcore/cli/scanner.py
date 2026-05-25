@@ -6,6 +6,7 @@ from ..config import get_config
 from ..tui import TreeSelectorApp
 from ..utils import (
     FolderScanner,
+    PathFilter,
     PathGuard,
     PathTreeNode,
     ProjectFilter,
@@ -15,10 +16,12 @@ from ..utils.path import find_project_root
 from ..utils.scanner import TargetFileType
 
 
-def main(
+def folder_scanner(  # IMPORTANT: configs from config(derivative?) setup in CLI callback!!!
     scan_root: Path | None = None,
     output_file: Path | None = None,
     print_debug_logs=False,
+    path_filter: PathFilter | None = None,
+    sort_method: str = "",
 ):
     """Launch Scanner, then select from Filesystem Tree, finally write to file"""
 
@@ -29,20 +32,25 @@ def main(
     output_file: Path = PathGuard.unique(output_file)
     # LATER: maybe some Note when not unique? (maybe inside pathguard)
 
+    path_filter: PathFilter = path_filter or ProjectFilter(
+        _debug=print_debug_logs
+    )
     # Do this first to avoid error after long selection process
     target: TargetFileType = FolderScanner.target_from_path(output_file)
 
     scanner: FolderScanner = FolderScanner(
-        scan_root=scan_root,
-        path_filter=ProjectFilter(_debug=print_debug_logs),
+        scan_root=scan_root, path_filter=path_filter
     )
     tree: PathTreeNode = scanner.filesystem_tree()
 
-    if selected_files := TreeSelectorApp(sst_tree=tree).run():
-        printer.lines_with_len(
-            name="Selected Files",
-            lines=selected_files,
-        )
+    # TASK: load selected files here to previous_selection file
+    previous_selection: list[Path] = []
+    selector = TreeSelectorApp(
+        sst_tree=tree, sort_method=sort_method, pre_select=previous_selection
+    )
+    if selected_files := selector.run():
+        printer.lines_with_len(name="Selected Files", lines=selected_files)
+        # TASK: cache selected files here to previous_selection file
     else:
         printer.warn("Action cancelled by user.")
         raise typer.Exit()
@@ -52,8 +60,12 @@ def main(
     )
     output_file.write_text(data)
 
-    printer.success(f"Summary written to: {output_file}")
+    printer.lines(
+        header=f"Summary File created! Total Lines: {len(data.splitlines())}",
+        lines=[output_file, PathGuard.relative(output_file, strict=False)],
+        style="success",
+    )
 
 
 if __name__ == "__main__":
-    main()
+    folder_scanner()

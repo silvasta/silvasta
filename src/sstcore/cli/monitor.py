@@ -10,14 +10,15 @@ from ..utils.parse import LogPatterns, RegexMatch
 from ..utils.path import find_project_root, pyproject_log_section
 
 
-def main(log_path: Path | None = None):
+def log_monitor(log_path: Path | None = None):
     """Show tail log display"""
 
     if log_path is None:
         root: Path = find_project_root("pyproject.toml")
         log_config: SimpleNamespace = pyproject_log_section()
         log_path: Path = PathGuard.file(
-            root / log_config.log_dir / log_config.file_name,
+            target=root / log_config.log_dir / log_config.file_name,
+            default_content="",
             raise_error=False,
         )
 
@@ -29,7 +30,6 @@ def main(log_path: Path | None = None):
             logger.info(
                 "Parent folder not available -> no empty file created!"
             )
-
             sys.exit(1)
 
         log_path.touch()
@@ -81,4 +81,4 @@ def launch_tail_log_console(log_path: Path):
 
 
 if __name__ == "__main__":
-    main()
+    log_monitor()

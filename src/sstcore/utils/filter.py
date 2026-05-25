@@ -140,6 +140,8 @@ PROJECT_ALLOWED_EXTS: set[str] = {
     ".json",
     ".yaml",
     ".toml",
+    ".tex",
+    ".cls",
 }
 
 

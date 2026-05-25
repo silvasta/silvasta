@@ -1,17 +1,9 @@
 from pathlib import Path
 
-from sstcore.config import get_config
-from sstcore.utils import (
-    FolderScanner,
-    PathGuard,
-    PathTreeNode,
-    ProjectFilter,
-    printer,
-)
+from sstcore.utils import FolderScanner, PathGuard, PathTreeNode, printer
 from sstcore.utils.path import find_project_root
 from sstcore.utils.simple_tree import build_path_tree
 
-# SCAN_ROOT: Path = find_project_root() / "src/sstcore"
 SCAN_ROOT: Path = find_project_root()
 
 
@@ -20,7 +12,6 @@ def main():
     scan_dir()
     # tree_dir_absolute()
     # tree_dir_relative()
-    # write_summary()
 
     print("done")
 
@@ -28,15 +19,15 @@ def main():
 def scan_dir():
     absolute_paths: list[Path] = []
     relative_paths: list[Path] = []
+
     for abs_path in FolderScanner.walk(root=SCAN_ROOT):
         absolute_paths.append(abs_path)
-        rel_path = PathGuard.relative(target=abs_path, root=SCAN_ROOT)
+        rel_path: Path = PathGuard.relative(target=abs_path, root=SCAN_ROOT)
         relative_paths.append(rel_path)
 
     printer.lines_with_len(
         name="Absolute Paths",
         lines=absolute_paths,
-        style="normal",
     )
 
     printer.lines_with_len(
@@ -46,40 +37,17 @@ def scan_dir():
 
 
 def tree_dir_absolute():
-
+    printer.title("Tree Dir Absolute")
     paths: list[Path] = list(FolderScanner.walk(root=SCAN_ROOT))
-
     tree: PathTreeNode = build_path_tree(paths)
-
     printer.tree_graph(tree)
 
 
 def tree_dir_relative():
-
-    root_name: str = "ProjectRoot"
-
+    printer.title("Tree Dir Relative")
     paths: list[Path] = FolderScanner(scan_root=SCAN_ROOT).scan_local_files()
-
-    tree: PathTreeNode = build_path_tree(paths, root_name)
-
+    tree: PathTreeNode = build_path_tree(paths, root_name="ProjectRoot")
     printer.tree_graph(tree)
-
-
-def write_summary(print_debug_logs=False):
-
-    output_name: str = get_config().paths.summary_file().name
-
-    scanner: FolderScanner = FolderScanner(
-        scan_root=SCAN_ROOT,
-        path_filter=ProjectFilter(
-            _debug=print_debug_logs,
-            require_any={
-                "paths",
-                "names",
-            },
-        ),
-    )
-    scanner.write_summary_with_name(output_name)
 
 
 if __name__ == "__main__":

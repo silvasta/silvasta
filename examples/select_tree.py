@@ -46,6 +46,7 @@ def process_tree(task: Tasks = Tasks.SCAN):
     printer.lines_with_len(
         name="Successfully selected nodes",
         lines=selected_nodes,
+        style="success",
     )
 
 

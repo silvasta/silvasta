@@ -70,14 +70,16 @@ class FolderScanner:
 
     def scan_local_files(self, get_absolute_paths: bool = False) -> list[Path]:
         """Get list of absolute paths of local files that match predefined conditions"""
-        return [
+        p: list[Path] = sorted(
             path
             if get_absolute_paths
             else PathGuard.relative(target=path, root=self.scan_root)
             for path in self.walk(
                 self.scan_root, self.path_filter, debug=self._debug
             )
-        ]
+        )
+        printer.lines_with_len("paths", p)
+        return p
 
     @classmethod
     def walk(
@@ -108,9 +110,13 @@ class FolderScanner:
 
     def filesystem_tree(self) -> PathTreeNode:
         # TODO: Explain
-        return build_path_tree(
+        r = build_path_tree(
             paths=self.scan_local_files(), root_name=self.scan_root.name
         )
+        logger.info("Tree")
+        printer.tree_graph(r)
+
+        return r
 
     @classmethod
     def tree(

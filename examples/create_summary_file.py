@@ -16,7 +16,7 @@ OUTPUT_FILE: Path = config.paths.summary_file()
 
 PATH_FILTER = ProjectFilter(
     _debug=False,
-    # exclude=set(), # take care while overriding defaults
+    # exclude=set(), # NOTE: take care while overriding defaults
     require_any={
         "paths",
         "names",
@@ -27,10 +27,8 @@ PATH_FILTER = ProjectFilter(
 class Tasks(StrEnum):
     PICK = auto()
     FILTER = auto()
-    # TODO: memorize the last pick?
 
-    @property
-    def scanner(self) -> FolderScanner:
+    def get_scanner(self) -> FolderScanner:
         match self:
             case Tasks.PICK:
                 return FolderScanner(scan_root=SCAN_ROOT)
@@ -47,7 +45,7 @@ app = typer.Typer()
 def process_tree(task: Tasks = Tasks.PICK):
     """Process a specific node in the forest."""
 
-    scanner: FolderScanner = task.scanner
+    scanner: FolderScanner = task.get_scanner()
     tui = TreeSelectorApp(sst_tree=scanner.filesystem_tree())
     selected_nodes: list | None = tui.run()
 

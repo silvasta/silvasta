@@ -32,7 +32,7 @@ def process_list(
         printer.warn("Action cancelled by user.")
         raise typer.Exit()
 
-    printer.lines_with_len("Select", lines=selected_items)
+    printer.lines_with_len("Select", lines=selected_items, style="success")
 
 
 if __name__ == "__main__":

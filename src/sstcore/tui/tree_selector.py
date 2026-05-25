@@ -1,9 +1,13 @@
+from enum import StrEnum, auto
+
 from loguru import logger
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.message import Message
 from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
+
+from sstcore import printer
 
 from ..utils.simple_tree import SimpleTreeNode
 
@@ -60,11 +64,41 @@ class TreeSelectorApp(App[list]):
         Binding("q", "quit_without_selection", "Quit"),
     ]
 
-    def __init__(self, sst_tree: SimpleTreeNode, **kwargs):
+    class Sort(StrEnum):
+        BY_SELECTION = auto()
+        ALPHABETIC = auto()
+
+    sort_method: Sort = Sort.BY_SELECTION
+
+    def __init__(
+        self,
+        sst_tree: SimpleTreeNode,
+        sort_method: str = "",
+        pre_select: list
+        | None = None,  # TASK: memorize the last pick? use pre_select at call!
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.sst_tree: SimpleTreeNode = sst_tree
-        self.selected_identifiers: set = set()
-        self.original_labels: dict = {}
+        if sort_method:
+            self._setup_sort_method(sort_method)
+        self.selected_identifiers: dict[str, None] = {
+            uid: None for uid in (pre_select or [])
+        }
+        self.original_labels: dict[str, str] = {}
+
+    def _setup_sort_method(self, sort_method: str):
+        try:
+            self.sort_method: self.Sort = self.Sort(sort_method)
+        except ValueError:
+            logger.error(f"Unknown {sort_method=}")
+            printer.lines(  # LATER: this as printer function of class.Enum
+                header="Choose one of this sort arguments:",
+                style="Danger",
+                lines=[f"sort_method={m}" for m in self.Sort],
+                title="TreeSelectorApp.Sort",
+            )
+        logger.info(f"Using {self.sort_method.value=}")
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -122,22 +156,22 @@ class TreeSelectorApp(App[list]):
         """Fired when Spacebar is pressed"""
 
         if not (target_identifier := event.node.data):
-            logger.debug(f"Strange {event.node=} with {event.node.data=}")
-            return  # TODO: when happens this?
+            logger.debug(f"TTT Strange {event.node=} with {event.node.data=}")
+            return  # TEST: when happens this?
 
         is_selecting = target_identifier not in self.selected_identifiers
 
         def update_node_and_children(ui_node: TreeNode):
 
             if not (node_id := ui_node.data):
-                logger.debug(f"Strange {ui_node=} with {ui_node.data=}")
-                return  # TODO: when happens this?
+                logger.debug(f"TTT Strange {ui_node=} with {ui_node.data=}")
+                return  # TEST: when happens this?
 
             if is_selecting:
-                self.selected_identifiers.add(node_id)
+                self.selected_identifiers[node_id] = None
             else:
                 # discard doesn't error if missing
-                self.selected_identifiers.discard(node_id)
+                self.selected_identifiers.pop(node_id, None)
 
             ui_node.label: str = self.format_label(
                 node_id, self.original_labels[node_id]
@@ -154,8 +188,12 @@ class TreeSelectorApp(App[list]):
         """Fired when Enter is pressed"""
 
         if self.selected_identifiers:
-            # Return all selected items
-            self.exit(result=list(self.selected_identifiers))
+            result: list[str] = list(self.selected_identifiers.keys())
+            if self.sort_method == self.Sort.ALPHABETIC:
+                result.sort(
+                    key=lambda x: self.original_labels.get(x, x).lower()
+                )
+            self.exit(result=result)
         else:
             tree: MultiSelectTree = self.query_one(MultiSelectTree)
             if tree.cursor_node and tree.cursor_node.data:

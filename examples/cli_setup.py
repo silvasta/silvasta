@@ -4,7 +4,7 @@ from loguru import logger
 logger.remove()  # Intercept noisy logs (until log setup in attach_callback)
 
 from sstcore import printer  # noqa: E402
-from sstcore.cli import attach_callback, command  # noqa: E402
+from sstcore.cli import attach_callback, logger_catch, utils_app  # noqa: E402
 from sstcore.config import ConfigSetupParam, get_config  # noqa: E402
 
 example_setup_param = ConfigSetupParam(
@@ -29,18 +29,24 @@ def main():
 
 # main
 app = typer.Typer(
-    name="singu",
-    help="CLI for launching Robot or Development Tasks",
+    name="robot",
+    help="CLI for launching Robot Tasks",
     no_args_is_help=True,
 )
 # attach_callback(app, param=example_setup_param)
 attach_callback(app, param=nice_defaults)
 
 
+@app.command("launch")
+@logger_catch
+def launch_some_robo_stuff():
+    """Insert new task here..."""
+    for _ in range(5):
+        printer("robo")
+
+
 # utils
-app.command("monitor")(command.launch_monitor)
-app.command("scanner")(command.folder_scanner)
-app.command("config")(command.config_details)
+app.add_typer(utils_app)
 
 if __name__ == "__main__":
     main()
