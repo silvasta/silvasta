@@ -1,6 +1,7 @@
 import functools
 import re
 from collections.abc import Callable
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, ParamSpec, cast
 
@@ -11,6 +12,7 @@ from sstcore.exceptions import NotImplementedDispatchError
 P = ParamSpec("P")
 
 
+# REMOVE: but save somewhere where one can find it...
 class _TemporaryPythonVersionDispatcher:
     """Intended to group commands by Python 3.14 or smaller"""
 
@@ -23,9 +25,11 @@ class _TemporaryPythonVersionDispatcher:
         raise NotImplementedError
 
 
+# REMOVE: but save somewhere where one can find it...
 _fs_operator: _TemporaryPythonVersionDispatcher | None = None
 
 
+# REMOVE: but save somewhere where one can find it...
 def _get_fs_operator() -> _TemporaryPythonVersionDispatcher:
     global _fs_operator
     if _fs_operator is None:
@@ -36,6 +40,7 @@ def _get_fs_operator() -> _TemporaryPythonVersionDispatcher:
     return _fs_operator
 
 
+# REMOVE: but save somewhere where one can find it...
 def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispatcher:
     if version < (3, 14, 0):
         import shutil
@@ -51,7 +56,7 @@ def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispatcher:
 
         return _PythonOld()
     else:
-
+        # PLUG: and check oter pathlib 3.14 stuff
         class _Python314plus(_TemporaryPythonVersionDispatcher):
             @staticmethod
             def move(source: Path, target: Path):
@@ -66,6 +71,25 @@ def _load_fs_operator(version: tuple) -> _TemporaryPythonVersionDispatcher:
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
+
+    class SyncMode(StrEnum):
+        INCREMENT = auto()
+        OVERRIDE = auto()
+
+        def check_conflict(self, target: Path) -> Path:
+            if not target.exists():
+                PathGuard._ensure_dir_logic(target.parent)
+                return target
+            match self:
+                case PathGuard.SyncMode("increment"):
+                    return PathGuard._get_unique_candidate(
+                        path=target, ensure_parent=True
+                    )
+                case PathGuard.SyncMode("override"):
+                    logger.warning(f"Overriding existing File at {target=}")
+                    return target
+
+            raise ValueError(f"Issue for {target=} and {self=}")
 
     @staticmethod
     def _ensure_input(
@@ -400,6 +424,7 @@ class PathGuard:
         # Store type for reset logic later
         is_directory: bool = source.is_dir()
 
+        # LATER: sync?
         unique_target: Path = PathGuard._get_unique_candidate(
             target, ensure_parent=True
         )
@@ -419,47 +444,57 @@ class PathGuard:
         return unique_target
 
     @staticmethod
-    def copy(source: Path | str, target: Path | str) -> Path:
+    def copy(
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "increment",
+    ) -> Path:
         """Copy source (file or dir) to target, handles unique naming collisions"""
-
         source: Path = PathGuard._ensure_input(source, must_exists=True)
         target: Path = PathGuard._ensure_input(target)
+        sync_mode = PathGuard.SyncMode(sync_mode)
 
-        unique_target: Path = PathGuard._get_unique_candidate(
-            target, ensure_parent=True
-        )
-        _get_fs_operator().copy(source, unique_target)
+        inspected_target: Path = sync_mode.check_conflict(target)
+
+        _get_fs_operator().copy(source, inspected_target)
 
         logger.debug(
-            f"Copied: {PathGuard.relative_string(source, unique_target)}"
+            f"Copied: {PathGuard.relative_string(source, inspected_target)}"
         )
-        return unique_target
+        return inspected_target
 
     @staticmethod
-    def hardlink(source: Path | str, target: Path | str) -> Path:
+    def hardlink(
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "override",
+    ) -> Path:
         """Create a hardlink of source to target, handles unique naming collisions"""
 
         source: Path = PathGuard._ensure_input(source, must_exists=True)
         target: Path = PathGuard._ensure_input(target)
+        sync_mode = PathGuard.SyncMode(sync_mode)
 
-        unique_target: Path = PathGuard._get_unique_candidate(
-            target, ensure_parent=True
-        )
+        inspected_target: Path = sync_mode.check_conflict(target)
 
         try:
-            unique_target.hardlink_to(source)
+            inspected_target.hardlink_to(source)
             logger.debug(
-                f"Hardlinked: {PathGuard.relative_string(source, unique_target)}"
+                f"Hardlinked: {PathGuard.relative_string(source, inspected_target)}"
             )
         except OSError as e:
             logger.error("Hardlink failed! Source and Target on same drive?")
             logger.error(f"{source=}, {target=}")
             raise e
 
-        return unique_target
+        return inspected_target
 
     @staticmethod
-    def symlink(source: Path | str, target: Path | str) -> Path:
+    def symlink(
+        source: Path | str,
+        target: Path | str,
+        sync_mode: str | SyncMode = "increment",
+    ) -> Path:
         """Create absolute symlink of source to target, handles unique naming collisions"""
 
         # Important: Resolve source to absolute path, link breaks otherwise
@@ -467,16 +502,15 @@ class PathGuard:
             source, must_exists=True, resolve=True
         )
         target: Path = PathGuard._ensure_input(target)
+        sync_mode = PathGuard.SyncMode(sync_mode)
 
-        unique_target: Path = PathGuard._get_unique_candidate(
-            target, ensure_parent=True
-        )
+        inspected_target: Path = sync_mode.check_conflict(target)
+        inspected_target.symlink_to(source)
 
-        unique_target.symlink_to(source)
         logger.debug(
-            f"Symlinked: {PathGuard.relative_string(source, unique_target)}"
+            f"Symlinked: {PathGuard.relative_string(source, inspected_target)}"
         )
-        return unique_target
+        return inspected_target
 
     @staticmethod
     def relative_string(source: Path, target: Path):
