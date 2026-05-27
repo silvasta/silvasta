@@ -104,31 +104,30 @@ class PathGuard:
     def _ensure_file_logic(
         path: Path | str, raise_error: bool, default_content: str | None
     ) -> Path:
-        """The actual implementation logic"""
 
         path: Path = PathGuard._ensure_input(path)
 
         if path.exists():
             return path
 
-        logger.warning(f"File not found at: {path}")
+        logger.warning(f"No file found at: {path}")
 
         if default_content is not None:  # write first
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(default_content)
-            logger.info(f"Created default file:\n{path}")
+            logger.info(f"Created default file: {path=}")
 
             if raise_error:
-                msg = f"Critical file created, modify at:\n{path}"
+                msg = f"Critical file created, modify at: {path=}"
             else:
                 return path
         else:
             if raise_error:
-                msg = f"Critical file missing: {path}"
+                msg = f"Critical file missing: {path=}"
             else:
                 warn = "Suppress error only allowed for case of writing file with default content!"
                 logger.warning(warn)
-                msg = f"Wrong input, can't confirm:\n{path}"
+                msg = f"Wrong input, file not confirmd: {path=}"
 
         raise FileNotFoundError(msg)
 

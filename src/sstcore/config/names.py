@@ -268,33 +268,26 @@ type AutoParsedName = Annotated[
 
 
 class SstNames(BaseSettings):
-    """Default names and name factories for files and project"""
-
     model_config = ConfigDict(extra="allow")
 
     project: str = "sstcore"
 
-    # Master config file
-    setting_file: str = "settings.json"
     # Directories in local root
     data_dir: str = "data"
     plot_dir: str = "plots"
-    log_dir: str = "logs"
-    _log_file_name: str = ""
-    # Directories in data_dir
-    local_home_dir: str = "homes"
 
-    # Patterns
+
+class SstNamesWithPatterns(SstNames):
+    """Example patterns for ParsedName and StyledName attached"""
+
+    # Summary File: launch scanner, selected Files combined in file with name below
     summary_file: AutoParsedName = ParsedName(
         pattern="{day}_summary.{suffix}",
         keys=["day", "suffix"],
     )
+    # SstFile: description and style as below
     sstfile_dates: StyledName = StyledName.parse_style(
         style_pattern="[{style1}]{name}[/]: [{style2}]{first_tracked}[/] - [{style3}]{last_updated}[/]",
         keys=["name", "first_tracked", "last_updated"],
         styles=["blue", "dim", "white"],
     )
-
-    @property
-    def log_file(self) -> str:
-        return self._log_file_name or f"{self.project}.log" or "debug.log"

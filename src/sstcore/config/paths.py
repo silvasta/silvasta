@@ -1,12 +1,16 @@
 from pathlib import Path
 from typing import cast
 
+import typer
 from loguru import logger
 
 from ..utils import PathGuard, day_count
 from ..utils.path import recursive_root
+from ..utils.print import ColorBox, printer
 from .defaults import HomeSetup, SstDefaults
 from .names import SstNames
+
+c: ColorBox = printer.colorbox()
 
 
 class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
@@ -35,7 +39,7 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
         if self._defaults.home_setup == HomeSetup.LOCAL:  # TEST: home switch
             logger.warning("No project root found -> default to: 'global'")
-            self._defaults.home_setup: HomeSetup = HomeSetup.GLOBAL
+            self._defaults.home_setup = HomeSetup.GLOBAL
 
         self.project_root_found = False
 
@@ -54,17 +58,12 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     @property
     @PathGuard.dir
     def log_dir(self) -> Path:
-        return self.project_root / self._names.log_dir
-
-    @property
-    @PathGuard.file(default_content="", raise_error=False)
-    def log_file(self) -> Path:
-        return self.log_dir / self._names.log_file
+        return self.project_root / "logs"
 
     @property
     @PathGuard.dir
     def local_home_dir(self) -> Path:
-        return self.data_dir / self._names.local_home_dir
+        return self.data_dir / "homes"
 
     @property
     @PathGuard.dir
@@ -83,13 +82,28 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @property
     def dot_env(self) -> Path:
-        path: Path = self.config_home / ".env"
+        try:
+            return PathGuard.file(
+                target=self.config_home / ".env",
+                default_content=self._defaults.dot_env_content,
+            )
+        except FileNotFoundError:
+            text = f"{c.red('Missing .env File!')} {c.white(self.dot_env_unconfirmed)}"
+            printer.danger(text)
+            raise typer.Exit(code=1) from None
+
+    @property
+    def dot_env_unconfirmed(self) -> Path:
         return PathGuard.file(
-            path, default_content=self._defaults.dot_env_content
+            target=self.config_home / ".env",
+            default_content=self._defaults.dot_env_content,
+            raise_error=False,
         )
 
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:
-        return self.data_dir / self._names.summary_file(
+        if not hasattr(self._names, "summary_file"):
+            raise AttributeError("Modify Paths.Names to SstNamesWithPatterns")
+        return self.data_dir / self._names.summary_file(  # ty: ignore
             {"day": str(day_count()), "suffix": suffix}
         )

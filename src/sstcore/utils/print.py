@@ -100,7 +100,9 @@ class Printer:
 
         self(Markdown(f"{prefix}{text}"), *args, **kwargs)
 
-    def panel(self, text: str, title=None, title_align="right", style=""):
+    def panel(
+        self, text: str, title=None, title_align="right", style="", **kwargs
+    ):
         title: str | None = title or self.name_and_version() or None
         self(
             Panel(
@@ -108,6 +110,7 @@ class Printer:
                 title=title,
                 title_align=title_align,
                 style=style,
+                **kwargs,
             )
         )
 

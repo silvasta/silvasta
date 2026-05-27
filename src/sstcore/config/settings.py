@@ -1,12 +1,14 @@
+import json
+from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Self
 
 from loguru import logger
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
-from ..utils import PathGuard
-from ..utils.path import XdgHomes
+from ..utils.log import LogParam
 from .defaults import SstDefaults
 from .names import SstNames
 
@@ -16,7 +18,19 @@ class SstSettings(BaseSettings):
 
     names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
-    last_updated: datetime = datetime.now(UTC)
+    log: LogParam = Field(default_factory=LogParam)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updates: deque[datetime] = Field(default_factory=deque)
+
+    @classmethod
+    def load(cls, path: Path) -> Self:
+        """Load current status from json"""
+        return cls.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+    def save(self, path: Path):
+        """Save current status to json"""
+        self.touch()
+        path.write_text(self.json_content(), encoding="utf-8")
 
     @classmethod
     def default_json_content(cls) -> str:
@@ -26,63 +40,26 @@ class SstSettings(BaseSettings):
             indent=2,
         )
 
-    @classmethod
-    def ensure_master_setting_file(
-        cls, write_new_file_if_missing: bool
-    ) -> Path:
-        """If file not exists, {write default content and} get Error"""
-
-        master_file_path: Path = cls._master_file_path()
-        content: str | None = (
-            cls.default_json_content() if write_new_file_if_missing else None
-        )
-        try:
-            PathGuard.file(
-                target=master_file_path,
-                default_content=content,
-                raise_error=True,
-            )
-            logger.debug("master_setting_file ensured")
-            return master_file_path
-
-        except FileNotFoundError:
-            if not write_new_file_if_missing:
-                raise FileNotFoundError(
-                    "Place master_setting_file at location or write default!"
-                ) from None  # TEST: how does the error look in cli?
-
-        logger.info("New master_setting_file written from default Settings")
-        return (
-            cls.ensure_master_setting_file(  # Again to check if write worked
-                write_new_file_if_missing=False,  # False to avoid loop
-            )
-        )
-
-    @classmethod
-    def _master_file_path(cls) -> Path:
-        """Generate immutable path to load Settings or finding setting_file!"""
-        # IDEA: _master_file_path : Path|None = None
-        # if _master_file_path:
-        #   return _master_file_path
-        tmp_names: SstNames = cls().names  # HACK: somehow strange
-        return (
-            XdgHomes("config").path
-            / tmp_names.project
-            / tmp_names.setting_file
-        )
-
-    def save_to_path(self, path: Path):
-        """Save current status to json"""
-        self.last_updated: datetime = datetime.now(UTC)
-        path.write_text(self.json_content(), encoding="utf-8")
-
-    def save_to_master_setting_file(self):
-        self.save_to_path(self._master_file_path())
-        logger.debug("saved to master_file_path")
-
-    def json_content(self) -> str:
+    def json_content(self, exclude_defaults=False) -> str:
         """Dump content of all class members"""
         return self.model_dump_json(
-            exclude_defaults=False,
+            exclude_defaults=exclude_defaults,
             indent=2,
         )
+
+    @model_validator(mode="after")
+    def enforce_deque_maxlen(self) -> Self:
+        desired_maxlen: int = self.defaults.setting_update_length
+        if self.updates.maxlen != desired_maxlen:
+            self.updates = deque(self.updates, maxlen=desired_maxlen)
+        return self
+
+    def touch(self):
+        n_saved_update_times: int = self.defaults.setting_update_length
+        if n_saved_update_times != (before := self.updates.maxlen):
+            self.updates: deque[datetime] = deque(
+                self.updates, maxlen=n_saved_update_times
+            )
+            logger.success(f"Changed: {n_saved_update_times=} ({before=})")
+        self.updates.append(update := datetime.now(UTC))
+        self.last_updated: datetime = update

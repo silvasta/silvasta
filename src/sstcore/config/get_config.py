@@ -6,6 +6,9 @@ from .settings import SstSettings
 
 _config_instance: ConfigManager | None = None
 
+# AI: move to __init__?
+# - what about projects that inherit?
+
 
 def get_config() -> ConfigManager:
     global _config_instance
@@ -16,7 +19,6 @@ def get_config() -> ConfigManager:
         _config_instance = ConfigManager(
             settings_cls=SstSettings,
             paths_cls=SstPaths,
-            write_new_master_setting_file_if_missing=True,
         )
         logger.info("ConfigManager setup completed")
     else:

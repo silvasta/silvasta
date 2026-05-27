@@ -1,10 +1,11 @@
+import random
 from functools import wraps
 
 import typer
 from loguru import logger
+from rich.panel import Panel
 
-from sstcore.config.manager import ConfigSetupParam
-
+from ..config.manager import ConfigSetupParam
 from ..utils import Printer, printer
 from ..utils.log import LogParam, LogSetupResult, setup_logging
 
@@ -51,30 +52,80 @@ def main_callback(
     verbose: bool,
     quiet: bool,
     param: ConfigSetupParam | None = None,
+    warn_no_file: bool = True,
 ):
     """Setup logging (data, etc...) for app executed as main app"""
+
+    level: str | None = "DEBUG" if verbose else None
 
     Printer.project_name = param.project_name if param else ""
     Printer.project_version = param.project_version if param else ""
 
-    printer.title(f"Welcome to {ctx.info_name}!")
+    # NEXT: set default style
+
+    match random.randint(1, 4):
+        # match 4:
+        case 1:
+            printer.title(f"Welcome to {ctx.info_name}!")
+        case 2:
+            printer.panel(
+                f"[white]Welcome to {ctx.info_name}![/]", style="cyan"
+            )
+        case 3:
+            printer.panel(
+                f"[bold white]Welcome to {ctx.info_name}![/]",
+                border_style="white on cyan",
+                padding=(1, 1),
+            )
+        case 4:
+            printer(
+                Panel(
+                    Panel(
+                        f"[white]Welcome to {ctx.info_name}![/]",
+                        style="cyan on black",
+                    ),
+                    style="cyan",
+                ),
+            )
+
     printer.title("Setup Config and Logging", style="cyan")
 
-    log_param: LogParam | None = param.log if param else None
-    level: str | None = "DEBUG" if verbose else None
+    log_param: LogParam = param.log if param else LogParam()
 
     result: LogSetupResult = setup_logging(
         log_level_override=level, quiet=quiet, param=log_param
     )
+
     if param:
-        printer.title(f"Config File: {param.config_file}", style="cyan")
+        if (path := param.config_file).is_file():
+            printer.panel(
+                f"[white]{path}[/]",
+                title="Config File",
+                title_align="left",
+                style="cyan",
+            )
+        else:
+            printer.danger("Config file provided by param doesn't exists!")
+            printer(param)
+            logger.error(f"Missing config file: {path=}")
     else:
-        printer.warn("Config File: Not provided by 'ConfigSetupParam'")
+        if warn_no_file:
+            printer.warn("Config File: Not provided by 'ConfigSetupParam'")
 
-    printer.title(f"Log File: {result.log_file}", style="cyan")
+    printer.panel(
+        f"[white]{result.log_file}[/]",
+        title="Log File",
+        title_align="left",
+        style="cyan",
+    )
 
-    if result.selected_param.print_log_param:
-        printer(result.selected_param)  # REMOVE: print: print_log_param = True
+    if result.setup_source == "param" and param:
+        result.setup_source: str = param.log_source
+
+    if log_param.print_at_setup:
+        printer(result)
+    else:
+        printer(f"Log param source: {result.setup_source}")
 
 
 def sub_callback(ctx: typer.Context):
