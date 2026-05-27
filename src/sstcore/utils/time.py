@@ -36,6 +36,7 @@ class DateRange:
 def timer(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        logger.info("Launching timer")
         start: float = time.perf_counter()
         result = func(*args, **kwargs)
         end: float = time.perf_counter()

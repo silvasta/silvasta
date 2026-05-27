@@ -9,6 +9,9 @@ from loguru import logger
 
 from sstcore.exceptions import NotImplementedDispatchError
 
+logger.remove()
+
+
 P = ParamSpec("P")
 
 # IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
@@ -16,6 +19,12 @@ P = ParamSpec("P")
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
+
+    _debug = True
+
+    @classmethod
+    def debug(cls, toggle: bool | None = None):
+        cls._debug: bool = not cls._debug if toggle is None else toggle
 
     class SyncMode(StrEnum):
         INCREMENT = auto()
@@ -36,7 +45,8 @@ class PathGuard:
                         path=target, ensure_parent=True
                     )
                 case PathGuard.SyncMode.IGNORE:
-                    logger.debug(f"ignoring existing file: {target=}")
+                    if PathGuard.debug:
+                        logger.debug(f"ignoring existing file: {target=}")
                     raise FileExistsError("Catch error for SyncMode('ignore')")
 
     @staticmethod
@@ -67,12 +77,13 @@ class PathGuard:
 
         return path
 
-    @staticmethod
-    def _ensure_dir_logic(path: Path | str) -> Path:
+    @classmethod
+    def _ensure_dir_logic(cls, path: Path | str) -> Path:
         """The actual implementation logic"""
         path: Path = PathGuard._ensure_input(path)
         path.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"directory ensured: {path}")
+        if cls.debug:
+            logger.debug(f"directory ensured: {path}")
         return path
 
     @staticmethod
@@ -189,7 +200,8 @@ class PathGuard:
         if not path.exists():  # TEST: check how much this spams
             msg = "path already unique, "
             if path.parent.exists():
-                logger.debug(msg + "path has parent")
+                if PathGuard.debug:
+                    logger.debug(msg + "path has parent")
             else:
                 msg += "path has no parent, "
                 if ensure_parent:
@@ -402,7 +414,9 @@ class PathGuard:
 
         source.copy(inspected_target := sync_mode.check_conflict(target))
         relative: str = PathGuard.relative_string(source, inspected_target)
-        logger.debug(f"Copied: {relative}")
+
+        if PathGuard.debug:
+            logger.debug(f"Copied: {relative}")
 
         return inspected_target
 
@@ -428,7 +442,9 @@ class PathGuard:
             raise e
 
         relative: str = PathGuard.relative_string(source, inspected_target)
-        logger.debug(f"Hardlinked: {relative}")
+
+        if PathGuard.debug:
+            logger.debug(f"Hardlinked: {relative}")
 
         return inspected_target
 
@@ -450,7 +466,9 @@ class PathGuard:
         inspected_target.symlink_to(source)
 
         relative: str = PathGuard.relative_string(source, inspected_target)
-        logger.debug(f"Symlinked: {relative}")
+
+        if PathGuard.debug:
+            logger.debug(f"Symlinked: {relative}")
 
         return inspected_target
 

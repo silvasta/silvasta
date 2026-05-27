@@ -106,7 +106,7 @@ class Printer:
         title: str | None = title or self.name_and_version() or None
         self(
             Panel(
-                renderable=text,
+                renderable=text,  # TODO: confirm renderable
                 title=title,
                 title_align=title_align,
                 style=style,

@@ -11,8 +11,7 @@ class XdgHomes(StrEnum):
     STATE = auto()
     CONFIG = auto()
 
-    @property
-    def path(self) -> Path:
+    def path_from_os(self) -> Path:
         return Path(
             os.getenv(
                 key=f"XDG_{self.name}_HOME",

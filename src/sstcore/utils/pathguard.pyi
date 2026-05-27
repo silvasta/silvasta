@@ -15,6 +15,8 @@ class PathGuard:
 
         def check_conflict(self, target: Path) -> Path: ...
 
+    @classmethod
+    def debug(cls, toggle: bool | None = None): ...
     @staticmethod
     def _ensure_input(
         path: Path | str,

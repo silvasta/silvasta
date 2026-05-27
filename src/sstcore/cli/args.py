@@ -22,7 +22,6 @@ DryRun = Annotated[
 
 
 Root = Annotated[
-    # TEST: useful? no collision??
     Path | None,
     typer.Option(
         "--root",
@@ -31,6 +30,7 @@ Root = Annotated[
     ),
 ]
 
+# IDEA: this ad function/factory for customization
 File = Annotated[
     # WARN: check collision with Files
     Path | None,
@@ -38,6 +38,7 @@ File = Annotated[
         "--file",
         "-f",
         help="Add file from path",
+        # IDEA: help="Select {file_name} file by path",
     ),
 ]
 Files = Annotated[
@@ -49,3 +50,13 @@ Files = Annotated[
         help="Add files from paths",
     ),
 ]
+
+Write = Annotated[
+    bool,
+    typer.Option(
+        "--write",
+        "-w",
+        help="Write the current status to disk",
+    ),
+]
+# NEXT: Save, store args to config (if possible)

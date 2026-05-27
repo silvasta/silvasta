@@ -67,46 +67,51 @@ class FolderScanner:
     output_stem: str = "summary"
 
     _debug: bool = False
+    _follow_symlinks = False
 
     def scan_local_files(self, get_absolute_paths: bool = False) -> list[Path]:
         """Get list of absolute paths of local files that match predefined conditions"""
-        p: list[Path] = sorted(
+        paths: list[Path] = sorted(
             path
             if get_absolute_paths
             else PathGuard.relative(target=path, root=self.scan_root)
-            for path in self.walk(
-                self.scan_root, self.path_filter, debug=self._debug
-            )
+            for path in self.walk(self.scan_root, self.path_filter)
         )
-        printer.lines_with_len("paths", p)
-        return p
+        printer.lines_with_len("paths", paths)
+        return paths
 
     @classmethod
     def walk(
-        cls, root: Path, path_filter: FilterSet | None = None, debug=False
+        cls, root: Path, path_filter: FilterSet | None = None
     ) -> Iterator[Path]:
         """Walk directory downwards and yield absolute file paths that match filter"""
         path_filter: FilterSet = path_filter or ProjectFilter()
 
-        for item in root.iterdir():
-            # LATER: use new path.walk() -> dirpath, dirnames, filenames?
-            if not path_filter(item):
-                if debug:
-                    logger.debug(f"ignoring: {item=}")
+        printer.danger(f"{cls._follow_symlinks=}")
 
-                continue
+        for dirpath, dirnames, filenames in root.walk(
+            follow_symlinks=cls._follow_symlinks
+        ):
+            valid_dirs: list[str] = []
 
-            if item.is_dir():
-                if debug:
-                    logger.debug(f"yield from folder: {item=}")
+            for dir in dirnames:
+                if path_filter(dir_path := dirpath / dir):
+                    valid_dirs.append(dir)
+                elif cls._debug:
+                    logger.debug(f"ignoring folder: {dir_path=}")
 
-                yield from cls.walk(item, path_filter)
+            dirnames[:] = valid_dirs  # skip the filtered-out folders
 
-            if item.is_file():
-                if debug:
-                    logger.debug(f"yield file: {item=}")
+            for file in filenames:
+                if not path_filter(file_path := dirpath / file):
+                    if cls._debug:
+                        logger.debug(f"ignoring file: {file_path=}")
+                    continue
 
-                yield item
+                if cls._debug:
+                    logger.debug(f"yield file: {file_path=}")
+
+                yield file_path
 
     def filesystem_tree(self) -> PathTreeNode:
         # TODO: Explain
@@ -124,7 +129,7 @@ class FolderScanner:
     ) -> PathTreeNode:
         # TODO: Explain
         return build_path_tree(
-            paths=list(cls.walk(root=root, path_filter=path_filter)),
+            paths=sorted(cls.walk(root=root, path_filter=path_filter)),
             root_name=root.name,
         )
 

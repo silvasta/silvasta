@@ -62,7 +62,7 @@ def pop_left(path_parts: list[deque]) -> dict[str, list[deque]]:
     return current_nodes
 
 
-def recursive_tree(
+def recursive_tree(  # TODO: rename: like recursive_path_tree or so
     path_parts: list[deque[str]],
     current_node_name: str = "",
     current_node_path: Path = Path(),

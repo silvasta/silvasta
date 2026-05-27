@@ -30,14 +30,14 @@ dependencies = [
   "send2trash>=2.1.0",
 ]
 
-[dependency-groups]
-dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.34"]
-
 [project.urls]
 Repository = "https://github.com/silvasta/silvasta"
 
+[dependency-groups]
+dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.34"]
+
 [build-system]
-requires = ["uv_build>=0.10.9,<0.11.0"]
+requires = ["uv_build>=0.11.16,<0.12.0"]
 build-backend = "uv_build"
 
 [project.optional-dependencies]

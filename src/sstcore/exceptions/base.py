@@ -18,3 +18,10 @@ class NotImplementedDispatchError(NotImplementedError, SstError):
 
         msg: str = "-|-".join(_display(target) for target in args)
         super().__init__(f"Function can't process: {msg}")
+
+
+class FailedSelectionError(RuntimeError, SstError):
+    def __init__(self, message=None):
+        if message is None:
+            message = "It was an easy Selection... how can you Fail this?"
+        super().__init__(message)

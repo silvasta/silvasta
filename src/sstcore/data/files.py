@@ -509,6 +509,8 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def scan_local_dir(self) -> list[Path]:
         scanner: FolderScanner = self.get_scanner()
+        scanner._debug = True  # REMOVE:
+        scanner._follow_symlinks = True  # REMOVE:
         return scanner.scan_local_files(get_absolute_paths=False)
 
     def get_scanner(self) -> FolderScanner:
