@@ -14,3 +14,4 @@ wheels/
 logs
 plots
 summary*
+/src/sstcore/utils/print/_helper_rich_lookup.py

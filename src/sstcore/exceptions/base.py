@@ -13,11 +13,23 @@ class NotImplementedDispatchError(NotImplementedError, SstError):
     """Raised when singledispatchmethod don't provide target type"""
 
     def __init__(self, *args: Any):
+        self.args: tuple[Any] = args
+
         def _display(target: Any):
             return f"{type(target)=}, {target=}"
 
         msg: str = "-|-".join(_display(target) for target in args)
         super().__init__(f"Function can't process: {msg}")
+
+
+class NotImplementedMixinError(NotImplementedError, SstError):
+    """Raised when singledispatchmethod don't provide target type"""
+
+    def __init__(self, base, mixin, func):
+        self.base = base
+        self.mixin = mixin
+        self.func = func
+        super().__init__(f"Promblem for {mixin=} of {base=} in {func=}")
 
 
 class FailedSelectionError(RuntimeError, SstError):

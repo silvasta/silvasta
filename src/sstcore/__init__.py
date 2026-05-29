@@ -1,6 +1,8 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from .utils import PathGuard, printer
+from sstcore.utils.print import create_printer, printer
+
+from .utils import PathGuard
 
 try:  # show pyproject.toml package name
     __version__: str = version("sstcore")
@@ -12,6 +14,7 @@ __all__: list[str] = [
     "__version__",
     "PathGuard",
     "printer",
+    "create_printer",
 ]
 
 # TODO: quick improvements
@@ -21,5 +24,5 @@ __all__: list[str] = [
 
 # TASK:
 # - time management, UTC, maybe new lib
-# - exceptions
+# - Exceptions, and how to link to SafeTyper
 # - DiffFileManager, together with hardlink
