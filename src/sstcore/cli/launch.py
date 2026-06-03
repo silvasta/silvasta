@@ -1,25 +1,23 @@
 from pathlib import Path
 
-import typer
-
 from ..tui import TreeSelectorApp
 from ..utils.print import printer
 from . import args as sargs
+from .engine import SafeTyper
 from .monitor import log_monitor
 from .scanner import folder_scanner
-from .setup import attach_callback
+
+# TODO: Rename utils_app or similar
 
 
 def main() -> None:
     app()
 
 
-app = typer.Typer(
+app = SafeTyper(
     name="utils",
     help="Show statistics, configurations and more",
-    no_args_is_help=True,
 )
-attach_callback(app)
 
 
 def launch_monitor(file: sargs.File = None):  # NOTE: CLI hint not amazing...
