@@ -1,5 +1,6 @@
-from .defaults import HomeSetup, SstDefaults
+from .defaults import SstDefaults
 from .get_config import get_config
+from .homes import HomeSetup
 from .manager import ConfigManager, ConfigSetupParam, ConfigTypes
 from .names import AutoParsedName, ParsedName, SstNames, StyledName
 from .paths import SstPaths

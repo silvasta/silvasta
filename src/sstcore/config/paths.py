@@ -2,12 +2,11 @@ from pathlib import Path
 from typing import cast
 
 import typer
-from loguru import logger
 
 from ..utils import PathGuard, day_count
-from ..utils.path import recursive_root
 from ..utils.print import ColorBox, printer
-from .defaults import HomeSetup, SstDefaults
+from .defaults import SstDefaults
+from .homes import HomeSetup
 from .names import AutoParsedName, ParsedName, SstNames
 
 c: ColorBox = printer.colorbox()
@@ -26,30 +25,21 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         self,
         names: TNames | None = None,
         defaults: TDefaults | None = None,
+        homes: HomeSetup = HomeSetup.PROJECT,
     ):
         self._defaults: TDefaults = defaults or cast(TDefaults, SstDefaults())
         self._names: TNames = names or cast(TNames, SstNames())
+        self._homes: HomeSetup = homes
 
-        self.project_root: Path = self._check_local_root()
+    @property
+    @PathGuard.dir
+    def project_root(self) -> Path:
+        return self._homes.root
 
-    def _check_local_root(self) -> Path:
-        """Find project root or use CWD"""
-        root: Path | None = recursive_root(
-            path=Path.cwd(),
-            indicator=self._defaults.project_root_indicator,
-        )
-        if root is not None:
-            self.project_root_found = True
-
-            return root
-
-        if self._defaults.home_setup == HomeSetup.LOCAL:  # TEST: home switch
-            logger.warning("No project root found -> default to: 'global'")
-            self._defaults.home_setup = HomeSetup.GLOBAL
-
-        self.project_root_found = False
-
-        return Path.cwd()
+    @property
+    @PathGuard.dir
+    def configs_dir(self) -> Path:
+        return self._homes.root
 
     @property
     @PathGuard.dir
@@ -74,17 +64,17 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     @property
     @PathGuard.dir
     def data_home(self) -> Path:
-        return self._defaults.home_setup.data_home
+        return self._homes.data_home
 
     @property
     @PathGuard.dir
     def state_home(self) -> Path:
-        return self._defaults.home_setup.state_home
+        return self._homes.state_home
 
     @property
     @PathGuard.dir
     def config_home(self) -> Path:
-        return self._defaults.home_setup.config_home
+        return self._homes.config_home
 
     @property
     def dot_env(self) -> Path:
