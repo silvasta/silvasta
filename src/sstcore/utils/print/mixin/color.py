@@ -1,7 +1,6 @@
 from functools import singledispatchmethod
 
-from sstcore.exceptions import NotImplementedDispatchError
-
+from ....exceptions import NotImplementedDispatchError
 from ..base import BasePrinter
 from ..stylebox import Attribute, ColorBox
 
@@ -14,8 +13,9 @@ class ColorMixin(BasePrinter):
         self._color_box = ColorBox()
 
     def panel(self, target, **kwargs):
+        self._debug_log_if_active(target, **kwargs)
         text_style: str = kwargs.pop("text_style", "")
-        super().panel(
+        super().panel(  # TODO: dispatch kwargs
             self._colorize(target, text_style=text_style, **kwargs), **kwargs
         )
 

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from enum import Enum, auto
 from typing import Any
 
+from loguru import logger
 from rich.console import Console
 from rich.panel import Panel
 from rich.theme import Theme
@@ -13,7 +14,9 @@ from ...exceptions.base import NotImplementedMixinError
 class BasePrinter:
     """Customized Rich Console setup for easy access"""
 
+    # MOVE: to decorator
     _debug: bool = False
+    _log: bool = False
 
     project_name: str = "App"
     project_version: str = "0.0.0"
@@ -25,12 +28,13 @@ class BasePrinter:
 
     def __call__(self, *args, **kwargs):
         """Rich console print, printer.mute(): switch to regular print"""
+        self._debug_log_if_active(args, **kwargs)
 
+        # The Core
         self.console.print(*args, **kwargs)
 
     def panel(self, target: Any, **kwargs) -> None:
-        if "frame" in kwargs:
-            kwargs["border_style"] = kwargs.pop("frame")
+        self._debug_log_if_active(target, **kwargs)
         self(Panel(renderable=target, **kwargs))
 
     def _colorize[T: str | list](self, text: T, style: str) -> T:
@@ -47,6 +51,14 @@ class BasePrinter:
             func="_format",
         )
 
+    def _debug_log_if_active(self, *args, anyway=False, **kwargs):
+        # TODO: make this decorator!
+        if self._debug or anyway:
+            if self._log:
+                logger.error(f"\n{args=}\n{kwargs=}")
+            else:
+                print(f"\n{args=}\n{kwargs=}")
+
     def preview_themes(self):
         """Displays all styles in the current theme to visually preview them."""
         self.panel("Theme Preview")
@@ -60,12 +72,19 @@ class BasePrinter:
     # MOVE: maybe to style that provides the default, but for sure attached here
     _raw_theme: dict[str, str] = {
         # LATER: work out nice and efficiant defaults
-        "normal": "bold white",
-        "info": "black on white",
-        "title": "bold white on cyan",
-        "warning": "bold black on yellow",
-        "success": "bold white on green",
-        "danger": "bold black on red",
+        "normal": "white",
+        "info": "white",
+        "title": "cyan",
+        "warning": "yellow",
+        "success": "green",
+        "danger": "red",
+        ### ---
+        "Normal": "bold white",
+        "Info": "black on white",
+        "Title": "bold white on cyan",
+        "Warning": "bold black on yellow",
+        "Success": "bold white on green",
+        "Danger": "bold black on red",
     }
 
     class Modus(Enum):
