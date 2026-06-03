@@ -6,6 +6,7 @@ from .paths import SstPaths
 from .settings import SstSettings
 
 
+# IDEA: __call__ to get config?
 def __getattr__(name):  # TEST:
     if name == "config":
         return get_config()

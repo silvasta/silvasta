@@ -1,7 +1,7 @@
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
-from .home_setup import HomeSetup
+from .homes import HomeSetup
 
 
 class SstDefaults(BaseSettings):

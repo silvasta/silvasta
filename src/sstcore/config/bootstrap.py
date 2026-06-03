@@ -5,9 +5,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from sstcore.config import SstSettings
-
 from ..utils.path import XdgHomes, recursive_root
+from .settings import SstSettings
 
 
 @dataclass
@@ -39,6 +38,7 @@ class ConfigBootstrap[TSettings: SstSettings]:
 
         for path_loader in cls.target_locations():
             if final_setting_file := cls.check_location(path_loader):
+                logger.info(f"{final_setting_file=}")
                 return final_setting_file
 
         # AUTO-SCAFFOLD: create a default config at the project location
@@ -66,7 +66,8 @@ class ConfigBootstrap[TSettings: SstSettings]:
     @classmethod
     def check_location(cls, path_loader: Callable) -> Path | None:
         try:
-            path = path_loader()
+            if not (path := path_loader()):
+                raise FileNotFoundError
             cls._settings_cls.load(path)
             logger.info("Found valid SettingsFile at path=")
             return path
@@ -120,6 +121,7 @@ class ConfigBootstrap[TSettings: SstSettings]:
 
     @classmethod
     def find_local_setting_file(cls) -> Path | None:
+        # TASK: return only Path
         if (path := Path.cwd() / cls.default_setting_file_name).exists():
             return path
         logger.debug(f"No file found at {path=}")
@@ -154,11 +156,13 @@ class ConfigBootstrap[TSettings: SstSettings]:
 
         try:
             project_version: str = version(package_name)
+            return project_version
         except PackageNotFoundError:
             logger.warning(
                 f"Package '{package_name}' not installed in this environment. "
                 "Are you running in dev mode without 'uv tool install -e .'?"
             )
-            project_version: str = cls.default_project_version
+        except ValueError:
+            logger.warning("No distribution name provided to check version")
 
-        return project_version
+        return cls.default_project_version

@@ -8,9 +8,15 @@ from ..utils import PathGuard, day_count
 from ..utils.path import recursive_root
 from ..utils.print import ColorBox, printer
 from .defaults import HomeSetup, SstDefaults
-from .names import SstNames
+from .names import AutoParsedName, ParsedName, SstNames
 
 c: ColorBox = printer.colorbox()
+
+# MOVE: but where?
+summary_file: AutoParsedName = ParsedName(
+    pattern="{day}_summary.{suffix}",
+    keys=["day", "suffix"],
+)
 
 
 class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
@@ -102,8 +108,6 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:
-        if not hasattr(self._names, "summary_file"):
-            raise AttributeError("Modify Paths.Names to SstNamesWithPatterns")
-        return self.data_dir / self._names.summary_file(  # ty: ignore
+        return self.data_dir / summary_file(
             {"day": str(day_count()), "suffix": suffix}
         )

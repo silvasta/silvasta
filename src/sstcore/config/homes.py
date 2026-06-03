@@ -3,8 +3,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from ..utils import PathGuard
 from ..utils.path import XdgHomes, find_project_root
+from ..utils.pathguard import PathGuard
 
 
 class HomeSetup(StrEnum):  # TEST: homesetup
