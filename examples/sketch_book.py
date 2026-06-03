@@ -55,9 +55,9 @@ def show_attributes():
         printer.header(f"This is the {attribute}")
 
     _show(attribute="default")
-    _show(attribute="normal")
-    _show(attribute="bold")
     _show(attribute="invert")
+    _show(attribute="bold")
+    _show(attribute="normal")
 
 
 def test_padding(pad=(1, 3)):

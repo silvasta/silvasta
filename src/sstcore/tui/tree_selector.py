@@ -7,8 +7,7 @@ from textual.message import Message
 from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
 
-from sstcore import printer
-
+from ..utils.print import printer
 from ..utils.simple_tree import SimpleTreeNode
 
 
