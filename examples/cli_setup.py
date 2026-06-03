@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import typer
 from loguru import logger
 
@@ -7,9 +9,10 @@ from sstcore import printer  # noqa: E402
 from sstcore.cli import attach_callback, logger_catch, utils_app  # noqa: E402
 from sstcore.config import ConfigSetupParam, get_config  # noqa: E402
 
+# TASK: refresh this
+#
 example_setup_param = ConfigSetupParam(
-    log=None,  # using bare defaults
-    config_file="my_config.json",  # highly recommended not hardcoding this!
+    config_file=Path("my_config.json"),
     project_name="sstcore-lib",
     project_version="0.0.33",
 )
@@ -17,7 +20,7 @@ printer.title("Example Setup Param")
 printer(example_setup_param)
 
 
-nice_defaults: ConfigSetupParam = get_config().compose_setup_param()
+nice_defaults: ConfigSetupParam = get_config().setup_info
 
 printer.title("Nice automatically generated Defaults")
 printer(nice_defaults)

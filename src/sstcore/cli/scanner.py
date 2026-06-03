@@ -12,29 +12,46 @@ from ..utils import (
     ProjectFilter,
     printer,
 )
-from ..utils.path import find_project_root
+from ..utils.path import get_project_root
 from ..utils.scanner import TargetFileType
 
 
-def folder_scanner(  # IMPORTANT: configs from config(derivative?) setup in CLI callback!!!
+def folder_scanner(
     scan_root: Path | None = None,
     output_file: Path | None = None,
-    print_debug_logs=False,
     path_filter: PathFilter | None = None,
     sort_method: str = "",
+    print_debug_logs=False,
 ):
     """Launch Scanner, then select from Filesystem Tree, finally write to file"""
 
-    scan_root: Path = scan_root or find_project_root()
+    scan_root: Path = scan_root or get_project_root()
     output_file: Path = output_file or get_config().paths.summary_file()
-    # LATER: check how to apply project.get_config
-
     output_file: Path = PathGuard.unique(output_file)
-    # LATER: maybe some Note when not unique? (maybe inside pathguard)
 
-    path_filter: PathFilter = path_filter or ProjectFilter(
-        _debug=print_debug_logs
-    )
+    if path_filter is None:
+        path_filter: PathFilter = ProjectFilter(
+            exclude={
+                ".git",
+                "__pycache__",
+                ".venv",
+                "venv",
+                "env",
+                "target",
+            },
+            require_any={
+                ".py",
+                ".pyi",
+                ".rs",
+                ".md",
+                ".json",
+                ".yaml",
+                ".toml",
+                ".tex",
+                ".cls",
+            },
+            _debug=print_debug_logs,
+        )
     # Do this first to avoid error after long selection process
     target: TargetFileType = FolderScanner.target_from_path(output_file)
 
@@ -45,12 +62,13 @@ def folder_scanner(  # IMPORTANT: configs from config(derivative?) setup in CLI 
 
     # TASK: load selected files here to previous_selection file
     previous_selection: list[Path] = []
+
     selector = TreeSelectorApp(
         sst_tree=tree, sort_method=sort_method, pre_select=previous_selection
     )
     if selected_files := selector.run():
-        printer.lines_with_len(name="Selected Files", lines=selected_files)
         # TASK: cache selected files here to previous_selection file
+        printer.lines_with_len(name="Selected Files", lines=selected_files)
     else:
         printer.warn("Action cancelled by user.")
         raise typer.Exit()

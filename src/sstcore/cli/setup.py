@@ -22,6 +22,9 @@ def logger_catch(func):
         ):
             return func(*args, **kwargs)
 
+    # IMPORTANT:
+    printer.warn("logger_catch outdated! Check cli.engine.SafeTyper")
+
     return wrapper
 
 
@@ -38,7 +41,8 @@ def attach_callback(app: typer.Typer, param: ConfigSetupParam | None = None):
             False, "--quiet", "-q", help="Terminal output"
         ),
     ):
-        printer.warn("Outdated Callback Attach! Check cli.engine.SafeTyper")
+        # IMPORTANT:
+        printer.warn("attach_callback outdated! Check cli.engine.SafeTyper")
 
         if ctx.parent is None:
             main_callback(ctx, verbose, quiet, param)
@@ -92,9 +96,6 @@ def main_callback(
         title_align="left",
         style="cyan",
     )
-
-    if result.setup_source == "param" and param:
-        result.setup_source = param.log_source
 
     if log_param.print_at_setup:
         printer(result)
