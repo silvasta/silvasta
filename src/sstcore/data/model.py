@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class SstModel(BaseModel):
-    """Extended Defaulds to pydantic.BaseModel"""
+    """Extended Defaults to pydantic.BaseModel"""
 
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 

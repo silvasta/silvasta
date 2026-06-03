@@ -29,7 +29,7 @@ class NotImplementedMixinError(NotImplementedError, SstError):
         self.base = base
         self.mixin = mixin
         self.func = func
-        super().__init__(f"Promblem for {mixin=} of {base=} in {func=}")
+        super().__init__(f"Problem for {mixin=} of {base=} in {func=}")
 
 
 class FailedSelectionError(RuntimeError, SstError):

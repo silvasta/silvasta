@@ -45,7 +45,7 @@ def show_colors():
     ]
     for color_print in colors:
         printer(f"{color_print.__name__.capitalize():>7}", end=" ")  # ty:ignore
-        color_print("This is so Coloful")
+        color_print("This is so Colorful")
 
 
 def show_attributes():

@@ -14,7 +14,7 @@ class HomeSetup(StrEnum):  # TEST: homesetup
     def boot(
         self,
         project_name: str | None = None,  # needed for global setup
-        project_root_indicator: str = "pyproject.toml",  # needed for porject setup
+        project_root_indicator: str = "pyproject.toml",  # needed for project setup
         project_root: Path | None = None,  # needed for local setup
     ):
         """Launch setup with something like init"""

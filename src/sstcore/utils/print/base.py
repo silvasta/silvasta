@@ -71,7 +71,7 @@ class BasePrinter:
 
     # MOVE: maybe to style that provides the default, but for sure attached here
     _raw_theme: dict[str, str] = {
-        # LATER: work out nice and efficiant defaults
+        # LATER: work out nice and efficient defaults
         "normal": "white",
         "info": "white",
         "title": "cyan",

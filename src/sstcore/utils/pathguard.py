@@ -138,7 +138,7 @@ class PathGuard:
             else:
                 warn = "Suppress error only allowed for case of writing file with default content!"
                 logger.warning(warn)
-                msg = f"Wrong input, file not confirmd: {path=}"
+                msg = f"Wrong input, file not confirmed: {path=}"
 
         raise FileNotFoundError(msg)
 
