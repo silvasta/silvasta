@@ -37,7 +37,7 @@ class ToolMixin(BasePrinter):
         """Debug Dict"""
 
         if header:  # TODO: args, title_header?
-            self.header(header, title="Dict Inspection", style="green")
+            self.panel(header, title="Dict Inspection", style="green")
 
         table: Table = toolbox.dict_table(target, self._format, show_type)
 

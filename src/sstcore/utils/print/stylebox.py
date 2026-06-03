@@ -7,7 +7,7 @@ from rich.color import Color
 from rich.style import Style
 
 type color = str | Color  # color part of style
-type Attribute = str | BoxAttribut  # attribute part of style
+type Attribute = str | BoxAttribute  # attribute part of style
 
 type style = str | Style  # assembled color and attribute
 
@@ -24,7 +24,7 @@ class Colors:
     white: color = "white"
 
 
-class BoxAttribut(StrEnum):
+class BoxAttribute(StrEnum):
     NORMAL = auto()
     BOLD = auto()
     INVERT = auto()
@@ -47,15 +47,15 @@ class ColorBox:
     """Isolated string formatter mapping to your core theme definitions."""
 
     @classmethod
-    def with_mode(cls, attribute: str | BoxAttribut = "normal"):
-        attribute: str = BoxAttribut(attribute)
+    def with_mode(cls, attribute: str | BoxAttribute = "normal"):
+        attribute: str = BoxAttribute(attribute)
         return cls(_attribute=attribute)
 
     _colors: Colors = field(default_factory=Colors)
-    _attribute: BoxAttribut = BoxAttribut.NORMAL
+    _attribute: BoxAttribute = BoxAttribute.NORMAL
 
-    def set(self, attribute: str | BoxAttribut):
-        self._attribute: BoxAttribut = BoxAttribut(attribute)
+    def set(self, attribute: str | BoxAttribute):
+        self._attribute: BoxAttribute = BoxAttribute(attribute)
 
     def _colorize(self, text: str, color: color) -> str:
         """Main worker that supports all Colors"""
@@ -112,7 +112,7 @@ def _match_inverted_style(self, style: str) -> tuple[str, str]:
     if (header_style := style.lower()) == style:
         return "", style
     if not (line_style := self._inverted_themes.get(header_style)):
-        logger.warning(f"No inverted style avaliable: {style=}")
+        logger.warning(f"No inverted style available: {style=}")
         line_style: str = header_style
     return line_style, header_style
 

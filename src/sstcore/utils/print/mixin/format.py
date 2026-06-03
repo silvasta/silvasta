@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from loguru import logger
-from rich.panel import Panel
+from pydantic import BaseModel
+from rich.console import ConsoleRenderable
 
 from ..base import BasePrinter
 
@@ -15,9 +16,7 @@ class FormatMixin(BasePrinter):
 
         match self.modus:
             case self.Modus.RICH:
-                if not isinstance(target, (Panel, str)):
-                    target: str = self._format(target)
-                super().__call__(target, *args, **kwargs)
+                super().__call__(self._format(target), *args, **kwargs)
 
             case self.Modus.STANDARD:
                 print(args[0] or "something went wrong...")
@@ -26,16 +25,40 @@ class FormatMixin(BasePrinter):
                 pass
 
     def panel(self, target: Any | list[Any], **kwargs):
+        if "frame" in kwargs:
+            kwargs["border_style"] = kwargs.pop("frame")
+        self._debug_log_if_active(target, **kwargs)
+
         super().panel(self._format(target), **kwargs)
 
     @singledispatchmethod
     def _format(self, target) -> str:
-        logger.error(f"Unknown format of {type(target)=}: {target=}")
+        logger.warning(f"Unknown format of {type(target)=}: {target=}")
         return str(target)
 
     @_format.register
-    def _(self, target: Enum) -> str:
+    def _(self, target: str):  # LATER: any modification?
+        """Let regular String just pass"""
+        return target
+
+    @_format.register
+    def _(self, target: BaseModel):  # LATER: any modification?
+        """Let regular String just pass"""
+        return target
+
+    @_format.register
+    def _(self, target: ConsoleRenderable):
+        """Let Default Rich objects just pass"""
+        return target
+
+    @_format.register
+    def _(self, target: dict | Enum) -> str:
         return str(target)
+
+    # REMOVE: after test
+    # @_format.register
+    # def _(self, target: Enum) -> str:
+    #     return str(target)
 
     @_format.register
     def _(self, target: list | tuple) -> str:

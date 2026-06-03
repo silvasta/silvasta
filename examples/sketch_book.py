@@ -17,6 +17,13 @@ def main():
         test_padding,
         experiment_t_string,
     ]
+    printer.panel("blbls lldj", frame="plum1")
+    printer.panel("blbls lldj", frame="plum2")
+    printer.panel("blbls lldj", frame="plum3")
+    printer.panel("blbls lldj", frame="plum4")
+    printer.panel("blbls lldj", frame="purple")
+    printer.panel("blbls lldj", frame="purple3")
+    # printer.panel("blbls lldj", frame="purple4")
     for run in select:
         functions[run]()
 
@@ -45,7 +52,7 @@ def show_colors():
     ]
     for color_print in colors:
         printer(f"{color_print.__name__.capitalize():>7}", end=" ")  # ty:ignore
-        color_print("This is so Coloful")
+        color_print("This is so Colorful")
 
 
 def show_attributes():
@@ -55,9 +62,9 @@ def show_attributes():
         printer.header(f"This is the {attribute}")
 
     _show(attribute="default")
-    _show(attribute="normal")
-    _show(attribute="bold")
     _show(attribute="invert")
+    _show(attribute="bold")
+    _show(attribute="normal")
 
 
 def test_padding(pad=(1, 3)):

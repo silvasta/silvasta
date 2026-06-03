@@ -1,7 +1,6 @@
 from functools import singledispatchmethod
 
-from sstcore.exceptions import NotImplementedDispatchError
-
+from ....exceptions import NotImplementedDispatchError
 from ..base import BasePrinter
 from ..stylebox import Attribute, ColorBox
 
@@ -14,8 +13,9 @@ class ColorMixin(BasePrinter):
         self._color_box = ColorBox()
 
     def panel(self, target, **kwargs):
+        self._debug_log_if_active(target, **kwargs)
         text_style: str = kwargs.pop("text_style", "")
-        super().panel(
+        super().panel(  # TODO: dispatch kwargs
             self._colorize(target, text_style=text_style, **kwargs), **kwargs
         )
 
@@ -25,18 +25,18 @@ class ColorMixin(BasePrinter):
 
     @singledispatchmethod
     def _colorize[T: str | list](self, text: T, style: str, **kwargs) -> T:
-        # TASK: check if try colorize instead of direct raise
         raise NotImplementedDispatchError(text, style, kwargs)
 
     @_colorize.register
-    def _[T: str](self, text: str, style: str = "", **kwargs) -> str:
+    def _[T: str](self, target: str, style: str = "", **kwargs) -> str:
         style: str = style or kwargs.get("text_style", "white")
+        text: str = self._format(target)
         return self._color_box._colorize(text, color=str(style))
 
     @_colorize.register
-    def _[T: list[str]](self, text: list, style: str, **kwargs) -> list[str]:
+    def _[T: list[str]](self, target: list, style: str, **kwargs) -> list[str]:
         style: str = style or kwargs.get("text_style", "white")
-        return [self._colorize(i, style) for i in text] or []
+        return [self._colorize(i, style) for i in target] or []
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
     ### Box
@@ -55,50 +55,34 @@ class ColorMixin(BasePrinter):
     ### Prints
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
 
-    def white(self, text: str) -> None:
+    def white(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.white(text))
 
-    def blue(self, text: str) -> None:
+    def blue(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.blue(text))
 
-    def red(self, text: str) -> None:
+    def red(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.red(text))
 
-    def green(self, text: str) -> None:
+    def green(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.green(text))
 
-    def cyan(self, text: str) -> None:
+    def cyan(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.cyan(text))
 
-    def magenta(self, text: str) -> None:
+    def magenta(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.magenta(text))
 
-    def yellow(self, text: str) -> None:
+    def yellow(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.yellow(text))
 
-    def black(self, text: str) -> None:
+    def black(self, target) -> None:
+        text: str = self._format(target)
         self(self.colors.black(text))
-
-    # def white(self, text: str) -> None:
-    #     super().__call__(self.colors.white(text))
-    #
-    # def blue(self, text: str) -> None:
-    #     super().__call__(self.colors.blue(text))
-    #
-    # def red(self, text: str) -> None:
-    #     super().__call__(self.colors.red(text))
-    #
-    # def green(self, text: str) -> None:
-    #     super().__call__(self.colors.green(text))
-    #
-    # def cyan(self, text: str) -> None:
-    #     super().__call__(self.colors.cyan(text))
-    #
-    # def magenta(self, text: str) -> None:
-    #     super().__call__(self.colors.magenta(text))
-    #
-    # def yellow(self, text: str) -> None:
-    #     super().__call__(self.colors.yellow(text))
-    #
-    # def black(self, text: str) -> None:
-    #     super().__call__(self.colors.black(text))

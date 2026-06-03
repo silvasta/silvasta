@@ -34,9 +34,9 @@ class LayoutMixin(BasePrinter):
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
 
-    def title(self, text, title="", title_align="right"):
+    def title(self, text, title="", title_align="right", **kwargs):
         title: str = title or self.name_and_version()
-        self.header(text, title=title, title_align=title_align)
+        self.header(text, title=title, title_align=title_align, **kwargs)
 
     def success(self, text):
         self.header(text, frame="green")
@@ -55,8 +55,8 @@ class LayoutMixin(BasePrinter):
     def lines(self, lines: list, style="", title: str = "", header: str = ""):
         """Print header as title followed by lines in panel"""
         if header:
-            self.header(header, style=style, title=title)
-        self.panel(lines, title=title, style=style)
+            self.header(text=header, frame=style, title=title)
+        self.panel(lines, title=title, frame=style)
 
     def lines_with_len(self, name, lines: list, style: str = "title"):
         header = f"{name}: {len(lines)}"
