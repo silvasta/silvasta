@@ -59,7 +59,7 @@ def setup_logging(
         log_param = LogParam()
 
     if log_level_override is not None:
-        log_param.log_level: str = log_level_override
+        log_param.log_level = log_level_override
 
     logger.remove()
 

@@ -39,7 +39,7 @@ def log_monitor(log_path: Path | None = None):
         launch_tail_log_console(log_path)
 
     except KeyboardInterrupt:
-        printer.warn("Log file tailing stopped", style="yellow")
+        printer.warn("Log file tailing stopped")
         sys.exit(0)
 
 

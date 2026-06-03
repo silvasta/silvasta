@@ -96,11 +96,12 @@ class ConfigBootstrap[TSettings: SstSettings]:
                 break
         else:
             # AUTO-SCAFFOLD: create default config at the project location
-            default_path: Path = cls._scaffold_default_config(settings_cls)
-            logger.warning(
-                f"No existing Settings found — created scaffold: {default_path=}"
+            final_setting_file: Path = cls._scaffold_default_config(
+                settings_cls, defaults
             )
-            final_setting_file: Path = default_path
+            logger.warning(
+                f"No existing Settings found — created scaffold: {final_setting_file=}"
+            )
 
         return BootResult(
             project_name=defaults.project_name,

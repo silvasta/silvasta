@@ -11,6 +11,8 @@ from sstcore.config import (
 )
 from sstcore.utils import printer
 
+# TASK: refresh this!
+
 
 class Names(SstNames):
     """Define new custom names or override default names,
@@ -39,7 +41,6 @@ class Paths(SstPaths):
 config: ConfigManager[ProjectSettings, Names, Defaults, Paths] = ConfigManager(
     settings_cls=ProjectSettings,
     paths_cls=Paths,
-    write_new_master_setting_file_if_missing=True,
 )
 
 # do you see: 'x: int'? (where ': int' comes from type checker)
