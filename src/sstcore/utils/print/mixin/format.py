@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from loguru import logger
+from pydantic import BaseModel
 from rich.console import ConsoleRenderable
 
 from ..base import BasePrinter
@@ -26,19 +27,22 @@ class FormatMixin(BasePrinter):
     def panel(self, target: Any | list[Any], **kwargs):
         if "frame" in kwargs:
             kwargs["border_style"] = kwargs.pop("frame")
-        if "style" in kwargs:
-            self._debug_log_if_active(target, anyway=True, **kwargs)
-        else:
-            self._debug_log_if_active(target, **kwargs)
+        self._debug_log_if_active(target, **kwargs)
+
         super().panel(self._format(target), **kwargs)
 
     @singledispatchmethod
     def _format(self, target) -> str:
-        logger.error(f"Unknown format of {type(target)=}: {target=}")
+        logger.warning(f"Unknown format of {type(target)=}: {target=}")
         return str(target)
 
     @_format.register
     def _(self, target: str):  # LATER: any modification?
+        """Let regular String just pass"""
+        return target
+
+    @_format.register
+    def _(self, target: BaseModel):  # LATER: any modification?
         """Let regular String just pass"""
         return target
 
@@ -48,8 +52,13 @@ class FormatMixin(BasePrinter):
         return target
 
     @_format.register
-    def _(self, target: Enum) -> str:  # TODO: better handling?
+    def _(self, target: dict | Enum) -> str:
         return str(target)
+
+    # REMOVE: after test
+    # @_format.register
+    # def _(self, target: Enum) -> str:
+    #     return str(target)
 
     @_format.register
     def _(self, target: list | tuple) -> str:

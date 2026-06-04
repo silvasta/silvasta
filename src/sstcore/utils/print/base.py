@@ -51,8 +51,8 @@ class BasePrinter:
             func="_format",
         )
 
+    # TASK: make this decorator!
     def _debug_log_if_active(self, *args, anyway=False, **kwargs):
-        # TODO: make this decorator!
         if self._debug or anyway:
             if self._log:
                 logger.error(f"\n{args=}\n{kwargs=}")
