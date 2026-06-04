@@ -6,35 +6,40 @@ from typing import ParamSpec, cast
 
 from loguru import logger
 
-logger.remove()
+from ._config import PathConfig, PathInput, _state
 
-P = ParamSpec("P")
+P = ParamSpec("P")  # REMOVE: after fixing types (Python 3.14)
+
+# TASK: apply new PathInput
 
 
-def _ensure_input(  # AI: how to make this more universal? without keeping thousends of args
-    path: Path | str,
-    resolve: bool = False,
-    check_exists: bool = False,
-    must_exists: bool = False,
-) -> Path:
-    """Confirm path is Path, attach other checks if needed"""
-    path = Path(path)
+def _ensure_input(path_input: PathInput) -> Path:
+    """Normalize strings, Paths, or PathConfig instances into validated Path objects."""
+
+    if isinstance(path_input, PathConfig):
+        path = Path(path_input.target)
+        resolve: bool = path_input.resolve
+        check_exists: bool = path_input.check_exists
+        must_exists: bool = path_input.must_exists
+    else:
+        path = Path(path_input)
+        resolve = check_exists = must_exists = False
 
     if resolve:
         path: Path = path.resolve()
 
     if check_exists or must_exists:
         text: str = "exists!" if path.exists() else "not found on disk!"
-        msg = f"input {text} for: {path=}"
+        msg = f"Input {text} for: {path=}"
 
-    if check_exists:
-        logger.info(msg)
+        if check_exists:
+            logger.info(msg)
+        if must_exists:
+            if not path.exists():
+                raise FileNotFoundError(msg)
 
-    if must_exists:
-        if not path.exists():
-            raise FileNotFoundError(msg)
-        if not check_exists:
-            logger.debug(msg)
+            if _state.debug:
+                logger.debug(msg)
 
     return path
 
@@ -43,13 +48,15 @@ def _ensure_dir_logic(path: Path | str) -> Path:
     """The actual implementation logic"""
     path: Path = _ensure_input(path)
     path.mkdir(parents=True, exist_ok=True)
-    if cls.debug:  # FIX: how to get this value?
+    if _state.debug:
         logger.debug(f"directory ensured: {path}")
     return path
 
 
-# FIX:  ├╴  Generic function `dir` should use type parameters Ruff (UP047) [51, 5]
-def dir(target: Callable[P, Path] | Path | str) -> Callable[P, Path] | Path:
+# FIX: ParamSpec
+def dir_main(
+    target: Callable[P, Path] | Path | str,
+) -> Callable[P, Path] | Path:
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     # Case 1: Used as a Function Call (PathGuard.dir(path))
@@ -102,7 +109,7 @@ def _ensure_file_logic(
 
 
 # FIX: ParamSpec
-def file(
+def file_main(
     target: Callable[P, Path] | Path | str | None = None,
     raise_error=True,
     default_content: str | None = None,
@@ -150,10 +157,10 @@ def _get_unique_candidate(path: Path | str, ensure_parent: bool) -> Path:
 
     path: Path = _ensure_input(path)
 
-    if not path.exists():  # TEST: check how much this spams
+    if not path.exists():
         msg = "path already unique, "
         if path.parent.exists():
-            if PathGuard.debug:  # FIX:
+            if _state.debug:
                 logger.debug(msg + "path has parent")
         else:
             msg += "path has no parent, "
@@ -187,7 +194,7 @@ def _get_unique_candidate(path: Path | str, ensure_parent: bool) -> Path:
 
 
 # FIX: ParamSpec
-def unique(
+def unique_main(
     target: Callable[P, Path] | Path | str | None = None,
     ensure_parent=False,
 ) -> (
@@ -232,7 +239,6 @@ def unique(
         return decorator
 
 
-@staticmethod
 def find_sequence(base_target: Path | str) -> list[Path]:
     """Find all paths of a sequence (base name + auto-incremented versions)
     returns list, sorted by modification time (newest first)"""
@@ -244,9 +250,7 @@ def find_sequence(base_target: Path | str) -> list[Path]:
 
     # Same logic as in _get_unique_candidate, consider when adapt!
     suffixes: str = "".join(base.suffixes)
-    original_stem: str = (  # TODO: what if stem has already _NUM ?
-        base.name[: -len(suffixes)] if suffixes else base.name
-    )
+    original_stem: str = base.name[: -len(suffixes)] if suffixes else base.name
 
     #  re.escape to ensure special chars  don't break regex
     suffix_esc: str = re.escape(suffixes)
@@ -258,7 +262,6 @@ def find_sequence(base_target: Path | str) -> list[Path]:
     sequence: list[Path] = [
         item for item in parent.iterdir() if pattern.match(item.name)
     ]
-    # LATER: make sort strategy or flag, check as well how to use in PathGuard.prune
     sequence.sort(key=lambda p: p.stat().st_mtime, reverse=True)
 
     return sequence

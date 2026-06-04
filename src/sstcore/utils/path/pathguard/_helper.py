@@ -11,15 +11,14 @@ from ._ensure import _ensure_input
 
 
 def relative_string(source: Path, target: Path):
-    _relative: Path | None = relative_duo(source, target)
-    _relative: Path = _relative or relative(
+    relative: Path | None = relative_duo(source, target)
+    relative: Path = relative or relative_main(
         target=target, root=source, strict=False
     )
     return f"{source.name} -> {relative}"
 
 
-@staticmethod
-def relative(  # AI: here the args are overwhelming...
+def relative_main(
     target: Path | str,
     root: Path | str | None = None,
     strict: bool = True,
@@ -27,13 +26,11 @@ def relative(  # AI: here the args are overwhelming...
     must_exists: bool = False,
 ) -> Path:
     """Find relative path starting at root|CWD downwards to target"""
-    target_path: Path = (
-        _ensure_input(  # TASK: from where import _ensure_input?
-            path=target,
-            resolve=True,
-            check_exists=check_exists,
-            must_exists=must_exists,
-        )
+    target_path: Path = _ensure_input(  # TASK: clean args
+        path=target,
+        resolve=True,
+        check_exists=check_exists,
+        must_exists=must_exists,
     )
     root_path: Path = _ensure_input(
         path=root or Path.cwd(),
@@ -53,7 +50,6 @@ def relative(  # AI: here the args are overwhelming...
         return Path(os.path.relpath(target_path, root_path))
 
 
-@staticmethod
 def relative_duo(
     path1: Path | str,
     path2: Path | str,
@@ -62,7 +58,7 @@ def relative_duo(
 ) -> Path | None:
     """Find relative path from any of both directions or get None"""
 
-    path1: Path = _ensure_input(
+    path1: Path = _ensure_input(  # TASK: args
         path=path1,
         check_exists=check_exists,
         must_exists=must_exists,
@@ -73,12 +69,12 @@ def relative_duo(
         must_exists=must_exists,
     )
     try:
-        rel21 = relative(path1, path2, strict=True)
+        rel21 = relative_main(path1, path2, strict=True)
     except ValueError:
         rel21 = None
 
     try:
-        rel12 = relative(path2, path1, strict=True)
+        rel12 = relative_main(path2, path1, strict=True)
     except ValueError:
         rel12 = None
 
@@ -98,24 +94,21 @@ def relative_duo(
 
 
 @functools.singledispatch
-@staticmethod
 def split_read_print_path(target, local_root: Path | None = None):
     raise NotImplementedDispatchError(target, local_root)
 
 
 @split_read_print_path.register
-@staticmethod
 def _(target: list, local_root: Path | None = None) -> list[tuple[Path, Path]]:
     return [split_read_print_path(path, local_root) for path in target]
 
 
 @split_read_print_path.register
-@staticmethod
 def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
     if target.is_absolute():
         read_path: Path = target
         print_path: Path = (
-            target if local_root is None else relative(target, local_root)
+            target if local_root is None else relative_main(target, local_root)
         )
     else:  # Relative target
         if local_root is None:

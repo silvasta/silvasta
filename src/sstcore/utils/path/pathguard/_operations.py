@@ -5,6 +5,7 @@ from typing import Any
 
 from loguru import logger
 
+from ._config import _state
 from ._ensure import (
     _ensure_dir_logic,
     _ensure_input,
@@ -19,23 +20,19 @@ class SyncMode(StrEnum):
     OVERRIDE = auto()
     IGNORE = auto()
 
-    # TODO: imports from _ensure
-
     def check_conflict(self, target: Path) -> Path:
         if not target.exists():
             _ensure_dir_logic(target.parent)
             return target
 
-        match self:  # FIX: depending on how SyncMode is attached later
-            case PathGuard.SyncMode.OVERRIDE:
+        match self:
+            case SyncMode.OVERRIDE:
                 logger.warning(f"Overriding existing File at {target=}")
                 return target
-            case PathGuard.SyncMode.INCREMENT:
+            case SyncMode.INCREMENT:
                 return _get_unique_candidate(path=target, ensure_parent=True)
-            case PathGuard.SyncMode.IGNORE:
-                if PathGuard.debug:
-                    logger.debug(f"ignoring existing file: {target=}")
-                raise FileExistsError("Catch error for SyncMode('ignore')")
+            case SyncMode.IGNORE:
+                raise FileExistsError("Catch error for SyncMode.IGNORE")
 
 
 def remove(target: Path | str) -> bool:
@@ -144,7 +141,7 @@ def copy(
     source.copy(inspected_target := sync_mode.check_conflict(target))
     relative: str = relative_string(source, inspected_target)
 
-    if PathGuard.debug:  # FIX:
+    if _state.debug:  # FIX:
         logger.debug(f"Copied: {relative}")
 
     return inspected_target
@@ -173,13 +170,12 @@ def hardlink(
 
     relative: str = relative_string(source, inspected_target)
 
-    if PathGuard.debug:
+    if _state.debug:
         logger.debug(f"Hardlinked: {relative}")
 
     return inspected_target
 
 
-@staticmethod
 def symlink(
     source: Path | str,
     target: Path | str,
@@ -197,7 +193,7 @@ def symlink(
 
     relative: str = relative_string(source, inspected_target)
 
-    if PathGuard.debug:
+    if _state.debug:
         logger.debug(f"Symlinked: {relative}")
 
     return inspected_target
