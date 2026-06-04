@@ -12,48 +12,6 @@ from .print import printer
 from .simple_tree import PathTreeNode, build_path_tree
 
 
-class TargetFileType(StrEnum):
-    # NEXT: TargetFileType -> SummaryFile
-    # - collect everything independen of scan
-    # - build easy execution in scan
-    MD = auto()
-    XML = auto()
-    TXT = auto()
-
-    def start_part(self) -> str:
-        return {
-            TargetFileType.MD: "## Code Base",
-            TargetFileType.XML: "<codebase>",
-            TargetFileType.TXT: "",
-        }[self]
-
-    def content(self, rel_path: Path, content: str) -> str:
-        match self:
-            case TargetFileType.MD:
-                return self.format_for_md(rel_path, content)
-            case TargetFileType.XML:
-                return f'  <file path="{rel_path}">\n{content}\n  </file>'
-            case TargetFileType.TXT:
-                return f"--- file_path: {rel_path} ---\n{content}"
-
-    def end_part(self) -> str:
-        return {
-            TargetFileType.MD: "",
-            TargetFileType.XML: "</codebase>",
-            TargetFileType.TXT: "",
-        }[self]
-
-    @staticmethod
-    def format_for_md(path: Path, content: str) -> str:
-        match path.suffix:
-            case ".py" | ".pyi":
-                return f"```python\n# {path}\n{content}\n```"
-            case ".rs":
-                return f"```rust\n// {path}\n{content}\n```"
-            case _:
-                return f"`{path}`\n```\n{content}\n```"
-
-
 @dataclass
 class FolderScanner:
     """Scan downwards from local root, filter, get path list or load files"""
@@ -219,3 +177,47 @@ class FolderScanner:
             raise
 
         self.create_summary_file(target, output_path)
+
+
+class TargetFileType(StrEnum):
+    # NEXT: TargetFileType -> SummaryFile
+    # - collect everything independen of scan
+    # - build easy execution in scan
+    MD = auto()
+    XML = auto()
+    TXT = auto()
+
+    def start_part(self) -> str:
+        return {
+            TargetFileType.MD: "## Code Base",
+            TargetFileType.XML: "<codebase>",
+            TargetFileType.TXT: "",
+        }[self]
+
+    def content(self, rel_path: Path, content: str) -> str:
+        match self:
+            case TargetFileType.MD:
+                return self.format_for_md(rel_path, content)
+            case TargetFileType.XML:
+                return f'  <file path="{rel_path}">\n{content}\n  </file>'
+            case TargetFileType.TXT:
+                return f"--- file_path: {rel_path} ---\n{content}"
+
+    def end_part(self) -> str:
+        return {
+            TargetFileType.MD: "",
+            TargetFileType.XML: "</codebase>",
+            TargetFileType.TXT: "",
+        }[self]
+
+    @staticmethod
+    def format_for_md(path: Path, content: str) -> str:
+        match path.suffix:
+            case ".py" | ".pyi":
+                return f"```python\n# {path}\n{content}\n```"
+            case ".rs":
+                return f"```rust\n// {path}\n{content}\n```"
+            case ".tex":
+                return f"```tex\n% {path}\n{content}\n```"
+            case _:
+                return f"`{path}`\n```\n{content}\n```"
