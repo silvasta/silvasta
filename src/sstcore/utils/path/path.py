@@ -1,32 +1,7 @@
-import os
 import tomllib
-from enum import StrEnum, auto
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-
-
-class XdgHomes(StrEnum):
-    DATA = auto()
-    STATE = auto()
-    CONFIG = auto()
-
-    def path_from_os(self) -> Path:
-        return Path(
-            os.getenv(
-                key=f"XDG_{self.name}_HOME",
-                default=self._default_path(),
-            )
-        )
-
-    def _default_path(self) -> Path:
-        """Default to user home and default location"""
-        mapping: dict = {
-            XdgHomes.DATA: ".local/share",
-            XdgHomes.STATE: ".local/state",
-            XdgHomes.CONFIG: ".config",
-        }
-        return Path.home() / mapping[self]
 
 
 def recursive_root(path: Path, indicator: str) -> Path | None:

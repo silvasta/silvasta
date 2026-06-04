@@ -46,7 +46,7 @@ def find_project_root(
         return None
 
 
-def project_root(
+def get_project_root(
     start: Path | None = None,
     indicator: str = "pyproject.toml",
 ) -> Path:

@@ -18,6 +18,7 @@ class HomeSetup(StrEnum):  # TEST: homesetup
         project_root: Path | None = None,  # needed for local setup
     ):
         """Launch setup with something like init"""
+
         match self:
             case HomeSetup.GLOBAL:
                 if project_name is None:
@@ -60,6 +61,15 @@ class HomeSetup(StrEnum):  # TEST: homesetup
 
             case self.GLOBAL | self.LOCAL:
                 return self.config_home
+
+    @property
+    def log_dir(self) -> Path:
+        match self:
+            case self.PROJECT:
+                return self.root / "logs"
+
+            case self.GLOBAL | self.LOCAL:
+                return self.state_home / "logs"
 
     @property
     def config_home(self) -> Path:
