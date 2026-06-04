@@ -106,6 +106,10 @@ class ConfigManager[
         Printer.project_version = self.project_version
 
     @property
+    def home_setup(self) -> HomeSetup:
+        return self.paths._homes
+
+    @property
     def all_instances(self) -> list[ConfigTypes]:
         return [
             self.paths,

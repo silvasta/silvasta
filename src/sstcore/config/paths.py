@@ -39,7 +39,12 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     @property
     @PathGuard.dir
     def configs_dir(self) -> Path:
-        return self._homes.root
+        return self._homes.configs_dir
+
+    @property
+    @PathGuard.dir
+    def log_dir(self) -> Path:
+        return self._homes.log_dir
 
     @property
     @PathGuard.dir
@@ -50,11 +55,6 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     @PathGuard.dir
     def plot_dir(self) -> Path:
         return self.project_root / self._names.plot_dir
-
-    @property
-    @PathGuard.dir
-    def log_dir(self) -> Path:
-        return self.project_root / "logs"
 
     @property
     @PathGuard.dir

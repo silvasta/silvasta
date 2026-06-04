@@ -6,6 +6,7 @@ from typing import Self
 
 from loguru import logger
 
+from ..utils.path import pyproject_name
 from .homes import HomeSetup
 from .settings import SstSettings
 
@@ -46,8 +47,9 @@ class DefaultBootPaths(BootDefaults):
 
     def _home_setup_path(self, target: HomeSetup):
         if self.home_setup == target:
-            # AI: usually that should not happen, still...
-            raise ValueError("This path is already 'provided_from_home_setup'")
+            raise AttributeError(
+                "This path is already 'provided_from_home_setup'"
+            )
         return target.configs_dir / self.setting_file_name
 
     def home_setup_project(self) -> Path:
@@ -79,11 +81,9 @@ class ConfigBootstrap[TSettings: SstSettings]:
         cls, settings_cls: type[TSettings], defaults: BootDefaults
     ) -> BootResult:
 
-        # LATER: check if needed at all or validation needed
-        project_name: str = defaults.project_name
-        version: str = (
-            cls.check_project_version(package_name=defaults.project_name)
-            or defaults.project_version
+        project_name: str = cls.check_project_name(defaults)
+        version: str = cls.check_project_version(
+            package_name=project_name, defaults=defaults
         )
         HomeSetup(defaults.home_setup).boot(
             project_name=project_name,
@@ -95,8 +95,7 @@ class ConfigBootstrap[TSettings: SstSettings]:
                 logger.info(f"Found valid Settings: {final_setting_file=}")
                 break
         else:
-            # AUTO-SCAFFOLD: create default config at the project location
-            final_setting_file: Path = cls._scaffold_default_config(
+            final_setting_file: Path = cls.scaffold_default_config(
                 settings_cls, defaults
             )
             logger.warning(
@@ -114,6 +113,8 @@ class ConfigBootstrap[TSettings: SstSettings]:
         path_function: Callable, settings_cls: type[TSettings]
     ) -> Path | None:
         """Verify if SettingsFile exists at path and can be loaded"""
+
+        path = None  # Failsafe for logs in except
         try:
             path: Path = path_function()
             if not path.exists():
@@ -122,21 +123,21 @@ class ConfigBootstrap[TSettings: SstSettings]:
             logger.info(f"Found valid SettingsFile at {path=}")
             return path
 
-        except FileNotFoundError as error:
-            logger.debug(f"No file found at {path=}, {error=}")
+        except (FileNotFoundError, AttributeError) as error:
+            logger.debug(f"No file found at location: {error=}")
+
         except ValueError as error:
-            # AI: ...is this ValueError warning to hard for doubled _home_setup_path?
-            logger.warning(
-                f"Problem with loading SettingsFile: {path=}, {error=}"
-            )
+            logger.warning(f"Problem with Settings: {path=}, {error=}")
+
         return None
 
     @classmethod
-    def _scaffold_default_config(
+    def scaffold_default_config(
         cls, settings_cls, defaults: BootDefaults
     ) -> Path:
         """Create a minimal valid config. Never overwrite existing."""
 
+        path = None  # Failsafe for logs in except
         for path_function in DefaultBootPaths.path_factory(defaults):
             try:
                 if (path := path_function()).exists():
@@ -147,8 +148,8 @@ class ConfigBootstrap[TSettings: SstSettings]:
                 logger.info("New setting file created from defaults")
                 return path
 
-            except FileNotFoundError:
-                logger.debug(f"Path can't be constructed: {path=}")
+            except (FileNotFoundError, AttributeError) as error:
+                logger.debug(f"Path can't be constructed: {error=}")
 
             except ValueError as error:
                 logger.warning(f"Problem with: {path=}, {error=}")
@@ -156,8 +157,37 @@ class ConfigBootstrap[TSettings: SstSettings]:
         raise RuntimeError("Unable to scaffold new setting file")
 
     @staticmethod
-    def check_project_version(package_name) -> str | None:
+    def check_project_name(defaults: BootDefaults) -> str:
         """Get project_version from installation with project_name"""
+
+        if not (provided_name := defaults.project_name):
+            logger.debug("no project name provided")
+
+        try:
+            pyproject_toml_name: str = pyproject_name()
+
+        except FileNotFoundError:
+            if defaults.home_setup == HomeSetup.PROJECT:
+                logger.warning("Unable to find pyproject.toml file")
+            else:
+                logger.debug("no project name found in pyproject.toml")
+            pyproject_toml_name: str = ""
+
+        if provided_name != pyproject_toml_name:
+            msg = f"Using {provided_name=} but {pyproject_toml_name=}"
+            logger.info(msg)
+
+        name: str = provided_name or pyproject_toml_name or ""
+
+        logger.debug(f"finally using for project: {name=}")
+        return name
+
+    @staticmethod
+    def check_project_version(
+        package_name: str, defaults: BootDefaults
+    ) -> str:
+        """Get project_version from installation with project_name"""
+
         try:
             project_version: str = version(package_name)
             return project_version
@@ -168,3 +198,5 @@ class ConfigBootstrap[TSettings: SstSettings]:
             )
         except ValueError:
             logger.warning("No distribution name provided to check version")
+
+        return defaults.project_version
