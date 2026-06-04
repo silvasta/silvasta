@@ -11,7 +11,9 @@ from ._config import PathConfig, PathInput, _state
 
 def _ensure_input(path_input: PathInput) -> Path:
     """Normalize strings, Paths, or PathConfig instances into validated Path objects."""
+
     # LATER: compbine with InputConfig
+
     if isinstance(path_input, PathConfig):
         path = Path(path_input.target)
         resolve: bool = path_input.resolve

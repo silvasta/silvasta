@@ -30,7 +30,7 @@ class PathConfig:
             args["target"] = path_input
         elif path_input is None:
             args["target"] = Path.cwd()
-        else:
+        else:  # LATER: custom error
             raise ValueError(f"Invalid {path_input=}")
 
         if resolve is not None:

@@ -8,15 +8,6 @@ from ._config import PathConfig, PathInput
 from ._ensure import _ensure_input
 
 
-def relative_string(source: Path, target: Path):
-    # TODO: PathInput
-    relative: Path | None = relative_duo(source, target)
-    relative: Path = relative or relative_main(
-        target=target, root=source, strict=False
-    )
-    return f"{source.name} -> {relative}"
-
-
 def relative_main(
     target: PathInput, root: PathInput | None = None, strict: bool = True
 ) -> Path:
@@ -35,6 +26,15 @@ def relative_main(
         import os
 
         return Path(os.path.relpath(_target, _root))
+
+
+def relative_string(source: Path, target: Path):  # TODO: PathInput
+    """Small helper for prints"""
+    relative: Path | None = relative_duo(source, target)
+    relative: Path = relative or relative_main(
+        target=target, root=source, strict=False
+    )
+    return f"{source.name} -> {relative}"
 
 
 def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:

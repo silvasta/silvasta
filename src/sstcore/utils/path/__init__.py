@@ -1,6 +1,5 @@
 from .homes import HomeSetup, XdgHomes
-from .pathguard import PathGuard
-from .pathguard._config import PathConfig, PathInput  # TODO: wait for pyi
+from .pathguard import PathConfig, PathGuard, PathInput
 from .project_toml import pyproject_name, pyproject_path, pyproject_sns
 from .search import (
     find_project_root,
