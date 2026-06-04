@@ -2,20 +2,16 @@ import functools
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import ParamSpec, cast
+from typing import cast
 
 from loguru import logger
 
 from ._config import PathConfig, PathInput, _state
 
-P = ParamSpec("P")  # REMOVE: after fixing types (Python 3.14)
-
-# TASK: apply new PathInput
-
 
 def _ensure_input(path_input: PathInput) -> Path:
     """Normalize strings, Paths, or PathConfig instances into validated Path objects."""
-
+    # LATER: compbine with InputConfig
     if isinstance(path_input, PathConfig):
         path = Path(path_input.target)
         resolve: bool = path_input.resolve
@@ -44,7 +40,7 @@ def _ensure_input(path_input: PathInput) -> Path:
     return path
 
 
-def _ensure_dir_logic(path: Path | str) -> Path:
+def _ensure_dir_logic(path: PathInput) -> Path:
     """The actual implementation logic"""
     path: Path = _ensure_input(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -53,14 +49,13 @@ def _ensure_dir_logic(path: Path | str) -> Path:
     return path
 
 
-# FIX: ParamSpec
-def dir_main(
-    target: Callable[P, Path] | Path | str,
+def dir_main[**P](
+    target: Callable[P, Path] | PathInput,
 ) -> Callable[P, Path] | Path:
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     # Case 1: Used as a Function Call (PathGuard.dir(path))
-    if isinstance(target, (Path, str)):
+    if isinstance(target, (Path, str, PathConfig)):
         return _ensure_dir_logic(target)
 
     # Case 2: Used as a Decorator (@PathGuard.dir)
@@ -78,7 +73,7 @@ def dir_main(
 
 
 def _ensure_file_logic(
-    path: Path | str, raise_error: bool, default_content: str | None
+    path: PathInput, raise_error: bool, default_content: str | None
 ) -> Path:
 
     path: Path = _ensure_input(path)
@@ -108,9 +103,8 @@ def _ensure_file_logic(
     raise FileNotFoundError(msg)
 
 
-# FIX: ParamSpec
-def file_main(
-    target: Callable[P, Path] | Path | str | None = None,
+def file_main[**P](
+    target: Callable[P, Path] | PathInput | None = None,
     raise_error=True,
     default_content: str | None = None,
 ) -> (
@@ -124,7 +118,7 @@ def file_main(
     """Ensure path is file, write default content and | or raise error"""
 
     # CASE 1: Function Call -> PathGuard.file(path)
-    if isinstance(target, (Path, str)):
+    if isinstance(target, (Path, str, PathConfig)):
         return _ensure_file_logic(target, raise_error, default_content)
 
     # CASE 2: Bare Decorator -> @PathGuard.file
@@ -151,8 +145,10 @@ def file_main(
 
         return decorator
 
+    raise TypeError(f"Invalid target type for PathGuard.dir: {type(target)}")
 
-def _get_unique_candidate(path: Path | str, ensure_parent: bool) -> Path:
+
+def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
     """Internal logic: Appends counter until a free filename is found."""
 
     path: Path = _ensure_input(path)
@@ -193,9 +189,8 @@ def _get_unique_candidate(path: Path | str, ensure_parent: bool) -> Path:
     return candidate
 
 
-# FIX: ParamSpec
-def unique_main(
-    target: Callable[P, Path] | Path | str | None = None,
+def unique_main[**P](
+    target: Callable[P, Path] | PathInput | None = None,
     ensure_parent=False,
 ) -> (
     Path
@@ -211,7 +206,7 @@ def unique_main(
     """
 
     # Case 1: Direct call (PathGuard.unique(path))
-    if isinstance(target, (Path, str)):
+    if isinstance(target, (Path, str, PathConfig)):
         return _get_unique_candidate(target, ensure_parent)
 
     # Case 2: Bare Decorator (@PathGuard.unique)
@@ -238,8 +233,10 @@ def unique_main(
 
         return decorator
 
+    raise TypeError(f"Invalid target type for PathGuard.dir: {type(target)}")
 
-def find_sequence(base_target: Path | str) -> list[Path]:
+
+def find_sequence(base_target: PathInput) -> list[Path]:
     """Find all paths of a sequence (base name + auto-incremented versions)
     returns list, sorted by modification time (newest first)"""
 

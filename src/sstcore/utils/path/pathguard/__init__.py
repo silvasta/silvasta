@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 from ._config import PathConfig, PathInput, _state
 from ._ensure import (
     dir_main,
@@ -24,8 +22,11 @@ from ._operations import (
     trash,
 )
 
-# from loguru import logger
-# logger.remove()  # NEXT: check how cli looks without that
+__all__: list[str] = [
+    "PathGuard",
+    "PathConfig",
+    "PathInput",
+]
 
 
 class PathGuard:
@@ -39,25 +40,22 @@ class PathGuard:
         _state.debug = enable
 
     # --- Category 1: Structural Guards & Decorators ---
-    dir: Callable = staticmethod(dir_main)
-    file: Callable = staticmethod(file_main)
-    unique: Callable = staticmethod(unique_main)
-    find_sequence: Callable = staticmethod(find_sequence)
+    dir = staticmethod(dir_main)
+    file = staticmethod(file_main)
+    unique = staticmethod(unique_main)
+    find_sequence = staticmethod(find_sequence)
 
     # --- Category 2: Maintenance & Destruction Ops ---
-    remove: Callable = staticmethod(remove)
-    trash: Callable = staticmethod(trash)
-    prune: Callable = staticmethod(prune)
-    rotate: Callable = staticmethod(rotate)
-    copy: Callable = staticmethod(copy)
-    hardlink: Callable = staticmethod(hardlink)
-    symlink: Callable = staticmethod(symlink)
+    remove = staticmethod(remove)
+    trash = staticmethod(trash)
+    prune = staticmethod(prune)
+    rotate = staticmethod(rotate)
+    copy = staticmethod(copy)
+    hardlink = staticmethod(hardlink)
+    symlink = staticmethod(symlink)
 
     # --- Category 3: Evaluators & Diagnostics ---
-    relative: Callable = staticmethod(relative_main)
-    relative_duo: Callable = staticmethod(relative_duo)
-    relative_string: Callable = staticmethod(relative_string)
-    split_read_print_path: Callable = staticmethod(split_read_print_path)
-
-
-__all__: list[str] = ["PathGuard", "PathConfig", "PathInput"]
+    relative = staticmethod(relative_main)
+    relative_duo = staticmethod(relative_duo)
+    relative_string = staticmethod(relative_string)
+    split_read_print_path = staticmethod(split_read_print_path)

@@ -3,14 +3,13 @@ from pathlib import Path
 
 from loguru import logger
 
-from sstcore.exceptions import NotImplementedDispatchError
-
+from ....exceptions import NotImplementedDispatchError
+from ._config import PathConfig, PathInput
 from ._ensure import _ensure_input
-
-# TODO: better name than _helper?
 
 
 def relative_string(source: Path, target: Path):
+    # TODO: PathInput
     relative: Path | None = relative_duo(source, target)
     relative: Path = relative or relative_main(
         target=target, root=source, strict=False
@@ -19,62 +18,38 @@ def relative_string(source: Path, target: Path):
 
 
 def relative_main(
-    target: Path | str,
-    root: Path | str | None = None,
-    strict: bool = True,
-    check_exists: bool = False,
-    must_exists: bool = False,
+    target: PathInput, root: PathInput | None = None, strict: bool = True
 ) -> Path:
     """Find relative path starting at root|CWD downwards to target"""
-    target_path: Path = _ensure_input(  # TASK: clean args
-        path=target,
-        resolve=True,
-        check_exists=check_exists,
-        must_exists=must_exists,
-    )
-    root_path: Path = _ensure_input(
-        path=root or Path.cwd(),
-        resolve=True,
-        check_exists=check_exists,
-        must_exists=must_exists,
-    )
+
+    _target = _ensure_input(PathConfig.from_path_input(target, resolve=True))
+    _root = _ensure_input(PathConfig.from_path_input(root, resolve=True))
+
     if strict:
         try:
-            return target_path.relative_to(root_path)
+            return _target.relative_to(_root)
         except ValueError as e:
-            msg = f"{target_path=} not found in {root_path=}"
+            msg = f"{_target=} not found in {_root=}"
             raise ValueError(msg) from e
     else:
         import os
 
-        return Path(os.path.relpath(target_path, root_path))
+        return Path(os.path.relpath(_target, _root))
 
 
-def relative_duo(
-    path1: Path | str,
-    path2: Path | str,
-    check_exists: bool = False,
-    must_exists: bool = False,
-) -> Path | None:
+def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
     """Find relative path from any of both directions or get None"""
 
-    path1: Path = _ensure_input(  # TASK: args
-        path=path1,
-        check_exists=check_exists,
-        must_exists=must_exists,
-    )
-    path2: Path = _ensure_input(
-        path=path2,
-        check_exists=check_exists,
-        must_exists=must_exists,
-    )
+    _path1: Path = _ensure_input(path1)
+    _path2: Path = _ensure_input(path2)
+
     try:
-        rel21 = relative_main(path1, path2, strict=True)
+        rel21 = relative_main(_path1, _path2, strict=True)
     except ValueError:
         rel21 = None
 
     try:
-        rel12 = relative_main(path2, path1, strict=True)
+        rel12 = relative_main(_path2, _path1, strict=True)
     except ValueError:
         rel12 = None
 
@@ -95,6 +70,7 @@ def relative_duo(
 
 @functools.singledispatch
 def split_read_print_path(target, local_root: Path | None = None):
+    # TODO: PathInput
     raise NotImplementedDispatchError(target, local_root)
 
 

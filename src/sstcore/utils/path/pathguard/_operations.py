@@ -5,7 +5,7 @@ from typing import Any
 
 from loguru import logger
 
-from ._config import _state
+from ._config import PathConfig, PathInput, _state
 from ._ensure import (
     _ensure_dir_logic,
     _ensure_input,
@@ -49,7 +49,7 @@ def remove(target: Path | str) -> bool:
     return _clear_file_or_folder(target, clear_strategy=_remove)
 
 
-def trash(target: Path | str) -> bool:
+def trash(target: PathInput) -> bool:
     """Move file or folder at target location to system trash"""
 
     def _trash(path: Path):
@@ -61,7 +61,7 @@ def trash(target: Path | str) -> bool:
 
 
 def prune(
-    base_target: Path | str, remaining: int = 5, trash=False
+    base_target: PathInput, remaining: int = 5, trash=False
 ) -> list[Path]:
     """Remove oldest files/dirs from sequence (name_NUM{.*}) until remaining"""
 
@@ -75,16 +75,16 @@ def prune(
 
 
 def _clear_file_or_folder(
-    target: Path | str, clear_strategy: Callable[[Path], Any]
+    target: PathInput, clear_strategy: Callable[[Path], Any]
 ) -> bool:
     """Handle args, logs and errors for deleting files or folders"""
     _clear: str = getattr(clear_strategy, "__name__", "_clear")
     clear: str = _clear.strip("_").capitalize()
     try:
-        target: Path = _ensure_input(  # TASK: from where import _ensure_input?
-            target, must_exists=True
+        _target: Path = _ensure_input(
+            PathConfig.from_path_input(target, must_exists=True)
         )
-        clear_strategy(target)
+        clear_strategy(_target)
         logger.success(f"{clear}: {target}")
         return True
 
@@ -96,8 +96,8 @@ def _clear_file_or_folder(
 
 
 def rotate(
-    source: Path | str,
-    target: Path | str,
+    source: PathInput,
+    target: PathInput,
     sync_mode: str | SyncMode = "increment",
     reset: bool = False,
 ) -> Path:
@@ -105,70 +105,80 @@ def rotate(
     if reset=True, recreates empty file or directory at original 'source' location"""
 
     # TASK: similar pipeline as in _clear_file_or_folder
-    source: Path = _ensure_input(source, must_exists=True)
-    target: Path = _ensure_input(target)
+
+    _source: Path = _ensure_input(
+        PathConfig.from_path_input(source, must_exists=True)
+    )
+    _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
 
     # Store type for reset logic later
-    is_directory: bool = source.is_dir()
+    is_directory: bool = _source.is_dir()
 
-    source.move(inspected_target := sync_mode.check_conflict(target))
-    relative: str = relative_string(source, inspected_target)
+    _source.move(inspected_target := sync_mode.check_conflict(_target))
+    relative: str = relative_string(_source, inspected_target)
     logger.info(f"Rotated: {relative}")
 
     if reset:
         if is_directory:
-            source.mkdir()
+            _source.mkdir()
             logger.debug(f"Recreated empty directory: {source}")
         else:
-            source.touch()
+            _source.touch()
             logger.debug(f"Reset empty file: {source}")
 
     return inspected_target
 
 
 def copy(
-    source: Path | str,
-    target: Path | str,
+    source: PathInput,
+    target: PathInput,
     sync_mode: str | SyncMode = "increment",
 ) -> Path:
     """Copy source (file or dir) to target, handles unique naming collisions"""
+
     # TASK: similar pipeline as in _clear_file_or_folder
-    source: Path = _ensure_input(source, must_exists=True)
-    target: Path = _ensure_input(target)
+
+    _source: Path = _ensure_input(
+        PathConfig.from_path_input(source, must_exists=True)
+    )
+    _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
 
-    source.copy(inspected_target := sync_mode.check_conflict(target))
-    relative: str = relative_string(source, inspected_target)
+    _source.copy(inspected_target := sync_mode.check_conflict(_target))
+    relative: str = relative_string(_source, inspected_target)
 
-    if _state.debug:  # FIX:
+    if _state.debug:
         logger.debug(f"Copied: {relative}")
 
     return inspected_target
 
 
 def hardlink(
-    source: Path | str,
-    target: Path | str,
+    source: PathInput,
+    target: PathInput,
     sync_mode: str | SyncMode = "override",
 ) -> Path:
     """Create a hardlink of source to target, handles unique naming collisions"""
+
     # TASK: similar pipeline as in _clear_file_or_folder
 
-    source: Path = _ensure_input(source, must_exists=True)
-    target: Path = _ensure_input(target)
+    _source: Path = _ensure_input(
+        PathConfig.from_path_input(source, must_exists=True)
+    )
+    _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
 
-    inspected_target: Path = sync_mode.check_conflict(target)
+    inspected_target: Path = sync_mode.check_conflict(_target)
 
     try:
-        inspected_target.hardlink_to(source)
+        inspected_target.hardlink_to(_source)
     except OSError as e:
         logger.error("Hardlink failed! Source and Target on same drive?")
         logger.error(f"{source=}, {target=}")
         raise e
 
-    relative: str = relative_string(source, inspected_target)
+    relative: str = relative_string(_source, inspected_target)
 
     if _state.debug:
         logger.debug(f"Hardlinked: {relative}")
@@ -177,21 +187,24 @@ def hardlink(
 
 
 def symlink(
-    source: Path | str,
-    target: Path | str,
+    source: PathInput,
+    target: PathInput,
     sync_mode: str | SyncMode = "increment",
 ) -> Path:
     """Create absolute symlink of source to target, handles unique naming collisions"""
 
     # TASK: similar pipeline as in _clear_file_or_folder
-    source: Path = _ensure_input(source, must_exists=True, resolve=True)
-    target: Path = _ensure_input(target)
+
+    _source: Path = _ensure_input(
+        PathConfig.from_path_input(source, must_exists=True, resolve=True)
+    )
+    _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
 
-    inspected_target: Path = sync_mode.check_conflict(target)
-    inspected_target.symlink_to(source)
+    inspected_target: Path = sync_mode.check_conflict(_target)
+    inspected_target.symlink_to(_source)
 
-    relative: str = relative_string(source, inspected_target)
+    relative: str = relative_string(_source, inspected_target)
 
     if _state.debug:
         logger.debug(f"Symlinked: {relative}")
