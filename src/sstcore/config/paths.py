@@ -2,15 +2,18 @@ from pathlib import Path
 from typing import cast
 
 import typer
-from loguru import logger
 
-from ..utils import PathGuard, day_count
-from ..utils.path import recursive_root
+from ..utils import HomeSetup, PathGuard, day_count
 from ..utils.print import ColorBox, printer
-from .defaults import HomeSetup, SstDefaults
-from .names import SstNames
+from .defaults import SstDefaults
+from .names import AutoParsedName, ParsedName, SstNames
 
 c: ColorBox = printer.colorbox()
+
+summary_file: AutoParsedName = ParsedName(  # MOVE: but where?
+    pattern="{day}_summary.{suffix}",
+    keys=["day", "suffix"],
+)
 
 
 class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
@@ -20,30 +23,26 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         self,
         names: TNames | None = None,
         defaults: TDefaults | None = None,
+        homes: HomeSetup = HomeSetup.PROJECT,
     ):
         self._defaults: TDefaults = defaults or cast(TDefaults, SstDefaults())
         self._names: TNames = names or cast(TNames, SstNames())
+        self._homes: HomeSetup = homes
 
-        self.project_root: Path = self._check_local_root()
+    @property
+    @PathGuard.dir
+    def project_root(self) -> Path:
+        return self._homes.root
 
-    def _check_local_root(self) -> Path:
-        """Find project root or use CWD"""
-        root: Path | None = recursive_root(
-            path=Path.cwd(),
-            indicator=self._defaults.project_root_indicator,
-        )
-        if root is not None:
-            self.project_root_found = True
+    @property
+    @PathGuard.dir
+    def configs_dir(self) -> Path:
+        return self._homes.configs_dir
 
-            return root
-
-        if self._defaults.home_setup == HomeSetup.LOCAL:  # TEST: home switch
-            logger.warning("No project root found -> default to: 'global'")
-            self._defaults.home_setup = HomeSetup.GLOBAL
-
-        self.project_root_found = False
-
-        return Path.cwd()
+    @property
+    @PathGuard.dir
+    def log_dir(self) -> Path:
+        return self._homes.log_dir
 
     @property
     @PathGuard.dir
@@ -57,28 +56,18 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @property
     @PathGuard.dir
-    def log_dir(self) -> Path:
-        return self.project_root / "logs"
-
-    @property
-    @PathGuard.dir
-    def local_home_dir(self) -> Path:
-        return self.data_dir / "homes"
-
-    @property
-    @PathGuard.dir
     def data_home(self) -> Path:
-        return self._defaults.home_setup.data_home
+        return self._homes.data_home
 
     @property
     @PathGuard.dir
     def state_home(self) -> Path:
-        return self._defaults.home_setup.state_home
+        return self._homes.state_home
 
     @property
     @PathGuard.dir
     def config_home(self) -> Path:
-        return self._defaults.home_setup.config_home
+        return self._homes.config_home
 
     @property
     def dot_env(self) -> Path:
@@ -102,8 +91,6 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:
-        if not hasattr(self._names, "summary_file"):
-            raise AttributeError("Modify Paths.Names to SstNamesWithPatterns")
-        return self.data_dir / self._names.summary_file(  # ty: ignore
+        return self.data_dir / summary_file(
             {"day": str(day_count()), "suffix": suffix}
         )

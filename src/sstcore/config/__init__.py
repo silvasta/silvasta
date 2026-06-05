@@ -1,16 +1,9 @@
-from .defaults import HomeSetup, SstDefaults
+from .defaults import SstDefaults
 from .get_config import get_config
 from .manager import ConfigManager, ConfigSetupParam, ConfigTypes
 from .names import AutoParsedName, ParsedName, SstNames, StyledName
 from .paths import SstPaths
 from .settings import SstSettings
-
-
-def __getattr__(name):  # TEST:
-    if name == "config":
-        return get_config()
-    raise AttributeError(name)
-
 
 __all__: list = [
     "ConfigManager",
@@ -23,6 +16,5 @@ __all__: list = [
     "ParsedName",
     "StyledName",
     "SstDefaults",
-    "HomeSetup",
     "ConfigSetupParam",
 ]

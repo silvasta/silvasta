@@ -6,9 +6,6 @@ from .settings import SstSettings
 
 _config_instance: ConfigManager | None = None
 
-# AI: move to __init__?
-# - what about projects that inherit?
-
 
 def get_config() -> ConfigManager:
     global _config_instance

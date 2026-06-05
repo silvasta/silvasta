@@ -1,0 +1,29 @@
+{
+  "names": {
+    "project": "sstcore",
+    "data_dir": "data",
+    "plot_dir": "plots"
+  },
+  "defaults": {
+    "timestamp_format": "%Y-%m-%d_%H-%M-%S",
+    "input_date_formats": [
+      "%d-%m-%Y",
+      "%Y-%m-%d"
+    ],
+    "dot_env_content": ""
+  },
+  "log": {
+    "print_at_setup": true,
+    "setup_source": "Defaults: utils.log.LogParam",
+    "log_dir": "/home/silvan/PolyBox/Code/sstcore/latest/logs",
+    "log_filename": "sstcore.log",
+    "log_level": "INFO",
+    "retention": "1 week",
+    "rotation": "5 MB"
+  },
+  "last_updated": "2026-06-05T01:04:28.176093Z",
+  "updates": [
+    "2026-06-05T01:04:28.176093Z"
+  ],
+  "update_maxlen": 79
+}

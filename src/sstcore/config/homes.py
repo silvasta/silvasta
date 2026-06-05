@@ -3,11 +3,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from ..utils import PathGuard
-from ..utils.path import XdgHomes, find_project_root
+from ..utils.path import PathGuard, XdgHomes, get_project_root
 
 
-class HomeSetup(StrEnum):  # TEST: homesetup
+class HomeSetup(StrEnum):
     GLOBAL = auto()
     PROJECT = auto()
     LOCAL = auto()
@@ -24,7 +23,7 @@ class HomeSetup(StrEnum):  # TEST: homesetup
                 self.project_name: str = project_name
 
             case HomeSetup.PROJECT:
-                self.root: Path = find_project_root("pyproject.toml")
+                self.root: Path = get_project_root()
 
             case HomeSetup.LOCAL:
                 if local_root is None:

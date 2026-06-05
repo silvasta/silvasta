@@ -19,8 +19,10 @@ class SstSettings(BaseSettings):
     names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
     log: LogParam = Field(default_factory=LogParam)
+
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updates: deque[datetime] = Field(default_factory=deque)
+    update_maxlen: int = 79
 
     @classmethod
     def load(cls, path: Path) -> Self:
@@ -49,13 +51,13 @@ class SstSettings(BaseSettings):
 
     @model_validator(mode="after")
     def enforce_deque_maxlen(self) -> Self:
-        desired_maxlen: int = self.defaults.setting_update_length
+        desired_maxlen: int = self.update_maxlen
         if self.updates.maxlen != desired_maxlen:
             self.updates = deque(self.updates, maxlen=desired_maxlen)
         return self
 
     def touch(self):
-        n_saved_update_times: int = self.defaults.setting_update_length
+        n_saved_update_times: int = self.update_maxlen
         if n_saved_update_times != (before := self.updates.maxlen):
             self.updates: deque[datetime] = deque(
                 self.updates, maxlen=n_saved_update_times

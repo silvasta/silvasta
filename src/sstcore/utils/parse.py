@@ -94,11 +94,11 @@ class RegexMatch:
 class LogPatterns:
     """Centralized log patterns for dot-access in match statements."""
 
-    DEBUG = RegexMatch(r".*\[DEBUG\].*")
-    INFO = RegexMatch(r".*\[INFO\].*")
-    WARNING = RegexMatch(r".*\[WARNING\].*")
-    ERROR = RegexMatch(r".*\[ERROR\].*")
-    SUCCESS = RegexMatch(r".*\[SUCCESS\].*")
+    DEBUG = RegexMatch(r".*DEBUG.*")
+    INFO = RegexMatch(r".*INFO.*")
+    WARNING = RegexMatch(r".*WARNING.*")
+    ERROR = RegexMatch(r".*ERROR.*")
+    SUCCESS = RegexMatch(r".*SUCCESS.*")
 
 
 def grep_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
@@ -109,12 +109,3 @@ def grep_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
     for line in lines:
         if line == regex:  # calls stored regex match pattern on line
             yield line
-
-
-def sanitize(text: str) -> str:
-    """Clean text and prepare for further process"""
-    # LATER: collect ideas for cleanup with options
-    # - remove non-printable chars
-    # - create different sets for different purposes
-    # -> define later, when known for what to use
-    return text.strip()

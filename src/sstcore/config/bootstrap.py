@@ -1,164 +1,204 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from typing import Self
 
 from loguru import logger
 
-from sstcore.config import SstSettings
+from sstcore.utils.log import LogParam
 
-from ..utils.path import XdgHomes, recursive_root
+from ..utils.path import HomeSetup, pyproject_name
+from .settings import SstSettings
 
 
 @dataclass
-class ProjectMeta:
+class BootResult:
+    """Final confirmed Result by ConfigBootstrap"""
+
     project_name: str
     project_version: str
+    setting_file: Path
+
+
+@dataclass
+class BootDefaults:
+    """Input Args for ConfigBootstrap"""
+
+    home_setup: HomeSetup
+    project_name: str = ""
+    project_root: Path | None = None
+    project_version: str = "0.0.0"
+
+    # IDEA: logfile/param?
+
+    setting_file: Path | None = None
+    setting_file_name: str = "settings.json"
 
 
 class ConfigBootstrap[TSettings: SstSettings]:
-    default_project_name: str = "sstcore"
-    default_project_version: str = "0.0.0"
-
-    default_setting_file_name: str = "settings.json"
-
-    _provided_setting_file: Path | None = None
-    _settings_cls: type[TSettings]
+    """Collection of methods that run before config is ready"""
 
     @classmethod
-    def ensure(
-        cls,
-        settings_cls: type[TSettings],
-        project_name: str,
-        setting_file: Path | None = None,
-    ) -> Path:
+    def initial_setup(
+        cls, settings_cls: type[TSettings], defaults: BootDefaults
+    ) -> BootResult:
 
-        cls._settings_cls: type[TSettings] = settings_cls
-        cls._provided_setting_file: Path | None = setting_file
-        cls.default_project_name: str = project_name
-
-        for path_loader in cls.target_locations():
-            if final_setting_file := cls.check_location(path_loader):
-                return final_setting_file
-
-        # AUTO-SCAFFOLD: create a default config at the project location
-        default_path: Path = cls._scaffold_default_config(settings_cls)
-        logger.warning(f"No config found — created scaffold at {default_path}")
-
-        return default_path
-
-    @classmethod
-    def _scaffold_default_config(cls, settings_cls) -> Path:
-        """Create a minimal valid config. Never overwrite existing."""
-        # Prefer project-local configs/ dir if in a project
-        if root := cls.find_project_setting_file():
-            target: Path = root / "configs" / cls.default_setting_file_name
+        project_name: str = cls.check_project_name(defaults)
+        version: str = cls.check_project_version(
+            package_name=project_name, defaults=defaults
+        )
+        HomeSetup(defaults.home_setup).boot(
+            project_name=project_name,
+            # LATER: figure out best input arg strategy
+            project_root=defaults.project_root,
+            local_root=defaults.project_root,
+        )
+        for path in DefaultBootPaths.path_factory(defaults):
+            if final_setting_file := cls.check_location(path, settings_cls):
+                logger.info(f"Found valid Settings: {final_setting_file=}")
+                break
         else:
-            target: Path = cls.xdg_config_path()
-
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.exists():
-            target.write_text(
-                settings_cls.default_json_content(), encoding="utf-8"
+            log_setup = LogParam(log_dir=defaults.home_setup.log_dir)
+            final_setting_file: Path = cls.scaffold_default_config(
+                settings_cls, defaults, log_setup.attach_logname(project_name)
             )
-        return target
+            logger.warning(
+                f"No existing Settings found — created scaffold: {final_setting_file=}"
+            )
 
-    @classmethod
-    def check_location(cls, path_loader: Callable) -> Path | None:
+        return BootResult(
+            project_name=defaults.project_name,
+            project_version=version,
+            setting_file=final_setting_file,
+        )
+
+    @staticmethod
+    def check_location(
+        path_function: Callable, settings_cls: type[TSettings]
+    ) -> Path | None:
+        """Verify if SettingsFile exists at path and can be loaded"""
+
+        path = None  # Failsafe for logs in except
         try:
-            path = path_loader()
-            cls._settings_cls.load(path)
-            logger.info("Found valid SettingsFile at path=")
+            path: Path = path_function()
+            if not path.exists():
+                raise FileNotFoundError
+            settings_cls.load(path)
+            logger.info(f"Found valid SettingsFile at {path=}")
             return path
 
-        except FileNotFoundError as error:
-            logger.debug(f"No file found at {path=}, {error=}")
+        except (FileNotFoundError, AttributeError) as error:
+            logger.debug(f"No file found at location: {error=}")
 
         except ValueError as error:
-            logger.warning(
-                f"Problem with loading SettingsFile: {path=}, {error=}"
-            )
+            logger.warning(f"Problem with Settings: {path=}, {error=}")
+
         return None
 
     @classmethod
-    def target_locations(cls) -> list[Callable[..., Path | None]]:
-        return [
-            cls.find_provided_setting_file,
-            cls.find_project_setting_file,
-            cls.find_global_setting_file,
-            cls.find_local_setting_file,
-        ]
+    def scaffold_default_config(
+        cls, settings_cls, defaults: BootDefaults, log_setup: LogParam
+    ) -> Path:
+        """Create a minimal valid config. Never overwrite existing."""
+        path = None  # Failsafe for logs in except
+        for path_function in DefaultBootPaths.path_factory(defaults):
+            try:
+                if (path := path_function()).exists():
+                    raise FileExistsError(f"Detected Existing File! {path=}")
+                path.parent.mkdir(parents=True, exist_ok=True)
 
-    @classmethod
-    def find_provided_setting_file(cls) -> Path | None:
-        if path := cls._provided_setting_file:
-            return cls._provided_setting_file
-        logger.debug(f"No file found at {path=}")
+                settings_cls(log=log_setup).save(path)
 
-    @classmethod
-    def find_project_setting_file(cls) -> Path | None:
-        if project_root := recursive_root(Path.cwd(), "pyproject.toml"):
-            path = project_root / "configs" / cls.default_setting_file_name
-            if path.exists():
+                logger.info("New setting file created from defaults")
                 return path
-        logger.debug(f"No file found at {path=}")
 
-    @classmethod
-    def find_global_setting_file(cls) -> Path | None:
-        if path := cls.xdg_config_path():
-            if path.exists():
-                return path
-        logger.debug(f"No file found at {path=}")
+            except (FileNotFoundError, AttributeError) as error:
+                logger.debug(f"Path can't be constructed: {error=}")
 
-    @classmethod
-    def xdg_config_path(cls) -> Path:
-        return (
-            XdgHomes(value="config").path_from_os()
-            / cls.default_project_name
-            / cls.default_setting_file_name
-        )
+            except ValueError as error:
+                logger.warning(f"Problem with: {path=}, {error=}")
 
-    @classmethod
-    def find_local_setting_file(cls) -> Path | None:
-        if (path := Path.cwd() / cls.default_setting_file_name).exists():
-            return path
-        logger.debug(f"No file found at {path=}")
+        raise RuntimeError("Unable to scaffold new setting file")
 
-    @classmethod
-    def meta(cls):
-        ensured_name: str = cls.check_project_name()
-        ensured_version: str = cls.check_project_version(ensured_name)
-        return ProjectMeta(
-            project_name=ensured_name,
-            project_version=ensured_version,
-        )
-
-    @classmethod
-    def check_project_name(cls) -> str:
-        """Get project_name from Names or fallback to Defaults"""
-        if project_name := cls.default_project_name:
-            logger.debug(f"using {project_name=}")
-            return project_name
-        else:
-            default_name: str = cls.default_project_name
-            logger.warning(f"No project_name defined, using: {default_name=}")
-            return default_name
-
-    @classmethod
-    def check_project_version(
-        cls, package_name, version_str: str | None = None
-    ):
+    @staticmethod
+    def check_project_name(defaults: BootDefaults) -> str:
         """Get project_version from installation with project_name"""
-        if version_str:
-            return version_str
+
+        if not (provided_name := defaults.project_name):
+            logger.debug("no project name provided")
+
+        try:
+            pyproject_toml_name: str = pyproject_name()
+
+        except FileNotFoundError:
+            if defaults.home_setup == HomeSetup.PROJECT:
+                logger.warning("Unable to find pyproject.toml file")
+            else:
+                logger.debug("no project name found in pyproject.toml")
+            pyproject_toml_name: str = ""
+
+        if provided_name != pyproject_toml_name:
+            msg = f"Using {provided_name=} but {pyproject_toml_name=}"
+            logger.info(msg)
+
+        name: str = provided_name or pyproject_toml_name or ""
+
+        logger.debug(f"finally using for project: {name=}")
+        return name
+
+    @staticmethod
+    def check_project_version(
+        package_name: str, defaults: BootDefaults
+    ) -> str:
+        """Get project_version from installation with project_name"""
 
         try:
             project_version: str = version(package_name)
+            return project_version
         except PackageNotFoundError:
             logger.warning(
                 f"Package '{package_name}' not installed in this environment. "
                 "Are you running in dev mode without 'uv tool install -e .'?"
             )
-            project_version: str = cls.default_project_version
+        except ValueError:
+            logger.warning("No distribution name provided to check version")
 
-        return project_version
+        return defaults.project_version
+
+
+class DefaultBootPaths(BootDefaults):
+    """Helper for Lazy Path loading, holds Sorting of Path execution"""
+
+    def provided_setting_file(self) -> Path:
+        if self.setting_file:
+            return self.setting_file
+        raise FileNotFoundError("No setting file provided in BootDefaults")
+
+    def provided_from_home_setup(self) -> Path:
+        return self.home_setup.configs_dir / self.setting_file_name
+
+    def _home_setup_path(self, target: HomeSetup):
+        if self.home_setup == target:
+            raise AttributeError("This path is 'provided_from_home_setup'")
+        return target.configs_dir / self.setting_file_name
+
+    def home_setup_project(self) -> Path:
+        return self._home_setup_path(target=HomeSetup.PROJECT)
+
+    def home_setup_global(self) -> Path:
+        return self._home_setup_path(target=HomeSetup.GLOBAL)
+
+    def home_setup_local(self) -> Path:
+        return self._home_setup_path(target=HomeSetup.LOCAL)
+
+    @classmethod
+    def path_factory(cls, defaults: BootDefaults) -> list[Callable[..., Path]]:
+        factory: Self = cls(**asdict(defaults))
+        return [
+            factory.provided_setting_file,
+            factory.provided_from_home_setup,
+            factory.home_setup_project,
+            factory.home_setup_global,
+            factory.home_setup_local,
+        ]
