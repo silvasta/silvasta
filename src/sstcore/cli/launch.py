@@ -7,24 +7,24 @@ from .engine import SafeTyper
 from .monitor import log_monitor
 from .scanner import folder_scanner
 
-# TODO: Rename utils_app or similar
-
 
 def main() -> None:
-    app()
+    utils_app()
 
 
-app = SafeTyper(
+utils_app = SafeTyper(
     name="utils",
-    help="Show statistics, configurations and more",
+    help="FolderScanner and Log Console Monitor",
 )
 
 
+@utils_app.command("monitor")
 def launch_monitor(file: sargs.File = None):  # NOTE: CLI hint not amazing...
     """Log Console Monitor: watch new log file entries"""
     log_monitor(log_path=file)
 
 
+@utils_app.command("scanner")
 def launch_folder_scanner(
     scan_root: sargs.Root = None,
     output_file: sargs.File = None,
@@ -34,6 +34,7 @@ def launch_folder_scanner(
     folder_scanner(scan_root, output_file, sort_method=sort)
 
 
+@utils_app.command("print")
 def print_file(path: Path):
     """Print Prompt, Response or any Markdown File in Rich style"""
     printer.title(path.name)
@@ -48,10 +49,6 @@ def print_file(path: Path):
             # printer.file(*.xx) dispatches xx
             printer.md(path.read_text())
 
-
-app.command("monitor")(launch_monitor)
-app.command("scanner")(launch_folder_scanner)
-app.command("print")(print_file)
 
 if __name__ == "__main__":
     main()
