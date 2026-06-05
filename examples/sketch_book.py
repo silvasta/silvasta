@@ -17,6 +17,13 @@ def main():
         test_padding,
         experiment_t_string,
     ]
+    printer.panel("blbls lldj", frame="plum1")
+    printer.panel("blbls lldj", frame="plum2")
+    printer.panel("blbls lldj", frame="plum3")
+    printer.panel("blbls lldj", frame="plum4")
+    printer.panel("blbls lldj", frame="purple")
+    printer.panel("blbls lldj", frame="purple3")
+    # printer.panel("blbls lldj", frame="purple4")
     for run in select:
         functions[run]()
 
