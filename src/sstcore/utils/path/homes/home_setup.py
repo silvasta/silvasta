@@ -48,7 +48,7 @@ class HomeSetup(StrEnum):
             logger.debug(f"set project_root to {Path.cwd()=}")
 
         if self._local_root is None:
-            self.project_root: Path = Path.cwd()
+            self._project_root: Path = Path.cwd()
             logger.debug(f"set local_root to {Path.cwd()=}")
 
         logger.debug(f"HomeSetup '{self}' booted successfully")
@@ -64,6 +64,16 @@ class HomeSetup(StrEnum):
         if not self._project_root:
             raise AttributeError("wrong boot")  # AI: which Exception?
         return self._project_root
+
+    @property
+    def root(self) -> Path:
+        match self:
+            case self.PROJECT:
+                return self.project_root
+            case self.LOCAL:
+                return self.local_root
+        # Last resort...
+        return self._project_root or self._local_root or Path.cwd()
 
     @property
     def local_root(self) -> Path:

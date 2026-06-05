@@ -7,7 +7,7 @@ from pathlib import Path
 from loguru import logger
 
 from .filter import FilterSet, PathFilter, ProjectFilter
-from .pathguard import PathGuard
+from .path import PathGuard
 from .print import printer
 from .simple_tree import PathTreeNode, build_path_tree
 
@@ -94,8 +94,6 @@ class FolderScanner:
     # LATER: make easy function with input: list[Path]
     # - recognize target from output_file
     # - combine as much as possible in 1 step
-    # TASK: arg strategy
-    # - avoid TargetFileType, try from output_file
 
     @staticmethod
     def assemble_summary_file(  # MOVE: to TargetFileType=SummaryFile
@@ -180,7 +178,7 @@ class FolderScanner:
 
 
 class TargetFileType(StrEnum):
-    # NEXT: TargetFileType -> SummaryFile
+    # LATER:: TargetFileType -> SummaryFile
     # - collect everything independen of scan
     # - build easy execution in scan
     MD = auto()

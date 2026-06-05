@@ -34,9 +34,9 @@ class LayoutMixin(BasePrinter):
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
 
-    def title(self, text, title="", title_align="right"):
+    def title(self, text, title="", title_align="right", **kwargs):
         title: str = title or self.name_and_version()
-        self.header(text, title=title, title_align=title_align)
+        self.header(text, title=title, title_align=title_align, **kwargs)
 
     def success(self, text):
         self.header(text, frame="green")

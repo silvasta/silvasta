@@ -25,6 +25,10 @@ def recursive_parent(path: Path, parent_dir_name: str) -> Path | None:
         return recursive_parent(path.parent, parent_dir_name)
 
 
+def any_root() -> Path:
+    return find_project_root(strict=False) or Path.cwd()
+
+
 def find_project_root(
     start: Path | None = None,
     indicator: str = "pyproject.toml",
