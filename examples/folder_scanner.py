@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from sstcore.utils import FolderScanner, PathGuard, PathTreeNode, printer
-from sstcore.utils.path import find_project_root
+from sstcore.utils.path import get_project_root
 from sstcore.utils.simple_tree import build_path_tree
 
-SCAN_ROOT: Path = find_project_root()
+SCAN_ROOT: Path = get_project_root()
 
 
 def main():

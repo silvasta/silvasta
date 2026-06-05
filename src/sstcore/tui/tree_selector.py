@@ -7,8 +7,7 @@ from textual.message import Message
 from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
 
-from sstcore import printer
-
+from ..utils.print import printer
 from ..utils.simple_tree import SimpleTreeNode
 
 
@@ -173,7 +172,7 @@ class TreeSelectorApp(App[list]):
                 # discard doesn't error if missing
                 self.selected_identifiers.pop(node_id, None)
 
-            ui_node.label: str = self.format_label(
+            ui_node.label = self.format_label(
                 node_id, self.original_labels[node_id]
             )
             # Recursive down to select all sub-elements in folder

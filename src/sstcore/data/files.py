@@ -10,8 +10,6 @@ from typing import Any, Self
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
-from sstcore.utils.simple_tree import build_path_tree
-
 from ..config import ConfigManager, get_config
 from ..exceptions import NotImplementedDispatchError, RegistrySyncError
 from ..utils import (
@@ -22,6 +20,7 @@ from ..utils import (
     PathTreeNode,
     ProjectFilter,
 )
+from ..utils.simple_tree import build_path_tree
 
 # IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
 

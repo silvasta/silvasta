@@ -5,13 +5,13 @@ import typer
 
 from sstcore.tui.tree_selector import TreeSelectorApp
 from sstcore.utils import FolderScanner, SimpleTreeNode, printer
-from sstcore.utils.path import find_project_root
+from sstcore.utils.path import get_project_root
 from sstcore.utils.simple_tree import (
     get_big_example_tree,
     get_example_tree,
 )
 
-SCAN_ROOT: Path = find_project_root()
+SCAN_ROOT: Path = get_project_root()
 
 
 class Tasks(Enum):

@@ -122,7 +122,6 @@ class PathFilter(FilterSet[str, Path]):
 
 
 PROJECT_IGNORE_DIRS: set[str] = {
-    # MOVE: to config.defaults or new class
     ".git",
     "__pycache__",
     ".venv",
@@ -132,7 +131,6 @@ PROJECT_IGNORE_DIRS: set[str] = {
 }
 
 PROJECT_ALLOWED_EXTS: set[str] = {
-    # MOVE: to config.defaults or new class
     ".py",
     ".pyi",
     ".rs",

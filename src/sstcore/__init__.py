@@ -1,8 +1,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from sstcore.utils.print import create_printer, printer
-
-from .utils import PathGuard
+from .utils.path import PathGuard
+from .utils.print import printer
 
 try:  # show pyproject.toml package name
     __version__: str = version("sstcore")
@@ -14,7 +13,6 @@ __all__: list[str] = [
     "__version__",
     "PathGuard",
     "printer",
-    "create_printer",
 ]
 
 # TODO: quick improvements

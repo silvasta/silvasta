@@ -6,11 +6,11 @@ import typer
 from sstcore.config import ConfigManager, get_config
 from sstcore.tui.tree_selector import TreeSelectorApp
 from sstcore.utils import FolderScanner, ProjectFilter, printer
-from sstcore.utils.path import find_project_root
+from sstcore.utils.path import get_project_root
 
 config: ConfigManager = get_config()
 
-SCAN_ROOT: Path = find_project_root()
+SCAN_ROOT: Path = get_project_root()
 OUTPUT_FILE: Path = config.paths.summary_file()
 
 
