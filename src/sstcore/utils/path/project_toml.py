@@ -1,70 +1,14 @@
-import os
 import tomllib
-from enum import StrEnum, auto
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
 
-
-class XdgHomes(StrEnum):
-    DATA = auto()
-    STATE = auto()
-    CONFIG = auto()
-
-    def path_from_os(self) -> Path:
-        return Path(
-            os.getenv(
-                key=f"XDG_{self.name}_HOME",
-                default=self._default_path(),
-            )
-        )
-
-    def _default_path(self) -> Path:
-        """Default to user home and default location"""
-        mapping: dict = {
-            XdgHomes.DATA: ".local/share",
-            XdgHomes.STATE: ".local/state",
-            XdgHomes.CONFIG: ".config",
-        }
-        return Path.home() / mapping[self]
-
-
-def recursive_root(path: Path, indicator: str) -> Path | None:
-    """Find root by indicator iterating parent paths upwards"""
-    if (path / indicator).exists():
-        return path
-    elif path == path.parent:
-        return None
-    else:
-        return recursive_root(path.parent, indicator)
-
-
-def recursive_parent(path: Path, parent_dir_name: str) -> Path | None:
-    """Find closest parent dir with name by iterating upwards"""
-    if path.name == parent_dir_name:
-        return path
-    elif path == path.parent:
-        return None
-    else:
-        return recursive_parent(path.parent, parent_dir_name)
-
-
-def find_project_root(indicator: Path | str = "pyproject.toml") -> Path:
-    """Call recursive root function, return Success, Error for fail"""
-
-    search_result: Path | None = recursive_root(Path.cwd(), str(indicator))
-
-    if search_result:
-        return search_result
-    else:
-        print(f"Failed with indicator: {indicator}")
-        raise FileNotFoundError("Project root not found!")
+from .search import get_project_root
 
 
 def pyproject_path() -> Path:
     """Path to own pyproject.toml file"""
-
-    return find_project_root(indicator="pyproject.toml") / "pyproject.toml"
+    return get_project_root(indicator="pyproject.toml") / "pyproject.toml"
 
 
 @lru_cache(maxsize=1)
@@ -89,7 +33,7 @@ def pyproject_sns(pyproject_toml_path: Path | None = None) -> SimpleNamespace:
     return dict_to_sns(toml)
 
 
-def dict_to_sns(data):
+def dict_to_sns(data):  # LATER: move somewhere else if ever needed again
     """Transform nested dict to SimpleNamespace with dot access"""
     if isinstance(data, dict):
         # Recursive conversion of dict to unpack all nested values
