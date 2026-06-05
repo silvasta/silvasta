@@ -1,83 +1,66 @@
 import sys
 import time
 from pathlib import Path
-from types import SimpleNamespace
+from typing import Any
 
-from loguru import logger
-
+from ..config import get_config
 from ..utils import PathGuard, printer
-from ..utils.parse import LogPatterns, RegexMatch
-from ..utils.path import find_project_root, pyproject_log_section
+from ..utils.parse import LogPatterns
 
 
 def log_monitor(log_path: Path | None = None):
     """Show tail log display"""
 
-    if log_path is None:
-        root: Path = find_project_root("pyproject.toml")
-        log_config: SimpleNamespace = pyproject_log_section()
-        log_path: Path = PathGuard.file(
-            target=root / log_config.log_dir / log_config.file_name,
-            default_content="",
-            raise_error=False,
-        )
-
-    if not log_path.exists():
-        if not log_path.parent.exists():
-            printer("no log path parent")
-            # Avoid creating directories when the issue is most likely failed path
-            logger.error(f"No file found at: {log_path=}")
-            logger.info(
-                "Parent folder not available -> no empty file created!"
-            )
-            sys.exit(1)
-
-        log_path.touch()
-        logger.warning(f"Created missing log file at: {log_path=}")
-
+    log_file: Path = PathGuard.file(
+        target=log_path or get_config().log_path,
+        default_content="",
+        raise_error=False,
+    )
     try:
-        launch_tail_log_console(log_path)
+        launch_tail_log_console(log_file)
 
     except KeyboardInterrupt:
         printer.warn("Log file tailing stopped")
         sys.exit(0)
 
 
-def launch_tail_log_console(log_path: Path):
+def launch_tail_log_console(log_file: Path):
     """Launch console with live log prints from file assuming it is valid"""
 
-    printer.panel(
-        f"Tailing [bold cyan]{log_path}[/bold cyan] ...",
-        title="Loguru Monitor",
+    cyan: Any = printer.colors.cyan
+
+    printer.title(
+        [f"Tailing {printer._format(log_file)} ..."],
+        title=cyan("Loguru Monitor"),
+        title_align="right",
+        frame="purple",
     )
-    log_styles: dict[RegexMatch, str] = {
-        LogPatterns.DEBUG: "bold yellow",
-        LogPatterns.INFO: "bold white",
-        LogPatterns.WARNING: "bold magenta",
-        LogPatterns.ERROR: "bold red",
-        LogPatterns.SUCCESS: "bold green",
-    }
-    with open(log_path) as f:
+
+    with open(log_file) as f:
         f.seek(0, 2)  # Move to end of file
 
         while True:
             if not (line := f.readline()):
-                time.sleep(0.1)  # save CPU
+                time.sleep(0.1)
                 continue
 
-            match line:
-                case (
-                    LogPatterns.DEBUG
-                    | LogPatterns.INFO
-                    | LogPatterns.WARNING
-                    | LogPatterns.ERROR
-                    | LogPatterns.SUCCESS as matcher
-                ):  # Coloring based on Loguru levels
-                    style: str = log_styles[matcher]
+            match line:  # FIX: broken... since  when??
+                case LogPatterns.DEBUG:
+                    style: str = "bold yellow"
+                case LogPatterns.INFO:
+                    style: str = "bold white"
+                case LogPatterns.WARNING:
+                    style: str = "bold magenta"
+                case LogPatterns.ERROR:
+                    style: str = "bold red"
+                case LogPatterns.SUCCESS:
+                    style: str = "bold green"
                 case _:
                     style = None
 
             printer(line.strip(), style=style)
+            printer(line.strip())
+            print(f"{style=}")
 
 
 if __name__ == "__main__":
