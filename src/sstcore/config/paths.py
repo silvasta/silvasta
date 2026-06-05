@@ -3,16 +3,14 @@ from typing import cast
 
 import typer
 
-from ..utils import PathGuard, day_count
+from ..utils import HomeSetup, PathGuard, day_count
 from ..utils.print import ColorBox, printer
 from .defaults import SstDefaults
-from .homes import HomeSetup
 from .names import AutoParsedName, ParsedName, SstNames
 
 c: ColorBox = printer.colorbox()
 
-# MOVE: but where?
-summary_file: AutoParsedName = ParsedName(
+summary_file: AutoParsedName = ParsedName(  # MOVE: but where?
     pattern="{day}_summary.{suffix}",
     keys=["day", "suffix"],
 )
@@ -55,11 +53,6 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     @PathGuard.dir
     def plot_dir(self) -> Path:
         return self.project_root / self._names.plot_dir
-
-    @property
-    @PathGuard.dir
-    def local_home_dir(self) -> Path:
-        return self.data_dir / "homes"
 
     @property
     @PathGuard.dir

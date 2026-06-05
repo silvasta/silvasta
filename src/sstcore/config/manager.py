@@ -7,31 +7,15 @@ from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from ..utils import Printer, day_count
+from ..utils import HomeSetup, Printer, day_count
 from ..utils.log import LogParam
 from .bootstrap import BootDefaults, BootResult, ConfigBootstrap
 from .defaults import SstDefaults
-from .homes import HomeSetup
 from .names import SstNames
 from .paths import SstPaths
 from .settings import SstSettings
 
 type ConfigTypes = SstDefaults | SstNames | SstPaths | SstSettings
-
-
-class ConfigSetupParam(BaseModel):
-    """Used to hand-over trough CLI setup pipeline, app.main -> callback -> setup logging"""
-
-    config_file: Path
-    project_name: str = ""
-    project_version: str = ""
-    log_source: str = ""
-    log: LogParam = Field(default_factory=LogParam)
-
-    @field_validator("config_file")
-    @classmethod
-    def ensure_path(cls, v: Path | str):
-        return Path(v)
 
 
 class ConfigManager[
@@ -110,13 +94,8 @@ class ConfigManager[
         return self.paths._homes
 
     @property
-    def all_instances(self) -> list[ConfigTypes]:
-        return [
-            self.paths,
-            self.settings,
-            self.names,
-            self.defaults,
-        ]
+    def log_path(self) -> Path:
+        return self.settings.log.log_file
 
     @property
     def name(self):
@@ -155,6 +134,19 @@ class ConfigManager[
             config_file=self.setting_file,
             project_name=self.project_name,
             project_version=self.project_version,
-            log=self.settings.log,
-            log_source="config.settings.log",
+            log=self.settings.log.with_source("Custom: config.settings.log"),
         )
+
+
+class ConfigSetupParam(BaseModel):
+    """Used to hand-over trough CLI setup pipeline, app.main -> callback -> setup logging"""
+
+    config_file: Path
+    project_name: str = ""
+    project_version: str = ""
+    log: LogParam = Field(default_factory=LogParam)
+
+    @field_validator("config_file")
+    @classmethod
+    def ensure_path(cls, v: Path | str):
+        return Path(v)

@@ -6,8 +6,9 @@ from typing import Self
 
 from loguru import logger
 
-from ..utils.path import pyproject_name
-from .homes import HomeSetup
+from sstcore.utils.log import LogParam
+
+from ..utils.path import HomeSetup, pyproject_name
 from .settings import SstSettings
 
 
@@ -26,51 +27,13 @@ class BootDefaults:
 
     home_setup: HomeSetup
     project_name: str = ""
-    project_root_indicator: str = "pyproject.toml"
     project_root: Path | None = None
     project_version: str = "0.0.0"
 
+    # IDEA: logfile/param?
+
     setting_file: Path | None = None
     setting_file_name: str = "settings.json"
-
-
-class DefaultBootPaths(BootDefaults):
-    """Helper for Lazy Path loading, holds Sorting of Path execution"""
-
-    def provided_setting_file(self) -> Path:
-        if self.setting_file:
-            return self.setting_file
-        raise FileNotFoundError("No setting file provided in BootDefaults")
-
-    def provided_from_home_setup(self) -> Path:
-        return self.home_setup.configs_dir / self.setting_file_name
-
-    def _home_setup_path(self, target: HomeSetup):
-        if self.home_setup == target:
-            raise AttributeError(
-                "This path is already 'provided_from_home_setup'"
-            )
-        return target.configs_dir / self.setting_file_name
-
-    def home_setup_project(self) -> Path:
-        return self._home_setup_path(target=HomeSetup.PROJECT)
-
-    def home_setup_global(self) -> Path:
-        return self._home_setup_path(target=HomeSetup.GLOBAL)
-
-    def home_setup_local(self) -> Path:
-        return self._home_setup_path(target=HomeSetup.LOCAL)
-
-    @classmethod
-    def path_factory(cls, defaults: BootDefaults) -> list[Callable[..., Path]]:
-        factory: Self = cls(**asdict(defaults))
-        return [
-            factory.provided_setting_file,
-            factory.provided_from_home_setup,
-            factory.home_setup_project,
-            factory.home_setup_global,
-            factory.home_setup_local,
-        ]
 
 
 class ConfigBootstrap[TSettings: SstSettings]:
@@ -87,16 +50,18 @@ class ConfigBootstrap[TSettings: SstSettings]:
         )
         HomeSetup(defaults.home_setup).boot(
             project_name=project_name,
-            project_root_indicator=defaults.project_root_indicator,
+            # LATER: figure out best input arg strategy
             project_root=defaults.project_root,
+            local_root=defaults.project_root,
         )
         for path in DefaultBootPaths.path_factory(defaults):
             if final_setting_file := cls.check_location(path, settings_cls):
                 logger.info(f"Found valid Settings: {final_setting_file=}")
                 break
         else:
+            log_setup = LogParam(log_dir=defaults.home_setup.log_dir)
             final_setting_file: Path = cls.scaffold_default_config(
-                settings_cls, defaults
+                settings_cls, defaults, log_setup.attach_logname(project_name)
             )
             logger.warning(
                 f"No existing Settings found — created scaffold: {final_setting_file=}"
@@ -133,18 +98,18 @@ class ConfigBootstrap[TSettings: SstSettings]:
 
     @classmethod
     def scaffold_default_config(
-        cls, settings_cls, defaults: BootDefaults
+        cls, settings_cls, defaults: BootDefaults, log_setup: LogParam
     ) -> Path:
         """Create a minimal valid config. Never overwrite existing."""
-
         path = None  # Failsafe for logs in except
         for path_function in DefaultBootPaths.path_factory(defaults):
             try:
                 if (path := path_function()).exists():
                     raise FileExistsError(f"Detected Existing File! {path=}")
-
                 path.parent.mkdir(parents=True, exist_ok=True)
-                settings_cls().save(path)
+
+                settings_cls(log=log_setup).save(path)
+
                 logger.info("New setting file created from defaults")
                 return path
 
@@ -200,3 +165,40 @@ class ConfigBootstrap[TSettings: SstSettings]:
             logger.warning("No distribution name provided to check version")
 
         return defaults.project_version
+
+
+class DefaultBootPaths(BootDefaults):
+    """Helper for Lazy Path loading, holds Sorting of Path execution"""
+
+    def provided_setting_file(self) -> Path:
+        if self.setting_file:
+            return self.setting_file
+        raise FileNotFoundError("No setting file provided in BootDefaults")
+
+    def provided_from_home_setup(self) -> Path:
+        return self.home_setup.configs_dir / self.setting_file_name
+
+    def _home_setup_path(self, target: HomeSetup):
+        if self.home_setup == target:
+            raise AttributeError("This path is 'provided_from_home_setup'")
+        return target.configs_dir / self.setting_file_name
+
+    def home_setup_project(self) -> Path:
+        return self._home_setup_path(target=HomeSetup.PROJECT)
+
+    def home_setup_global(self) -> Path:
+        return self._home_setup_path(target=HomeSetup.GLOBAL)
+
+    def home_setup_local(self) -> Path:
+        return self._home_setup_path(target=HomeSetup.LOCAL)
+
+    @classmethod
+    def path_factory(cls, defaults: BootDefaults) -> list[Callable[..., Path]]:
+        factory: Self = cls(**asdict(defaults))
+        return [
+            factory.provided_setting_file,
+            factory.provided_from_home_setup,
+            factory.home_setup_project,
+            factory.home_setup_global,
+            factory.home_setup_local,
+        ]
