@@ -1,6 +1,6 @@
 [project]
 name = "sstcore"
-version = "0.3.0b2"
+version = "0.3.0b3"
 description = "Collection of frequently used generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
@@ -17,9 +17,8 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
@@ -34,14 +33,14 @@ dependencies = [
 Repository = "https://github.com/silvasta/silvasta"
 
 [dependency-groups]
-dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.34"]
+dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.44"]
 
 [build-system]
 requires = ["uv_build>=0.11.16,<0.12.0"]
 build-backend = "uv_build"
 
 [project.optional-dependencies]
-cli = ["typer"]
+cli = ["typer", "fire"]
 tui = ["textual"]
 all = ["sstcore[cli]", "sstcore[tui]"]
 
@@ -60,8 +59,13 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 79
 
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 72
+
 [tool.ruff.lint]
 select = [
+  # "D",  # D: docstrings
   "E",  # E: pycodestyle errors
   "F",  # F: Pyflakes
   "I",  # I: isort (import sorting)
@@ -70,5 +74,10 @@ select = [
   "N",  # N: pep8-naming
 ]
 ignore = [
-  "E501", # Ignore long lines: only format, not error on them
+  # "E501", # Ignore long lines: only format, not error on them
+  "D400", # Ignore strict period rule, rely on D415 instead
+  "D415", # Ignore .?!
+  "D203", # Conflicts with D211 (no blank line before class)
+  "D212", # Conflicts with D213 (multi-line summary second line)
+  "D202", # Conflicts with D213 (multi-line summary second line)
 ]
