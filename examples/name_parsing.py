@@ -1,23 +1,72 @@
 from contextlib import suppress
 from datetime import datetime
+from pathlib import Path
 
-from sstcore.config import ParsedName, StyledName
+from pydantic import BaseModel
+
 from sstcore.utils import PatternNamer, day_count, printer
+from sstcore.utils.parse import ParsedName, StyledName
 
 
-def main():
-    print("Start of name_parsing")
+def main():  # IDEA: google.Fire for dispatching like this?
+    printer.title("Start of name_parsing")
     # pattern_namer()
-    # parsed_name()
+    parsed_name()
     # predefined_keys()
     # styled_name()
-    show_error()
+    # show_error()
+    parsed_basemodel_name()
+
+
+def parsed_basemodel_name():
+    printer.title("Start of parsed_basemodel_name")
+
+    class TreeInfoSchema(BaseModel):
+        sprout_id: int
+        topic: str
+
+    # Instantiate with the generic type and schema class
+    tree_parser: ParsedName[TreeInfoSchema] = ParsedName[TreeInfoSchema](
+        pattern="t_{sprout_id}_{topic}",
+        schema=TreeInfoSchema,
+        strip_extension=True,  # Safely handles Path("t_42_math.json")
+    )
+
+    # Backwards parsing returns the BaseModel directly!
+    tree_data = tree_parser(Path("t_42_math.json"))
+
+    printer(tree_data)
+
+    print(tree_data.sprout_id)  # 42 (as int)
+    print(tree_data.topic)  # "math"
+
+    printer(tree_parser)
+
+
+def parsed_name():
+    printer.title("Start of parsed_name")
+
+    pattern: str = "{day}_summary.{suffix}"
+    summary_file: ParsedName = ParsedName(pattern=pattern)
+    printer(summary_file)
+
+    # Fine
+    printer.header(summary_file({"day": str(day_count()), "suffix": "md"}))
+    printer.header(summary_file("9607_summary.md"))
+
+    with suppress(ValueError):
+        printer.danger(summary_file({"suffix": "md"}))
+
+    printer.header(summary_file("962_summary.md"))
+
+    with suppress(ValueError):
+        printer.success(summary_file("962_summary_1.md"))
+        printer.success("it works!")
 
 
 def show_error():
-    summary_name: ParsedName = ParsedName.only_from_pattern(
-        pattern="{day}_summary.{suffix}"
-    )
+    pattern = "{day}_summary.{suffix}"
+    summary_name: ParsedName = ParsedName(pattern=pattern)
     printer(summary_name)
 
     printer(f"{(summary_name([22, 'md']))=}")
@@ -49,25 +98,6 @@ def styled_name():
     print(sstfile_dates)
     print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
     printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
-
-
-def parsed_name():
-    pattern: str = "{day}_summary.{suffix}"
-    summary_file: ParsedName = ParsedName.only_from_pattern(pattern=pattern)
-    print(summary_file)
-
-    # Fine
-    print(summary_file({"day": str(day_count()), "suffix": "md"}))
-    print(summary_file("9607_summary.md"))
-
-    with suppress(ValueError):
-        print(summary_file({"suffix": "md"}))
-
-    print(summary_file("962_summary.md"))
-
-    with suppress(ValueError):
-        print(summary_file("962_summary_1.md"))
-        print("it works!")
 
 
 def pattern_namer():
