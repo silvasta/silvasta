@@ -8,7 +8,9 @@ from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
 
 from ..utils.print import printer
-from ..utils.simple_tree import SimpleTreeNode
+from ..utils.tree import SimpleTreeNode
+
+# TASK: check folder(edges != leaf) and how they are counted
 
 
 class MultiSelectTree(Tree[str]):
