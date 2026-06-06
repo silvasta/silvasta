@@ -5,7 +5,7 @@ from typing import Any
 from rich.table import Table
 from rich.tree import Tree
 
-from ..simple_tree import SimpleTreeNode
+from ..tree import SimpleTreeNode
 from .stylebox import style
 
 

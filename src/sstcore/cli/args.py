@@ -3,6 +3,7 @@ from typing import Annotated
 
 import typer
 
+# IMPORTANT: Save, store args to config (if possible)
 # TASK: Find proper generalized annotations
 # - check:
 #   - sachmis
@@ -59,4 +60,3 @@ Write = Annotated[
         help="Write the current status to disk",
     ),
 ]
-# NEXT: Save, store args to config (if possible)

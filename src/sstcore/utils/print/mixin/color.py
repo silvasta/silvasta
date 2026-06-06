@@ -15,8 +15,11 @@ class ColorMixin(BasePrinter):
     def panel(self, target, **kwargs):
         self._debug_log_if_active(target, **kwargs)
         text_style: str = kwargs.pop("text_style", "")
+        title: str = kwargs.pop("title", "")  # MOVE:
         super().panel(  # TODO: dispatch kwargs
-            self._colorize(target, text_style=text_style, **kwargs), **kwargs
+            self._colorize(target, text_style=text_style, **kwargs),
+            title=self._colorize(title, "white"),  # MOVE:
+            **kwargs,
         )
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -

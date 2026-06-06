@@ -3,7 +3,7 @@ from pathlib import Path
 from rich.table import Table
 from rich.tree import Tree
 
-from ...simple_tree import SimpleTreeNode
+from ...tree import SimpleTreeNode
 from .. import toolbox
 from ..base import BasePrinter
 from ..stylebox import style

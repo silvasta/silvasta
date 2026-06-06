@@ -71,6 +71,6 @@ class FormatMixin(BasePrinter):
         target = Path(target)
         if target.is_dir():
             return f"[blue]{target}/[/]"
-        if target.parent != Path("."):
+        if target.parent != Path("."):  # TODO: color as arg
             return f"[blue]{target.parent}/[/]{target.name}"
         return target.name

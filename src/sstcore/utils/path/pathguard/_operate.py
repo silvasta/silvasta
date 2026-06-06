@@ -35,6 +35,11 @@ class SyncMode(StrEnum):
                 raise FileExistsError("Catch error for SyncMode.IGNORE")
 
 
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Transfer Operations
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
 def rotate(
     source: PathInput,
     target: PathInput,
@@ -150,6 +155,11 @@ def symlink(
         logger.debug(f"Symlinked: {relative}")
 
     return inspected_target
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Delete Operations
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 def _clear_file_or_folder(

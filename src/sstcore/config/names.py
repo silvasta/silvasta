@@ -5,7 +5,7 @@ from ..utils.parse import ParsedName, StyledName
 
 
 class SstNames(BaseSettings):
-    model_config = ConfigDict(extra="allow")  # TODO: sure?
+    model_config = ConfigDict(extra="allow")
 
     project: str = "sstcore"
 

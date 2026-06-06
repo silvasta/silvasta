@@ -20,7 +20,7 @@ utils_app = SafeTyper(
 
 @utils_app.command("monitor")
 def launch_monitor(file: sargs.File = None):  # NOTE: CLI hint not amazing...
-    """Log Console Monitor: watch new log file entries"""
+    """Log Console Monitor: Watch new log file entries!"""
     log_monitor(log_path=file)
 
 
@@ -30,7 +30,7 @@ def launch_folder_scanner(
     output_file: sargs.File = None,
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.BY_SELECTION,
 ):
-    """Folder Scanner with TreeSelector: write combined file"""
+    """Folder Scanner with TreeSelector: Write combined file!"""
     folder_scanner(scan_root, output_file, sort_method=sort)
 
 

@@ -4,8 +4,10 @@ from .parse import PatternNamer
 from .path import HomeSetup, PathGuard, XdgHomes
 from .print import Printer, create_printer, printer
 from .scanner import FolderScanner
-from .simple_tree import PathTreeNode, SimpleTreeNode
 from .time import day_count
+from .tree import PathTreeNode, SimpleTreeNode
+
+# NEXT: clean up!
 
 __all__: list = [
     "day_count",

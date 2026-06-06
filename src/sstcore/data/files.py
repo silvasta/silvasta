@@ -20,7 +20,7 @@ from ..utils import (
     PathTreeNode,
     ProjectFilter,
 )
-from ..utils.simple_tree import build_path_tree
+from ..utils.tree import build_path_tree
 
 # IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
 
@@ -42,6 +42,7 @@ class SstFile(BaseModel):
     def description(self) -> str:
         """Extensive description formatted with Rich Color String"""
         config: ConfigManager = get_config()
+        # FIX: name placement
         return config.names.sstfile_dates.styled(self._description)
 
     @property
@@ -53,6 +54,7 @@ class SstFile(BaseModel):
     def raw_description(self) -> str:
         """Raw description without any coloring"""
         config: ConfigManager = get_config()
+        # FIX: name placement
         return config.names.sstfile_dates(self._description)
 
     @property
@@ -119,16 +121,18 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     basic operations to handle files and groups of files"""
 
     local_root: Path
+    files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
+
     _scanner: FolderScanner | None = PrivateAttr(default=None)
-    # TODO: mode MODIFY: dont delete or move the file, but override changes in tracker?
-    # - create sync function in SstFile
     _sync_mode: PathGuard.SyncMode = (
+        # TASK: mode MODIFY:
+        # dont delete or move the file,
+        # but override changes in tracker?
+        # -> create sync function in SstFile
         PrivateAttr(  # LATER: make this public str?
             default=PathGuard.SyncMode.INCREMENT
         )
     )
-
-    files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
 
     @classmethod
     def setup_at(cls, local_root: Path) -> Self:
@@ -149,7 +153,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def has_duplicated_file_paths(self) -> bool:
         return len(self.local_file_paths) < len(self.files)
 
-    # TODO: here or in SstFile? (same for confirm_local_status)
+    # LATER: here or in SstFile? (same for confirm_local_status)
     # - maybe both in both directions? arg: path <-> File
     # def has_incremented_file_paths(self):
 
@@ -305,8 +309,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def update_files_from_local_folder(self) -> None:
         """Load new files and update files in registry if they changed"""
-        # LATER: changed? date? keywords? hash?
-        raise NotImplementedError
+        raise NotImplementedError  # LATER: changed? date? keywords? hash?
 
     def _clear_files_by_path(self, files_to_clear: Path):
         for file in self.get_files_by_path(files_to_clear):
@@ -317,7 +320,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         """Load all files inside local_root to registry,
         Override existing registry Files, clear_all: start from empty status"""
 
-        # TODO: better SyncMode
+        # LATER: better use of SyncMode, maybe second function (1 clear, 1 without)
 
         if clear_all:
             logger.info(f"Removing {self.n_files} files...")
@@ -343,11 +346,13 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         exclude_unset=False,
     ) -> Self:
         """Get registry with same configuration, new local_root and No files"""
+
         if exclude is None:
             exclude: set[str] = {"files", "local_root"}
+
         if add_to_exclude:
             exclude: set[str] = exclude | add_to_exclude
-        # TODO: check and compare SyncMode
+
         cloned_data: dict[str, Any] = self.model_dump(
             exclude=exclude, exclude_unset=exclude_unset, mode="python"
         )
@@ -453,12 +458,10 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         external_registry: Self,
         transfer_strategy: Callable[[Path, Path, str], Path],
     ) -> list[FilesT]:
-        # TODO: return Result: new,increment,override,ignore
-        # - multiple lists to handle
         """Attach data from external registry"""
+        logger.info(f"Files before: {external_registry.n_files=}")
 
         new_files: list[FilesT] = []
-        logger.info(f"Files before: {external_registry.n_files=}")
 
         for file in external_registry.files:
             source: Path = external_registry.local_root / file.local_path
@@ -471,6 +474,10 @@ class FileRegistry[FilesT: SstFile](BaseModel):
                 new_files.append(new_file)
 
         logger.info(f"Files attached: {len(new_files)=}")
+
+        # LATER: return Result: {new,increment,override,ignore}
+        # - multiple lists to handle, attached, [SyncMode], not found
+
         return new_files
 
     def _fetch_external_file(
@@ -508,9 +515,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def scan_local_dir(self) -> list[Path]:
         scanner: FolderScanner = self.get_scanner()
-        scanner._debug = True  # REMOVE:
-        scanner._follow_symlinks = True  # REMOVE:
-        return scanner.scan_local_files(get_absolute_paths=False)
+        return scanner.get_files()
 
     def get_scanner(self) -> FolderScanner:
         if not self._scanner:

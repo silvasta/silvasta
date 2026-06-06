@@ -70,7 +70,7 @@ def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
 
 @functools.singledispatch
 def split_read_print_path(target, local_root: Path | None = None):
-    # TODO: PathInput
+    # TODO: Better Name and doc
     raise NotImplementedDispatchError(target, local_root)
 
 
@@ -81,6 +81,7 @@ def _(target: list, local_root: Path | None = None) -> list[tuple[Path, Path]]:
 
 @split_read_print_path.register
 def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
+
     if target.is_absolute():
         read_path: Path = target
         print_path: Path = (

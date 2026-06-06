@@ -56,7 +56,7 @@ class LayoutMixin(BasePrinter):
         """Print header as title followed by lines in panel"""
         if header:
             self.header(text=header, frame=style, title=title)
-        self.panel(lines, title=title, frame=style)
+        self.panel(lines, title=title, frame=style, title_align="right")
 
     def lines_with_len(self, name, lines: list, style: str = "title"):
         header = f"{name}: {len(lines)}"

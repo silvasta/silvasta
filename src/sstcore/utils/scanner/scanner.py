@@ -66,7 +66,7 @@ class FolderScanner:
         return sorted(self.walk())
 
     def _walk(self):
-        yield self.scan_root.walk(follow_symlinks=self.follow_symlinks)
+        yield from self.scan_root.walk(follow_symlinks=self.follow_symlinks)
 
     def tree(self) -> PathTreeNode:
         """Build Connected Nodes from walked Paths"""
@@ -83,7 +83,7 @@ class FolderScanner:
             header="Files for Summary",
             title="FolderScanner",
             lines=(files := self.get_files()),
-            style="yellow",
+            style="green",
         )
         data: str = assemble_summary_file(files, output_file, self.scan_root)
 

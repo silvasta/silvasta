@@ -6,11 +6,11 @@ import typer
 from ..utils import HomeSetup, PathGuard, day_count
 from ..utils.print import ColorBox, printer
 from .defaults import SstDefaults
-from .names import AutoParsedName, ParsedName, SstNames
+from .names import ParsedName, SstNames
 
 c: ColorBox = printer.colorbox()
 
-summary_file: AutoParsedName = ParsedName(  # MOVE: but where?
+summary_file = ParsedName(  # MOVE: but where?
     pattern="{day}_summary.{suffix}",
     keys=["day", "suffix"],
 )

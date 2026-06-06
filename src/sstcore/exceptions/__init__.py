@@ -1,13 +1,13 @@
 from .base import (
-    FailedSelectionError,
     NotImplementedDispatchError,
     RegistrySyncError,
     SstError,
+    TuiSelectorError,
 )
 
 __all__: list[str] = [
     "SstError",
     "RegistrySyncError",
     "NotImplementedDispatchError",
-    "FailedSelectionError",
+    "TuiSelectorError",
 ]

@@ -7,6 +7,8 @@ from ..config.manager import ConfigSetupParam
 from ..utils import Printer, printer
 from ..utils.log import LogParam, LogSetupResult, setup_logging
 
+# IMPORTANT: delete this when new setup esablished
+
 
 def logger_catch(func):
     """Typer decorator BELOW 'app.command()', catch errors and log them via Loguru.
@@ -22,7 +24,6 @@ def logger_catch(func):
         ):
             return func(*args, **kwargs)
 
-    # IMPORTANT:
     printer.warn("logger_catch outdated! Check cli.engine.SafeTyper")
 
     return wrapper
@@ -41,7 +42,6 @@ def attach_callback(app: typer.Typer, param: ConfigSetupParam | None = None):
             False, "--quiet", "-q", help="Terminal output"
         ),
     ):
-        # IMPORTANT:
         printer.warn("attach_callback outdated! Check cli.engine.SafeTyper")
 
         if ctx.parent is None:

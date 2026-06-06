@@ -11,7 +11,7 @@ from ._helper import (
     relative_string,
     split_read_print_path,
 )
-from ._operations import (
+from ._operate import (
     SyncMode,
     copy,
     hardlink,

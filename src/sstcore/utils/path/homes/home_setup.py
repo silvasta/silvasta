@@ -3,13 +3,14 @@ from pathlib import Path
 
 from loguru import logger
 
-from ..search import get_project_root
+from ..search import find_project_root, get_project_root
 from .xdg import XdgHomes
 
-# LATER: use Enum or similar as guard of uniqueness,
+# IMPORTANT: needed for config.bootstrap and master setting file search
+# IDEA:
+# Use Enum or similar as guard of uniqueness and dispatch,
 # but with an approach that is more data friendly,
-# somehow paired with dataclass but able to boot all 3 together
-# (needed for config.bootstrap and master setting file search)
+# - somehow paired with dataclass but able to boot all 3 together?
 
 
 class HomeSetup(StrEnum):
@@ -25,9 +26,17 @@ class HomeSetup(StrEnum):
     ):
         """Launch setup with something like init"""
 
+        # print("xxxx")
+        # print(f"x HOME: {self}")
+        # print("xxxx")
+
         self._project_name: str | None = project_name
-        self._project_root: Path | None = project_root
+        self._project_root: Path | None = project_root or find_project_root()
         self._local_root: Path | None = local_root
+
+        # print("xxxx")
+        # print(f"x1 project_root: {self._project_root}")
+        # print("xxxx")
 
         match self:
             case HomeSetup.GLOBAL:
@@ -38,17 +47,20 @@ class HomeSetup(StrEnum):
                 if self._project_root is None:
                     logger.info("HomeSetup.PROJECT Boots with toml_search!")
                 self._project_root: Path = project_root or get_project_root()
+                # print("xxxx")
+                # print(f"x2 project_root: {self._project_root}")
+                # print("xxxx")
 
             case HomeSetup.LOCAL:
                 if local_root is None:
                     logger.info("HomeSetup.LOCAL Boots at CWD!")
 
         if self._project_root is None:
-            self._project_root: Path = Path.cwd()
+            self._project_root: Path | None = find_project_root()
             logger.debug(f"set project_root to {Path.cwd()=}")
 
         if self._local_root is None:
-            self._project_root: Path = Path.cwd()
+            self._local_root: Path = Path.cwd()
             logger.debug(f"set local_root to {Path.cwd()=}")
 
         logger.debug(f"HomeSetup '{self}' booted successfully")
@@ -62,18 +74,27 @@ class HomeSetup(StrEnum):
     @property
     def project_root(self) -> Path:
         if not self._project_root:
-            raise AttributeError("wrong boot")  # AI: which Exception?
+            raise AttributeError("wrong boot")
+
+        # print("xxxx")
+        # print(f"x3project_root: {self._project_root}")
+        # print("xxxx")
+
         return self._project_root
 
     @property
     def root(self) -> Path:
+        # print(f"x4project_root: {self._project_root}")
+        # print(self._local_root)
+        # print("xxxx")
         match self:
             case self.PROJECT:
                 return self.project_root
             case self.LOCAL:
                 return self.local_root
+        raise ValueError
         # Last resort...
-        return self._project_root or self._local_root or Path.cwd()
+        # return self._project_root or self._local_root or Path.cwd()
 
     @property
     def local_root(self) -> Path:

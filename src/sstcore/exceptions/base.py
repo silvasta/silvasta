@@ -32,7 +32,7 @@ class NotImplementedMixinError(NotImplementedError, SstError):
         super().__init__(f"Problem for {mixin=} of {base=} in {func=}")
 
 
-class FailedSelectionError(RuntimeError, SstError):
+class TuiSelectorError(RuntimeError, SstError):
     def __init__(self, message=None):
         if message is None:
             message = "It was an easy Selection... how can you Fail this?"

@@ -10,7 +10,6 @@ from ..utils.parse import LogPatterns
 
 def log_monitor(log_path: Path | None = None):
     """Show tail log display"""
-
     log_file: Path = PathGuard.file(
         target=log_path or get_config().log_path,
         default_content="",
@@ -26,7 +25,6 @@ def log_monitor(log_path: Path | None = None):
 
 def launch_tail_log_console(log_file: Path):
     """Launch console with live log prints from file assuming it is valid"""
-
     cyan: Any = printer.colors.cyan
 
     printer.title(
@@ -59,8 +57,6 @@ def launch_tail_log_console(log_file: Path):
                     style = None
 
             printer(line.strip(), style=style)
-            printer(line.strip())
-            print(f"{style=}")
 
 
 if __name__ == "__main__":
