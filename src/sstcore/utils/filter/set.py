@@ -1,28 +1,18 @@
-import functools
 from dataclasses import dataclass, field
 from functools import singledispatchmethod
 from pathlib import Path
 
-from loguru import logger
+from ._debug import debug_log
 
-
-def debug_log(func):
-    """Decorator that logs target_set and corresponding class attribute"""
-
-    @functools.wraps(func)
-    def wrapper(self, target_set, *args, **kwargs):
-        if self._debug:
-            attr_name: str = func.__name__.replace("fulfills_", "")
-            attr_value: set | None = getattr(self, attr_name, None)
-            logger.debug(f"{attr_name}={attr_value}, {target_set=}")
-        return func(self, target_set, *args, **kwargs)
-
-    return wrapper
+# TASK: check SetType and ObjectType
+# - int ever used or needed?
+# - ObjectType ever different from SetType?
+# - list[ObjectType]? maybe that as Type or dispatch
 
 
 @dataclass
 class FilterSet[SetType: str | Path | int, ObjectType]:
-    """Create set that takes input(s) and answers if they match the loaded criteria"""
+    """Take input and answer if it matches the loaded criteria!"""
 
     exclude: set[SetType] = field(default_factory=set)
     require_all: set[SetType] = field(default_factory=set)
@@ -30,7 +20,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
 
     allow_hidden_files: bool = False
 
-    # Get complementary negative set, instead get all matching, get all others
+    # Get complementary negative set, all not matching criteria
     return_if_not_hit: bool = False
 
     _debug: bool = False
@@ -54,7 +44,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
             target_set: set[SetType] = self._create_target_set(item)
             hit: bool = self.fulfills_all_conditions(target_set)
 
-            # Attach 'hit' or 'not hit = missing' depending if flag is active
+            # Attach 'hit' or 'not hit = missing' depending on flag
             if hit != self.return_if_not_hit:
                 filtered.append(item)
 
@@ -113,55 +103,3 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
             return False
 
         return True
-
-
-@dataclass
-class PathFilter(FilterSet[str, Path]):
-    def _create_target_set(self, target: Path) -> set[str]:
-        return set(target.parts) | {target.stem} | {target.suffix}
-
-
-PROJECT_IGNORE_DIRS: set[str] = {
-    ".git",
-    "__pycache__",
-    ".venv",
-    "venv",
-    "env",
-    "target",
-}
-
-PROJECT_ALLOWED_EXTS: set[str] = {
-    ".py",
-    ".pyi",
-    ".rs",
-    ".md",
-    ".json",
-    ".yaml",
-    ".toml",
-    ".tex",
-    ".cls",
-}
-
-
-@dataclass
-class ProjectFilter(PathFilter):
-    exclude: set[str] = field(
-        default_factory=lambda: set(PROJECT_IGNORE_DIRS),
-    )
-    require_any: set[str] = field(
-        default_factory=lambda: set(PROJECT_ALLOWED_EXTS)
-    )
-
-    def __call__(self, target: Path) -> bool:
-        target_set: set[str] = self._create_target_set(target)
-
-        if not self.allow_hidden_files and target.name.startswith("."):
-            return False
-
-        if target.is_dir():
-            return self.fulfills_exclude(target_set)
-
-        if target.is_file():
-            return self.fulfills_require_any(target_set)
-
-        raise ValueError(f"Invalid path, got {target=}")
