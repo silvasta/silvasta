@@ -6,13 +6,12 @@ from rich.tree import Tree
 from ...tree import SimpleTreeNode
 from .. import toolbox
 from ..base import BasePrinter
-from ..stylebox import style
 
 
 class ToolMixin(BasePrinter):
-    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- --
+    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- ---
     ### Tool Kit
-    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- --
+    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- ---
 
     def path_exists_table(self, paths: list[Path], title=None, header="Path"):
         """Check if Paths exist and visualize in Table"""
@@ -33,13 +32,24 @@ class ToolMixin(BasePrinter):
         target: dict,
         header="Dict Inspection",
         show_type: bool | tuple[bool, bool] = (True, True),
+        _style="green",  # REMOVE: after removing: type style
     ):
         """Debug Dict"""
+        if header:
+            # TASK: args, title_header?
+            # - use intermediates like self.title or self.header
+            header: str = self._colorize(header, style="bold white")
+            title: str = self._colorize("Dict Inspection", style="white")
+            self.panel(
+                header,
+                title=title,
+                title_align="right",
+                style=_style,
+            )
 
-        if header:  # TODO: args, title_header?
-            self.panel(header, title="Dict Inspection", style="green")
-
-        table: Table = toolbox.dict_table(target, self._format, show_type)
+        table: Table = toolbox.dict_table(
+            target, self._format, style=_style, show_type=show_type
+        )
 
         self(table)
 
@@ -47,9 +57,9 @@ class ToolMixin(BasePrinter):
         self,
         simple_tree: SimpleTreeNode,
         max_depth: int | None = None,
-        root: style = "bold magenta",
-        node: style = "by_level",
-        guide: style = "bold white",
+        root: str = "bold magenta",
+        node: str = "by_level",
+        guide: str = "bold white",
         hide_root=False,
     ) -> None:
         """Visualizes a SimpleTreeNode model as a nested Rich Tree"""

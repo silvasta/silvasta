@@ -20,7 +20,6 @@ from .mixin.color import ColorMixin
 from .mixin.format import FormatMixin
 from .mixin.layout import LayoutMixin
 from .mixin.tool import ToolMixin
-from .stylebox import ColorBox
 
 
 def create_printer(color=True, tool=True, format=True, layout=True):

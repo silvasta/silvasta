@@ -7,6 +7,7 @@ from loguru import logger
 from pydantic import BaseModel
 from rich.console import ConsoleRenderable
 
+from ...log.inspect import debug_log_or_print
 from ..base import BasePrinter
 
 
@@ -24,26 +25,32 @@ class FormatMixin(BasePrinter):
             case self.Modus.NULL:
                 pass
 
+    @debug_log_or_print(anyway=False)
     def panel(self, target: Any | list[Any], **kwargs):
         if "frame" in kwargs:
             kwargs["border_style"] = kwargs.pop("frame")
-        self._debug_log_if_active(target, **kwargs)
 
         super().panel(self._format(target), **kwargs)
 
     @singledispatchmethod
     def _format(self, target) -> str:
-        logger.warning(f"Unknown format of {type(target)=}: {target=}")
+        if self._log:
+            logger.warning(f"Unknown format of {type(target)=}: {target=}")
         return str(target)
 
     @_format.register
-    def _(self, target: str):  # LATER: any modification?
+    def _(self, target: str):  # LATER: any modification? yes
         """Let regular String just pass"""
         return target
 
     @_format.register
     def _(self, target: BaseModel):  # LATER: any modification?
-        """Let regular String just pass"""
+        """Let BaseModel just pass"""
+        return target
+
+    @_format.register
+    def _(self, target: Exception):  # FIX:
+        """Let Exception just pass"""
         return target
 
     @_format.register
@@ -62,7 +69,8 @@ class FormatMixin(BasePrinter):
 
     @_format.register
     def _(self, target: list | tuple) -> str:
-        items: list[str] = [self._format(item) for item in target]
+        # LATER: fix format acrobatic
+        items: list[str] = [str(self._format(item)) for item in target]
         return "\n".join(items)
 
     @_format.register

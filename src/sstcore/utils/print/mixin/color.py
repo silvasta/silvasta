@@ -1,8 +1,9 @@
 from functools import singledispatchmethod
 
 from ....exceptions import NotImplementedDispatchError
+from ...log.inspect import debug_log_or_print
+from ...paint.stylebox import Attribute, ColorBox
 from ..base import BasePrinter
-from ..stylebox import Attribute, ColorBox
 
 
 class ColorMixin(BasePrinter):
@@ -12,8 +13,8 @@ class ColorMixin(BasePrinter):
         super().__init__(*args, **kwargs)
         self._color_box = ColorBox()
 
+    @debug_log_or_print(anyway=False)
     def panel(self, target, **kwargs):
-        self._debug_log_if_active(target, **kwargs)
         text_style: str = kwargs.pop("text_style", "")
         title: str = kwargs.pop("title", "")  # MOVE:
         super().panel(  # TODO: dispatch kwargs
@@ -22,28 +23,30 @@ class ColorMixin(BasePrinter):
             **kwargs,
         )
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Colorizing  strings
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+    # TASK: Fix pipeline trough Format
     @singledispatchmethod
-    def _colorize[T: str | list](self, text: T, style: str, **kwargs) -> T:
-        raise NotImplementedDispatchError(text, style, kwargs)
+    def _colorize[T: str | list](self, text: T, **kwargs) -> T:
+        raise NotImplementedDispatchError(text, kwargs=kwargs)
 
     @_colorize.register
     def _[T: str](self, target: str, style: str = "", **kwargs) -> str:
         style: str = style or kwargs.get("text_style", "white")
-        text: str = self._format(target)
-        return self._color_box._colorize(text, color=str(style))
+        if text := self._format(target):
+            return self._color_box._colorize(text, color=str(style))
+        return ""  # TEST: avoid stuff like: kwargs={'title': '[white][/]',...}
 
     @_colorize.register
     def _[T: list[str]](self, target: list, style: str, **kwargs) -> list[str]:
         style: str = style or kwargs.get("text_style", "white")
         return [self._colorize(i, style) for i in target] or []
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Box
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     @property
     def colors(self) -> ColorBox:
@@ -54,9 +57,9 @@ class ColorMixin(BasePrinter):
         """Export new ColorBox with desired attribute"""
         return ColorBox.with_mode(attribute=mode)
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Prints
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def white(self, target) -> None:
         text: str = self._format(target)
@@ -70,11 +73,23 @@ class ColorMixin(BasePrinter):
         text: str = self._format(target)
         self(self.colors.red(text))
 
+    def r(self, target) -> None:
+        text: str = self._format(target)
+        self(self.colors.red(text))
+
     def green(self, target) -> None:
         text: str = self._format(target)
         self(self.colors.green(text))
 
+    def g(self, target) -> None:
+        text: str = self._format(target)
+        self(self.colors.green(text))
+
     def cyan(self, target) -> None:
+        text: str = self._format(target)
+        self(self.colors.cyan(text))
+
+    def c(self, target) -> None:
         text: str = self._format(target)
         self(self.colors.cyan(text))
 
