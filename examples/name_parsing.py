@@ -2,20 +2,54 @@ from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
 
+import fire
 from pydantic import BaseModel
 
 from sstcore.utils import PatternNamer, day_count, printer
 from sstcore.utils.parse import ParsedName, StyledName
 
 
-def main():  # IDEA: google.Fire for dispatching like this?
+def main():
     printer.title("Start of name_parsing")
-    # pattern_namer()
-    parsed_name()
-    # predefined_keys()
-    # styled_name()
-    # show_error()
-    parsed_basemodel_name()
+    fire.Fire(ParseTasks)
+
+
+class ParseTasks:
+    def model(self):
+        parsed_basemodel_name()
+
+    def base(self):
+        parsed_name()
+
+    def style(self):
+        styled_name()
+
+    def regex(self):
+        pattern_namer()
+
+    def error(self):
+        show_error()
+
+
+def parsed_name():
+    printer.title("Start of parsed_name")
+
+    pattern: str = "{day}_summary.{suffix}"
+    summary_file: ParsedName = ParsedName(pattern=pattern)
+    printer(summary_file)
+
+    # Fine
+    printer.header(summary_file({"day": str(day_count()), "suffix": "md"}))
+    printer.header(summary_file("9607_summary.md"))
+
+    with suppress(ValueError):
+        printer.danger(summary_file({"suffix": "md"}))
+
+    printer.header(summary_file("962_summary.md"))
+
+    with suppress(ValueError):
+        printer.success(summary_file("962_summary_1.md"))
+        printer.success("it works!")
 
 
 def parsed_basemodel_name():
@@ -41,50 +75,6 @@ def parsed_basemodel_name():
     print(tree_data.topic)  # "math"
 
     printer(tree_parser)
-
-
-def parsed_name():
-    printer.title("Start of parsed_name")
-
-    pattern: str = "{day}_summary.{suffix}"
-    summary_file: ParsedName = ParsedName(pattern=pattern)
-    printer(summary_file)
-
-    # Fine
-    printer.header(summary_file({"day": str(day_count()), "suffix": "md"}))
-    printer.header(summary_file("9607_summary.md"))
-
-    with suppress(ValueError):
-        printer.danger(summary_file({"suffix": "md"}))
-
-    printer.header(summary_file("962_summary.md"))
-
-    with suppress(ValueError):
-        printer.success(summary_file("962_summary_1.md"))
-        printer.success("it works!")
-
-
-def show_error():
-    pattern = "{day}_summary.{suffix}"
-    summary_name: ParsedName = ParsedName(pattern=pattern)
-    printer(summary_name)
-
-    printer(f"{(summary_name([22, 'md']))=}")
-
-    summary_fail = "hello_summary-tar-gz"
-    try:
-        _fail_name_parts: dict = summary_name(summary_fail)
-    except ValueError:
-        printer.danger(f"Failed for {summary_fail=}")
-
-    summary_file = "422_summary.tar.gz"
-    fail_key = "hello"
-    try:
-        printer(f"{(name_parts:= summary_name(summary_file))=}")
-        printer(f"{name_parts["suffix"]=}")
-        printer(f"{name_parts[fail_key]=}")
-    except KeyError:
-        printer.danger(f"Failed with {fail_key=} for {summary_file=}")
 
 
 def styled_name():
@@ -125,6 +115,29 @@ def pattern_namer():
 
     random_1: dict[str, str] = namer.extract("93-59_sstcore_sstcore.p")
     print(random_1)
+
+
+def show_error():
+    pattern = "{day}_summary.{suffix}"
+    summary_name: ParsedName = ParsedName(pattern=pattern)
+    printer(summary_name)
+
+    printer(f"{(summary_name([22, 'md']))=}")
+
+    summary_fail = "hello_summary-tar-gz"
+    try:
+        _fail_name_parts: dict = summary_name(summary_fail)
+    except ValueError:
+        printer.danger(f"Failed for {summary_fail=}")
+
+    summary_file = "422_summary.tar.gz"
+    fail_key = "hello"
+    try:
+        printer(f"{(name_parts:= summary_name(summary_file))=}")
+        printer(f"{name_parts["suffix"]=}")
+        printer(f"{name_parts[fail_key]=}")
+    except KeyError:
+        printer.danger(f"Failed with {fail_key=} for {summary_file=}")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ def process_list(
         False, "--example", "-e", help="1:list, 2:dict,..."
     ),
 ):
-    """Process a specific item from a list."""
+    """Process a specific item from a list or dict"""
 
     match example:
         case 1:

@@ -3,6 +3,7 @@ from typing import Any
 
 from sstcore import printer
 from sstcore.utils.print import ColorBox
+from sstcore.utils.tree import SimpleTreeNode, examples
 
 c: ColorBox = printer.colorbox()
 
@@ -11,6 +12,7 @@ def main():
     select: list[int] = [2, 0, 1]
 
     functions: list[Callable] = [
+        show_tree_graph,
         show_headers,
         show_colors,
         show_attributes,
@@ -23,9 +25,16 @@ def main():
     printer.panel("blbls lldj", frame="plum4")
     printer.panel("blbls lldj", frame="purple")
     printer.panel("blbls lldj", frame="purple3")
-    # printer.panel("blbls lldj", frame="purple4")
+
     for run in select:
         functions[run]()
+
+
+def show_tree_graph():
+    printer.title("Print the SimpleTree", title="SimpleTree")
+    example_tree: SimpleTreeNode = examples.simple_tree()
+    printer.tree_graph(example_tree)
+    printer.tree_graph(examples.big_tree())
 
 
 def show_headers(text="Selected Models"):
@@ -80,7 +89,7 @@ def experiment_t_string():
     name = "Alice"
     tmpl = t"Hello {name}!"
 
-    # IDEA: use something like this to "de-"colorize strings that don't go trough console
+    # IDEA: use something like this to "de-"colorize strings that do go log
 
     for s, v in zip(tmpl.strings, tmpl.values, strict=False):
         print(s)

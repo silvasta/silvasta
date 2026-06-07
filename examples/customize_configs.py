@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import Field
 
+from sstcore import PathGuard
 from sstcore.config import (
     ConfigManager,
     SstDefaults,
@@ -18,35 +19,40 @@ class Names(SstNames):
     """Define new custom names or override default names,
     used in Paths and to access them by config.{some_name}"""
 
-    project: str = "sstcore"
-
-    # Use same folder as example file to show usage
-    data_dir: str = Path(__file__).resolve().parent.name
-    user_setting_file: str = "example_settings.json"
+    report_dir: str = "reports"
 
 
 class Defaults(SstDefaults):
     print_value: int = 5
 
 
-class ProjectSettings(SstSettings):
+class Settings(SstSettings):
     names: Names = Field(default_factory=Names)
     defaults: Defaults = Field(default_factory=Defaults)
 
 
 class Paths(SstPaths):
-    pass
+    @property
+    @PathGuard.dir
+    def report_dir(self) -> Path:
+        return Path.cwd() / self._names.data_dir
+
+    @property
+    def report_file(self) -> Path:
+        return self.report_dir / "example.pdf"
 
 
-config: ConfigManager[ProjectSettings, Names, Defaults, Paths] = ConfigManager(
-    settings_cls=ProjectSettings,
+config: ConfigManager[Settings, Names, Defaults, Paths] = ConfigManager(
+    settings_cls=Settings,
     paths_cls=Paths,
+    project_name="MyProject",
+    setting_file=Path.cwd() / "example_settings.json",
 )
 
-# do you see: 'x: int'? (where ': int' comes from type checker)
-x = config.defaults.print_value
+printer.success("config is ready!")
+printer(config.settings)
+
+config.paths.report_dir.touch()
 
 for i in range(config.defaults.print_value):
-    print(f"Success {i}")
-
-printer(config.settings)
+    printer.success(f"Success {i}")

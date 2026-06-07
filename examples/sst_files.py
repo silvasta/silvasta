@@ -20,7 +20,7 @@ def main():
         create_role()
 
 
-class Role(SstFile):
+class Role(SstFile):  # REMOVE: is already in Project right?
     local_path: Path | None = None
     path: Path
     content: str
