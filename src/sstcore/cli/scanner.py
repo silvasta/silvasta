@@ -13,75 +13,68 @@ from ..utils import (
     printer,
 )
 from ..utils.path import get_project_root
-from ..utils.scanner import TargetFileType
+from ..utils.scanner import write_summary_file
 
 
 def folder_scanner(
     scan_root: Path | None = None,
     output_file: Path | None = None,
-    path_filter: PathFilter | None = None,
+    filter: PathFilter | None = None,
     sort_method: str = "",
-    print_debug_logs=False,
 ):
-    """Launch Scanner, then select from Filesystem Tree, finally write to file"""
+    """Launch Scanner, select from Filesystem Tree and write to file"""
 
     scan_root: Path = scan_root or get_project_root()
     output_file: Path = output_file or get_config().paths.summary_file()
     output_file: Path = PathGuard.unique(output_file)
 
-    if path_filter is None:
-        path_filter: PathFilter = ProjectFilter(
-            exclude={
-                ".git",
-                "__pycache__",
-                ".venv",
-                "venv",
-                "env",
-                "target",
-            },
-            require_any={
-                ".py",
-                ".pyi",
-                ".rs",
-                ".md",
-                ".json",
-                ".yaml",
-                ".toml",
-                ".tex",
-                ".cls",
-            },
-            _debug=print_debug_logs,
-        )
-    # Do this first to avoid error after long selection process
-    target: TargetFileType = FolderScanner.target_from_path(output_file)
+    if filter is None:
+        filter: ProjectFilter = _setup_filter()
 
-    scanner: FolderScanner = FolderScanner(
-        scan_root=scan_root, path_filter=path_filter
-    )
-    tree: PathTreeNode = scanner.filesystem_tree()
+    scanner = FolderScanner(scan_root=scan_root, path_filter=filter)
+    tree: PathTreeNode = scanner.tree()
 
-    # TASK: load selected files here to previous_selection file
-    previous_selection: list[Path] = []
+    previous_selection: list[Path] = []  # TASK: implement: previous_selection
 
     selector = TreeSelectorApp(
         sst_tree=tree, sort_method=sort_method, pre_select=previous_selection
     )
-    if selected_files := selector.run():
-        # TASK: cache selected files here to previous_selection file
+    if selected_files := selector.run():  # TASK: cache selected files here
         printer.lines_with_len(name="Selected Files", lines=selected_files)
     else:
         printer.warn("Action cancelled by user.")
         raise typer.Exit()
 
-    data: str = FolderScanner.assemble_summary_file(
-        selected_files, target, scan_root=scan_root
-    )
-    output_file.write_text(data)
+    data: str = write_summary_file(selected_files, output_file)
 
     printer.lines(
         header=f"Summary File created! Total Lines: {len(data.splitlines())}",
         lines=[output_file, PathGuard.relative(output_file, strict=False)],
-        style="success",
+        style="green",
+    )
+
+
+def _setup_filter() -> ProjectFilter:
+    return ProjectFilter(
+        exclude={
+            ".git",
+            "__pycache__",
+            ".venv",
+            "venv",
+            "env",
+            "target",
+        },
+        require_any={
+            ".py",
+            ".pyi",
+            ".rs",
+            ".md",
+            ".json",
+            ".yaml",
+            ".toml",
+            ".tex",
+            ".cls",
+        },
     )
 
 
