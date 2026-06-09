@@ -16,9 +16,11 @@ class ParsedName[ModelT: BaseModel](BaseModel):
     _namer: PatternNamer = PrivateAttr()
     keys: list[str] = Field(default_factory=list)
 
-    schema: type[ModelT] | None = Field(default=None, exclude=True)
+    model_cls: type[ModelT] | None = Field(default=None, exclude=True)
 
     strip_extension: bool = Field(default=False)
+    strip_increments: bool = Field(default=True)
+
     datetime_format: str = Field(default="%Y-%m-%d_%H-%M-%S", exclude=True)
 
     @property
@@ -26,7 +28,6 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         return len(self.keys)
 
     def forward_parsing(self, safe_target: dict[str, str | datetime]) -> str:
-        """Final cleanup of string before extracting keys with PatternNamer"""
 
         clean_target: dict[str, str] = {}
 
@@ -44,15 +45,19 @@ class ParsedName[ModelT: BaseModel](BaseModel):
     def backwards_parsing(
         self, formatted_string: str
     ) -> dict[str, Any] | ModelT:
-        """Final cleanup of string before extracting pattern with PatternNamer"""
 
-        # Strip PathGuard increments (e.g., "_1", "_42") before the extension
-        clean_string: str = re.sub(r"_\d+(?=\.|$)", "", formatted_string)
+        if self.strip_increments:
+            # Strip PathGuard Increments (like "_1", "_42") before extension
+            pattern: str = r"_\d+(?=\.|$)"
+            clean_string: str = re.sub(pattern, "", formatted_string)
+        else:
+            # Avoid for cases like: "tree_id_111" where you search for id=111
+            clean_string: str = formatted_string
 
         raw_dict: dict = self._namer.extract(clean_string)
 
-        if self.schema:
-            return self.schema(**raw_dict)
+        if self.model_cls:
+            return self.model_cls(**raw_dict)
 
         return raw_dict
 
@@ -68,8 +73,10 @@ class ParsedName[ModelT: BaseModel](BaseModel):
 
         for key in self.keys:
             if key not in target:
-                msg: str = f"Missing value for {key=}! Using fallback for: {self.pattern=}"
-                logger.error(msg)
+                logger.error(
+                    f"Missing value for {key=}!"
+                    " Using fallback for: {self.pattern=}"
+                )
                 safe_target[key] = f"UNKNOWN-{key.upper()}"
             else:
                 safe_target[key] = target[key]
@@ -89,8 +96,10 @@ class ParsedName[ModelT: BaseModel](BaseModel):
 
             # Error Case 1: less values provided than keys -> Fill
             if i >= n_values:
-                msg: str = f"Missing value for {key=}! Using fallback for: {self.pattern=}"
-                logger.error(msg)
+                logger.error(
+                    f"Missing value for {key=}!"
+                    " Using fallback for: {self.pattern=}"
+                )
                 safe_target[key] = f"UNKNOWN-STYLE{i}"
 
         # Error Case 2: more values provided than keys -> Crop
@@ -100,6 +109,8 @@ class ParsedName[ModelT: BaseModel](BaseModel):
             logger.error(msg)
 
         return self.forward_parsing(safe_target)
+
+    # TASK: backwards parsing of list that doesn't throw!
 
     @__call__.register
     def _(self, target: Path) -> dict[str, Any] | ModelT:
@@ -113,7 +124,7 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         return self.backwards_parsing(target)
 
     @singledispatchmethod
-    @staticmethod  # LATER: format_brackets[T] and  -> T | list[T]: (corrected..)
+    @staticmethod  # LATER: format_brackets[T] and  -> T | list[T]:
     def format_brackets(target: str | list[str]):
         raise NotImplementedDispatchError(target)
 
@@ -136,7 +147,7 @@ class ParsedName[ModelT: BaseModel](BaseModel):
     def with_predefined_keys(
         cls, key_indexes: list[int] | None = None
     ) -> Self:
-        """Create keys and pattern factory in derived class, fill before assignment"""
+        """Use key and pattern factory in derived class for constructor"""
 
         raw_keys: list[str] = cls._load_predefined_keys()
 
@@ -168,16 +179,16 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         """Runs automatically whenever the model is instantiated or updated."""
         self._namer = PatternNamer(self.pattern)
 
-        # 1. If a schema is provided, auto-populate expected keys from the model fields
-        if self.schema and not self.keys:
-            self.keys: list[str] = list(self.schema.model_fields.keys())
+        # 1. If schema provided, auto-populate keys from the model fields
+        if self.model_cls and not self.keys:
+            self.keys: list[str] = list(self.model_cls.model_fields.keys())
 
         # 2. Validation check against the pattern
         if self.keys and set(self.keys) != set(self._namer.keys):
             logger.error(
                 f"Configured pattern '{self.pattern}' changed expected keys! "
                 f"Expected: {self.keys}, Found: {self._namer.keys}. "
-                f"Paths generated with this pattern might contain 'UNKNOWN' placeholders."
+                f"Generated strings might contain 'UNKNOWN' placeholders."
             )
         # Sync to the actual keys requested by the pattern
         self.keys: list[str] = self._namer.keys

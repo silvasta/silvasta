@@ -34,9 +34,9 @@ class PatternNamer:
                 regex_parts.append(re.escape(literal_text))
 
             if field_name is not None:
-                #  Add dynamic fields as Named Regex Capture Groups: (?P<name>pattern)
+                #  Named Regex Capture Groups: (?P<name>pattern)
                 keys.append(field_name)
-                # Using .+? (non-greedy) to prevent a greedy match from swallowing separators
+                # Using .+? to prevent greedy match from swallowing separators
                 regex_parts.append(f"(?P<{field_name}>.+?)")
 
         regex_parts.append("$")
@@ -44,7 +44,7 @@ class PatternNamer:
         return regex_parts
 
     def format(self, **kwargs) -> str:
-        """Takes keyword arguments and returns the formatted string"""
+        """Create formatted string from keyword arguments"""
 
         if missing := set(self.keys) - set(kwargs.keys()):
             raise ValueError(f"Provide all keys for format! {missing=}")
@@ -52,7 +52,7 @@ class PatternNamer:
         return self.pattern.format(**kwargs)
 
     def extract(self, target: Path | str) -> dict[str, str]:
-        """Takes formatted string and returns dict mapping keys to extracted values"""
+        """Extract dict mapping keys from formatted string"""
 
         formatted_string: str = (
             str(target.name) if isinstance(target, Path) else str(target)
@@ -61,6 +61,7 @@ class PatternNamer:
         if match := self._regex.match(formatted_string):
             return match.groupdict()
 
+        # LATER: consider None?
         raise ValueError(f"No match: {formatted_string=} and {self.pattern=}")
 
 
@@ -73,7 +74,7 @@ class RegexMatch:
 
     def __init__(self, pattern: str):
         self.pattern: str = pattern
-        # Pre-compile for speed: useful for high-frequency, don't hurt for low-frequency
+        # Pre-compile for speed: useful for high-frequency
         self._compiled: re.Pattern[str] = re.compile(pattern)
         self.match: re.Match | None = None
 
@@ -102,7 +103,7 @@ class LogPatterns:
 
 
 def grep_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
-    """Yield line if it matches the pattern, works with lists or file objects"""
+    """Yield line if it matches pattern"""
 
     regex = RegexMatch(pattern)
 
