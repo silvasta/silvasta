@@ -31,7 +31,7 @@ def folder_scanner(
     if filter is None:
         filter: ProjectFilter = _setup_filter()
 
-    scanner = FolderScanner(scan_root=scan_root, path_filter=filter)
+    scanner = FolderScanner(scan_root=scan_root, filter=filter)
     tree: PathTreeNode = scanner.tree()
 
     previous_selection: list[Path] = []  # TASK: implement: previous_selection

@@ -62,7 +62,7 @@ def parsed_basemodel_name():
     # Instantiate with the generic type and schema class
     tree_parser: ParsedName[TreeInfoSchema] = ParsedName[TreeInfoSchema](
         pattern="t_{sprout_id}_{topic}",
-        schema=TreeInfoSchema,
+        model_cls=TreeInfoSchema,
         strip_extension=True,  # Safely handles Path("t_42_math.json")
     )
 
@@ -80,7 +80,10 @@ def parsed_basemodel_name():
 def styled_name():
 
     sstfile_dates: StyledName = StyledName.parse_style(
-        style_pattern="[{style1}]{name}[/]: [{style2}]{first_tracked}[/] - [{style3}]{last_updated}[/]",
+        style_pattern=(
+            "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
+            " - [{style3}]{last_updated}[/]"
+        ),
         keys=["name", "first_tracked", "last_updated"],
         styles=["blue", "red", "white"],
     )
