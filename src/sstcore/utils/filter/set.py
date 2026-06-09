@@ -31,6 +31,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
 
     @__call__.register
     def _(self, target: str | Path | int) -> bool:
+        # TASK: put ObjectType,SetType here
         """String input -> returns filename string"""
         target_set: set[SetType] = self._create_target_set(target)
         return self.fulfills_all_conditions(target_set)
@@ -41,6 +42,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
         filtered: list[ObjectType] = []
 
         for item in target:
+            # TASK: combine set, then filter over all?
             target_set: set[SetType] = self._create_target_set(item)
             hit: bool = self.fulfills_all_conditions(target_set)
 
@@ -53,7 +55,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
     @singledispatchmethod
     def _create_target_set(self, target: ObjectType) -> set[SetType]:
         """Override this for specific object handling!"""
-
+        # TODO: combined set?
         raise NotImplementedError(f"Cannot process {type(target)=}")
 
     @_create_target_set.register
@@ -63,6 +65,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
     @debug_log
     def fulfills_exclude(self, target_set: set[SetType]) -> bool:
         """Condition 1: Must NOT have any excluded keywords"""
+        # TODO: subhook for derivatives
         if self.exclude:
             # Must NOT have any excluded keywords
             if not self.exclude.isdisjoint(target_set):
@@ -73,6 +76,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
     @debug_log
     def fulfills_require_all(self, target_set: set[SetType]) -> bool:
         """Condition 2: Must have ALL required keywords"""
+        # TODO: subhook for derivatives
         if self.require_all:
             # Must have ALL required keywords
             if not self.require_all.issubset(target_set):
@@ -83,6 +87,7 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
     @debug_log
     def fulfills_require_any(self, target_set: set[SetType]) -> bool:
         """Condition 3: Must have AT LEAST ONE required_any keyword"""
+        # TODO: subhook for derivatives
         if self.require_any:
             # Must have AT LEAST ONE required_any keyword
             if self.require_any.isdisjoint(target_set):
@@ -90,9 +95,12 @@ class FilterSet[SetType: str | Path | int, ObjectType]:
 
         return True
 
+    # TASK: make this extendable, 1 execution for all derivatives
+    # - any derivative can assemble its own
     def fulfills_all_conditions(self, target_set: set[SetType]) -> bool:
         """Compare internal registry with target keyword set"""
 
+        # TODO: combine the 3 below as general subhook
         if not self.fulfills_exclude(target_set):
             return False
 

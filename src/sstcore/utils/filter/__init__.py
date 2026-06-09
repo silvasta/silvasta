@@ -14,13 +14,11 @@ __all__: list[str] = [
     "PROJECT_IGNORE_DIRS",
     "PROJECT_ALLOWED_EXTS",
     "ProjectFilter",
-    "PatternFilter",
 ]
 from .path import (
     PROJECT_ALLOWED_EXTS,
     PROJECT_IGNORE_DIRS,
     PathFilter,
-    PatternFilter,
     ProjectFilter,
 )
 from .set import FilterSet
