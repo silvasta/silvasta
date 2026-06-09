@@ -97,7 +97,7 @@ def tree_graph(
         label=_apply_style(simple_tree.name, color=root),
         guide_style=guide,
         hide_root=hide_root,
-        # style="on white",  # Applies a background color to the whole tree area
+        # style="on white",  # Applies background color to the whole tree area
     )
 
     def build_branch(

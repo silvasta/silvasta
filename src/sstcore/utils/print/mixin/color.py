@@ -22,9 +22,9 @@ class ColorMixin(BasePrinter):
             **kwargs,
         )
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Colorizing  strings
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     @singledispatchmethod
     def _colorize[T: str | list](self, text: T, style: str, **kwargs) -> T:
@@ -41,9 +41,9 @@ class ColorMixin(BasePrinter):
         style: str = style or kwargs.get("text_style", "white")
         return [self._colorize(i, style) for i in target] or []
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Box
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     @property
     def colors(self) -> ColorBox:
@@ -54,9 +54,9 @@ class ColorMixin(BasePrinter):
         """Export new ColorBox with desired attribute"""
         return ColorBox.with_mode(attribute=mode)
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Prints
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def white(self, target) -> None:
         text: str = self._format(target)
@@ -70,11 +70,23 @@ class ColorMixin(BasePrinter):
         text: str = self._format(target)
         self(self.colors.red(text))
 
+    def r(self, target) -> None:
+        text: str = self._format(target)
+        self(self.colors.red(text))
+
     def green(self, target) -> None:
         text: str = self._format(target)
         self(self.colors.green(text))
 
+    def g(self, target) -> None:
+        text: str = self._format(target)
+        self(self.colors.green(text))
+
     def cyan(self, target) -> None:
+        text: str = self._format(target)
+        self(self.colors.cyan(text))
+
+    def c(self, target) -> None:
         text: str = self._format(target)
         self(self.colors.cyan(text))
 

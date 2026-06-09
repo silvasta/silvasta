@@ -10,9 +10,9 @@ from ..stylebox import style
 
 
 class ToolMixin(BasePrinter):
-    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- --
+    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- ---
     ### Tool Kit
-    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- --
+    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- ---
 
     def path_exists_table(self, paths: list[Path], title=None, header="Path"):
         """Check if Paths exist and visualize in Table"""

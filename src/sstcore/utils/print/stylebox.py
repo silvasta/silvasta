@@ -76,11 +76,11 @@ class ColorBox:
     def red(self, text: Any) -> str:
         return self._colorize(text, self._colors.red)
 
-    def green(self, text: Any) -> str:
-        return self._colorize(text, self._colors.green)
-
     def cyan(self, text: Any) -> str:
         return self._colorize(text, self._colors.cyan)
+
+    def green(self, text: Any) -> str:
+        return self._colorize(text, self._colors.green)
 
     def magenta(self, text: Any) -> str:
         return self._colorize(text, self._colors.magenta)
@@ -90,6 +90,15 @@ class ColorBox:
 
     def black(self, text: Any) -> str:
         return self._colorize(text, self._colors.black)
+
+    def r(self, text: Any) -> str:
+        return self._colorize(text, self._colors.red)
+
+    def g(self, text: Any) -> str:
+        return self._colorize(text, self._colors.green)
+
+    def b(self, text: Any) -> str:
+        return self._colorize(text, self._colors.cyan)
 
 
 # LATER:

@@ -16,7 +16,8 @@ class LayoutMixin(BasePrinter):
         if not (0 <= header <= 6):  # Generate Header if argument is set
             fallback_header = 0
             self(
-                f"Markdown Header {header=} invalid (H1 to H6), using {fallback_header=}",
+                f"Markdown Header {header=} invalid (H1 to H6),"
+                " using {fallback_header=}",
                 style="danger",
             )
             header: int = fallback_header
@@ -24,15 +25,15 @@ class LayoutMixin(BasePrinter):
 
         self(Markdown(f"{prefix}{text}"), *args, **kwargs)
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def header(
         self, text, text_style: str = "bold white", frame="cyan", **kwargs
     ):
         self.panel(text, text_style=text_style, frame=frame, **kwargs)
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def title(self, text, title="", title_align="right", **kwargs):
         title: str = title or self.name_and_version()
@@ -47,7 +48,10 @@ class LayoutMixin(BasePrinter):
     def warn(self, text):
         self.header(text, frame="yellow")
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    def special(self, text):
+        self.header(text, frame="purple")
+
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     # TASK: _inverted_theme, test rich reversed but as well,
     # check which theme setups fit together
@@ -62,7 +66,7 @@ class LayoutMixin(BasePrinter):
         header = f"{name}: {len(lines)}"
         self.lines(header=header, title=name, lines=lines, style=style)
 
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- -
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def banner(
         self, target: Any | list[Any], style="cyan", padding=(1, 1), **kwargs
