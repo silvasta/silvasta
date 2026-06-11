@@ -28,21 +28,26 @@ from ..utils.tree import build_path_tree
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
+    # LATER: check if path is needed for more general setup
     local_path: Path  # relative from local filedir
     keywords: set = Field(default_factory=set)
 
     first_tracked: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    def __str__(self):
+        return f"{self.__class__.__name__}(local_path={self.local_path})"
+
     @property
     def is_temp_file(self) -> bool:  # LATER: check if needed
         return self.local_path == Path()
 
+    # TODO: colorful
+
     @property
     def description(self) -> str:
         """Extensive description formatted with Rich Color String"""
-        config: ConfigManager = get_config()
-        # FIX: name placement
+        config: ConfigManager = get_config()  # TODO: names placement
         return config.names.sstfile_dates.styled(self._description)
 
     @property
@@ -53,8 +58,7 @@ class SstFile(BaseModel):
     @property
     def raw_description(self) -> str:
         """Raw description without any coloring"""
-        config: ConfigManager = get_config()
-        # FIX: name placement
+        config: ConfigManager = get_config()  # TODO: names placement
         return config.names.sstfile_dates(self._description)
 
     @property
@@ -71,7 +75,8 @@ class SstFile(BaseModel):
 
     @property
     def added_at(self) -> str:
-        # LATER: pendulum,arrow,dateutil or custom + timestamp_format back to Defaults
+        # LATER: pendulum,arrow,dateutil or custom
+        # + timestamp_format somehow to Defaults
         return self.first_tracked.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
     def confirm_local_status(self, local_dir: Path) -> bool:
@@ -88,7 +93,8 @@ class SstFile(BaseModel):
         return True
 
     def _is_identical_to(self, other_path: Path, local_dir: Path) -> bool:
-        """UNTESTED: Fast structural comparison without reading full contents into memory"""
+        """UNTESTED:
+        Fast structural comparison without reading full contents into memory"""
         my_path = local_dir / self.local_path
         if not my_path.exists() or not other_path.exists():
             return False
@@ -99,7 +105,8 @@ class SstFile(BaseModel):
     # TASK: hash for the files itself
 
     def _compute_hash(self, local_dir: Path, algorithm: str = "sha256") -> str:
-        """UNTESTED: Compute file hash efficiently via chunking (useful for databases/remotes)"""
+        """UNTESTED:
+        Compute file hash via chunking (useful for databases/remotes)"""
         my_path = local_dir / self.local_path
         if not my_path.is_file():
             return ""
@@ -122,8 +129,8 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     local_root: Path
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
+    scanner: FolderScanner | None = None
 
-    _scanner: FolderScanner | None = PrivateAttr(default=None)
     _sync_mode: PathGuard.SyncMode = (
         # TASK: mode MODIFY:
         # dont delete or move the file,
@@ -190,9 +197,23 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         ]
 
     def get_files_by_path(self, path: Path) -> list[FilesT]:
-        # LATER: get_file_by_path  that handles case 0,1,_ already here? (only -> FilesT)
         local_path: Path = self.relative_to_local_root(path)
         return [file for file in self.files if file.local_path == local_path]
+
+    def get_files_by_parent(self, path: Path | None = None) -> list[FilesT]:
+        _path: Path = path or Path.cwd()
+        if _path.is_file():
+            parent_dir: Path = _path.parent
+            logger.debug(f"searching Files using: {parent_dir=}")
+        elif _path.is_dir():
+            logger.debug(f"searching Files at: {(parent_dir := _path)}")
+        else:  # LATER: avoid warning for relative paths not from CWD
+            parent_dir: Path = _path
+            logger.warning(f"Using but Not Detected on Disk: {parent_dir=}")
+        parent: Path = self.relative_to_local_root(parent_dir)
+        return [
+            file for file in self.files if file.local_path.parent == parent
+        ]
 
     def get_files_by_name(self, name: str) -> list[FilesT]:
         return [file for file in self.files if file.name == name]
@@ -201,7 +222,10 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         """Get all files filtered by keywords setup in file_filter"""
         return [file for file in self.files if file_filter(file)]
 
-    def get_files_by_keyword(self, keywords: str | list[str]) -> list[FilesT]:
+    def get_files_by_keyword(
+        self,  # TASK: generic type ContainerT[ContentT] or similar
+        keywords: str | list[str] | set[str],
+    ) -> list[FilesT]:
         """Get all files that have at least 1 of the required keywords"""
         if isinstance(keywords, str):
             keywords: list[str] = [keywords]
@@ -235,7 +259,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         return relative_path
 
     def ensure_local_path(self, path: Path) -> Path:
-        """Transform and confirm absolute path into relative, confirm relative path"""
+        """Confirm path exists inside local_root and provide Relative"""
         if path.is_absolute():
             try:
                 return self.relative_to_local_root(path, strict=True)
@@ -252,7 +276,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         )
 
     def create_local_file(self, path: Path) -> FilesT:
-        """Ensure file is inside local_root, create instance with abstract constructor"""
+        """Ensure path is local_path and create File with constructor"""
         local_path: Path = self.ensure_local_path(path)
         file: FilesT = self._create_local_file(local_path)
         logger.debug(f"New file created: {file.local_path=}")
@@ -260,8 +284,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def _create_local_file(self, *_args, **_kwargs) -> FilesT:
         """Derive class and override this to set file constructor"""
-        msg = f"{self.__class__.__name__} has no implementation of _create_local_file!"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(f"{self.__class__.__name__}")
 
     def attach(self, file: FilesT, strict=True):
         """Check if File is valid local file and attach to Registry"""
@@ -320,7 +343,8 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         """Load all files inside local_root to registry,
         Override existing registry Files, clear_all: start from empty status"""
 
-        # LATER: better use of SyncMode, maybe second function (1 clear, 1 without)
+        # LATER: better use of SyncMode
+        # - maybe second function (1 with clear, 1 without)
 
         if clear_all:
             logger.info(f"Removing {self.n_files} files...")
@@ -340,7 +364,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def clone_empty_registry(
         self,
-        local_root,
+        local_root: Path,
         exclude: set[str] | None = None,
         add_to_exclude: set[str] | None = None,
         exclude_unset=False,
@@ -356,6 +380,15 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         cloned_data: dict[str, Any] = self.model_dump(
             exclude=exclude, exclude_unset=exclude_unset, mode="python"
         )
+
+        # Intercept the serialized scanner and update its target root
+        if (scanner_data := cloned_data.get("scanner")) is not None:
+            if isinstance(scanner_data, dict):
+                scanner_data["scan_root"] = local_root
+            else:
+                # Fallback just in case model_dump left it as an object
+                scanner_data.scan_root = local_root
+
         return type(self)(local_root=local_root, **cloned_data)
 
     def mirror_from_path(
@@ -385,7 +418,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         external_registry: Self,
         sync_mode: PathGuard.SyncMode | str = "ignore",
     ) -> list[FilesT]:
-        """Copy files of external registry into local_root and add to registry"""
+        """Copy files of external registry into local_root and attach"""
         self._sync_mode = PathGuard.SyncMode(sync_mode)
         return self._sync_registry(
             external_registry, transfer_strategy=PathGuard.copy
@@ -396,7 +429,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         external_registry: Self,
         sync_mode: PathGuard.SyncMode | str = "increment",
     ) -> list[FilesT]:
-        """Move files of external registry into local_root and add to registry"""
+        """Move files of external registry into local_root and attach"""
         self._sync_mode = PathGuard.SyncMode(sync_mode)
         return self._sync_registry(
             external_registry, transfer_strategy=PathGuard.rotate
@@ -518,13 +551,14 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         return scanner.get_files()
 
     def get_scanner(self) -> FolderScanner:
-        if not self._scanner:
-            return self.setup_scanner(path_filter=ProjectFilter())
-        return self._scanner
+        if not self.scanner:
+            logger.debug("setup scanner with default: ProjectFilter")
+            return self.setup_scanner(filter=ProjectFilter())
+        return self.scanner
 
-    def setup_scanner(self, path_filter: PathFilter) -> FolderScanner:
-        self._scanner = FolderScanner(self.local_root, path_filter=path_filter)
-        return self._scanner
+    def setup_scanner(self, filter: PathFilter) -> FolderScanner:
+        self.scanner = FolderScanner(self.local_root, filter=filter)
+        return self.scanner
 
     def tree(
         self,  # LATER: create SstFileTree?
