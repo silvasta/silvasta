@@ -41,13 +41,14 @@ def _unpack_bool_tuple(  # LATER: check where else this can be used
 def dict_table(
     target: dict,
     _format: Callable[[Any], str],
+    style="cyan",
     show_type: bool | tuple[bool, bool] = (True, True),
 ) -> Table:
     """Debug Dict"""
 
     key_type, value_type = _unpack_bool_tuple(show_type)
 
-    table = Table(style="cyan")
+    table = Table(style=style)
 
     table.add_column("Key", justify="left", style="green")
 

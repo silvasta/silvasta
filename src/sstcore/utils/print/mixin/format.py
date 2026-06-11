@@ -3,7 +3,6 @@ from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
 from pydantic import BaseModel
 from rich.console import ConsoleRenderable
 
@@ -33,7 +32,7 @@ class FormatMixin(BasePrinter):
 
     @singledispatchmethod
     def _format(self, target) -> str:
-        logger.warning(f"Unknown format of {type(target)=}: {target=}")
+        # logger.warning(f"Unknown format of {type(target)=}: {target=}")
         return str(target)
 
     @_format.register
@@ -62,7 +61,8 @@ class FormatMixin(BasePrinter):
 
     @_format.register
     def _(self, target: list | tuple) -> str:
-        items: list[str] = [self._format(item) for item in target]
+        # LATER: fix format acrobatic
+        items: list[str] = [str(self._format(item)) for item in target]
         return "\n".join(items)
 
     @_format.register

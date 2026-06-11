@@ -6,6 +6,45 @@ from rich.style import Style
 from rich.table import Table
 
 
+def main():
+    fire.Fire(PrintSelection)
+
+
+class PrintSelection:
+    """Collect different Layouts and Functions"""
+
+    def __init__(self):
+        # AI: Filled classes such that this orchestration chain works perfectly
+        printer.dict_table(ANSI_COLOR_NAMES)
+        printer(target=(a := AnsiBox()))
+        printer.dict_table(Style.STYLE_ATTRIBUTES, show_type=False)
+        printer(target=(s := StyleBox()))
+
+        self.a: AnsiBox = a
+        self.s: StyleBox = s
+
+    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+    # Shuffle Commands
+    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+    def ansi(self):
+        """Trigger ANSI styling demonstration"""
+        self.a.ansi()
+
+    def do(self):
+        """Trigger Style attributes demonstration"""
+        self.s.do()
+
+    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+    # ColorBox / Testing
+    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+    def some(self):
+        """Send the PrintSelection text here 󰾚󰾚󰾚"""
+        printer.c("How will this looock?")
+        printer.r(f"Send the {self.__class__.__name__} text here 󰾚󰾚󰾚")
+
+
 # Simulating sstcore.printer behavior based on your usage
 class SSTPrinter:
     def __call__(self, target):
@@ -69,45 +108,6 @@ class StyleBox(BaseModel):
                 )
             except Exception:
                 console.print(f"Attribute available: {attr}")
-
-
-class PrintSelection:
-    """Collect different Layouts and Functions"""
-
-    def __init__(self):
-        # AI: Filled classes such that this orchestration chain works perfectly
-        printer.dict_table(ANSI_COLOR_NAMES)
-        printer(target=(a := AnsiBox()))
-        printer.dict_table(Style.STYLE_ATTRIBUTES, show_type=False)
-        printer(target=(s := StyleBox()))
-
-        self.a: AnsiBox = a
-        self.s: StyleBox = s
-
-    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    # Shuffle Commands
-    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-    def ansi(self):
-        """Trigger ANSI styling demonstration"""
-        self.a.ansi()
-
-    def do(self):
-        """Trigger Style attributes demonstration"""
-        self.s.do()
-
-    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    # ColorBox / Testing
-    # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-    def some(self):
-        """Send the PrintSelection text here 󰾚󰾚󰾚"""
-        printer.c("How will this looock?")
-        printer.r(f"Send the {self.__class__.__name__} text here 󰾚󰾚󰾚")
-
-
-def main():
-    fire.Fire(PrintSelection)
 
 
 # AI: Luasnip configuration format for Neovim:

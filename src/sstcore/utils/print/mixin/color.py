@@ -26,9 +26,10 @@ class ColorMixin(BasePrinter):
     ### Colorizing  strings
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+    # TASK: Fix pipeline trough Format
     @singledispatchmethod
-    def _colorize[T: str | list](self, text: T, style: str, **kwargs) -> T:
-        raise NotImplementedDispatchError(text, style, kwargs)
+    def _colorize[T: str | list](self, text: T, **kwargs) -> T:
+        raise NotImplementedDispatchError(text, kwargs=kwargs)
 
     @_colorize.register
     def _[T: str](self, target: str, style: str = "", **kwargs) -> str:

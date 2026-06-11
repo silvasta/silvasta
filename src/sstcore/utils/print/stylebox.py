@@ -57,6 +57,9 @@ class ColorBox:
     def set(self, attribute: str | BoxAttribute):
         self._attribute: BoxAttribute = BoxAttribute(attribute)
 
+    def __call__(self, text: str, color: color):
+        return self._colorize(text, color)
+
     def _colorize(self, text: str, color: color) -> str:
         """Main worker that supports all Colors"""
 
@@ -99,6 +102,9 @@ class ColorBox:
 
     def b(self, text: Any) -> str:
         return self._colorize(text, self._colors.cyan)
+
+    def s(self, text: Any) -> str:
+        return self._colorize(text, "purple")
 
 
 # LATER:
