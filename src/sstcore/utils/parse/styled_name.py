@@ -2,7 +2,6 @@ import re
 from contextlib import contextmanager
 from typing import Self
 
-from loguru import logger
 from pydantic import PrivateAttr
 
 from .parsed_name import ParsedName
@@ -24,7 +23,6 @@ class StyledName(ParsedName):  # TASK: adapt to new ParsedName
             rich_template: str = rich_template.replace(f"{{style{i}}}", style)
 
         self._styler = PatternNamer(rich_template)
-        logger.info(f"{self._styler=}")
 
     def _forward_parsing(self, clean_target: dict[str, str]) -> str:
         """Used for override and intercept in StyledName"""
@@ -57,7 +55,7 @@ class StyledName(ParsedName):  # TASK: adapt to new ParsedName
     def parse_style(
         cls, style_pattern: str, keys: list[str], styles: list[str]
     ) -> Self:
-        """Use transformed style_pattern as base pattern for regex parser setup"""
+        """Use transformed style_pattern as base for regex parser setup"""
 
         pattern: str = re.sub(r"\[.*?\]", "", style_pattern)
 
