@@ -34,6 +34,14 @@ class SstFile(BaseModel):
     first_tracked: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    def __repr__(self):
+        return self.name
+
+    # LATER: nice rendering
+
+    def __str__(self):
+        return self.description
+
     @property
     def is_temp_file(self) -> bool:  # LATER: check if needed
         return self.local_path == Path()
@@ -125,8 +133,8 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     local_root: Path
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
+    scanner: FolderScanner | None = None
 
-    _scanner: FolderScanner | None = PrivateAttr(default=None)
     _sync_mode: PathGuard.SyncMode = (
         # TASK: mode MODIFY:
         # dont delete or move the file,
@@ -345,7 +353,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
 
     def clone_empty_registry(
         self,
-        local_root,
+        local_root: Path,
         exclude: set[str] | None = None,
         add_to_exclude: set[str] | None = None,
         exclude_unset=False,
@@ -361,6 +369,15 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         cloned_data: dict[str, Any] = self.model_dump(
             exclude=exclude, exclude_unset=exclude_unset, mode="python"
         )
+
+        # Intercept the serialized scanner and update its target root
+        if (scanner_data := cloned_data.get("scanner")) is not None:
+            if isinstance(scanner_data, dict):
+                scanner_data["scan_root"] = local_root
+            else:
+                # Fallback just in case model_dump left it as an object
+                scanner_data.scan_root = local_root
+
         return type(self)(local_root=local_root, **cloned_data)
 
     def mirror_from_path(
@@ -523,13 +540,14 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         return scanner.get_files()
 
     def get_scanner(self) -> FolderScanner:
-        if not self._scanner:
+        if not self.scanner:
+            logger.debug("setup scanner with default: ProjectFilter")
             return self.setup_scanner(filter=ProjectFilter())
-        return self._scanner
+        return self.scanner
 
     def setup_scanner(self, filter: PathFilter) -> FolderScanner:
-        self._scanner = FolderScanner(self.local_root, filter=filter)
-        return self._scanner
+        self.scanner = FolderScanner(self.local_root, filter=filter)
+        return self.scanner
 
     def tree(
         self,  # LATER: create SstFileTree?
