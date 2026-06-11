@@ -3,12 +3,10 @@ from typing import cast
 
 import typer
 
-from ..utils import HomeSetup, PathGuard, day_count
-from ..utils.print import ColorBox, printer
+from ..utils import HomeSetup, PathGuard, day_count, printer
+from ..utils.paint import ColorBox
 from .defaults import SstDefaults
 from .names import ParsedName, SstNames
-
-c: ColorBox = printer.colorbox()
 
 summary_file = ParsedName(  # MOVE: but where?
     pattern="{day}_summary.{suffix}",
@@ -69,25 +67,31 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     def config_home(self) -> Path:
         return self._homes.config_home
 
-    @property
     def dot_env(self) -> Path:
+        """Ensure .env File, create template for missing and raise"""
         try:
             return PathGuard.file(
-                target=self.config_home / ".env",
+                target=self.dot_env_unconfirmed,
                 default_content=self._defaults.dot_env_content,
             )
         except FileNotFoundError:
-            text = f"{c.red('Missing .env File!')} {c.white(self.dot_env_unconfirmed)}"
+            # MOVE: to pathguard error handling, or cli,
+            #         - but with __rich__ cli print
+            c: ColorBox = printer.colorbox()
+            text = (
+                f"{c.red('Missing .env File!')}"
+                f" {c.white(self.dot_env_unconfirmed)}"
+            )
             printer.danger(text)
             raise typer.Exit(code=1) from None
 
     @property
     def dot_env_unconfirmed(self) -> Path:
-        return PathGuard.file(
-            target=self.config_home / ".env",
-            default_content=self._defaults.dot_env_content,
-            raise_error=False,
-        )
+        """Provide bare dot_env Path without any checks"""
+        return self.config_home / ".env"
+
+    def scanner_cache_file(self, scan_root: Path) -> Path:
+        return scan_root / ".sst_scanner_cache.json"
 
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:

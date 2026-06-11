@@ -8,13 +8,15 @@ from loguru import logger
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
+from sstcore.utils.time import nice_duration
+
 from ..utils.log import LogParam
 from .defaults import SstDefaults
 from .names import SstNames
 
 
 class SstSettings(BaseSettings):
-    """Default settings and names, written to and loaded from file"""
+    """Container for Defaults and Names and Frame for setting file"""
 
     names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
@@ -30,20 +32,24 @@ class SstSettings(BaseSettings):
         return cls.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
     def save(self, path: Path):
-        """Save current status to json"""
+        """Refresh datetime and save current status to json"""
+        before: datetime = self.last_updated
         self.touch()
+        # TEST: Logs beautifully as: "Settings updated after 1d 6h 22m"?
+        duration: str = nice_duration(before, after=self.last_updated)
+        logger.info(f"Settings updated after {duration}")
         path.write_text(self.json_content(), encoding="utf-8")
 
     @classmethod
     def default_json_content(cls) -> str:
-        """Get unmodified dumped content of all class members"""
+        """Get unmodified json content of all class members"""
         return cls().model_dump_json(
             exclude_defaults=False,
             indent=2,
         )
 
     def json_content(self, exclude_defaults=False) -> str:
-        """Dump content of all class members"""
+        """Dump content of all class members with custom indent"""
         return self.model_dump_json(
             exclude_defaults=exclude_defaults,
             indent=2,
@@ -53,10 +59,14 @@ class SstSettings(BaseSettings):
     def enforce_deque_maxlen(self) -> Self:
         desired_maxlen: int = self.update_maxlen
         if self.updates.maxlen != desired_maxlen:
-            self.updates = deque(self.updates, maxlen=desired_maxlen)
+            self.updates: deque[datetime] = deque(
+                iterable=self.updates,
+                maxlen=desired_maxlen,
+            )
         return self
 
     def touch(self):
+        """Update datetime and check maxlen of saved updates"""
         n_saved_update_times: int = self.update_maxlen
         if n_saved_update_times != (before := self.updates.maxlen):
             self.updates: deque[datetime] = deque(

@@ -29,9 +29,6 @@ class DateRange:
     def duration(self) -> timedelta:
         return self.end - self.start
 
-    # @property
-    # LATER: string_duration, interval, others?
-
 
 def timer(func):
     @wraps(func)
@@ -47,7 +44,22 @@ def timer(func):
 
 
 def day_count(day: date | None = None) -> int:
-    """Returns day of Millennium, relative to input or today"""
+    """Calculate Day of Millennium for today or target day"""
     day: date = day or date.today()
     delta: timedelta = day - date(2000, 1, 1)
     return delta.days
+
+
+def nice_duration(before: datetime, after: datetime) -> str:
+    """Transform duration from Start to End in Nice String"""
+
+    delta: timedelta = after - before
+    days: int = delta.days
+    hours, remainder = divmod(delta.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    if days > 0:
+        return f"{days}d {hours}h {minutes}m"
+    if hours > 0:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m {seconds}s"

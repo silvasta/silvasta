@@ -50,13 +50,12 @@ class ConfigBootstrap[TSettings: SstSettings]:
         )
         HomeSetup(defaults.home_setup).boot(
             project_name=project_name,
-            # LATER: figure out best input arg strategy
             project_root=defaults.project_root,
             local_root=defaults.project_root,
         )
         for path in DefaultBootPaths.path_factory(defaults):
             if final_setting_file := cls.check_location(path, settings_cls):
-                logger.info(f"Found valid Settings: {final_setting_file=}")
+                logger.debug(f"Found valid Settings: {final_setting_file=}")
                 break
         else:
             log_setup = LogParam(log_dir=defaults.home_setup.log_dir)
@@ -64,7 +63,7 @@ class ConfigBootstrap[TSettings: SstSettings]:
                 settings_cls, defaults, log_setup.attach_logname(project_name)
             )
             logger.warning(
-                f"No existing Settings found — created scaffold: {final_setting_file=}"
+                f"No Settings found — created scaffold: {final_setting_file=}"
             )
 
         return BootResult(
@@ -85,7 +84,7 @@ class ConfigBootstrap[TSettings: SstSettings]:
             if not path.exists():
                 raise FileNotFoundError
             settings_cls.load(path)
-            logger.info(f"Found valid SettingsFile at {path=}")
+            logger.debug(f"Found valid SettingsFile at {path=}")
             return path
 
         except (FileNotFoundError, AttributeError) as error:

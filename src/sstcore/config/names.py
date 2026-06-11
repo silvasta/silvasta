@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
@@ -13,18 +15,21 @@ class SstNames(BaseSettings):
     data_dir: str = "data"
     plot_dir: str = "plots"
 
+    @cached_property
+    def sstfile_dates(self) -> StyledName:
+        # TODO: compare this with Printer and Colorbox -> find best setup
+        return StyledName.parse_style(
+            style_pattern=(
+                "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
+                " - [{style3}]{last_updated}[/]"
+            ),
+            keys=["name", "first_tracked", "last_updated"],
+            styles=["blue", "dim", "white"],
+        )
 
-class SstNamesWithPatterns(SstNames):  # REFACTOR: check sachmis.Names
-    """Example patterns for ParsedName and StyledName attached"""
-
-    # Summary File: launch scanner, selected Files combined in file with name below
-    summary_file: ParsedName = ParsedName(
-        pattern="{day}_summary.{suffix}",
-        keys=["day", "suffix"],
-    )
-    # SstFile: description and style as below
-    sstfile_dates: StyledName = StyledName.parse_style(
-        style_pattern="[{style1}]{name}[/]: [{style2}]{first_tracked}[/] - [{style3}]{last_updated}[/]",
-        keys=["name", "first_tracked", "last_updated"],
-        styles=["blue", "dim", "white"],
-    )
+    @cached_property
+    def summary_file(self) -> ParsedName:
+        return ParsedName(
+            pattern="{day}_summary.{suffix}",
+            keys=["day", "suffix"],
+        )
