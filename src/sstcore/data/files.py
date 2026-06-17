@@ -28,29 +28,26 @@ from ..utils.tree import build_path_tree
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
+    # LATER: check if path is needed for more general setup
     local_path: Path  # relative from local filedir
     keywords: set = Field(default_factory=set)
 
     first_tracked: datetime = Field(default_factory=lambda: datetime.now(UTC))
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
-    def __repr__(self):
-        return self.name
-
-    # LATER: nice rendering
-
     def __str__(self):
-        return f"{self.__class__.__name__}({self.local_path})"
+        return f"{self.__class__.__name__}(local_path={self.local_path})"
 
     @property
     def is_temp_file(self) -> bool:  # LATER: check if needed
         return self.local_path == Path()
 
+    # TODO: colorful
+
     @property
     def description(self) -> str:
         """Extensive description formatted with Rich Color String"""
-        config: ConfigManager = get_config()
-        # FIX: name placement
+        config: ConfigManager = get_config()  # TODO: names placement
         return config.names.sstfile_dates.styled(self._description)
 
     @property
@@ -61,8 +58,7 @@ class SstFile(BaseModel):
     @property
     def raw_description(self) -> str:
         """Raw description without any coloring"""
-        config: ConfigManager = get_config()
-        # FIX: name placement
+        config: ConfigManager = get_config()  # TODO: names placement
         return config.names.sstfile_dates(self._description)
 
     @property
