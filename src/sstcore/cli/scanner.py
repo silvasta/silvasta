@@ -74,6 +74,7 @@ def _setup_filter() -> ProjectFilter:
             ".toml",
             ".tex",
             ".cls",
+            ".lua",
         },
     )
 
