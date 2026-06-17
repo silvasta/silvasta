@@ -6,20 +6,24 @@ class SstError(Exception):
 
 
 class RegistrySyncError(FileNotFoundError, SstError):
-    """Raised when the FileRegistry state does not match the physical local disk."""
+    """Raise when FileRegistry State mismatches physical local disk"""
 
 
 class NotImplementedDispatchError(NotImplementedError, SstError):
-    """Raised when singledispatchmethod don't provide target type"""
+    """Raise when singledispatchmethod has missing TargetType"""
 
-    def __init__(self, *args: Any):
+    # LATER: make first argument more visible, it is the failing one
+    def __init__(self, first: Any, *args: Any, kwargs=None):
         self.args: tuple[Any] = args
 
-        def _display(target: Any):
-            return f"{type(target)=}, {target=}"
+        def _render(target: Any):
+            return f"{type(target).__name__}: {target}"
 
-        msg: str = "-|-".join(_display(target) for target in args)
-        super().__init__(f"Function can't process: {msg}")
+        _first = f"MissingTargetType={_render(first)}"
+        _args = f"args=({', '.join([_render(target) for target in args])})"
+        _kwargs = f"kwargs=({_render(kwargs) if kwargs else ''}"
+
+        super().__init__(", ".join([_first, _args, _kwargs]))
 
 
 class NotImplementedMixinError(NotImplementedError, SstError):
