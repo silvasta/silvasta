@@ -1,25 +1,38 @@
 from typing import Any
 
+from rich.panel import Panel
+from rich.text import Text
+
 
 class SstError(Exception):
     """Root of all custom Exceptions"""
 
 
 class RegistrySyncError(FileNotFoundError, SstError):
-    """Raised when the FileRegistry state does not match the physical local disk."""
+    """Raise when FileRegistry State mismatches physical local disk"""
 
 
 class NotImplementedDispatchError(NotImplementedError, SstError):
-    """Raised when singledispatchmethod don't provide target type"""
+    """Raise on missing TargetType for singledispatchmethod"""
 
-    def __init__(self, *args: Any):
+    def __init__(self, first: Any, *args: Any, **kwargs):
+        self.first = first
         self.args: tuple[Any] = args
+        self.kwargs: dict = kwargs or {}
 
-        def _display(target: Any):
-            return f"{type(target)=}, {target=}"
+        super().__init__(type(first).__name__)
 
-        msg: str = "-|-".join(_display(target) for target in args)
-        super().__init__(f"Function can't process: {msg}")
+    def __rich__(self) -> Panel:
+        """Rich protocol hook. Triggered by console.print(error)"""
+        text = Text()
+        text.append("Missing TargetType: ", style="bold red")
+        text.append(f"{type(self.first).__name__}\n", style="bold yellow")
+        text.append(f"Target Value: {self.first}\n\n", style="dim")
+        text.append(f"Args: {self.args}\n", style="cyan")
+        text.append(f"Kwargs: {self.kwargs}", style="magenta")
+        return Panel(
+            text, title="NotImplementedDispatchError", border_style="red"
+        )
 
 
 class NotImplementedMixinError(NotImplementedError, SstError):
