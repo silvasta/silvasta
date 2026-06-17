@@ -40,7 +40,7 @@ class SstFile(BaseModel):
     # LATER: nice rendering
 
     def __str__(self):
-        return self.description
+        return f"{self.__class__.__name__}({self.local_path})"
 
     @property
     def is_temp_file(self) -> bool:  # LATER: check if needed
@@ -203,6 +203,21 @@ class FileRegistry[FilesT: SstFile](BaseModel):
     def get_files_by_path(self, path: Path) -> list[FilesT]:
         local_path: Path = self.relative_to_local_root(path)
         return [file for file in self.files if file.local_path == local_path]
+
+    def get_files_by_parent(self, path: Path | None = None) -> list[FilesT]:
+        _path: Path = path or Path.cwd()
+        if _path.is_file():
+            parent_dir: Path = _path.parent
+            logger.debug(f"searching Files using: {parent_dir=}")
+        elif _path.is_dir():
+            logger.debug(f"searching Files at: {(parent_dir := _path)}")
+        else:  # LATER: avoid warning for relative paths not from CWD
+            parent_dir: Path = _path
+            logger.warning(f"Using but Not Detected on Disk: {parent_dir=}")
+        parent: Path = self.relative_to_local_root(parent_dir)
+        return [
+            file for file in self.files if file.local_path.parent == parent
+        ]
 
     def get_files_by_name(self, name: str) -> list[FilesT]:
         return [file for file in self.files if file.name == name]
