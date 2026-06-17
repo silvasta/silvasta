@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import typer
@@ -31,15 +32,16 @@ def folder_scanner(
     if filter is None:
         filter: ProjectFilter = _setup_filter()
 
-    scanner = FolderScanner(scan_root=scan_root, path_filter=filter)
+    scanner = FolderScanner(scan_root=scan_root, filter=filter)
     tree: PathTreeNode = scanner.tree()
 
-    previous_selection: list[Path] = []  # TASK: implement: previous_selection
+    previous_selection: list[Path] = _load_previous_selection(scan_root)
 
     selector = TreeSelectorApp(
         sst_tree=tree, sort_method=sort_method, pre_select=previous_selection
     )
-    if selected_files := selector.run():  # TASK: cache selected files here
+    if selected_files := selector.run():
+        _save_selection_cache(scan_root, selected_files)
         printer.lines_with_len(name="Selected Files", lines=selected_files)
     else:
         printer.warn("Action cancelled by user.")
@@ -74,8 +76,30 @@ def _setup_filter() -> ProjectFilter:
             ".toml",
             ".tex",
             ".cls",
+            ".lua",
         },
     )
+
+
+def _load_previous_selection(scan_root: Path) -> list[Path]:
+    cache_file: Path = get_config().paths.scanner_cache_file(scan_root)
+    if cache_file.exists():
+        try:
+            with open(cache_file, encoding="utf-8") as f:
+                paths_str = json.load(f)
+                return [Path(p) for p in paths_str if Path(p).exists()]
+        except json.JSONDecodeError, OSError:
+            printer.warn("Failed to read scanner cache. Starting fresh.")
+    return []
+
+
+def _save_selection_cache(scan_root: Path, selected_files: list[Path]) -> None:
+    cache_file: Path = get_config().paths.scanner_cache_file(scan_root)
+    try:
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump([str(p) for p in selected_files], f, indent=2)
+    except OSError as e:
+        printer.warn(f"Could not save selection cache: {e}")
 
 
 if __name__ == "__main__":

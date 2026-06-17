@@ -35,10 +35,14 @@ class FolderScanner:
     """
 
     scan_root: Path
-    path_filter: PathFilter = field(default_factory=ProjectFilter)
+    filter: PathFilter = field(default_factory=ProjectFilter)
 
     provide_relative_paths = False
     follow_symlinks = False
+
+    def get_files(self) -> list[Path]:
+        """Collect and Sort the walked Paths"""
+        return sorted(self.walk())
 
     def walk(
         self,
@@ -47,23 +51,18 @@ class FolderScanner:
 
         for dirpath, dirnames, filenames in self._walk():
             dirnames[:] = [
-                dir  # the rest is skipped in next iteration
+                dir  # the rest is skipped next iteration
                 for dir in dirnames
-                if self.path_filter(dirpath / dir)
+                if self.filter(dirpath / dir)
             ]
 
             for file in filenames:
-                if self.path_filter(file_path := dirpath / file):
+                if self.filter(file_path := dirpath / file):
                     yield (
                         PathGuard.relative(file_path, self.scan_root)
                         if self.provide_relative_paths
                         else file_path
                     )
-
-    def get_files(self) -> list[Path]:
-        """Collect and Sort the walked Paths"""
-
-        return sorted(self.walk())
 
     def _walk(self):
         yield from self.scan_root.walk(follow_symlinks=self.follow_symlinks)
@@ -76,7 +75,7 @@ class FolderScanner:
         )
 
     def summary(self, output_file: Path | None = None, write=True) -> str:
-        """Load all Paths and assemble them to 1 summary file"""
+        """Load all Paths and assemble Content to 1 Summary File"""
 
         output_file: Path = output_file or Path.cwd() / "summary.md"
         printer.lines(
