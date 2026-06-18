@@ -3,6 +3,7 @@ from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
 
+from loguru import logger
 from pydantic import BaseModel
 from rich.console import ConsoleRenderable
 
@@ -33,17 +34,23 @@ class FormatMixin(BasePrinter):
 
     @singledispatchmethod
     def _format(self, target) -> str:
-        # logger.warning(f"Unknown format of {type(target)=}: {target=}")
+        if self._log:
+            logger.warning(f"Unknown format of {type(target)=}: {target=}")
         return str(target)
 
     @_format.register
-    def _(self, target: str):  # LATER: any modification?
+    def _(self, target: str):  # LATER: any modification? yes
         """Let regular String just pass"""
         return target
 
     @_format.register
     def _(self, target: BaseModel):  # LATER: any modification?
-        """Let regular String just pass"""
+        """Let BaseModel just pass"""
+        return target
+
+    @_format.register
+    def _(self, target: Exception):  # FIX:
+        """Let Exception just pass"""
         return target
 
     @_format.register

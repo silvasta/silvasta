@@ -1,5 +1,8 @@
 from typing import Any
 
+from rich.panel import Panel
+from rich.text import Text
+
 
 class SstError(Exception):
     """Root of all custom Exceptions"""
@@ -10,20 +13,26 @@ class RegistrySyncError(FileNotFoundError, SstError):
 
 
 class NotImplementedDispatchError(NotImplementedError, SstError):
-    """Raise when singledispatchmethod has missing TargetType"""
+    """Raise on missing TargetType for singledispatchmethod"""
 
-    # LATER: make first argument more visible, it is the failing one
-    def __init__(self, first: Any, *args: Any, kwargs=None):
+    def __init__(self, first: Any, *args: Any, **kwargs):
+        self.first = first
         self.args: tuple[Any] = args
+        self.kwargs: dict = kwargs or {}
 
-        def _render(target: Any):
-            return f"{type(target).__name__}: {target}"
+        super().__init__(type(first).__name__)
 
-        _first = f"MissingTargetType={_render(first)}"
-        _args = f"args=({', '.join([_render(target) for target in args])})"
-        _kwargs = f"kwargs=({_render(kwargs) if kwargs else ''}"
-
-        super().__init__(", ".join([_first, _args, _kwargs]))
+    def __rich__(self) -> Panel:
+        """Rich protocol hook. Triggered by console.print(error)"""
+        text = Text()
+        text.append("Missing TargetType: ", style="bold red")
+        text.append(f"{type(self.first).__name__}\n", style="bold yellow")
+        text.append(f"Target Value: {self.first}\n\n", style="dim")
+        text.append(f"Args: {self.args}\n", style="cyan")
+        text.append(f"Kwargs: {self.kwargs}", style="magenta")
+        return Panel(
+            text, title="NotImplementedDispatchError", border_style="red"
+        )
 
 
 class NotImplementedMixinError(NotImplementedError, SstError):
