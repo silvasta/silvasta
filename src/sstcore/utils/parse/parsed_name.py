@@ -19,6 +19,8 @@ class ParsedName[ModelT: BaseModel](BaseModel):
     model_cls: type[ModelT] | None = Field(default=None, exclude=True)
 
     strip_extension: bool = Field(default=False)
+    strip_increments: bool = Field(default=True)
+
     datetime_format: str = Field(default="%Y-%m-%d_%H-%M-%S", exclude=True)
 
     @property
@@ -44,8 +46,13 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         self, formatted_string: str
     ) -> dict[str, Any] | ModelT:
 
-        # Strip PathGuard increments (e.g., "_1", "_42") before the extension
-        clean_string: str = re.sub(r"_\d+(?=\.|$)", "", formatted_string)
+        if self.strip_increments:
+            # Strip PathGuard Increments (like "_1", "_42") before extension
+            pattern: str = r"_\d+(?=\.|$)"
+            clean_string: str = re.sub(pattern, "", formatted_string)
+        else:
+            # Avoid for cases like: "tree_id_111" where you search for id=111
+            clean_string: str = formatted_string
 
         raw_dict: dict = self._namer.extract(clean_string)
 
