@@ -80,20 +80,10 @@ def _setup_filter() -> ProjectFilter:
         },
     )
 
-    # NEXT: fix
-
-
-def _get_cache_file(scan_root: Path) -> Path:  # MOVE: config.paths?
-    return scan_root / ".sst_scanner_cache.json"
-
-    # NEXT: fix
-
 
 def _load_previous_selection(scan_root: Path) -> list[Path]:
-    # NEXT: fix
-    # NEXT: fix
-    # NEXT: fix, save in data  but  name like scan_root!
-    if (cache_file := _get_cache_file(scan_root)).exists():
+    cache_file: Path = get_config().paths.scanner_cache_file(scan_root)
+    if cache_file.exists():
         try:
             with open(cache_file, encoding="utf-8") as f:
                 paths_str = json.load(f)
@@ -104,8 +94,9 @@ def _load_previous_selection(scan_root: Path) -> list[Path]:
 
 
 def _save_selection_cache(scan_root: Path, selected_files: list[Path]) -> None:
+    cache_file: Path = get_config().paths.scanner_cache_file(scan_root)
     try:
-        with open(_get_cache_file(scan_root), "w", encoding="utf-8") as f:
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump([str(p) for p in selected_files], f, indent=2)
     except OSError as e:
         printer.warn(f"Could not save selection cache: {e}")

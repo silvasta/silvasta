@@ -12,6 +12,9 @@ from ..utils import Printer, printer
 from ..utils.log import LogSetupResult, setup_logging
 from . import canvas
 
+# AI: is this a reasonable simplification or either confusing?
+type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
+
 
 class SafeTyper(typer.Typer):
     """
@@ -20,44 +23,30 @@ class SafeTyper(typer.Typer):
     - Provide Framework with basic callback attach and start prints
     - Ensure Loguru is ready and loaded with custom settings
     - Protect CLI display from Errors with registred Exception handlers
-    """
 
-    #  TASK: config: improve param or setup/load config inside startup
+    """
 
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
 
-        # NEXT: check loguru setup in pipeline, excludes?
-        # - where, who and when to intercept what, so far confusing...
-        # - sometimes like doubled stack trace
-        # Need:
-        # - clear boundry which error is raised where!
+        try:  # Regular Typer Execution (No logger here!)
+            return super().__call__(*args, **kwargs)
 
-        try:  # Lock down unexpected critical exceptions via loguru tracking
-            exclude: tuple = (  # TEST:
-                typer.Exit,
-                typer.Abort,
-                *self._error_handlers.keys(),
-            )
-            with logger.catch(reraise=True, exclude=exclude):
-                return super().__call__(*args, **kwargs)
-
-        except typer.Exit, typer.Abort:
-            raise  # Let Typer handle its normal command loop exits cleanly
+        except typer.Exit, typer.Abort:  # WARN: tuple?
+            raise
 
         except Exception as error:
-            # 2. Intercept project-specific overrides outside loguru tracing
             if handler := self._error_handlers.get(type(error)):
                 try:
                     handler(error)
-                    sys.exit(1)  # NEXT: works, was before typer.Exit, why?
-
+                    sys.exit(1)  # Force OS exit, skip Typer teardown
                 except Exception as handler_exc:
                     logger.critical(
                         f"Custom error handler crashed: {handler_exc}"
                     )
+                    sys.exit(2)
 
-            # 3. Fallback tracking for completely unhandled structural issues
+            # This is the ONLY place an unhandled error gets logged!
             logger.exception("CLI tracking execution failed critically")
             sys.exit(1)
 
@@ -70,32 +59,40 @@ class SafeTyper(typer.Typer):
 
         return decorator
 
-    def __init__(self, *args, param: ConfigSetupParam | None = None, **kwargs):
+    #  TASK: config: improve param or setup/load config inside startup
+
+    def __init__(
+        self,
+        *args,
+        param: ConfigSetupParam | None = None,
+        **kwargs,
+    ):
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(*args, **kwargs)
 
-        logger.info(f"Start of Setup: {self.__class__.__name__}")
-        # Silence to avoide noisy logs and prints from bootstrap
-        logger.remove()  # TASK: find or confirm best location
+        logger.info(f"Start of Setup: {type(self).__name__}")
 
+        # AI: check the get_config from sstcore and from sachmis,
+        # - discuss if 1 clear setup together with log here could make sense,
+        #   or other options how to synchronize the pipeline
+
+        # AI: here is first usage of get_config() (compare with logs)
         self._param: ConfigSetupParam = param or get_config().setup_info
         self._inject_project_param_to_printer()
 
-        self._error_handlers: dict[
-            type[BaseException], Callable[[Any], None]
-        ] = {}  # TODO: improve, new type?
-
+        self._error_handlers: ErrorHandlerDict = {}
         self._attach_internal_callback()
 
     def _inject_project_param_to_printer(self):
+        # NOTE: maybe do this in config setup?
+        # (is already done there, the params come from there...)
         project_name: str = self._param.project_name or "EmptySetupParam"
         project_version: str = self._param.project_version or "0.0.0"
-        # TODO: check how it works with derivatives of Printer
         Printer.project_name = project_name
         Printer.project_version = project_version
 
     def _attach_internal_callback(self):
-        """Dispatch callback depending on App is Main or Subapp"""
+        """Dispatch callback depending on Main or Subapp"""
 
         @self.callback()
         def dispatcher(
@@ -117,10 +114,10 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Logging and confirm settings"""
 
-        # TASK: maybe here: setup config?
-
         printer.title(f"Welcome to {ctx.info_name}!")
         printer.header("Setup Config and Logging")
+
+        # TASK: maybe here: setup config?
 
         canvas.main_callback_config_setup(self._param)
 
@@ -135,4 +132,4 @@ class SafeTyper(typer.Typer):
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice Title for launching Subapp"""
-        printer.title(f"Launching sub command: {ctx.info_name}!")
+        printer.title(f"Launching attached App: {ctx.info_name}!")

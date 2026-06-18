@@ -17,6 +17,9 @@ from .settings import SstSettings
 
 type ConfigTypes = SstDefaults | SstNames | SstPaths | SstSettings
 
+# AI: I just removed a lot of old stuff from here,
+# remaining unclear stuff and ideas are marked
+
 
 class ConfigManager[
     TSettings: SstSettings,
@@ -24,22 +27,13 @@ class ConfigManager[
     TDefaults: SstDefaults,
     TPaths: SstPaths,
 ]:
-    """Provide singleton with all settings and factories"""
-
-    _env_loaded = False
-
-    @property
-    def names(self) -> TNames:
-        """Explicit return of Generic type with dot access"""
-        return cast(TNames, self.settings.names)
-
-    @property
-    def defaults(self) -> TDefaults:
-        """Explicit return of Generic type with dot access"""
-        return cast(TDefaults, self.settings.defaults)
+    """Bundle Container and Factories and provide access as Singleton"""
 
     def __init__(
         self,
+        # AI: the definition of all this params here ,
+        # is this mabye better controlled inside CLI?
+        # (check get_config())
         settings_cls: type[TSettings],
         paths_cls: type[TPaths],
         setting_file: Path | None = None,
@@ -50,6 +44,7 @@ class ConfigManager[
         self._starttime: datetime = datetime.now(UTC)
 
         boot: BootResult = ConfigBootstrap.initial_setup(
+            # NOTE: this should later on ensure easy switch to XDG_HOMES
             settings_cls,
             defaults=BootDefaults(
                 project_name=project_name,
@@ -62,44 +57,42 @@ class ConfigManager[
         self.project_version: str = boot.project_version
 
         self.setting_file: Path = boot.setting_file
-        self.settings: TSettings = self._load_settings(settings_cls)
-        self.paths: TPaths = self._load_paths(paths_cls, home_setup)
+        self.settings: TSettings = settings_cls.load(self.setting_file)
+        self.paths: TPaths = paths_cls(self.names, self.defaults, home_setup)
 
         self._fill_printer()  # important to get title in Panel
+        self._env_loaded = False
 
     def save_settings(self):
+        """Provide access to save Setting file"""
         self.settings.save(self.setting_file)
         logger.info(f"Settings saved to: {self.setting_file}")
 
-    def _load_settings(self, settings_cls: type[TSettings]) -> TSettings:
-        settings: TSettings = settings_cls.load(self.setting_file)
-        logger.debug(f"{self.name} loaded: {settings_cls.__name__}")
-        return settings
+    def __str__(self) -> str:
+        return type(self).__name__
 
-    def _load_paths(
-        self, paths_cls: type[TPaths], home_setup: HomeSetup
-    ) -> TPaths:
-        paths: TPaths = paths_cls(
-            names=self.names, defaults=self.defaults, homes=home_setup
-        )
-        logger.debug(f"{self.name} loaded: {paths_cls.__name__}")
-        return paths
+    def __repr__(self) -> str:
+        settings: str = type(self.settings).__name__
+        paths: str = type(self.settings).__name__
+        defaults: str = type(self.defaults).__name__
+        names: str = type(self.names).__name__
+        return f"{self}[{settings}, {paths}, {defaults},{names}]"
 
     def _fill_printer(self):
+        # AI: unsure why this is here and in SafeTyper,
+        # probably to ensure it is done...
         Printer.project_name = self.project_name
         Printer.project_version = self.project_version
 
     @property
-    def home_setup(self) -> HomeSetup:
-        return self.paths._homes
+    def names(self) -> TNames:
+        """Provide Names instance access with enforced dot access"""
+        return cast(TNames, self.settings.names)
 
     @property
-    def log_path(self) -> Path:
-        return self.settings.log.log_file
-
-    @property
-    def name(self):
-        return self.__class__.__name__
+    def defaults(self) -> TDefaults:
+        """Provide Defaults instance access with enforced dot access"""
+        return cast(TDefaults, self.settings.defaults)
 
     @property
     def dom(self) -> int:
@@ -110,7 +103,7 @@ class ConfigManager[
         return self._starttime.strftime(self.defaults.timestamp_format)
 
     @property
-    def duration(self) -> timedelta:  # LATER: where and how to apply format?
+    def duration(self) -> timedelta:
         return datetime.now(UTC) - self._starttime
 
     @property
@@ -118,18 +111,20 @@ class ConfigManager[
         return datetime.now(UTC).strftime(self.defaults.timestamp_format)
 
     def from_env(self, key: str):
-        """get variable from environment, log failure, raise error"""
+        """Ensure .env is loaded, get env var with key or raise Error"""
+
         if not self._env_loaded:
-            load_dotenv(self.paths.dot_env)
+            load_dotenv(self.paths.dot_env())
             self._env_loaded = True
-        var: str = os.getenv(key, "fail")  # NOTE: stable enough?
-        if var == "fail":
-            logger.error(f"failed to load env var with {key=}")
-            raise ValueError("Value not found in os.env or with loaded .env")
-        return var
+
+        if (var := os.getenv(key)) is not None:
+            return var
+
+        raise ValueError(f"Missing {key=} in os.env despite loaded .env")
 
     @property
     def setup_info(self) -> ConfigSetupParam:
+        # AI: Here is the package loaded, filled with config bootstrap result
         return ConfigSetupParam(
             config_file=self.setting_file,
             project_name=self.project_name,
@@ -138,12 +133,21 @@ class ConfigManager[
         )
 
 
+# AI: this was intended as like representative of ConfigManager inside Typer
 class ConfigSetupParam(BaseModel):
-    """Used to hand-over trough CLI setup pipeline, app.main -> callback -> setup logging"""
+    """Used to send trough CLI setup pipeline, app -> callback -> log setup"""
 
+    # AI: considering the usage of the param below,
+    # the latest setup of config is in _run_main_callback,
+    # preferably before the first printer.title
+    # (this displays project stats in the title)
+
+    # Used for display at startup
     config_file: Path
+    # Used for Printer injection
     project_name: str = ""
     project_version: str = ""
+    # Used for loguru
     log: LogParam = Field(default_factory=LogParam)
 
     @field_validator("config_file")

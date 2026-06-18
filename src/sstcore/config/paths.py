@@ -67,14 +67,16 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
     def config_home(self) -> Path:
         return self._homes.config_home
 
-    @property
     def dot_env(self) -> Path:
+        """Ensure .env File, create template for missing and raise"""
         try:
             return PathGuard.file(
-                target=self.config_home / ".env",
+                target=self.dot_env_unconfirmed,
                 default_content=self._defaults.dot_env_content,
             )
         except FileNotFoundError:
+            # MOVE: to pathguard error handling, or cli,
+            #         - but with __rich__ cli print
             c: ColorBox = printer.colorbox()
             text = (
                 f"{c.red('Missing .env File!')}"
@@ -85,17 +87,12 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @property
     def dot_env_unconfirmed(self) -> Path:
-        return PathGuard.file(
-            target=self.config_home / ".env",
-            default_content=self._defaults.dot_env_content,
-            raise_error=False,
-        )
+        """Provide bare dot_env Path without any checks"""
+        return self.config_home / ".env"
 
-    # NEXT: fix
-    # def scanner_cache_file(self, suffix: str = "md") -> Path:
-    #     return self.data_dir / summary_file(
-    #         {"day": str(day_count()), "suffix": suffix}
-    #     )
+    def scanner_cache_file(self, scan_root: Path) -> Path:
+        return scan_root / ".sst_scanner_cache.json"
+
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:
         return self.data_dir / summary_file(
