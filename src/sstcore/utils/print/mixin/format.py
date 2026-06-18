@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel
 from rich.console import ConsoleRenderable
 
+from ...log.inspect import debug_log_or_print
 from ..base import BasePrinter
 
 
@@ -23,10 +24,10 @@ class FormatMixin(BasePrinter):
             case self.Modus.NULL:
                 pass
 
+    @debug_log_or_print(anyway=False)
     def panel(self, target: Any | list[Any], **kwargs):
         if "frame" in kwargs:
             kwargs["border_style"] = kwargs.pop("frame")
-        self._debug_log_if_active(target, **kwargs)
 
         super().panel(self._format(target), **kwargs)
 

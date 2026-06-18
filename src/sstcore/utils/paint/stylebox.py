@@ -4,12 +4,9 @@ from typing import Any
 
 from loguru import logger
 from rich.color import Color
-from rich.style import Style
 
 type color = str | Color  # color part of style
 type Attribute = str | BoxAttribute  # attribute part of style
-
-type style = str | Style  # assembled color and attribute
 
 
 @dataclass

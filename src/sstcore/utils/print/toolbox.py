@@ -6,7 +6,6 @@ from rich.table import Table
 from rich.tree import Tree
 
 from ..tree import SimpleTreeNode
-from .stylebox import style
 
 
 def path_exists_table(
@@ -76,9 +75,9 @@ def dict_table(
 def tree_graph(
     simple_tree: SimpleTreeNode,
     max_depth: int | None = None,
-    root: style = "bold magenta",
-    node: style = "by_level",
-    guide: style = "bold white",
+    root: str = "bold magenta",
+    node: str = "by_level",
+    guide: str = "bold white",
     hide_root=False,
 ) -> Tree:
     """Visualizes a SimpleTreeNode model as a nested Rich Tree"""
@@ -89,7 +88,7 @@ def tree_graph(
         3: "white",
     }
 
-    def _apply_style(node_label: str, color: style | int = ""):
+    def _apply_style(node_label: str, color: str | int = ""):
         if isinstance(color, int):
             color: str = _node_styles.get(color, "red")
         return f"[{color}]{node_label}[/]" if color else node_label
@@ -110,7 +109,7 @@ def tree_graph(
             return
 
         nonlocal node
-        color: style | int = current_depth if node == "by_level" else node
+        color: str | int = current_depth if node == "by_level" else node
 
         for branch in tree_node.branches:
             child_label: str = _apply_style(branch.display_label, color=color)

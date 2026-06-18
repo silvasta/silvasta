@@ -6,7 +6,6 @@ from rich.tree import Tree
 from ...tree import SimpleTreeNode
 from .. import toolbox
 from ..base import BasePrinter
-from ..stylebox import style
 
 
 class ToolMixin(BasePrinter):
@@ -58,9 +57,9 @@ class ToolMixin(BasePrinter):
         self,
         simple_tree: SimpleTreeNode,
         max_depth: int | None = None,
-        root: style = "bold magenta",
-        node: style = "by_level",
-        guide: style = "bold white",
+        root: str = "bold magenta",
+        node: str = "by_level",
+        guide: str = "bold white",
         hide_root=False,
     ) -> None:
         """Visualizes a SimpleTreeNode model as a nested Rich Tree"""

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..log.inspect import debug_log_or_print
 from .set import FilterSet
 
 
@@ -21,6 +22,7 @@ PROJECT_IGNORE_DIRS: set[str] = {
     "target",
 }
 
+
 PROJECT_ALLOWED_EXTS: set[str] = {
     ".py",
     ".pyi",
@@ -31,12 +33,13 @@ PROJECT_ALLOWED_EXTS: set[str] = {
     ".toml",
     ".tex",
     ".cls",
+    ".lua",
 }
 
 
 @dataclass
 class ProjectFilter(PathFilter):
-    """Setup with defaults for files of Coding Projects."""
+    """Setup with Defaults for Files of Projects"""
 
     exclude: set[str] = field(
         default_factory=lambda: set(PROJECT_IGNORE_DIRS),
@@ -45,17 +48,14 @@ class ProjectFilter(PathFilter):
         default_factory=lambda: set(PROJECT_ALLOWED_EXTS)
     )
 
-    # TASK: move this to subhook, no __call__ override!!
-    def __call__(self, target: Path) -> bool:
-        target_set: set[str] = self._create_target_set(target)
+    @debug_log_or_print(anyway=False)
+    def _fulfills_conditions(self, target: Path, target_set: set) -> bool:
 
         if not self.allow_hidden_files and target.name.startswith("."):
             return False
-
         if target.is_dir():
             return self.fulfills_exclude(target_set)
-
         if target.is_file():
             return self.fulfills_require_any(target_set)
 
-        raise ValueError(f"Invalid path, got {target=}")
+        return False

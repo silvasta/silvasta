@@ -1,8 +1,9 @@
 from functools import singledispatchmethod
 
 from ....exceptions import NotImplementedDispatchError
+from ...log.inspect import debug_log_or_print
+from ...paint.stylebox import Attribute, ColorBox
 from ..base import BasePrinter
-from ..stylebox import Attribute, ColorBox
 
 
 class ColorMixin(BasePrinter):
@@ -12,8 +13,8 @@ class ColorMixin(BasePrinter):
         super().__init__(*args, **kwargs)
         self._color_box = ColorBox()
 
+    @debug_log_or_print(anyway=False)
     def panel(self, target, **kwargs):
-        self._debug_log_if_active(target, **kwargs)
         text_style: str = kwargs.pop("text_style", "")
         title: str = kwargs.pop("title", "")  # MOVE:
         super().panel(  # TODO: dispatch kwargs
@@ -34,8 +35,9 @@ class ColorMixin(BasePrinter):
     @_colorize.register
     def _[T: str](self, target: str, style: str = "", **kwargs) -> str:
         style: str = style or kwargs.get("text_style", "white")
-        text: str = self._format(target)
-        return self._color_box._colorize(text, color=str(style))
+        if text := self._format(target):
+            return self._color_box._colorize(text, color=str(style))
+        return ""  # TEST: avoid stuff like: kwargs={'title': '[white][/]',...}
 
     @_colorize.register
     def _[T: list[str]](self, target: list, style: str, **kwargs) -> list[str]:
