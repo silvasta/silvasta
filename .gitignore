@@ -14,3 +14,4 @@ wheels/
 logs
 plots
 /src/sstcore/utils/print/_helper_rich_lookup.py
+/.sst_scanner_cache.json

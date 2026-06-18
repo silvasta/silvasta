@@ -10,7 +10,7 @@ from ..config import get_config
 from ..config.manager import ConfigSetupParam
 from ..utils import Printer, printer
 from ..utils.log import LogSetupResult, setup_logging
-from . import layout
+from . import canvas
 
 
 class SafeTyper(typer.Typer):
@@ -122,7 +122,7 @@ class SafeTyper(typer.Typer):
         printer.title(f"Welcome to {ctx.info_name}!")
         printer.header("Setup Config and Logging")
 
-        layout.main_callback_config_setup(self._param)
+        canvas.main_callback_config_setup(self._param)
 
         result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
@@ -131,7 +131,7 @@ class SafeTyper(typer.Typer):
         )
         self.log_file: Path | None = result.log_file
 
-        layout.main_callback_log_setup(result)
+        canvas.main_callback_log_setup(result)
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice Title for launching Subapp"""

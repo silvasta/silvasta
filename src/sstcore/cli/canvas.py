@@ -4,7 +4,7 @@ from sstcore.utils.log import LogSetupResult
 
 from ..config.manager import ConfigSetupParam
 from ..utils import printer
-from ..utils.print import ColorBox
+from ..utils.paint import ColorBox
 
 c: ColorBox = printer.colorbox(mode="bold")
 
