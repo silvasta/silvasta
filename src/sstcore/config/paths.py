@@ -3,12 +3,10 @@ from typing import cast
 
 import typer
 
-from ..utils import HomeSetup, PathGuard, day_count
-from ..utils.print import ColorBox, printer
+from ..utils import HomeSetup, PathGuard, day_count, printer
+from ..utils.paint import ColorBox
 from .defaults import SstDefaults
 from .names import ParsedName, SstNames
-
-c: ColorBox = printer.colorbox()
 
 summary_file = ParsedName(  # MOVE: but where?
     pattern="{day}_summary.{suffix}",
@@ -77,7 +75,11 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
                 default_content=self._defaults.dot_env_content,
             )
         except FileNotFoundError:
-            text = f"{c.red('Missing .env File!')} {c.white(self.dot_env_unconfirmed)}"
+            c: ColorBox = printer.colorbox()
+            text = (
+                f"{c.red('Missing .env File!')}"
+                f" {c.white(self.dot_env_unconfirmed)}"
+            )
             printer.danger(text)
             raise typer.Exit(code=1) from None
 
@@ -89,6 +91,11 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
             raise_error=False,
         )
 
+    # NEXT: fix
+    # def scanner_cache_file(self, suffix: str = "md") -> Path:
+    #     return self.data_dir / summary_file(
+    #         {"day": str(day_count()), "suffix": suffix}
+    #     )
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:
         return self.data_dir / summary_file(
