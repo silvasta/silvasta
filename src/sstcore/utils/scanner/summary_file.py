@@ -85,7 +85,7 @@ class SummaryFileBox(StrEnum):
 
     @classmethod
     def type_from_path(cls, output_file: Path) -> SummaryFileBox:
-        """Match the Output file to the avaliable types"""
+        """Match the Output file to the available types"""
         try:
             return cls(output_file.suffix.strip("."))
         except ValueError:

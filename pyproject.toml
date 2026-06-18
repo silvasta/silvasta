@@ -40,6 +40,15 @@ requires = ["uv_build>=0.11.16,<0.12.0"]
 build-backend = "uv_build"
 
 [project.optional-dependencies]
+# TODO: grouping dependencies, what makes sense?
+# - fire is the one used for example scripts, located in root/examples/*.py
+# - typer is the backbone of the actual library, how to group?
+# - textual is already used inside CLI utils (mainly as picker)
+# textual needs typer for launch, typer slightly relies on textual features
+# - how to group them?
+# fire
+# - is actually very nice for fast script deployment, is it heavy?
+#   otherwise i take it probably into regular dependencies
 cli = ["typer", "fire"]
 tui = ["textual"]
 all = ["sstcore[cli]", "sstcore[tui]"]
