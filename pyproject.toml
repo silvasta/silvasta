@@ -39,6 +39,9 @@ dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.44"]
 requires = ["uv_build>=0.11.16,<0.12.0"]
 build-backend = "uv_build"
 
+[project.scripts]
+sst = "sstcore.__main__:main"
+
 [project.optional-dependencies]
 # TODO: grouping dependencies, what makes sense?
 # - fire is the one used for example scripts, located in root/examples/*.py
