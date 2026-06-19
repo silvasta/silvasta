@@ -1,17 +1,25 @@
 [project]
 name = "sstcore"
 version = "0.3.0b4"
-description = "Collection of frequently used generalized Utils, Functions and Tools"
+description = "Collection of Generalized Utils, Functions and Tools"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.14"
 license = { text = "Apache-2.0" }
 keywords = [
+  # --- Category 1: Descriptors & Features ---
   "utilities",
-  "config-management",
   "path-handling",
-  "logging",
+  "config-management",
+  "cli-framework",
+  "terminal-ui",
+  "tui-components",
+  # --- Category 2: Ecosystem & Libraries ---
   "pydantic",
+  "rich",
+  "typer",
+  "textual",
+  "loguru",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -27,8 +35,6 @@ dependencies = [
   "pydantic-settings>=2.13.1",
   "rich>=14.3.3",
   "send2trash>=2.1.0",
-  # NOTE: fire is required to play test scripts
-  # - and I want to use sstcore as my toolbox, fire is heavy improvemnt
   "fire",
 ]
 
@@ -47,15 +53,8 @@ sst = "sstcore.__main__:main"
 
 [project.optional-dependencies]
 cli = ["typer", "textual"]
-all = ["sstcore[cli]"]     # as placeholder for later and for completenes
+all = ["sstcore[cli]"]
 
-
-[tool.sstcore.logging]
-level = "INFO"
-file_name = "utils.log"
-log_dir = "logs"
-retention = "1 month"
-rotation = "10 MB"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -64,26 +63,46 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 79
 
-[tool.ruff.format]
-docstring-code-format = true
-docstring-code-line-length = 72
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint]
 select = [
-  # "D",  # D: docstrings
-  "E",  # E: pycodestyle errors
-  "F",  # F: Pyflakes
-  "I",  # I: isort (import sorting)
-  "UP", # UP: pyupgrade (modernize syntax)
-  "B",  # B: flake8-bugbear (finds likely bugs)
-  "N",  # N: pep8-naming
+  "B",  # flake8-bugbear
+  "D",  # docstrings
+  "E",  # pycodestyle errors
+  "F",  # Pyflakes
+  "I",  # isort
+  "N",  # pep8-naming
+  "UP", # pyupgrade
 ]
+
 ignore = [
-  # "E501", # Ignore long lines: only format, not error on them
-  # TODO: Strategy for DXXX
-  "D400", # Ignore strict period rule, rely on D415 instead
-  "D415", # Ignore .?!
-  "D203", # Conflicts with D211 (no blank line before class)
-  "D212", # Conflicts with D213 (multi-line summary second line)
-  "D202", # Conflicts with D213 (multi-line summary second line)
+  # TODO: __doc__
+  # --- The "Don't Force Me to Write Comments" Rules ---
+  "D104", #  15  #  5  # Missing docstring in public package
+  "D101", #  16  #  5  # Missing docstring in public class
+  "D100", #  43  #  4  # Missing docstring in public module
+  "D107", #  14  #  3  # Missing docstring in __init__
+  "D103", #   7  #  3  # Missing docstring in public function
+  "D102", # 125  #  2  # Missing docstring in public method
+  "D106", #   8  #  1  # Missing docstring in public nested class
+  "D105", #   8  #  1  # Missing docstring in magic method
+
+  # --- The "Stop Micromanaging My Punctuation" Rules ---
+  "D400", # First line must end with a period
+  "D415", # First line must end with a period, question mark, or exclamation point
+
+  # --- Aesthetic Preferences & Layout Adjustments ---
+  "D212", # Multi-line docstring summary should start at the first line
+
+  # --- Conflict Resolution (Mandatory for Ruff Formatter compatibility) ---
+  "D203", # One-blank-line-before-class (Conflicts with D211)
+  "D202", # No blank lines allowed after function docstring
 ]
+
+# TASK: use this to filter
+# [tool.ruff.lint.per-file-ignores]
+# # Keep tracking progress, but allow mixins and low-priority files to remain quiet
+# "src/sstcore/utils/print/mixin/*.py" = ["D101", "D102"]
+# "src/sstcore/tui/*.py" = ["D102"]
