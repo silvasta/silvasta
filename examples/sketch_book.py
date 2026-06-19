@@ -49,8 +49,9 @@ def latest():
 
 def find_color():
     logger.remove()
+    example: str = "This is how colored Text looks"
     for color in data.keys():
-        printer.panel(target=color, frame=color)
+        printer.panel(target=f"{color} - {c(example, color)}", frame=color)
 
 
 def show_tree_graph():
