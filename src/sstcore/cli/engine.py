@@ -7,9 +7,10 @@ import typer
 from loguru import logger
 
 from ..config import ConfigManager
-from ..config.get_config import default_config_loader
+from ..config.loader import default_config_loader
 from ..utils import printer
 from ..utils.log import LogSetupResult, setup_logging
+from ..utils.log.setup import setup_minimal_logging
 from . import args, canvas
 
 type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
@@ -18,7 +19,7 @@ type ConfigLoader = Callable[[Path | None], ConfigManager]
 
 class SafeTyper(typer.Typer):
     """
-    Lead custom Setup for Typer app with Log and Error handling
+    Lead Custom Setup for Typer App with Log and Error handling
 
     - Provide Framework with basic callback attach and start prints
     - Ensure Loguru is ready and loaded with custom settings
@@ -91,17 +92,19 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Config and Logging and show Status"""
 
-        printer.title(f"Welcome to {ctx.info_name}!")
-        printer.header("Setup Config and Logging")
-
         load_from_default: bool = self._config_loader is None
 
-        # MOVE: before first print that needs injection?
+        setup_minimal_logging("DEBUG" if verbose else "WARNING")
+
         config: ConfigManager = (  # IDEA: attach to typer context?
             default_config_loader(setting_file)
             if load_from_default
             else self._config_loader(setting_file)
         )
+        # Move after config, waiting for Printer injection in config setup
+        printer.title(f"Welcome to {ctx.info_name}!")
+        printer.header("Setup Config and Logging")
+
         canvas.main_callback_config_setup(config, load_from_default)
 
         result: LogSetupResult = setup_logging(

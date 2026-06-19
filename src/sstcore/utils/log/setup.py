@@ -6,6 +6,17 @@ from loguru import logger
 from ..path import PathGuard
 from .param import LogParam, LogSetupResult
 
+
+def setup_minimal_logging(level: str = "WARNING"):
+    """Kill noise immediately. Users see almost nothing during bootstrap."""
+    logger.remove()
+    logger.add(
+        lambda msg: print(msg, end=""),
+        level=level,
+        format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
+    )
+
+
 # Cache Result to prevent multiple calls
 _setup_result: LogSetupResult | None = None
 

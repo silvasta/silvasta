@@ -28,7 +28,6 @@ SettingFile = Annotated[
 Verbose = Annotated[
     bool,
     typer.Option(
-        False,
         "--verbose",
         "-v",
         help="Force verbose DEBUG logs",
@@ -37,7 +36,6 @@ Verbose = Annotated[
 Quiet = Annotated[
     bool,
     typer.Option(
-        False,
         "--quiet",
         "-q",
         help="Silence terminal outputs",

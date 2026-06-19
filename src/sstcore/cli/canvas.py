@@ -15,7 +15,7 @@ def main_callback_config_setup(config, from_default: bool):
     """Provide Information about Config setup"""
 
     if from_default:  # TASK: colorize
-        text = f"Typer Setup: {config} loaded with default Parameter"
+        text = f"Typer Setup: {config} loaded with Default Parameter"
         printer.warn(text)
     else:
         text = f"Typer Setup: {config} loaded with provided ConfigLoader"

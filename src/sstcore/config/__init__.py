@@ -1,5 +1,5 @@
 from .defaults import SstDefaults
-from .get_config import get_config
+from .loader import get_config
 from .manager import ConfigManager
 from .names import SstNames
 from .paths import SstPaths
