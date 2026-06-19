@@ -30,7 +30,14 @@ def folder_scanner(
     output_file: Path = PathGuard.unique(output_file)
 
     if filter is None:
-        filter: ProjectFilter = _setup_filter()
+        # filter: PathFilter = _setup_filter()
+        # FIX:
+        # FIX:
+        # FIX:
+        # FIX:
+        filter = ProjectFilter(require_all=set(), require_any=set())
+
+    printer(filter)
 
     scanner = FolderScanner(scan_root=scan_root, filter=filter)
     tree: PathTreeNode = scanner.tree()
@@ -56,7 +63,7 @@ def folder_scanner(
     )
 
 
-def _setup_filter() -> ProjectFilter:
+def _setup_filter() -> PathFilter:
     return ProjectFilter(
         exclude={
             ".git",

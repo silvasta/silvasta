@@ -29,7 +29,72 @@ def assemble_summary_file(
     - local_root is for creating the relative paths inside the summary
 
     """
+    files = [file for file in files if file.is_absolute()]
 
+    # FIX: somehow got:
+    # ╭─────────────────────────── Selected Files ───────────────────────────╮
+    # │ Selected Files: 13                                                   │
+    # ╰──────────────────────────────────────────────────────────────────────╯
+    # ╭───────────────────────────────────────────────────── Selected Files ─╮
+    # │ ./                                                                   │
+    # │ /home/silvan/manuals/dot/zsh/custom/aliases.zsh                      │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/                     │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/_alacritty           │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/_btm                 │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/_cargo               │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/_ftdv                │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/_rustup              │
+    # │ /home/silvan/manuals/dot/zsh/custom/completions/_sachmis             │
+    # │ /home/silvan/manuals/dot/zsh/custom/example.zsh                      │
+    # │ /home/silvan/manuals/dot/zsh/custom/functions.zsh                    │
+    # │ /home/silvan/manuals/dot/zsh/custom/plugins/example/example.plugin.z │
+    # │ sh                                                                   │
+    # │ /home/silvan/manuals/dot/zsh/custom/themes/pygmalion-s.zsh-theme     │
+    # ╰──────────────────────────────────────────────────────────────────────╯
+    # ./
+    # /home/silvan/manuals/dot/zsh/custom/aliases.zsh
+    # /home/silvan/manuals/dot/zsh/custom/completions/
+    # /home/silvan/manuals/dot/zsh/custom/completions/_alacritty
+    # /home/silvan/manuals/dot/zsh/custom/completions/_btm
+    # /home/silvan/manuals/dot/zsh/custom/completions/_cargo
+    # /home/silvan/manuals/dot/zsh/custom/completions/_ftdv
+    # /home/silvan/manuals/dot/zsh/custom/completions/_rustup
+    # /home/silvan/manuals/dot/zsh/custom/completions/_sachmis
+    # /home/silvan/manuals/dot/zsh/custom/example.zsh
+    # /home/silvan/manuals/dot/zsh/custom/functions.zsh
+    # /home/silvan/manuals/dot/zsh/custom/plugins/example/example.plugin.zsh
+    # /home/silvan/manuals/dot/zsh/custom/themes/pygmalion-s.zsh-theme
+    # zsh.xml
+    # None
+    #     #PosixPath('/home/silvan/manuals/dot/zsh/custom/aliases.zsh'), PosixPath('/home/silvan/manuals/dot/zsh/custom...
+    #                      │         └ <staticmethod(<function split_read_print_path at 0x78222e107530>)>
+    #                      └ <class 'sstcore.utils.path.pathguard.PathGuard'>
+    #
+    #   File "/home/silvan/.local/share/uv/python/cpython-3.14.5-linux-x86_64-gnu/lib/python3.14/functools.py", line 982, in wrapper
+    #     return dispatch(args[0].__class__)(*args, **kw)
+    #            │        │                   │       └ {}
+    #            │        │                   └ ([PosixPath('.'), PosixPath('/home/silvan/manuals/dot/zsh/custom/aliases.zsh'), PosixPath('/home/silvan/manuals/dot/zsh/custo...
+    #            │        └ ([PosixPath('.'), PosixPath('/home/silvan/manuals/dot/zsh/custom/aliases.zsh'), PosixPath('/home/silvan/manuals/dot/zsh/custo...
+    #            └ <function singledispatch.<locals>.dispatch at 0x78222e107320>
+    #
+    #   File "/home/silvan/PolyBox/Code/sstcore/latest/src/sstcore/utils/path/pathguard/_helper.py", line 84, in _
+    #     return [split_read_print_path(path, local_root) for path in target]
+    #             │                           │                       └ [PosixPath('.'), PosixPath('/home/silvan/manuals/dot/zsh/custom/aliases.zsh'), PosixPath('/home/silvan/manuals/dot/zsh/custom...
+    #             │                           └ None
+    #             └ <function split_read_print_path at 0x78222e107530>
+    #
+    #   File "/home/silvan/.local/share/uv/python/cpython-3.14.5-linux-x86_64-gnu/lib/python3.14/functools.py", line 982, in wrapper
+    #     return dispatch(args[0].__class__)(*args, **kw)
+    #            │        │                   │       └ {}
+    #            │        │                   └ (PosixPath('.'), None)
+    #            │        └ (PosixPath('.'), None)
+    #            └ <function singledispatch.<locals>.dispatch at 0x78222e107320>
+    #
+    #   File "/home/silvan/PolyBox/Code/sstcore/latest/src/sstcore/utils/path/pathguard/_helper.py", line 99, in _
+    #     raise ValueError(msg)
+    #                      └ "Relative Path not possible: local_root=None and target=PosixPath('.')"
+    #
+    # ValueError: Relative Path not possible: local_root=None and target=PosixPath('.')
     summary: SummaryFileBox = SummaryFileBox.type_from_path(output_file)
 
     parts: list[str] = [summary.start()]
