@@ -31,7 +31,9 @@ class SafeTyper(typer.Typer):
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(**kwargs)
 
-        logger.info(f"Start of Setup: {type(self).__name__}")
+        # TODO: avoid like 5 logs in console when multiple subapps are attached
+        # if config_loader: # with this only 1, but maybe 0 needed?
+        #     logger.info(f"Start of Setup: {type(self).__name__}")
 
         self._config_loader: ConfigLoader | None = config_loader
         self._error_handlers: ErrorHandlerDict = {}
@@ -39,6 +41,8 @@ class SafeTyper(typer.Typer):
 
     def register_error(self, exception: type[BaseException]):
         """Decorator: Attach Exception with custom Handler to Registry"""
+
+        # TODO: check for better typing
 
         def decorator(handler: Callable[[Any], None]):
             self._error_handlers[exception] = handler
@@ -51,20 +55,21 @@ class SafeTyper(typer.Typer):
         try:
             return super().__call__(*args, **kwargs)
 
-        except typer.Exit, typer.Abort:
-            raise
-
         except Exception as error:
             if handler := self._error_handlers.get(type(error)):
                 try:
                     handler(error)
                     sys.exit(1)
 
-                except Exception as handler_exc:
-                    logger.critical(f"Error handler failed: {handler_exc}")
+                except SystemExit:
+                    raise  #  Let handlers dictate their own exit codes
+
+                except Exception as handler_fail:
+                    logger.critical(f"Error handler failed: {handler_fail}")
+                    logger.error(f"Initial Error: {error}")
                     sys.exit(2)
 
-            # This is the ONLY place an unhandled error gets logged!
+            # Fallback for unhandled structural issues
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)
 
@@ -92,9 +97,9 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Config and Logging and show Status"""
 
-        load_from_default: bool = self._config_loader is None
-
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
+
+        load_from_default: bool = self._config_loader is None
 
         config: ConfigManager = (  # IDEA: attach to typer context?
             default_config_loader(setting_file)
@@ -113,9 +118,6 @@ class SafeTyper(typer.Typer):
             param=config.settings.log,
         )
         canvas.main_callback_log_setup(result)
-
-        # TEST: if it works from config.__init__
-        # self._inject_project_param_to_printer()
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice Title for launching Subapp"""
