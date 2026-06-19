@@ -7,7 +7,7 @@ type PathInput = Path | str | PathConfig
 
 @dataclass(frozen=True, slots=True)
 class PathConfig:
-    """Encapsulates validation and normalization behaviors for a target path."""
+    """Encapsulate Validation and Normalization behavior for Target Path"""
 
     target: Path | str
     resolve: bool = False
@@ -30,7 +30,7 @@ class PathConfig:
             args["target"] = path_input
         elif path_input is None:
             args["target"] = Path.cwd()
-        else:  # LATER: custom error
+        else:  # LATER: custom error?
             raise ValueError(f"Invalid {path_input=}")
 
         if resolve is not None:

@@ -44,7 +44,7 @@ def timer(func):
 
 
 def day_count(day: date | None = None) -> int:
-    """Calculate Day of Millenium for today or target day"""
+    """Calculate Day of Millennium for today or target day"""
     day: date = day or date.today()
     delta: timedelta = day - date(2000, 1, 1)
     return delta.days

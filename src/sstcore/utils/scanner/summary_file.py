@@ -29,6 +29,7 @@ def assemble_summary_file(
     - local_root is for creating the relative paths inside the summary
 
     """
+
     summary: SummaryFileBox = SummaryFileBox.type_from_path(output_file)
 
     parts: list[str] = [summary.start()]

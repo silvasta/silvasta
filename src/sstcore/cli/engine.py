@@ -23,7 +23,7 @@ class SafeTyper(typer.Typer):
 
     - Provide Framework with basic callback attach and start prints
     - Ensure Loguru is ready and loaded with custom settings
-    - Protect CLI display from Errors with registred Exception handlers
+    - Protect CLI display from Errors with registered Exception handlers
 
     """
 

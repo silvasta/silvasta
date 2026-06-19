@@ -1,3 +1,9 @@
+"""
+NOTHING IMPLEMENTED AND TESTED (only collected)
+
+Provide Manager for File Diff, most likely working with inodes and hardlinks
+"""
+
 import difflib
 import time
 from pathlib import Path
@@ -6,7 +12,7 @@ from loguru import logger
 
 
 def has_diverged(workspace_file: Path, registry_file: Path) -> bool:
-    """Check if the workspace file has been modified since it was registered."""
+    """Check if workspace file changed since registration"""
     try:
         ws_stat = workspace_file.stat()
         reg_stat = registry_file.stat()

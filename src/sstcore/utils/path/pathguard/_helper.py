@@ -11,7 +11,7 @@ from ._ensure import _ensure_input
 def relative_main(
     target: PathInput, root: PathInput | None = None, strict: bool = True
 ) -> Path:
-    """Find relative path starting at root|CWD downwards to target"""
+    """Find Relative Path starting at Root (or CWD) downwards to Target"""
 
     _target = _ensure_input(PathConfig.from_path_input(target, resolve=True))
     _root = _ensure_input(PathConfig.from_path_input(root, resolve=True))
@@ -29,7 +29,7 @@ def relative_main(
 
 
 def relative_string(source: Path, target: Path):  # TODO: PathInput
-    """Small helper for prints"""
+    """Search relative Path in both direction and provide any rendering"""
     relative: Path | None = relative_duo(source, target)
     relative: Path = relative or relative_main(
         target=target, root=source, strict=False
@@ -38,7 +38,7 @@ def relative_string(source: Path, target: Path):  # TODO: PathInput
 
 
 def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
-    """Find relative path from any of both directions or get None"""
+    """Search relative paths in both directions and provide Result or None"""
 
     _path1: Path = _ensure_input(path1)
     _path2: Path = _ensure_input(path2)
@@ -70,7 +70,12 @@ def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
 
 @functools.singledispatch
 def split_read_print_path(target, local_root: Path | None = None):
-    # TODO: Better Name and doc
+    """
+    Apply local_root or CWD at Target to create Pair of Paths
+
+    - 1 Absolute Path: computer readable safe for Operations
+    - 1 Relative Path: human readable nice for Display
+    """
     raise NotImplementedDispatchError(target, local_root)
 
 
@@ -89,9 +94,9 @@ def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
         )
     else:  # Relative target
         if local_root is None:
-            raise ValueError(
-                f"Can't construct proper Path with {local_root=} for: {target=}"
-            )
+            msg = f"Relative Path not possible: {local_root=} and {target=}"
+            # LATER: custom Exception? PathGuardRelativeError... improve
+            raise ValueError(msg)
         read_path: Path = local_root / target
         print_path: Path = target
     return read_path, print_path

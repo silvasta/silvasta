@@ -93,8 +93,12 @@ class SstFile(BaseModel):
         return True
 
     def _is_identical_to(self, other_path: Path, local_dir: Path) -> bool:
-        """UNTESTED:
-        Fast structural comparison without reading full contents into memory"""
+        """
+        UNTESTED
+
+        Fast structural comparison without reading full contents into memory
+        """
+
         my_path = local_dir / self.local_path
         if not my_path.exists() or not other_path.exists():
             return False
@@ -105,8 +109,11 @@ class SstFile(BaseModel):
     # TASK: hash for the files itself
 
     def _compute_hash(self, local_dir: Path, algorithm: str = "sha256") -> str:
-        """UNTESTED:
-        Compute file hash via chunking (useful for databases/remotes)"""
+        """
+        UNTESTED
+
+        Compute file hash via chunking (useful for databases/remotes)
+        """
         my_path = local_dir / self.local_path
         if not my_path.is_file():
             return ""
@@ -124,8 +131,7 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
 
 
 class FileRegistry[FilesT: SstFile](BaseModel):
-    """Local Registry with Files relative to Root, provides
-    basic operations to handle files and groups of files"""
+    """Provide Container for Files and Tools for FileSystem Operations"""
 
     local_root: Path
     files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
@@ -244,8 +250,13 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         return [file for file in self.files if keyword_filter(file)]
 
     def relative_to_local_root(self, path: Path, strict: bool = True) -> Path:
-        """Create relative path from local_root, just forward already relative,
-        strict=False tries to create paths like: ../../file.txt"""
+        """
+        Get Relative Path calculated from local_root
+
+        Relative Input Paths are forward without any check
+
+        - strict=False: Search in all directions get Paths like: ../../file.txt
+        """
 
         if not path.is_absolute():
             logger.debug(f"Forwarding relative {path=} for {self.local_root=}")
@@ -340,8 +351,11 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             self.files.remove(file)
 
     def reload_all_files_from_local_folder(self, *, clear_all=False):
-        """Load all files inside local_root to registry,
-        Override existing registry Files, clear_all: start from empty status"""
+        """
+        Override existing Files and load New Files from local_dir
+
+        - clear_all: Delete current Registry status at beginning
+        """
 
         # LATER: better use of SyncMode
         # - maybe second function (1 with clear, 1 without)
