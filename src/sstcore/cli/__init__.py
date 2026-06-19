@@ -1,6 +1,10 @@
 """
 Provide Setup for quick access to advanced Typer features
 
+- SafeTyper: Register ExceptionHandlers and bootstrap Typer with Log and Config
+- sargs: Provide general usable Typer Arguments and Options
+- folder_scanner: Attach FolderScanner to Treeselector and provide SummaryFile
+
 """
 
 from . import args as sargs

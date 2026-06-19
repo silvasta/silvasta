@@ -66,7 +66,10 @@ class PatternNamer:
 
 
 class RegexMatch:
-    r"""Store and compare regex pattern. Example usage:
+    r"""
+    Compile Regex Pattern and apply it to Equality checks
+
+    Example usage:
     match line:
         case RegexMatch(r".*\[DEBUG\].*") as m:
             print(f"Debug found: {m.match.group(0)}")
@@ -74,7 +77,7 @@ class RegexMatch:
 
     def __init__(self, pattern: str):
         self.pattern: str = pattern
-        # Pre-compile for speed: useful for high-frequency
+        # Pre-compile: useful for high-frequency and anyway cheap
         self._compiled: re.Pattern[str] = re.compile(pattern)
         self.match: re.Match | None = None
 

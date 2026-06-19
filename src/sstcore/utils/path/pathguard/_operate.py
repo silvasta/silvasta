@@ -16,11 +16,15 @@ from ._helper import relative_string
 
 
 class SyncMode(StrEnum):
+    """Govern the Conflict Resolution Strategy for File Transfers"""
+
     INCREMENT = auto()
     OVERRIDE = auto()
     IGNORE = auto()
 
     def check_conflict(self, target: Path) -> Path:
+        """Provide SyncMode Path that is valid to write or Raise"""
+
         if not target.exists():
             _ensure_dir_logic(target.parent)
             return target
@@ -46,10 +50,9 @@ def rotate(
     sync_mode: str | SyncMode = "increment",
     reset: bool = False,
 ) -> Path:
-    """Moves source (file or dir) to target, handles unique naming collisions,
-    if reset=True, recreates empty file or directory at original 'source' location"""
+    """Move Source to Target and if reset: Create empty File or Dir"""
 
-    # TASK: similar pipeline as in _clear_file_or_folder
+    # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
         PathConfig.from_path_input(source, must_exists=True)
@@ -80,9 +83,9 @@ def copy(
     target: PathInput,
     sync_mode: str | SyncMode = "increment",
 ) -> Path:
-    """Copy source (file or dir) to target, handles unique naming collisions"""
+    """Copy Source to Target"""
 
-    # TASK: similar pipeline as in _clear_file_or_folder
+    # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
         PathConfig.from_path_input(source, must_exists=True)
@@ -104,9 +107,9 @@ def hardlink(
     target: PathInput,
     sync_mode: str | SyncMode = "override",
 ) -> Path:
-    """Create a hardlink of source to target, handles unique naming collisions"""
+    """Create Hardlink at Target Pointing to Source"""
 
-    # TASK: similar pipeline as in _clear_file_or_folder
+    # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
         PathConfig.from_path_input(source, must_exists=True)
@@ -136,9 +139,9 @@ def symlink(
     target: PathInput,
     sync_mode: str | SyncMode = "increment",
 ) -> Path:
-    """Create absolute symlink of source to target, handles unique naming collisions"""
+    """Create Absolute Symlink at Target Pointing to Source"""
 
-    # TASK: similar pipeline as in _clear_file_or_folder
+    # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
         PathConfig.from_path_input(source, must_exists=True, resolve=True)
@@ -165,9 +168,12 @@ def symlink(
 def _clear_file_or_folder(
     target: PathInput, clear_strategy: Callable[[Path], Any]
 ) -> bool:
-    """Handle args, logs and errors for deleting files or folders"""
+    """Execute Delete Operation in Safe Environment"""
+
+    # Extract Name of clear_strategy for log
     _clear: str = getattr(clear_strategy, "__name__", "_clear")
     clear: str = _clear.strip("_").capitalize()
+
     try:
         _target: Path = _ensure_input(
             PathConfig.from_path_input(target, must_exists=True)
@@ -211,7 +217,7 @@ def trash(target: PathInput) -> bool:
 def prune(
     base_target: PathInput, remaining: int = 5, trash=False
 ) -> list[Path]:
-    """Remove oldest files/dirs from sequence (name_NUM{.*}) until remaining"""
+    """Prune Sequence back to specified number of Remaining Targets"""
 
     if remaining >= len(sequence := find_sequence(base_target)):
         return []

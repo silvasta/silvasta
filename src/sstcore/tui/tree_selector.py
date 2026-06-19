@@ -14,7 +14,12 @@ from ..utils.tree import SimpleTreeNode
 
 
 class MultiSelectTree(Tree[str]):
-    """A custom Tree that uses Vim navigation and disables default selection keys"""
+    """
+    Render SimpleTreeNode with Selectable Nodes and provide Result
+
+    - Implement VIM Navigation and disable default selection keys
+
+    """
 
     BINDINGS = [
         Binding("j", "cursor_down", "Down", show=True),
@@ -36,29 +41,29 @@ class MultiSelectTree(Tree[str]):
         """Emitted when the user finalizes their selection"""
 
     def action_collapse_parent(self) -> None:
-        """Vim 'h': Collapse current node, or move to parent if already collapsed."""
+        """Key H: Collapse node or move to parent if already collapsed"""
         if node := self.cursor_node:
             if node.is_expanded and node.allow_expand:
                 node.collapse()
 
     def action_expand_child(self) -> None:
-        """Vim 'l': Expand current node, or move to first child if already expanded."""
+        """Key L: Expand node or move to first child if already expanded"""
         if node := self.cursor_node:
             if not node.is_expanded and node.allow_expand:
                 node.expand()
 
     def action_toggle_select(self) -> None:
-        """Spacebar: Request the App to toggle this node's selection state."""
+        """Key Space: Toggle node Selection State"""
         if self.cursor_node:
             self.post_message(self.NodeToggled(self.cursor_node))
 
     def action_submit(self) -> None:
-        """Enter: Request the App to finalize and exit."""
+        """Key Enter: Finish Selection and provide Result"""
         self.post_message(self.Submitted())
 
 
 class TreeSelectorApp(App[list]):
-    """A transient app that displays a tree and returns the selected node."""
+    """Displays Tree in transient app and return the Selected Node"""
 
     BINDINGS = [
         Binding("escape", "quit_without_selection", "Cancel"),
@@ -66,6 +71,8 @@ class TreeSelectorApp(App[list]):
     ]
 
     class Sort(StrEnum):
+        """Govern Action Selection and Execution"""
+
         BY_SELECTION = auto()
         ALPHABETIC = auto()
 
@@ -75,8 +82,7 @@ class TreeSelectorApp(App[list]):
         self,
         sst_tree: SimpleTreeNode,
         sort_method: str = "",
-        pre_select: list
-        | None = None,  # TASK: memorize the last pick? use pre_select at call!
+        pre_select: list | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -93,7 +99,7 @@ class TreeSelectorApp(App[list]):
             self.sort_method: self.Sort = self.Sort(sort_method)
         except ValueError:
             logger.error(f"Unknown {sort_method=}")
-            printer.lines(  # LATER: this as printer function of class.Enum
+            printer.lines(  # LATER: this as printer function of class.Enum...?
                 header="Choose one of this sort arguments:",
                 style="Danger",
                 lines=[f"sort_method={m}" for m in self.Sort],
@@ -154,7 +160,7 @@ class TreeSelectorApp(App[list]):
     def on_multi_select_tree_node_toggled(
         self, event: MultiSelectTree.NodeToggled
     ) -> None:
-        """Fired when Spacebar is pressed"""
+        """Fire when Spacebar is pressed"""
 
         if not (target_identifier := event.node.data):
             logger.debug(f"TTT Strange {event.node=} with {event.node.data=}")

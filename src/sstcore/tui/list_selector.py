@@ -4,7 +4,7 @@ from textual.widgets import Footer, Header, Label, ListItem, ListView
 
 
 class SelectableItem(ListItem):
-    """A custom ListItem that holds its identifier and formats its own label."""
+    """Format Label for display and provide Identifier if Selected"""
 
     def __init__(self, label: str, identifier: str) -> None:
         super().__init__()
@@ -27,7 +27,7 @@ class SelectableItem(ListItem):
 
 
 class ListSelectorApp(App[list]):
-    """A transient app that displays a flat list and returns the selected item(s)."""
+    """Display flat List in transient app and return Selected Items"""
 
     BINDINGS = [
         Binding("j", "cursor_down", "Down"),
@@ -41,12 +41,16 @@ class ListSelectorApp(App[list]):
     def __init__(
         self, items: list | set | dict, multi_select: bool = False, **kwargs
     ):
+        """
+        Normalize Input to Dict like: [Key = ID] and [Value = Label]
+
+        - Lists and Sets use 1 Item for Both: ID and label
+
+        """
         super().__init__(**kwargs)
         self.multi_select: bool = multi_select
         self.selected_identifiers: set = set()
 
-        # Normalize inputs: dicts use keys as IDs and values as labels.
-        # Lists/Sets use the item as both ID and label.
         if isinstance(items, dict):
             self.items: dict[str, str] = {
                 str(k): str(v) for k, v in items.items()
@@ -56,11 +60,11 @@ class ListSelectorApp(App[list]):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        list_items = [
+        items: list[SelectableItem] = [
             SelectableItem(label=label, identifier=identifier)
             for identifier, label in self.items.items()
         ]
-        yield ListView(*list_items, id="selection_list")
+        yield ListView(*items, id="selection_list")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -107,7 +111,11 @@ class ListSelectorApp(App[list]):
         item.update_display()
 
     def action_submit(self) -> None:
-        """Enter: Return selections, falling back to the highlighted item if none selected."""
+        """
+        Key Enter: Finish Selection and provide Result
+
+        - Use as fallback: Item under Cursor if No Selection
+        """
         if self.selected_identifiers:
             self.exit(result=list(self.selected_identifiers))
         else:
@@ -120,5 +128,6 @@ class ListSelectorApp(App[list]):
                 self.exit(result=[])
 
     def action_quit_without_selection(self) -> None:
+        # LATER: Generalized Key XYZ style
         """Escape/q: Close without result"""
         self.exit(result=[])

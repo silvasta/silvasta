@@ -90,10 +90,12 @@ def _recursive_path_tree(
 
 
 def _pop_left(path_parts: list[deque]) -> dict[str, list[deque]]:
-    """Squash all top left path elements into branched dict.
+    """
+    Squash all top left path elements into branched dict.
 
     Filter empty path path segments, shorten remaining deque element,
-    and provide dict with 1-n keys each with list of 0-k"""
+    and provide dict with 1-n keys each with list of 0-k
+    """
 
     current_nodes: dict[str, list[deque]] = defaultdict(list)
 

@@ -10,9 +10,9 @@ from ._config import PathConfig, PathInput, _state
 
 
 def _ensure_input(path_input: PathInput) -> Path:
-    """Normalize strings, Paths, or PathConfig instances into validated Path objects."""
+    """Extract PathInput and provide validated Paths"""
 
-    # LATER: compbine with InputConfig
+    # LATER: somehow combine with PathConfig?
 
     if isinstance(path_input, PathConfig):
         path = Path(path_input.target)
@@ -43,7 +43,7 @@ def _ensure_input(path_input: PathInput) -> Path:
 
 
 def _ensure_dir_logic(path: PathInput) -> Path:
-    """The actual implementation logic"""
+    """PathGuard.dir implementation logic"""
     path: Path = _ensure_input(path)
     path.mkdir(parents=True, exist_ok=True)
     if _state.debug:
@@ -77,6 +77,7 @@ def dir_main[**P](
 def _ensure_file_logic(
     path: PathInput, raise_error: bool, default_content: str | None
 ) -> Path:
+    """PathGuard.file implementation logic"""
 
     path: Path = _ensure_input(path)
 
@@ -98,7 +99,7 @@ def _ensure_file_logic(
         if raise_error:
             msg = f"Critical file missing: {path=}"
         else:
-            warn = "Suppress error only allowed for case of writing file with default content!"
+            warn = "Suppress Error only allowed when writing default_content!"
             logger.warning(warn)
             msg = f"Wrong input, file not confirmed: {path=}"
 
@@ -117,7 +118,7 @@ def file_main[**P](
         Callable[P, Path],
     ]
 ):
-    """Ensure path is file, write default content and | or raise error"""
+    """Ensure path is file or write default content and | or Raise"""
 
     # CASE 1: Function Call -> PathGuard.file(path)
     if isinstance(target, (Path, str, PathConfig)):
@@ -134,7 +135,7 @@ def file_main[**P](
 
         return wrapper
 
-    # CASE 3: Decorator with Arguments -> @PathGuard.file(default_content="...")
+    # CASE 3: Decorator with Args -> @PathGuard.file(default_content="...")
     if target is None:
 
         def decorator(func: Callable[P, Path]) -> Callable[P, Path]:
@@ -147,11 +148,9 @@ def file_main[**P](
 
         return decorator
 
-    raise TypeError(f"Invalid target type for PathGuard.dir: {type(target)}")
-
 
 def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
-    """Internal logic: Appends counter until a free filename is found."""
+    """PathGuard.unique implementation logic: Increment until Path is unique"""
 
     path: Path = _ensure_input(path)
 
@@ -202,9 +201,12 @@ def unique_main[**P](
         Callable[P, Path],
     ]
 ):
-    """Hybrid: Ensures the returned path does NOT exist,
-    ensure_parent creates folder to make it directly writable.
-    If it exists, auto-increments suffix (file_1.txt, file_2.txt)
+    """
+    Hybrid: Ensure Path does NOT exist.
+
+    Apply auto-increments before suffix (file_1.txt, file_2.txt)
+
+    - ensure_parent: create folder to ensure Path is writable
     """
 
     # Case 1: Direct call (PathGuard.unique(path))
@@ -235,12 +237,13 @@ def unique_main[**P](
 
         return decorator
 
-    raise TypeError(f"Invalid target type for PathGuard.dir: {type(target)}")
-
 
 def find_sequence(base_target: PathInput) -> list[Path]:
-    """Find all paths of a sequence (base name + auto-incremented versions)
-    returns list, sorted by modification time (newest first)"""
+    """
+    Find all Paths of a Sequence (base name + auto-incremented versions)
+
+    Return list sorted by modification time (newest first)
+    """
 
     base: Path = _ensure_input(base_target)
 
