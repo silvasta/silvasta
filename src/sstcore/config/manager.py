@@ -5,20 +5,13 @@ from typing import cast
 
 from dotenv import load_dotenv
 from loguru import logger
-from pydantic import BaseModel, Field, field_validator
 
 from ..utils import HomeSetup, Printer, day_count
-from ..utils.log import LogParam
 from .bootstrap import BootDefaults, BootResult, ConfigBootstrap
 from .defaults import SstDefaults
 from .names import SstNames
 from .paths import SstPaths
 from .settings import SstSettings
-
-type ConfigTypes = SstDefaults | SstNames | SstPaths | SstSettings
-
-# AI: I just removed a lot of old stuff from here,
-# remaining unclear stuff and ideas are marked
 
 
 class ConfigManager[
@@ -31,9 +24,6 @@ class ConfigManager[
 
     def __init__(
         self,
-        # AI: the definition of all this params here ,
-        # is this mabye better controlled inside CLI?
-        # (check get_config())
         settings_cls: type[TSettings],
         paths_cls: type[TPaths],
         setting_file: Path | None = None,
@@ -44,7 +34,6 @@ class ConfigManager[
         self._starttime: datetime = datetime.now(UTC)
 
         boot: BootResult = ConfigBootstrap.initial_setup(
-            # NOTE: this should later on ensure easy switch to XDG_HOMES
             settings_cls,
             defaults=BootDefaults(
                 project_name=project_name,
@@ -79,8 +68,6 @@ class ConfigManager[
         return f"{self}[{settings}, {paths}, {defaults},{names}]"
 
     def _fill_printer(self):
-        # AI: unsure why this is here and in SafeTyper,
-        # probably to ensure it is done...
         Printer.project_name = self.project_name
         Printer.project_version = self.project_version
 
@@ -121,36 +108,3 @@ class ConfigManager[
             return var
 
         raise ValueError(f"Missing {key=} in os.env despite loaded .env")
-
-    @property
-    def setup_info(self) -> ConfigSetupParam:
-        # AI: Here is the package loaded, filled with config bootstrap result
-        return ConfigSetupParam(
-            config_file=self.setting_file,
-            project_name=self.project_name,
-            project_version=self.project_version,
-            log=self.settings.log.with_source("Custom: config.settings.log"),
-        )
-
-
-# AI: this was intended as like representative of ConfigManager inside Typer
-class ConfigSetupParam(BaseModel):
-    """Used to send trough CLI setup pipeline, app -> callback -> log setup"""
-
-    # AI: considering the usage of the param below,
-    # the latest setup of config is in _run_main_callback,
-    # preferably before the first printer.title
-    # (this displays project stats in the title)
-
-    # Used for display at startup
-    config_file: Path
-    # Used for Printer injection
-    project_name: str = ""
-    project_version: str = ""
-    # Used for loguru
-    log: LogParam = Field(default_factory=LogParam)
-
-    @field_validator("config_file")
-    @classmethod
-    def ensure_path(cls, v: Path | str):
-        return Path(v)

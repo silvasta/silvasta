@@ -27,9 +27,10 @@ def setup_logging(
     - LogSetupResult provides the finally applied paths and settings
 
     If all options are unused or fail, LogParam defaults are applied
-    """
 
+    """
     global _setup_result
+
     if _setup_result is not None:
         return _setup_result
 
@@ -53,7 +54,6 @@ def setup_logging(
             format=" | ".join(format_parts),
             colorize=True,
         )
-
     # File output
     if log_to_file or log_file:
         logger.add(
@@ -66,14 +66,12 @@ def setup_logging(
             diagnose=True,  # Shows variable values in logs!
             enqueue=True,  # Thread-safe
         )
-
     if not quiet and not log_to_file:
         print("Warning: Logging is completely disabled.")
 
     _setup_result = LogSetupResult.from_param(
         log_file=log_file_path, selected_param=log_param
     )
-
     return _setup_result
 
 

@@ -12,7 +12,41 @@ import typer
 #   - tyrus
 #   - SysCo
 
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+###  Boot
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
+SettingFile = Annotated[
+    Path | None,
+    typer.Option(
+        "--json",
+        "-j",
+        help="Override path to json settings file",
+    ),
+]
+
+Verbose = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Force verbose DEBUG logs",
+    ),
+]
+Quiet = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Silence terminal outputs",
+    ),
+]
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+###  Common
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 DryRun = Annotated[
     bool,
     typer.Option(

@@ -6,14 +6,14 @@ from typing import Any
 import typer
 from loguru import logger
 
-from ..config import get_config
-from ..config.manager import ConfigSetupParam
-from ..utils import Printer, printer
+from ..config import ConfigManager
+from ..config.get_config import default_config_loader
+from ..utils import printer
 from ..utils.log import LogSetupResult, setup_logging
-from . import canvas
+from . import args, canvas
 
-# AI: is this a reasonable simplification or either confusing?
 type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
+type ConfigLoader = Callable[[Path | None], ConfigManager]
 
 
 class SafeTyper(typer.Typer):
@@ -26,29 +26,15 @@ class SafeTyper(typer.Typer):
 
     """
 
-    def __call__(self, *args, **kwargs):
-        """Run Typer app as usual but intercept critical Errors"""
+    def __init__(self, config_loader: ConfigLoader | None = None, **kwargs):
+        kwargs.setdefault("no_args_is_help", True)
+        super().__init__(**kwargs)
 
-        try:  # Regular Typer Execution (No logger here!)
-            return super().__call__(*args, **kwargs)
+        logger.info(f"Start of Setup: {type(self).__name__}")
 
-        except typer.Exit, typer.Abort:  # WARN: tuple?
-            raise
-
-        except Exception as error:
-            if handler := self._error_handlers.get(type(error)):
-                try:
-                    handler(error)
-                    sys.exit(1)  # Force OS exit, skip Typer teardown
-                except Exception as handler_exc:
-                    logger.critical(
-                        f"Custom error handler crashed: {handler_exc}"
-                    )
-                    sys.exit(2)
-
-            # This is the ONLY place an unhandled error gets logged!
-            logger.exception("CLI tracking execution failed critically")
-            sys.exit(1)
+        self._config_loader: ConfigLoader | None = config_loader
+        self._error_handlers: ErrorHandlerDict = {}
+        self._attach_internal_callback()
 
     def register_error(self, exception: type[BaseException]):
         """Decorator: Attach Exception with custom Handler to Registry"""
@@ -59,76 +45,74 @@ class SafeTyper(typer.Typer):
 
         return decorator
 
-    #  TASK: config: improve param or setup/load config inside startup
+    def __call__(self, *args, **kwargs):
+        """Run Typer app as usual but intercept critical Errors"""
+        try:
+            return super().__call__(*args, **kwargs)
 
-    def __init__(
-        self,
-        *args,
-        param: ConfigSetupParam | None = None,
-        **kwargs,
-    ):
-        kwargs.setdefault("no_args_is_help", True)
-        super().__init__(*args, **kwargs)
+        except typer.Exit, typer.Abort:
+            raise
 
-        logger.info(f"Start of Setup: {type(self).__name__}")
+        except Exception as error:
+            if handler := self._error_handlers.get(type(error)):
+                try:
+                    handler(error)
+                    sys.exit(1)
 
-        # AI: check the get_config from sstcore and from sachmis,
-        # - discuss if 1 clear setup together with log here could make sense,
-        #   or other options how to synchronize the pipeline
+                except Exception as handler_exc:
+                    logger.critical(f"Error handler failed: {handler_exc}")
+                    sys.exit(2)
 
-        # AI: here is first usage of get_config() (compare with logs)
-        self._param: ConfigSetupParam = param or get_config().setup_info
-        self._inject_project_param_to_printer()
-
-        self._error_handlers: ErrorHandlerDict = {}
-        self._attach_internal_callback()
-
-    def _inject_project_param_to_printer(self):
-        # NOTE: maybe do this in config setup?
-        # (is already done there, the params come from there...)
-        project_name: str = self._param.project_name or "EmptySetupParam"
-        project_version: str = self._param.project_version or "0.0.0"
-        Printer.project_name = project_name
-        Printer.project_version = project_version
+            # This is the ONLY place an unhandled error gets logged!
+            logger.exception("CLI Execution: Critical Failure...")
+            sys.exit(1)
 
     def _attach_internal_callback(self):
-        """Dispatch callback depending on Main or Subapp"""
+        """Dispatch callback for Main or Subapp"""
 
         @self.callback()
         def dispatcher(
             ctx: typer.Context,
-            verbose: bool = typer.Option(
-                False, "--verbose", "-v", help="Show debug logs"
-            ),
-            quiet: bool = typer.Option(
-                False, "--quiet", "-q", help="Terminal output"
-            ),
+            verbose: args.Verbose = False,
+            quiet: args.Quiet = False,
+            setting_file: args.SettingFile = None,
         ):
             if ctx.parent is None:
-                self._run_main_callback(ctx, verbose, quiet)
+                self._run_main_callback(ctx, verbose, quiet, setting_file)
             else:
                 self._run_sub_callback(ctx)
 
     def _run_main_callback(
-        self, ctx: typer.Context, verbose: bool, quiet: bool
+        self,
+        ctx: typer.Context,
+        verbose: bool,
+        quiet: bool,
+        setting_file: Path | None,
     ):
-        """Setup Logging and confirm settings"""
+        """Setup Config and Logging and show Status"""
 
         printer.title(f"Welcome to {ctx.info_name}!")
         printer.header("Setup Config and Logging")
 
-        # TASK: maybe here: setup config?
+        load_from_default: bool = self._config_loader is None
 
-        canvas.main_callback_config_setup(self._param)
+        # MOVE: before first print that needs injection?
+        config: ConfigManager = (  # IDEA: attach to typer context?
+            default_config_loader(setting_file)
+            if load_from_default
+            else self._config_loader(setting_file)
+        )
+        canvas.main_callback_config_setup(config, load_from_default)
 
         result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
-            param=self._param.log if self._param else None,
+            param=config.settings.log,
         )
-        self.log_file: Path | None = result.log_file
-
         canvas.main_callback_log_setup(result)
+
+        # TEST: if it works from config.__init__
+        # self._inject_project_param_to_printer()
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice Title for launching Subapp"""
