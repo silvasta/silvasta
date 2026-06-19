@@ -27,6 +27,9 @@ dependencies = [
   "pydantic-settings>=2.13.1",
   "rich>=14.3.3",
   "send2trash>=2.1.0",
+  # NOTE: fire is required to play test scripts
+  # - and I want to use sstcore as my toolbox, fire is heavy improvemnt
+  "fire",
 ]
 
 [project.urls]
@@ -43,18 +46,8 @@ build-backend = "uv_build"
 sst = "sstcore.__main__:main"
 
 [project.optional-dependencies]
-# TODO: grouping dependencies, what makes sense?
-# - fire is the one used for example scripts, located in root/examples/*.py
-# - typer is the backbone of the actual library, how to group?
-# - textual is already used inside CLI utils (mainly as picker)
-# textual needs typer for launch, typer slightly relies on textual features
-# - how to group them?
-# fire
-# - is actually very nice for fast script deployment, is it heavy?
-#   otherwise i take it probably into regular dependencies
-cli = ["typer", "fire"]
-tui = ["textual"]
-all = ["sstcore[cli]", "sstcore[tui]"]
+cli = ["typer", "textual"]
+all = ["sstcore[cli]"]     # as placeholder for later and for completenes
 
 
 [tool.sstcore.logging]
@@ -87,6 +80,7 @@ select = [
 ]
 ignore = [
   # "E501", # Ignore long lines: only format, not error on them
+  # TODO: Strategy for DXXX
   "D400", # Ignore strict period rule, rely on D415 instead
   "D415", # Ignore .?!
   "D203", # Conflicts with D211 (no blank line before class)
