@@ -1,11 +1,18 @@
-# Utils Collection
+# Base of all Projects - `sstcore`
 
-[![PyPI version](https://img.shields.io/pypi/v/silvasta.svg)](https://pypi.org/project/silvasta/)
-[![Python versions](https://img.shields.io/pypi/pyversions/silvasta.svg)](https://pypi.org/project/silvasta/)
+<!-- LATER: as soon as online  -->
+<!-- [![PyPI version](https://img.shields.io/pypi/v/sstcore.svg)](https://pypi.org/project/sstcore/) -->
+<!-- [![Python versions](https://img.shields.io/pypi/pyversions/sstcore.svg)](https://pypi.org/project/sstcore/) -->
 
 **Collection of frequently used generalized Utils, Functions and Tools.**
 
-`silvasta` serves as the foundation for several of my projects. It provides battle-tested solutions for:
+`sstcore` serves as the foundation for several of my projects. It provides battle-tested solutions for:
+
+<!-- TODO: -->
+<!-- - SafeTyper -->
+<!-- - Config with entire Family and Bootstrap  -->
+<!-- - Paint -> Printer -> Canvas -> CLI -->
+<!-- - like any folder somewhere (maybe group filter/parse) -->
 
 - Filesystem safety and path management (`PathGuard`)
 - Opinionated but flexible configuration management (`ConfigManager`)
@@ -22,19 +29,19 @@
 
 ```bash
 # Basic
-pip install silvasta
+pip install sstcore
 
 # Recommended
-pip install "silvasta[cli]"
-
+uv add "sstcore[cli]"
+# TODO: sync with toml
 # With all extras
-pip install "silvasta[all]"
+uv add "sstcore[all]"
 ```
 
 **Test version:**
 
 ```bash
-pip install -i https://test.pypi.org/simple/ silvasta
+uv add  ...
 ```
 
 ## Quickstart
@@ -43,7 +50,7 @@ pip install -i https://test.pypi.org/simple/ silvasta
 
 ```python
 from pathlib import Path
-from silvasta import PathGuard
+from sstcore import PathGuard
 
 # As regular function
 log_dir = PathGuard.dir("~/logs/myapp")
@@ -68,7 +75,7 @@ See `PathGuard.file()`, `.dir()`, `.unique()`, `.rotate()`, `.prune()`, `.find_s
 ### Configuration System
 
 ```python
-from silvasta.config import ConfigManager, SstSettings, SstPaths
+from sstcore.config import ConfigManager, SstSettings, SstPaths
 
 config = ConfigManager.default_setup()
 print(config.project_name)
@@ -85,7 +92,7 @@ The system supports master settings files, environment variable loading, and eas
 
 ```python
 import typer
-from silvasta.cli import attach_callback, logger_catch
+from sstcore.cli import attach_callback, logger_catch
 
 app = typer.Typer()
 
@@ -99,10 +106,10 @@ attach_callback(app)  # attaches logging, config, printer, verbose/quiet flags
 
 ## Module Overview
 
-- **`silvasta.utils`** — `PathGuard`, `Printer`, `setup_logging`, `day_count`, ...
-- **`silvasta.config`** — `ConfigManager`, `SstSettings`, `SstPaths`, `SstDefaults`, ...
-- **`silvasta.cli`** — `attach_callback`, `logger_catch`, `monitor`
-- **`silvasta.data`** — File helpers
+- **`sstcore.utils`** — `PathGuard`, `Printer`, `setup_logging`, `day_count`, ...
+- **`sstcore.config`** — `ConfigManager`, `SstSettings`, `SstPaths`, `SstDefaults`, ...
+- **`sstcore.cli`** — `attach_callback`, `logger_catch`, `monitor`
+- **`sstcore.data`** — File helpers
 
 Full API documentation is available in the docstrings and on GitHub.
 
