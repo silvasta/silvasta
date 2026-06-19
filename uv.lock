@@ -402,9 +402,10 @@ wheels = [
 
 [[package]]
 name = "sstcore"
-version = "0.3.0b3"
+version = "0.3.0b4"
 source = { editable = "." }
 dependencies = [
+    { name = "fire" },
     { name = "loguru" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -414,16 +415,12 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
-    { name = "fire" },
     { name = "textual" },
     { name = "typer" },
 ]
 cli = [
-    { name = "fire" },
-    { name = "typer" },
-]
-tui = [
     { name = "textual" },
+    { name = "typer" },
 ]
 
 [package.dev-dependencies]
@@ -436,18 +433,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fire", marker = "extra == 'cli'" },
+    { name = "fire" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "rich", specifier = ">=14.3.3" },
     { name = "send2trash", specifier = ">=2.1.0" },
     { name = "sstcore", extras = ["cli"], marker = "extra == 'all'" },
-    { name = "sstcore", extras = ["tui"], marker = "extra == 'all'" },
-    { name = "textual", marker = "extra == 'tui'" },
+    { name = "textual", marker = "extra == 'cli'" },
     { name = "typer", marker = "extra == 'cli'" },
 ]
-provides-extras = ["cli", "tui", "all"]
+provides-extras = ["cli", "all"]
 
 [package.metadata.requires-dev]
 dev = [

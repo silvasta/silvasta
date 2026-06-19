@@ -77,8 +77,8 @@ select = [
   "UP", # pyupgrade
 ]
 
-ignore = [
-  # TODO: __doc__
+ignore = [ # TODO: __doc__
+  "E501",
   # --- The "Don't Force Me to Write Comments" Rules ---
   "D104", #  15  #  5  # Missing docstring in public package
   "D101", #  16  #  5  # Missing docstring in public class
