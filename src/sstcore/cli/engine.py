@@ -16,6 +16,8 @@ from . import args, canvas
 type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
 type ConfigLoader = Callable[[Path | None], ConfigManager]
 
+# TODO: rich,repr,str
+
 
 class SafeTyper(typer.Typer):
     """
@@ -31,18 +33,12 @@ class SafeTyper(typer.Typer):
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(**kwargs)
 
-        # TODO: avoid like 5 logs in console when multiple subapps are attached
-        # if config_loader: # with this only 1, but maybe 0 needed?
-        #     logger.info(f"Start of Setup: {type(self).__name__}")
-
         self._config_loader: ConfigLoader | None = config_loader
         self._error_handlers: ErrorHandlerDict = {}
         self._attach_internal_callback()
 
-    def register_error(self, exception: type[BaseException]):
+    def register_error_handler(self, exception: type[BaseException]):
         """Decorator: Attach Exception with custom Handler to Registry"""
-
-        # TODO: check for better typing
 
         def decorator(handler: Callable[[Any], None]):
             self._error_handlers[exception] = handler
@@ -97,7 +93,8 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Config and Logging and show Status"""
 
-        setup_minimal_logging("DEBUG" if verbose else "WARNING")
+        if not quiet:  # LATER: maybe separate from log:quiet?
+            setup_minimal_logging("DEBUG" if verbose else "WARNING")
 
         load_from_default: bool = self._config_loader is None
 
@@ -106,9 +103,10 @@ class SafeTyper(typer.Typer):
             if load_from_default
             else self._config_loader(setting_file)
         )
-        # Move after config, waiting for Printer injection in config setup
-        printer.title(f"Welcome to {ctx.info_name}!")
-        printer.header("Setup Config and Logging")
+        if not quiet:  # LATER: maybe separate from log:quiet?
+            # Move after config, waiting for Printer injection in config setup
+            printer.title(f"Welcome to {ctx.info_name}!")
+            printer.header("Setup Config and Logging")
 
         canvas.main_callback_config_setup(config, load_from_default)
 
@@ -117,7 +115,8 @@ class SafeTyper(typer.Typer):
             quiet=quiet,
             param=config.settings.log,
         )
-        canvas.main_callback_log_setup(result)
+        if not quiet:  # LATER: maybe separate from log:quiet?
+            canvas.main_callback_log_setup(result)
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice Title for launching Subapp"""
