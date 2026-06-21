@@ -28,12 +28,12 @@ def main() -> None:
 def check_cli_installed():
     """Find required packages or give instructions and quit"""
 
-    cli_installed = (
+    cli_is_installed: bool = (
         importlib.util.find_spec("typer") is not None
         and importlib.util.find_spec("textual") is not None
     )
 
-    if not cli_installed:
+    if not cli_is_installed:
         # paint
         error: str = printer.colors.red("Problem with Installation")
         _sst = escape("'sstcore[cli]'")
