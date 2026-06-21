@@ -93,8 +93,7 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Config and Logging and show Status"""
 
-        if not quiet:  # LATER: maybe separate from log:quiet?
-            setup_minimal_logging("DEBUG" if verbose else "WARNING")
+        setup_minimal_logging("DEBUG" if verbose else "WARNING")
 
         load_from_default: bool = self._config_loader is None
 
@@ -115,8 +114,7 @@ class SafeTyper(typer.Typer):
             quiet=quiet,
             param=config.settings.log,
         )
-        if not quiet:  # LATER: maybe separate from log:quiet?
-            canvas.main_callback_log_setup(result)
+        canvas.main_callback_log_setup(result)
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice Title for launching Subapp"""

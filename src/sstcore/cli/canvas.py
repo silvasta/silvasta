@@ -14,12 +14,9 @@ _log_param = c.yellow("LogParamSource")
 def main_callback_config_setup(config, from_default: bool):
     """Provide Information about Config setup"""
 
-    if from_default:  # TASK: colorize
-        text = f"Typer Setup: {config} loaded with Default Parameter"
-        printer.warn(text)
-    else:
-        text = f"Typer Setup: {config} loaded with provided ConfigLoader"
-        printer.warn(text)
+    safe: str = c.yellow("SafeTyper")
+    param: str = c.cyan("default params" if from_default else "config_loader")
+    printer.warn(text=f"{safe} Created {c.cyan(config)} with {param}")
 
     printer.title(config.setting_file, title=_config_file)
 
