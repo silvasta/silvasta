@@ -1,7 +1,15 @@
 from typing import Any
 
+from rich import inspect
+from rich.control import strip_control_codes
 from rich.panel import Panel
 from rich.text import Text
+
+
+def test_this_somewhennnn(text: str) -> str:
+    """Fix broken or undesired color pattern"""
+    inspect(text)
+    return strip_control_codes(text)
 
 
 class SstError(Exception):
@@ -19,7 +27,6 @@ class NotImplementedDispatchError(NotImplementedError, SstError):
         self.first = first
         self.args: tuple[Any] = args
         self.kwargs: dict = kwargs or {}
-
         super().__init__(type(first).__name__)
 
     def __rich__(self) -> Panel:
@@ -36,7 +43,7 @@ class NotImplementedDispatchError(NotImplementedError, SstError):
 
 
 class NotImplementedMixinError(NotImplementedError, SstError):
-    """Raised when singledispatchmethod don't provide target type"""
+    """Raised when Mixin queue somthing mixed up"""
 
     def __init__(self, base, mixin, func):
         self.base = base

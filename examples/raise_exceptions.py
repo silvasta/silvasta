@@ -1,3 +1,5 @@
+from rich import inspect
+
 from sstcore import printer
 from sstcore.exceptions import (
     NotImplementedDispatchError,
@@ -5,9 +7,11 @@ from sstcore.exceptions import (
     TuiSelectorError,
 )
 
+# NEXT: double check with firework an Exceptionator, then delete module
+
 
 def main():
-    """Run all exception UI tests"""
+    """Run all Exception UI tests"""
     test_dispatch_error()
     test_mixin_error()
     test_tui_error()
@@ -20,7 +24,9 @@ def test_dispatch_error():
         raise NotImplementedDispatchError(
             bad_target, "unexpected_arg", strict=True, mode="fast"
         )
+
     except NotImplementedDispatchError as error:
+        inspect(error, all=True)
         printer(error)
 
 
@@ -31,6 +37,7 @@ def test_mixin_error():
             base="BasePrinter", mixin="ColorMixin", func="_format"
         )
     except NotImplementedMixinError as error:
+        inspect(error, all=True)
         printer(error)
 
 
@@ -40,6 +47,7 @@ def test_tui_error():
         raise TuiSelectorError()
     except TuiSelectorError as error:
         try:
+            inspect(error, all=True)
             printer.danger(error)  # FIX: printer
         except NotImplementedDispatchError as error:
             printer(error)
