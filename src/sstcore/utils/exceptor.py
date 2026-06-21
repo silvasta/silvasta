@@ -83,6 +83,7 @@ class Exceptor:
     """Show console output and handling of attached Exceptions"""
 
     app: typer.Typer | None = None
+    quiet = False  # used for Typer setup
 
     @property
     def with_typer(self) -> bool:
@@ -101,7 +102,7 @@ class Exceptor:
         return "Exceptor is launching..."
 
     def __repr__(self) -> str:
-        with_app: str = "WithTyper" if self.with_typer else ""
+        with_app: str = "::WithTyper" if self.with_typer else ""
         return f"Exceptor{with_app}({self.tasks})"
 
     def __rich__(self) -> str:
@@ -129,18 +130,22 @@ class Exceptor:
             self._current_task()
 
         self.app: typer.Typer = app
-        printer.header(f"App Loaded: {type(self.app).__name__}")
+
+        app_name: str = type(self.app).__name__
+        printer.header(f"{app_name} Loaded: {app}")
 
     def _raise_typer(self, task: ExceptorTask):
+        app_name: str = type(self.app).__name__
         try:
             self._current_task: ExceptorTask = task
-            self.app(["throw"], standalone_mode=False)  # ty:ignore
-
+            with printer.muted():
+                self.app(["throw"], standalone_mode=False)  # ty:ignore
+            printer.success(f"{c.g(app_name)} catched the Error")
         except NoTyperLoadedError:
             printer.danger(f"Provide proper Typer! Ignoring: {task}")
 
         except BaseException as error:
-            printer.danger(f"App failed: {error}")
+            printer.danger(f"{c.r(app_name)} crashed: {error=}")
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### Regular Exectuion

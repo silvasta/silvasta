@@ -12,7 +12,32 @@ from sstcore.exceptions import (
 from sstcore.utils.exceptor import ErrorList, Exceptor, ExceptorTask
 
 
-def handle_missing_file(error: FileMissingFoundError):
+def main() -> None:
+    printer.title("Launching Exceptor")
+    fire.Fire(ExceptorLaunch)
+
+
+app = SafeTyper(
+    name="error_test",
+    help="Attach ExceptionHandler and send trough Exceptor",
+)
+
+
+@app.register_error_handler(TuiSelectorError)
+def handle_tui_selector(error: TuiSelectorError):
+    printer.danger(f"Selector failed: {error}")
+
+
+class MissingFileError(FileNotFoundError):
+    def __init__(self, path: Path):
+        self.path: Path = path
+
+    def __str__(self):
+        return type(self).__name__
+
+
+@app.register_error_handler(MissingFileError)
+def handle_missing_file(error: MissingFileError):
     scroll: list[str] = [
         f"  Start of handling: {error}",
         f"  observing path: {error.path}",
@@ -22,20 +47,11 @@ def handle_missing_file(error: FileMissingFoundError):
     printer.green("  Handle Missing Path completed")
 
 
-class FileMissingFoundError(FileNotFoundError):
-    def __init__(self, path: Path):
-        self.path: Path = path
-
-    def __str__(self):
-        return type(self).__name__
-
-
 handled_task = ExceptorTask(
-    error=FileMissingFoundError,
+    error=MissingFileError,
     args=(Path("/home/silvan/here/failed/the/path/to_file.py"),),
     handler=handle_missing_file,
 )
-
 
 tasks: ErrorList = [
     TuiSelectorError,
@@ -50,23 +66,13 @@ exceptor_tasks: list[ExceptorTask] = [
         args=("hello", 11),
     ),
     ExceptorTask(
-        error=SstError,
-        kwargs={"test": 112},
-    ),
-    ExceptorTask(
         error=NotImplementedDispatchError,
         args=("hello", 11),
         kwargs={"test": 112},
     ),
 ]
 
-# all_tasks: ErrorList = tasks + exceptor_tasks
-all_tasks: ErrorList = [handled_task]
-
-
-def main() -> None:
-    printer.title("Launching Exceptor")
-    fire.Fire(ExceptorLaunch)
+all_tasks: ErrorList = tasks + exceptor_tasks
 
 
 class ExceptorLaunch:
@@ -74,7 +80,7 @@ class ExceptorLaunch:
         Exceptor(all_tasks)
 
     def app(self):
-        Exceptor(tasks, app)
+        Exceptor(all_tasks, app)
 
     def delay(self):
         exceptor = Exceptor(all_tasks, app, direct=False)
@@ -87,17 +93,6 @@ class ExceptorLaunch:
             printer.header(f"Launch from CLI: {task}")
             printer(task)
             printer(f"{task=}")
-
-
-app = SafeTyper(
-    name="error_test",
-    help="Attach ExceptionHandler and send trough Exceptor",
-)
-
-
-@app.register_error_handler(TuiSelectorError)
-def handle_tui_selector(error: TuiSelectorError):
-    printer.danger(f"Selector failed: {error}")
 
 
 if __name__ == "__main__":
