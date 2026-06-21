@@ -34,6 +34,8 @@ class FormatMixin(BasePrinter):
 
     @singledispatchmethod
     def _format(self, target) -> str:
+        if hasattr(target, "__rich__"):
+            return target
         if self._log:
             logger.warning(f"Unknown format of {type(target)=}: {target=}")
         return str(target)

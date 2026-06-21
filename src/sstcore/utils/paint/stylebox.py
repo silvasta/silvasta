@@ -79,6 +79,9 @@ class ColorBox:
     def cyan(self, text: Any) -> str:
         return self._colorize(text, self._colors.cyan)
 
+    def purple(self, text: Any) -> str:
+        return self._colorize(text, "purple")
+
     def green(self, text: Any) -> str:
         return self._colorize(text, self._colors.green)
 
@@ -91,17 +94,25 @@ class ColorBox:
     def black(self, text: Any) -> str:
         return self._colorize(text, self._colors.black)
 
+    # TODO: make private?
     def r(self, text: Any) -> str:
         return self._colorize(text, self._colors.red)
 
+    # TODO: make private?
     def g(self, text: Any) -> str:
         return self._colorize(text, self._colors.green)
 
+    # TODO: make private?
     def b(self, text: Any) -> str:
         return self._colorize(text, self._colors.cyan)
 
+    # TODO: make private?
     def s(self, text: Any) -> str:
         return self._colorize(text, "purple")
+
+    # TODO: make private?
+    def y(self, text: Any) -> str:
+        return self._colorize(text, self._colors.yellow)
 
 
 # LATER:
