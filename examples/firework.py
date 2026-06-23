@@ -6,15 +6,51 @@ from sstcore import printer
 from sstcore.cli.engine import SafeTyper
 from sstcore.exceptions import (
     NotImplementedDispatchError,
+    RegistrySyncError,
     SstError,
     TuiSelectorError,
 )
-from sstcore.utils.exceptor import ErrorList, Exceptor, ExceptorTask
+from sstcore.utils.exceptor import (
+    ErrorList,
+    Exceptor,
+    ExceptorTask,
+    ExceptorTaskHandler,
+)
 
 
 def main() -> None:
-    printer.title("Launching Exceptor")
     fire.Fire(ExceptorLaunch)
+
+
+class ExceptorLaunch:
+    def list(self):
+        Exceptor(all_tasks)
+
+    def app(self):
+        Exceptor(all_tasks, app)
+
+    def delay(self):
+        exceptor = Exceptor(all_tasks, app, direct=False)
+        printer(exceptor)
+        input("ENTER")
+        exceptor()
+
+    def task(self):
+        for task in [*exceptor_tasks, handled_task]:
+            printer.header(f"Launch from CLI: {task}")
+            printer(task)
+            printer(f"{task=}")
+
+    def error(self):
+        tasks: list[ExceptorTask] = ExceptorTaskHandler.ensure(internal)
+        for task in tasks:
+            printer.line()
+            printer(task)
+            printer(task.load())
+
+            printer.box("the new box")
+            printer.box_bottom("the new bottom")
+            printer.box_top("the new top")
 
 
 app = SafeTyper(
@@ -53,6 +89,15 @@ handled_task = ExceptorTask(
     handler=handle_missing_file,
 )
 
+internal: ErrorList = [
+    SstError,
+    RegistrySyncError,
+    ExceptorTask(
+        error=NotImplementedDispatchError,
+        args=("hello", 11),
+        kwargs={"test": 112},
+    ),
+]
 tasks: ErrorList = [
     TuiSelectorError,
     KeyboardInterrupt,
@@ -73,26 +118,6 @@ exceptor_tasks: list[ExceptorTask] = [
 ]
 
 all_tasks: ErrorList = tasks + exceptor_tasks
-
-
-class ExceptorLaunch:
-    def list(self):
-        Exceptor(all_tasks)
-
-    def app(self):
-        Exceptor(all_tasks, app)
-
-    def delay(self):
-        exceptor = Exceptor(all_tasks, app, direct=False)
-        printer(exceptor)
-        input("ENTER")
-        exceptor()
-
-    def task(self):
-        for task in [*exceptor_tasks, handled_task]:
-            printer.header(f"Launch from CLI: {task}")
-            printer(task)
-            printer(f"{task=}")
 
 
 if __name__ == "__main__":

@@ -1,24 +1,163 @@
 """
 Exceptor - Massivly load and launch exceptions
 
-- app: Launch setup inside Typer application
+- app: Provide Environment and Tracking for Exectuion inside Typer Setup
+
 """
 
+import sys
 from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Any
-
-import typer
+from dataclasses import dataclass, field
+from typing import Any, Self
 
 from sstcore import printer
+from sstcore.cli.engine import SafeTyper
 from sstcore.utils.paint import ColorBox
 
 c: ColorBox = ColorBox.with_mode("bold")
 
 
 type ErrorHandler = Callable[[Any], None]
-
 type ErrorList = list[type[BaseException] | ExceptorTask]
+
+
+@dataclass
+class ExceptorTaskHandler:
+    """Manage ExceptorTask Collection"""
+
+    registry: list[ExceptorTask] = field(default_factory=list)
+
+    # LATER: extend general global property setup
+
+    @property
+    def all_exceptions(self) -> ErrorList:
+        return [task.error for task in self.registry]
+
+    @classmethod
+    def arise(cls, tasks: ErrorList) -> Self:
+        """Arise from the confirmed List of given Task and Exceptions"""
+        ensured_tasks: list[ExceptorTask] = [
+            item  # just forward already prepared tasks
+            if isinstance(item, ExceptorTask)
+            else ExceptorTask(item)
+            for item in tasks
+        ]
+        return cls(ensured_tasks)
+
+    @classmethod
+    def ensure(cls, tasks: ErrorList) -> list[ExceptorTask]:
+        """Confirm List and provide valid ExceptorTasks"""
+        return cls.arise(tasks).registry
+
+
+class Exceptor:
+    """Raise one Exception after another and show Nice CLI and Clear Debug"""
+
+    app: SafeTyper | None = None
+    quiet = False  # used to silence SafeTyper log setup in sstcore
+
+    @property
+    def has_typer(self) -> bool:
+        return isinstance(self.app, SafeTyper)
+
+    def __init__(
+        self,
+        tasks: ErrorList,
+        app: SafeTyper | None = None,
+        direct: bool = True,
+    ):
+        self.tasks: list[ExceptorTask] = ExceptorTaskHandler.ensure(tasks)
+        if app:
+            self.app: SafeTyper = app
+            self._load_typer()
+        direct and self()  # risky but this is as well a fun tool
+
+    def __call__(self):
+        printer.line()
+        printer.box(self, box=printer.BOX_FULL)
+
+        for task in self.tasks:
+            printer.box(f"{c.cyan('Next')} {task}")
+            printer(task.error)
+            printer(task)
+
+            if self.has_typer:
+                self._raise_typer(task)
+            else:
+                self._raise_exception(task)
+
+            printer(c(f"  Finished {task}\n", color="dim italic"))
+
+    def __rich__(self) -> str:
+        return f"{c.b(type(self).__name__)} {'Start of Launch'}..."
+
+    def __str__(self) -> str:
+        return "Exceptor is launching..."
+
+    def __repr__(self) -> str:
+        with_app: str = "::WithTyper" if self.has_typer else ""
+        return f"Exceptor{with_app}({self.tasks})"
+
+    # ------------------------------------------------------------------ #
+    # SafeTyper Integration
+    # ------------------------------------------------------------------ #
+
+    def _load_typer(self):
+
+        if not isinstance(self.app, SafeTyper):
+            warn: str = c.yellow("Provided app is not SafeTyper")
+            printer.warn(warn + " – falling back to raw mode")
+            return
+
+        @self.app.command()
+        def throw():
+            self._current_task()
+
+        n_handler: int = len(self.app._error_handlers)
+        n_tasks: int = len(self.tasks)
+
+        printer.header(f"{self.app} {n_handler=} for {n_tasks=}")
+
+    def _raise_typer(self, task: ExceptorTask):
+        assert isinstance(self.app, SafeTyper)
+
+        self._current_task: ExceptorTask = task
+        try:
+            with printer.muted():  # silence print, no catch executed here!
+                self.app(["throw"], standalone_mode=False)
+            printer.success(f"{c.g(self.app)} catched the Error")
+
+        except SystemExit:
+            printer.yellow(f"{c.y(self.app)} triggered sys.exit(1)")
+
+        except BaseException as error:
+            _error: str = type(error).__name__
+            critical_end: str = c.r("CLI Execution: Critical Failure...")
+            printer.danger(f"{c.r(self.app)} {critical_end}")
+
+            if isinstance(error, (KeyboardInterrupt, SystemExit)):
+                printer.warn(f"System exception {c.r(_error)} received")
+
+    # ------------------------------------------------------------------ #
+    ### Regular Exectuion
+    # ------------------------------------------------------------------ #
+
+    def _raise_exception(self, task: ExceptorTask):
+        try:
+            task()  # load arg and kwarg from dataclass
+
+        except BaseException as error:
+            _error = str(error) or f"{error!r}"
+            printer.danger(f"{c.r('Error Detected')} {_error}")
+
+            if task.handler:
+                try:
+                    task.handler(error)
+                    printer.success("Error Handler complete!")
+
+                except BaseException as handler_fail:
+                    printer.danger("Error Handler Failed!")
+                    printer(handler_fail)
 
 
 @dataclass
@@ -34,6 +173,7 @@ class ExceptorTask:
         return f"{type(self).__name__}::{self.error.__name__}"
 
     def __rich__(self):
+        # REFACTOR: compare with latest status of Exception Panel
         task: str = c.yellow(type(self).__name__)
         error: str = c.red(self.error.__name__)
         args: str = f"  {c.b('args')}    {self.args or 'not loaded'}"
@@ -42,129 +182,34 @@ class ExceptorTask:
         handler: str = f"  {c.magenta('handler')} {_handler or 'not loaded'}"
         return f"  {task} {error}\n{args}\n{kwargs}\n{handler}"
 
-        # HACK: check what here is going  wrong... it always strips the left side just away
+        # HACK: check later what here is going  wrong...
+        # - it always strips the left side just away
+        # - ...most likely one of the Printer.format issues
         # args = f"{c.b('args'):10} {self.args or 'not loaded'}"
         # kwargs = f"{c.b('kwargs'):10} {self.kwargs or 'not loaded'}"
         # handler = f"{c.b('handler'):10} {self.handler or 'not loaded'}"
 
     def __call__(self):
         """Dispatch args and kwargs then Raise"""
+        printer(exception := self.load())
+
+        raise exception
+
+    def load(self) -> BaseException:
 
         match (self.args is None, self.kwargs is None):
             case (True, True):
-                raise self.error
+                return self.error()
 
             case (False, True):
-                raise self.error(*self.args)  # ty:ignore
+                return self.error(*self.args)  # ty:ignore
 
             case (True, False):
-                raise self.error(**self.kwargs)  # ty:ignore
+                return self.error(**self.kwargs)  # ty:ignore
 
             case (False, False):
-                raise self.error(*self.args, **self.kwargs)  # ty:ignore
+                return self.error(*self.args, **self.kwargs)  # ty:ignore
 
-        printer.special(f"{c('Fail at load kw|arg!', 'purple')} {self}!")
-
-    @classmethod
-    def ensure_list(cls, tasks: ErrorList) -> list[ExceptorTask]:
-        return [
-            item  # Just Forward already prepared Tasks
-            if isinstance(item, ExceptorTask)
-            else cls(item)
-            for item in tasks
-        ]
-
-
-class NoTyperLoadedError(AttributeError):  # LATER: __rich__ example
-    """Raise if Typer is Launched but not Loaded"""
-
-
-class Exceptor:
-    """Show console output and handling of attached Exceptions"""
-
-    app: typer.Typer | None = None
-    quiet = False  # used for Typer setup
-
-    @property
-    def with_typer(self) -> bool:
-        return self.app is not None
-
-    def __init__(
-        self, tasks: ErrorList, app: typer.Typer | None = None, direct=True
-    ):
-        self.tasks: list[ExceptorTask] = ExceptorTask.ensure_list(tasks)
-        if app:
-            self._load_typer(app)
-        if direct:
-            self()
-
-    def __str__(self) -> str:
-        return "Exceptor is launching..."
-
-    def __repr__(self) -> str:
-        with_app: str = "::WithTyper" if self.with_typer else ""
-        return f"Exceptor{with_app}({self.tasks})"
-
-    def __rich__(self) -> str:
-        return f"{c.s(Exceptor)} {c.red('is launching')}..."
-
-    def __call__(self):
-        printer.warn(f"{self}")
-
-        for task in self.tasks:
-            printer.header(f"{c.cyan('Next')} {task}")
-            printer(task)
-
-            if self.with_typer:
-                self._raise_typer(task)
-            else:
-                self._raise_exception(task)
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Typer
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def _load_typer(self, app: typer.Typer):
-        @app.command()
-        def throw():
-            self._current_task()
-
-        self.app: typer.Typer = app
-
-        app_name: str = type(self.app).__name__
-        printer.header(f"{app_name} Loaded: {app}")
-
-    def _raise_typer(self, task: ExceptorTask):
-        app_name: str = type(self.app).__name__
-        try:
-            self._current_task: ExceptorTask = task
-            with printer.muted():
-                self.app(["throw"], standalone_mode=False)  # ty:ignore
-            printer.success(f"{c.g(app_name)} catched the Error")
-        except NoTyperLoadedError:
-            printer.danger(f"Provide proper Typer! Ignoring: {task}")
-
-        except BaseException as error:
-            printer.danger(f"{c.r(app_name)} crashed: {error=}")
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Regular Exectuion
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def _raise_exception(self, task: ExceptorTask):
-        try:
-            task()  # load arg and kwarg from dataclass
-
-        except BaseException as error:
-            _error = str(error) or f"{error!r}"
-            printer.danger(f"{c.r('Error Detected')} {_error}")
-            if task.handler:
-                try:
-                    task.handler(error)
-                    printer.success("Error Handler complete!")
-
-                except BaseException as handler_fail:
-                    printer.danger("Error Handler Failed!")
-                    printer(handler_fail)
-
-            printer(c.c(f"  Finish {task}\n", color="dim italic"))
+        arguments: str = f"{c.b('args')} and {c.b('kwargs')}"
+        printer.special(f"{c.purple(self)} Failed to load {arguments}!")
+        return sys.exit(2)
