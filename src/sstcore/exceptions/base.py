@@ -1,19 +1,68 @@
 from typing import Any
 
-from rich import inspect
-from rich.control import strip_control_codes
 from rich.panel import Panel
-from rich.text import Text
 
+from ..utils.paint import ColorBox
 
-def test_this_somewhennnn(text: str) -> str:
-    """Fix broken or undesired color pattern"""
-    inspect(text)
-    return strip_control_codes(text)
+c = ColorBox()
 
 
 class SstError(Exception):
-    """Root of all custom Exceptions"""
+    """Root of all Custom Exceptions"""
+
+    # FIX: check gemini chat .args and ._kwargs???
+    # - maybe property below broken
+
+    def __str__(self, *args, **kwargs):
+        # TODO: attach something?
+        return super().__str__(*args, **kwargs)
+
+    def __repr__(self):
+        attrs: str = ", ".join(
+            f"{k}={v!r}"
+            for k, v in vars(self).items()
+            if not k.startswith("_")
+        )
+        return f"{type(self).__name__}({attrs})"
+
+    def __rich__(self):
+        """Provide Panel Template"""
+        rows: list[str] = [
+            f"{c.r(self._name)}",
+            f"{c.b('args')}    {self._args or 'not loaded'}",
+            f"{c.b('kwargs')}  {self._kwargs or 'not loaed'}",
+        ]
+        self._modify_if_needed(rows)
+
+        return Panel(
+            "\n".join(rows),
+            title=c(self._title, color="bold white"),
+            border_style="red",
+            title_align="right",
+        )
+
+    def _modify_if_needed(self, rows: list[str]):
+        """Use this for modification in Subclasses"""
+
+    @property
+    def _title(self):
+        return f"{type(self).__name__[:-5]}{c.red('Error')}"
+
+    @property
+    def _name(self):
+        return type(self).__name__
+
+    @property
+    def _args(self) -> tuple | str:
+        return getattr(self, "args", self._default)
+
+    @property
+    def _default(self):
+        return "nothing attached"
+
+    @property
+    def _kwargs(self) -> dict | None:
+        return getattr(self, "kwargs", self._default)
 
 
 class RegistrySyncError(FileNotFoundError, SstError):
@@ -29,16 +78,24 @@ class NotImplementedDispatchError(NotImplementedError, SstError):
         self.kwargs: dict = kwargs or {}
         super().__init__(type(first).__name__)
 
-    def __rich__(self) -> Panel:
-        """Rich protocol hook. Triggered by console.print(error)"""
-        text = Text()
-        text.append("Missing TargetType: ", style="bold red")
-        text.append(f"{type(self.first).__name__}\n", style="bold yellow")
-        text.append(f"Target Value: {self.first}\n\n", style="dim")
-        text.append(f"Args: {self.args}\n", style="cyan")
-        text.append(f"Kwargs: {self.kwargs}", style="magenta")
+    def __rich__(self) -> Panel:  # LATER: merge with template
+        """Provide the first nice plots! ...done"""
+
+        error: str = type(self).__name__
+        target = "Missing match for Target"
+        target_type = type(self.first).__name__
+
+        rows: list[str] = [
+            f"{c.r(error)}",
+            f"{c.r(target)} type: {c.y(target_type)}, value = {c.g(f'{self.first}')}",
+            f"{c.b('args')}    {self.args or 'not loaded'}",
+            f"{c.b('kwargs')}  {self.kwargs or 'not loaed'}",
+        ]
         return Panel(
-            text, title="NotImplementedDispatchError", border_style="red"
+            "\n".join(rows),
+            title=c("NotImplementedDispatchError", color="bold white"),
+            border_style="red",
+            title_align="right",
         )
 
 
