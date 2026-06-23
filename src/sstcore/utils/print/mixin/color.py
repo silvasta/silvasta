@@ -1,4 +1,8 @@
 from functools import singledispatchmethod
+from pathlib import Path
+
+from rich.box import Box
+from rich.rule import Rule
 
 from ....exceptions import NotImplementedDispatchError
 from ...log.inspect import debug_log_or_print
@@ -23,6 +27,83 @@ class ColorMixin(BasePrinter):
             **kwargs,
         )
 
+    LINE_COLOR = "cyan"  # MOVE: later to colorbox
+
+    # -- Box Layout Definitions --
+    # Inline comments prevent Ruff/Black from collapsing the strings into one line
+
+    BOX_TOP = Box(
+        ""
+        "────\n"  # 1. Top border
+        "    \n"  # 2. Header walls
+        "    \n"  # 3. Header divider
+        "    \n"  # 4. Body walls
+        "    \n"  # 5. Body row divider
+        "    \n"  # 6. Footer divider
+        "    \n"  # 7. Footer walls
+        "    \n"  # 8. Bottom border
+    )
+
+    BOX_BOTTOM = Box(
+        ""
+        "    \n"  # 1. Top border
+        "    \n"  # 2. Header walls
+        "    \n"  # 3. Header divider
+        "    \n"  # 4. Body walls
+        "    \n"  # 5. Body row divider
+        "    \n"  # 6. Footer divider
+        "    \n"  # 7. Footer walls
+        "────\n"  # 8. Bottom border
+    )
+
+    BOX_OPEN = Box(
+        ""
+        "────\n"  # 1. Top border
+        "    \n"  # 2. Header walls
+        "    \n"  # 3. Header divider
+        "    \n"  # 4. Body walls
+        "    \n"  # 5. Body row divider
+        "    \n"  # 6. Footer divider
+        "    \n"  # 7. Footer walls
+        "────\n"  # 8. Bottom border
+    )
+    BOX_FULL = Box(
+        ""
+        "────\n"  # 1. Top border
+        "│ ││\n"  # 2. Header walls
+        "│ ││\n"  # 3. Header divider
+        "│ ││\n"  # 4. Body walls
+        "│ ││\n"  # 5. Body row divide
+        "│ ││\n"  # 6. Footer divider
+        "│ ││\n"  # 7. Footer walls
+        "╰─╯┴\n"  # 8. Bottom border
+    )
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+    def line(self, style: str = ""):
+        """Print a full-width horizontal rule"""
+        target_style = style or self.LINE_COLOR
+        self(Rule(style=target_style))
+
+    def paths(self, paths: list[Path], frame: str = "cyan"):
+        """Print a list of paths within an open box"""
+        self.box(self._format(paths), frame=frame)
+
+    def box_top(self, target, frame=""):
+        return self.box(target, frame, box=self.BOX_TOP)
+
+    def box_bottom(self, target, frame=""):
+        return self.box(target, frame, box=self.BOX_BOTTOM)
+
+    def box(self, target, frame: str = "", box: Box | None = None):
+        """Print target inside a customizable layout box (defaults to OPEN_BOX)"""
+        self.panel(
+            target=target,
+            box=box or self.BOX_OPEN,
+            border_style=frame or self.LINE_COLOR,
+            expand=True,
+        )
+
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
     ### Colorizing  strings
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -30,7 +111,9 @@ class ColorMixin(BasePrinter):
     # TASK: Fix pipeline trough Format
     @singledispatchmethod
     def _colorize[T: str | list](self, text: T, **kwargs) -> T:
-        raise NotImplementedDispatchError(text, kwargs=kwargs)
+        self(exc := NotImplementedDispatchError(text, kwargs=kwargs))
+        self._raise_or_not(exc)
+        return text
 
     @_colorize.register
     def _[T: str](self, target: str, style: str = "", **kwargs) -> str:
@@ -58,7 +141,7 @@ class ColorMixin(BasePrinter):
         return ColorBox.with_mode(attribute=mode)
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-    ### Prints
+    ### Print in the named color or alias
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def white(self, target) -> None:

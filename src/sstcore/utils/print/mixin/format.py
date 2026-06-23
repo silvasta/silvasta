@@ -30,6 +30,7 @@ class FormatMixin(BasePrinter):
         if "frame" in kwargs:
             kwargs["border_style"] = kwargs.pop("frame")
 
+        # TODO: _format
         super().panel(self._format(target), **kwargs)
 
     @singledispatchmethod
@@ -41,7 +42,7 @@ class FormatMixin(BasePrinter):
         return str(target)
 
     @_format.register
-    def _(self, target: str):  # LATER: any modification? yes
+    def _(self, target: str):  # LATER: any modification? ...yes
         """Let regular String just pass"""
         return target
 

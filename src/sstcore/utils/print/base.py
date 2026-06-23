@@ -4,7 +4,10 @@ from contextlib import contextmanager
 from enum import Enum, auto
 from typing import Any
 
+from loguru import logger
+from rich import inspect
 from rich.console import Console
+from rich.control import strip_control_codes
 from rich.panel import Panel
 from rich.theme import Theme
 
@@ -12,11 +15,18 @@ from ...exceptions.base import NotImplementedMixinError
 from ..log.inspect import debug_log_or_print
 
 
+def test_this_somewhennnn(text: str) -> str:
+    """Fix broken or undesired color pattern"""
+    inspect(text)  # LATER: inspect rich.inspect
+    return strip_control_codes(text)
+
+
 class BasePrinter:
     """Customized Rich Console setup for easy access"""
 
     _debug: bool = False
     _log: bool = False
+    _strict: bool = False
 
     # Fill in Project with import and inject
     project_name: str = "App"
@@ -39,23 +49,30 @@ class BasePrinter:
         """Provide interface for rich.Panel pipeline"""
         self(Panel(renderable=target, **kwargs))
 
-    def _colorize[T: str | list](self, text: T, style: str) -> T:
-        raise NotImplementedMixinError(
+    def _colorize[T: str | list](self, text: T, style: str):
+        problem = NotImplementedMixinError(
             base=b[0].__name__
             if (b := type(self).__bases__)
             else "BasePrinter",
             mixin=type(self).__name__,
             func=sys._getframe().f_code.co_name,
         )
+        self._raise_or_not(problem)
 
-    def _format(self, target) -> str:
-        raise NotImplementedMixinError(
+    def _raise_or_not(self, issue):
+        if self._strict:
+            raise issue
+        logger.warning(issue)
+
+    def _format(self, target):
+        problem = NotImplementedMixinError(
             base=b[0].__name__
             if (b := type(self).__bases__)
             else "BasePrinter",
             mixin=type(self).__name__,
             func=sys._getframe().f_code.co_name,
         )
+        self._raise_or_not(problem)
 
     def preview_themes(self):
         """Displays all styles in the current theme"""

@@ -43,6 +43,8 @@ class BoxAttribute(StrEnum):
 class ColorBox:
     """Isolated string formatter mapping to your core theme definitions."""
 
+    _log = False
+
     @classmethod
     def with_mode(cls, attribute: str | BoxAttribute = "normal"):
         attribute: str = BoxAttribute(attribute)
@@ -63,7 +65,8 @@ class ColorBox:
         if style := self._attribute.apply_to(color):
             return f"[{style}]{text}[/]"
 
-        logger.debug("empty call to ColorBox._colorize")  # REMOVE: after tests
+        # if self._log:
+        # logger.debug("empty call to ColorBox._colorize")  # REMOVE: after tests
 
         return text
 
