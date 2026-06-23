@@ -37,6 +37,11 @@ class SafeTyper(typer.Typer):
         self._error_handlers: ErrorHandlerDict = {}
         self._attach_internal_callback()
 
+    def __str__(self):
+        return type(self).__name__
+
+    # TODO: def __repr__(self): def __rich__(self):
+
     def register_error_handler(self, exception: type[BaseException]):
         """Decorator: Attach Exception with custom Handler to Registry"""
 
@@ -65,7 +70,7 @@ class SafeTyper(typer.Typer):
                     logger.error(f"Initial Error: {error}")
                     sys.exit(2)
 
-            # Fallback for unhandled structural issues
+            # INFO:Fallback for unhandled structural issues
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)
 

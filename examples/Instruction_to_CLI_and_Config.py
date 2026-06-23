@@ -130,7 +130,7 @@ app.add_typer(typer_instance=utils_app)
 def attach_handlers(app: SafeTyper) -> None:
     """Assemble Handler in separate file and attach to app with this"""
 
-    @app.register_error(TuiSelectorError)
+    @app.register_error_handler(TuiSelectorError)
     def handle_tui_selector(error: TuiSelectorError):
         printer.danger(f"Selector failed: {error}")
 
