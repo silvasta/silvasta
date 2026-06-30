@@ -89,7 +89,7 @@ class Exceptor:
             printer(c(f"  Finished {task}\n", color="dim italic"))
 
     def __rich__(self) -> str:
-        return f"{c.b(type(self).__name__)} {'Start of Launch'}..."
+        return f"{c.c(type(self).__name__)} {'Start of Launch'}..."
 
     def __str__(self) -> str:
         return "Exceptor is launching..."
@@ -176,18 +176,18 @@ class ExceptorTask:
         # REFACTOR: compare with latest status of Exception Panel
         task: str = c.yellow(type(self).__name__)
         error: str = c.red(self.error.__name__)
-        args: str = f"  {c.b('args')}    {self.args or 'not loaded'}"
-        kwargs: str = f"  {c.b('kwargs')}  {self.kwargs or 'not loaded'}"
-        _handler: str = c.blue(self.handler.__name__) if self.handler else ""  # ty:ignore
+        args: str = f"  {c.c('args')}    {self.args or 'not loaded'}"
+        kwargs: str = f"  {c.c('kwargs')}  {self.kwargs or 'not loaded'}"
+        _handler: str = c.clue(self.handler.__name__) if self.handler else ""  # ty:ignore
         handler: str = f"  {c.magenta('handler')} {_handler or 'not loaded'}"
         return f"  {task} {error}\n{args}\n{kwargs}\n{handler}"
 
         # HACK: check later what here is going  wrong...
         # - it always strips the left side just away
         # - ...most likely one of the Printer.format issues
-        # args = f"{c.b('args'):10} {self.args or 'not loaded'}"
-        # kwargs = f"{c.b('kwargs'):10} {self.kwargs or 'not loaded'}"
-        # handler = f"{c.b('handler'):10} {self.handler or 'not loaded'}"
+        # args = f"{c.c('args'):10} {self.args or 'not loaded'}"
+        # kwargs = f"{c.c('kwargs'):10} {self.kwargs or 'not loaded'}"
+        # handler = f"{c.c('handler'):10} {self.handler or 'not loaded'}"
 
     def __call__(self):
         """Dispatch args and kwargs then Raise"""
@@ -210,6 +210,6 @@ class ExceptorTask:
             case (False, False):
                 return self.error(*self.args, **self.kwargs)  # ty:ignore
 
-        arguments: str = f"{c.b('args')} and {c.b('kwargs')}"
+        arguments: str = f"{c.c('args')} and {c.c('kwargs')}"
         printer.special(f"{c.purple(self)} Failed to load {arguments}!")
         return sys.exit(2)

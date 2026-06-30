@@ -9,48 +9,31 @@ from ..base import BasePrinter
 
 
 class ToolMixin(BasePrinter):
-    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- ---
-    ### Tool Kit
-    ### -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- --- -- ---
+    """Connect with the Special-Print ToolBox"""
 
     def path_exists_table(self, paths: list[Path], title=None, header="Path"):
-        """Check if Paths exist and visualize in Table"""
-
+        """Check Paths and show table with existing or missing locations"""
         table: Table = toolbox.path_exists_table(
-            paths, self._format, title, header
+            paths, self.format, title, header
         )
-
         self(table)
-
-    # TASK: figure out method to dynamically apply args, decorator?
-    # For example, provide with 1 set:
-    # - header, header_style etc
-    # - different other color or style attributes
 
     def dict_table(
         self,
         target: dict,
         header="Dict Inspection",
         show_type: bool | tuple[bool, bool] = (True, True),
-        _style="green",  # REMOVE: after removing: type style
+        style="green",
     ):
-        """Debug Dict"""
+        """Create colorful Debug Dict if desired with types of key and value"""
         if header:
-            # TASK: args, title_header?
-            # - use intermediates like self.title or self.header
-            header: str = self._colorize(header, style="bold white")
-            title: str = self._colorize("Dict Inspection", style="white")
-            self.panel(
-                header,
-                title=title,
-                title_align="right",
-                style=_style,
-            )
+            header: str = self._prepare(header, color="bold white")
+            title: str = self._prepare("Dict Inspection", color="white")
+            self.panel(header, title=title, title_align="right", style=style)
 
         table: Table = toolbox.dict_table(
-            target, self._format, style=_style, show_type=show_type
+            target, self.format, style=style, show_type=show_type
         )
-
         self(table)
 
     def tree_graph(
@@ -62,10 +45,8 @@ class ToolMixin(BasePrinter):
         guide: str = "bold white",
         hide_root=False,
     ) -> None:
-        """Visualizes a SimpleTreeNode model as a nested Rich Tree"""
-
+        """Render SimpleTreeNode model as nested Rich Tree"""
         visual_tree: Tree = toolbox.tree_graph(
             simple_tree, max_depth, root, node, guide, hide_root
         )
-
         self(visual_tree)

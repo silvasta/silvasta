@@ -24,7 +24,7 @@ def path_exists_table(
     return table
 
 
-def _unpack_bool_tuple(  # LATER: check where else this can be used
+def _unpack_bool_tuple(
     show_type: bool | tuple[bool, bool],
 ) -> tuple[bool, bool]:
 

@@ -3,7 +3,7 @@ from sstcore.utils.log import LogSetupResult
 from ..utils import printer
 from ..utils.paint import ColorBox
 
-c: ColorBox = printer.colorbox(mode="bold")
+c: ColorBox = ColorBox.with_mode("bold")
 
 _config_file = c.blue("Config File")
 

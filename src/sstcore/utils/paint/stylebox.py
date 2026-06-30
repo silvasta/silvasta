@@ -21,9 +21,29 @@ class Colors:
     white: color = "white"
 
 
+BASE_THEME: dict[str, str] = {
+    # LATER: iterate over projects, find best common default
+    "info": "white",
+    "title": "cyan",
+    "warning": "yellow",
+    "success": "green",
+    "danger": "red",
+    "special": "purple",
+    ### Customized Inverted
+    # LATER: use dataclass or other more advanced mechanism
+    "Info": "black on white",
+    "Title": "bold white on cyan",
+    "Warning": "bold black on yellow",
+    "Success": "bold white on green",
+    "Danger": "bold black on red",
+    "Special": "bold white on purple",
+}
+
+
 class BoxAttribute(StrEnum):
     NORMAL = auto()
     BOLD = auto()
+    DIM = auto()
     INVERT = auto()
     # LATER: check:
     # "frame": "frame",
@@ -34,6 +54,7 @@ class BoxAttribute(StrEnum):
         attribute: str = {
             self.NORMAL: "",
             self.BOLD: "bold",
+            self.DIM: "dim",
             self.INVERT: "reverse",
         }[self]
         return f"{attribute} {color}".strip()
@@ -56,7 +77,7 @@ class ColorBox:
     def set(self, attribute: str | BoxAttribute):
         self._attribute: BoxAttribute = BoxAttribute(attribute)
 
-    def __call__(self, text: str, color: color):
+    def __call__(self, text: str, color: color) -> str:
         return self._colorize(text, color)
 
     def _colorize(self, text: str, color: color) -> str:
@@ -65,8 +86,8 @@ class ColorBox:
         if style := self._attribute.apply_to(color):
             return f"[{style}]{text}[/]"
 
-        # if self._log:
-        # logger.debug("empty call to ColorBox._colorize")  # REMOVE: after tests
+        if self._log:  # REMOVE: after tests
+            logger.debug("empty call to ColorBox._colorize")
 
         return text
 
@@ -83,6 +104,7 @@ class ColorBox:
         return self._colorize(text, self._colors.cyan)
 
     def purple(self, text: Any) -> str:
+        # LATER: unify Color, BASE_THEME, special somehow
         return self._colorize(text, "purple")
 
     def green(self, text: Any) -> str:
@@ -97,58 +119,24 @@ class ColorBox:
     def black(self, text: Any) -> str:
         return self._colorize(text, self._colors.black)
 
-    # TODO: make private?
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+    ### Print with short alias (use careful for powerful observable 1-liner)
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    # LATER: final subset of 1char colors
+
     def r(self, text: Any) -> str:
         return self._colorize(text, self._colors.red)
 
-    # TODO: make private?
     def g(self, text: Any) -> str:
         return self._colorize(text, self._colors.green)
 
-    # TODO: make private?
-    def b(self, text: Any) -> str:
+    def c(self, text: Any) -> str:
         return self._colorize(text, self._colors.cyan)
 
-    # TODO: make private?
     def s(self, text: Any) -> str:
+        # LATER: unify Color, BASE_THEME, special somehow
         return self._colorize(text, "purple")
 
-    # TODO: make private?
     def y(self, text: Any) -> str:
         return self._colorize(text, self._colors.yellow)
-
-
-# LATER:
-_raw_theme: dict[str, str] = {
-    "normal": "bold white",
-    "info": "black on white",
-    "title": "bold white on cyan",
-    "warning": "bold black on yellow",
-    "success": "bold white on green",
-    "danger": "bold black on red",
-}
-
-
-# LATER:
-# REFACTOR: better concept, similar but not the same as rich.reverse
-# define pairs of opposite colors that fits well in optic not just reversed
-def _match_inverted_style(self, style: str) -> tuple[str, str]:
-    if not style:
-        return "", ""
-    if (header_style := style.lower()) == style:
-        return "", style
-    if not (line_style := self._inverted_themes.get(header_style)):
-        logger.warning(f"No inverted style available: {style=}")
-        line_style: str = header_style
-    return line_style, header_style
-
-
-# LATER:
-# TASK: define proper pairs
-_inverted_themes: dict[str, str] = {
-    "info": "white",
-    "title": "cyan",
-    "warning": "yellow",
-    "success": "green",
-    "danger": "red",
-}

@@ -1,7 +1,6 @@
 import sys
 import time
 from pathlib import Path
-from typing import Any
 
 from ..config import get_config
 from ..utils import PathGuard, printer
@@ -25,11 +24,10 @@ def log_monitor(log_path: Path | None = None):
 
 def launch_tail_log_console(log_file: Path):
     """Launch console with live log prints from file assuming it is valid"""
-    cyan: Any = printer.colors.cyan
 
     printer.title(
         [f"Tailing {printer._format(log_file)} ..."],
-        title=cyan("Loguru Monitor"),
+        title="Loguru Monitor",
         title_align="right",
         frame="purple",
     )

@@ -10,7 +10,7 @@ from sstcore.exceptions import NotImplementedDispatchError
 from sstcore.utils.color import ColorBox
 from sstcore.utils.tree import SimpleTreeNode, examples
 
-c: ColorBox = printer.colorbox()
+c: ColorBox = printer.color_box
 
 
 def main():

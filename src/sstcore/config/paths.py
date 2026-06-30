@@ -77,7 +77,7 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         except FileNotFoundError:
             # MOVE: to pathguard error handling, or cli,
             #         - but with __rich__ cli print
-            c: ColorBox = printer.colorbox()
+            c: ColorBox = ColorBox.with_mode("bold")
             text = (
                 f"{c.red('Missing .env File!')}"
                 f" {c.white(self.dot_env_unconfirmed)}"

@@ -89,7 +89,7 @@ def handle_missing_file(error: MissingFileError):
     scroll: list[str] = [
         f"  Start of handling: {error}",
         f"  observing path: {error.path}",
-        f"  sending message to {printer.colors.yellow('DataManager')}...",
+        f"  sending message to {printer._cb.yellow('DataManager')}...",
     ]
     printer(scroll)
     printer.green("  Handle Missing Path completed")

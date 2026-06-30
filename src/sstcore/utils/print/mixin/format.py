@@ -1,87 +1,60 @@
-from enum import Enum
+import textwrap
 from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
 
 from loguru import logger
-from pydantic import BaseModel
-from rich.console import ConsoleRenderable
+from rich.padding import Padding
 
 from ...log.inspect import debug_log_or_print
 from ..base import BasePrinter
 
 
 class FormatMixin(BasePrinter):
-    def __call__(self, target, *args, **kwargs):
-        """Rich console print, printer.mute(): switch to regular print"""
-
-        match self.modus:
-            case self.Modus.RICH:
-                super().__call__(self._format(target), *args, **kwargs)
-
-            case self.Modus.STANDARD:
-                print(args[0] or "something went wrong...")
-
-            case self.Modus.NULL:
-                pass
+    """Ensure Input is printable"""
 
     @debug_log_or_print(anyway=False)
-    def panel(self, target: Any | list[Any], **kwargs):
-        if "frame" in kwargs:
-            kwargs["border_style"] = kwargs.pop("frame")
+    def format(self, target: Any, indent=0) -> Any:
+        """Check Target type and return printable format"""
 
-        # TODO: _format
-        super().panel(self._format(target), **kwargs)
+        # If it has an indent and is already a Rich object, wrap it in Padding
+        if hasattr(target, "__rich__") or hasattr(target, "__rich_console__"):
+            return Padding(target, (0, 0, 0, indent)) if indent else target
+
+        if isinstance(target, str):
+            return self.indent(target, indent=indent)
+
+        return self._format(target, indent=indent)
+
+    def indent(self, target, indent=0) -> str:
+        return (
+            textwrap.indent(str(target), " " * indent)
+            if indent
+            else str(target)
+        )
 
     @singledispatchmethod
-    def _format(self, target) -> str:
-        if hasattr(target, "__rich__"):
-            return target
+    def _format(self, target, indent=0) -> str:
         if self._log:
             logger.warning(f"Unknown format of {type(target)=}: {target=}")
-        return str(target)
+        return self.indent(str(target), indent)
 
     @_format.register
-    def _(self, target: str):  # LATER: any modification? ...yes
-        """Let regular String just pass"""
-        return target
+    def _(self, target: Path, indent=0) -> str:
+        """Make folder parts blue and file name white"""
 
-    @_format.register
-    def _(self, target: BaseModel):  # LATER: any modification?
-        """Let BaseModel just pass"""
-        return target
-
-    @_format.register
-    def _(self, target: Exception):  # FIX:
-        """Let Exception just pass"""
-        return target
-
-    @_format.register
-    def _(self, target: ConsoleRenderable):
-        """Let Default Rich objects just pass"""
-        return target
-
-    @_format.register
-    def _(self, target: dict | Enum) -> str:
-        return str(target)
-
-    # REMOVE: after test
-    # @_format.register
-    # def _(self, target: Enum) -> str:
-    #     return str(target)
-
-    @_format.register
-    def _(self, target: list | tuple) -> str:
-        # LATER: fix format acrobatic
-        items: list[str] = [str(self._format(item)) for item in target]
-        return "\n".join(items)
-
-    @_format.register
-    # LATER: fix for relative paths called from different location
-    def _(self, target: Path) -> str:  # LATER: color files by type?
-        target = Path(target)
         if target.is_dir():
-            return f"[blue]{target}/[/]"
-        if target.parent != Path("."):  # TODO: color as arg
-            return f"[blue]{target.parent}/[/]{target.name}"
-        return target.name
+            return self.indent(f"[blue]{target}/[/]", indent)
+
+        if target.parent != Path("."):
+            return self.indent(  # LATER: color files by type?
+                f"[blue]{target.parent}/[/][white]{target.name}[/]"
+                # LATER: fix for relative paths called from different location
+            )
+
+        return self.indent(target.name)
+
+    @_format.register
+    def _(self, target: list, indent=0) -> str:
+        items: list[str] = [self._format(item, indent) for item in target]
+        return "\n".join(items)

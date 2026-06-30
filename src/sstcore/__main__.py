@@ -35,11 +35,11 @@ def check_cli_installed():
 
     if not cli_is_installed:
         # paint
-        error: str = printer.colors.red("Problem with Installation")
+        error: str = printer.color_box.red("Problem with Installation")
         _sst = escape("'sstcore[cli]'")
-        uv: str = printer.colors.cyan(f"uv add {_sst}")
-        or_: str = printer.colors.green("or")
-        pip: str = printer.colors.cyan(f"pip install {_sst}")
+        uv: str = printer.color_box.cyan(f"uv add {_sst}")
+        or_: str = printer.color_box.green("or")
+        pip: str = printer.color_box.cyan(f"pip install {_sst}")
 
         # canvas
         text: list[str] = [

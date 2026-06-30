@@ -29,8 +29,8 @@ class SstError(Exception):
         """Provide Panel Template"""
         rows: list[str] = [
             f"{c.r(self._name)}",
-            f"{c.b('args')}    {self._args or 'not loaded'}",
-            f"{c.b('kwargs')}  {self._kwargs or 'not loaed'}",
+            f"{c.c('args')}    {self._args or 'not loaded'}",
+            f"{c.c('kwargs')}  {self._kwargs or 'not loaed'}",
         ]
         self._modify_if_needed(rows)
 
@@ -88,8 +88,8 @@ class NotImplementedDispatchError(NotImplementedError, SstError):
         rows: list[str] = [
             f"{c.r(error)}",
             f"{c.r(target)} type: {c.y(target_type)}, value = {c.g(f'{self.first}')}",
-            f"{c.b('args')}    {self.args or 'not loaded'}",
-            f"{c.b('kwargs')}  {self.kwargs or 'not loaed'}",
+            f"{c.c('args')}    {self.args or 'not loaded'}",
+            f"{c.c('kwargs')}  {self.kwargs or 'not loaed'}",
         ]
         return Panel(
             "\n".join(rows),
