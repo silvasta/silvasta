@@ -31,6 +31,8 @@ def folder_scanner(
 
     if filter is None:
         # filter: PathFilter = _setup_filter()
+        # IMPORTANT: make it work local!
+        # - so far needs "fake pyproject.toml" to work in random folder...
         # FIX:
         # FIX:
         # FIX:

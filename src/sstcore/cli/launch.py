@@ -15,6 +15,7 @@ def main() -> None:
 utils_app = SafeTyper(
     name="utils",
     help="FolderScanner and Log Console Monitor",
+    # NEXT: check if config?
 )
 
 

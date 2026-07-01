@@ -16,12 +16,10 @@ from . import args, canvas
 type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
 type ConfigLoader = Callable[[Path | None], ConfigManager]
 
-# TODO: rich,repr,str
-
 
 class SafeTyper(typer.Typer):
     """
-    Lead Custom Setup for Typer App with Log and Error handling
+    Lead Custom Typer App Setup with Config, Log and Error handling
 
     - Provide Framework with basic callback attach and start prints
     - Ensure Loguru is ready and loaded with custom settings
@@ -29,11 +27,22 @@ class SafeTyper(typer.Typer):
 
     """
 
+    @property
+    def n_handler(self) -> int:
+        return len(self._error_handlers)
+
+    @property
+    def exceptions_of_all_handler(self) -> list[type[BaseException]]:
+        """List Exception class of all registred handler"""
+        return list(self._error_handlers.keys())
+
     def __init__(self, config_loader: ConfigLoader | None = None, **kwargs):
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(**kwargs)
 
-        self._config_loader: ConfigLoader | None = config_loader
+        self._config_loader: ConfigLoader = (
+            config_loader or default_config_loader
+        )
         self._error_handlers: ErrorHandlerDict = {}
         self._attach_internal_callback()
 
@@ -44,6 +53,13 @@ class SafeTyper(typer.Typer):
 
     def register_error_handler(self, exception: type[BaseException]):
         """Decorator: Attach Exception with custom Handler to Registry"""
+
+        # TODO: improve type, why attach Exception basically twice?
+        # @app.register_error_handler(TuiSelectorError)
+        # def handle_tui_selector(error: TuiSelectorError):
+        #     printer.danger(f"Selector failed: {error}")
+        # - use that handler has always first (or even all) arguments like:
+        # - error:Exception, grab this
 
         def decorator(handler: Callable[[Any], None]):
             self._error_handlers[exception] = handler
@@ -97,30 +113,30 @@ class SafeTyper(typer.Typer):
         setting_file: Path | None,
     ):
         """Setup Config and Logging and show Status"""
-
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
 
-        load_from_default: bool = self._config_loader is None
-
-        config: ConfigManager = (  # IDEA: attach to typer context?
-            default_config_loader(setting_file)
-            if load_from_default
-            else self._config_loader(setting_file)
-        )
-        if not quiet:  # LATER: maybe separate from log:quiet?
-            # Move after config, waiting for Printer injection in config setup
-            printer.title(f"Welcome to {ctx.info_name}!")
-            printer.header("Setup Config and Logging")
-
-        canvas.main_callback_config_setup(config, load_from_default)
+        config: ConfigManager = self._config_loader(setting_file)
+        # Wait for Printer until Injection in config_loader!
 
         result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
             param=config.settings.log,
         )
-        canvas.main_callback_log_setup(result)
+        if not quiet:
+            canvas.safe_typer.intro(project_name=ctx.info_name)
+            canvas.safe_typer.ConfigSetup(config, self._config_loader)()
+            canvas.safe_typer.main_callback_log_setup(result)
 
     def _run_sub_callback(self, ctx: typer.Context):
-        """Print Nice Title for launching Subapp"""
+        """Print Nice subapp title"""
+        # MOVE: canvas
+        # NEXT:
+        # NEXT:
+        # NEXT:
         printer.title(f"Launching attached App: {ctx.info_name}!")
+
+    def print_setup_status(self, show_handler=False):
+        """Launch Summary of Status after assembly"""
+        exceptions: list = self.exceptions_of_all_handler
+        canvas.safe_typer.Status(self, exceptions, show_handler)
