@@ -4,7 +4,7 @@ from typing import Any
 from loguru import logger
 from rich import print as rich_print
 
-from ..paint.stylebox import ColorBox
+from ..color import ColorBox
 
 
 def debug_log_or_print(anyway: bool = False):
@@ -30,7 +30,7 @@ def debug_log_or_print(anyway: bool = False):
                         f"{_target_str} | {_args_str} | {_kwargs_str}"
                     )
                 else:
-                    c: ColorBox = ColorBox.with_mode("bold")
+                    c: ColorBox = ColorBox.bold()
                     _info = [
                         c.red(_target_str),
                         c.cyan(_args_str),

@@ -12,9 +12,9 @@ from typing import Any, Self
 
 from sstcore import printer
 from sstcore.cli.engine import SafeTyper
-from sstcore.utils.paint import ColorBox
+from sstcore.utils.color import ColorBox
 
-c: ColorBox = ColorBox.with_mode("bold")
+c: ColorBox = ColorBox.bold()
 
 
 type ErrorHandler = Callable[[Any], None]

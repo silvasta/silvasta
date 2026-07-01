@@ -27,11 +27,7 @@ def create_printer(color=True, tool=True, format=True, layout=True):
     chain: list = []
 
     if format:
-        # AI: for the others, the pipeline makes more or less sense,
-        # here I assume the format is needed but with another structure
         chain.append(FormatMixin)
-        # TODO: check the role of FormatMixin,
-        # is it maybe just a more universal util that is called?
     if color:
         chain.append(ColorMixin)
     if layout:
