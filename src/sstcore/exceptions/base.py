@@ -2,7 +2,7 @@ from typing import Any
 
 from rich.panel import Panel
 
-from ..utils.paint import ColorBox
+from ..utils.color import ColorBox
 
 c = ColorBox()
 
@@ -10,12 +10,10 @@ c = ColorBox()
 class SstError(Exception):
     """Root of all Custom Exceptions"""
 
-    # FIX: check gemini chat .args and ._kwargs???
-    # - maybe property below broken
-
-    def __str__(self, *args, **kwargs):
-        # TODO: attach something?
-        return super().__str__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        self.kwargs: dict = kwargs
+        # Exception handles *args and stores them in self.args
+        super().__init__(*args)  # Do NOT pass kwargs up to Exception
 
     def __repr__(self):
         attrs: str = ", ".join(
@@ -27,11 +25,13 @@ class SstError(Exception):
 
     def __rich__(self):
         """Provide Panel Template"""
+
         rows: list[str] = [
             f"{c.r(self._name)}",
-            f"{c.c('args')}    {self._args or 'not loaded'}",
-            f"{c.c('kwargs')}  {self._kwargs or 'not loaed'}",
+            f"{c.c('args')}    {self.args or self._default}",
+            f"{c.c('kwargs')}  {self.kwargs or self._default}",
         ]
+
         self._modify_if_needed(rows)
 
         return Panel(
@@ -53,53 +53,37 @@ class SstError(Exception):
         return type(self).__name__
 
     @property
-    def _args(self) -> tuple | str:
-        return getattr(self, "args", self._default)
-
-    @property
     def _default(self):
         return "nothing attached"
 
-    @property
-    def _kwargs(self) -> dict | None:
-        return getattr(self, "kwargs", self._default)
 
-
-class RegistrySyncError(FileNotFoundError, SstError):
+class RegistrySyncError(SstError):
     """Raise when FileRegistry State mismatches physical local disk"""
 
+    # LATER: setup for different FileTrackerRegistry
 
-class NotImplementedDispatchError(NotImplementedError, SstError):
+
+class NotImplementedDispatchError(SstError, NotImplementedError):
     """Raise on missing TargetType for singledispatchmethod"""
 
     def __init__(self, first: Any, *args: Any, **kwargs):
         self.first = first
-        self.args: tuple[Any] = args
-        self.kwargs: dict = kwargs or {}
-        super().__init__(type(first).__name__)
+        msg = f"Missing dispatch target for {type(first).__name__}"
+        super().__init__(msg, *(first, *args), **kwargs)
 
-    def __rich__(self) -> Panel:  # LATER: merge with template
-        """Provide the first nice plots! ...done"""
+    def _modify_if_needed(self, rows: list[str]):
+        """Inject dispatch target type and value into Error Panel"""
 
-        error: str = type(self).__name__
-        target = "Missing match for Target"
-        target_type = type(self.first).__name__
+        missing: str = c.red("Missing match for Target")
+        target_type: str = c.yellow(type(self.first).__name__)
+        dispatcher: str = c.green(f"{self.first}")
 
-        rows: list[str] = [
-            f"{c.r(error)}",
-            f"{c.r(target)} type: {c.y(target_type)}, value = {c.g(f'{self.first}')}",
-            f"{c.c('args')}    {self.args or 'not loaded'}",
-            f"{c.c('kwargs')}  {self.kwargs or 'not loaed'}",
-        ]
-        return Panel(
-            "\n".join(rows),
-            title=c("NotImplementedDispatchError", color="bold white"),
-            border_style="red",
-            title_align="right",
-        )
+        line = f"{missing} type: {target_type}, value = {dispatcher}"
+
+        rows.insert(1, line)
 
 
-class NotImplementedMixinError(NotImplementedError, SstError):
+class NotImplementedMixinError(SstError, NotImplementedError):
     """Raised when Mixin queue somthing mixed up"""
 
     def __init__(self, base, mixin, func):
@@ -109,8 +93,29 @@ class NotImplementedMixinError(NotImplementedError, SstError):
         super().__init__(f"Problem for {mixin=} of {base=} in {func=}")
 
 
-class TuiSelectorError(RuntimeError, SstError):
+class TuiSelectorError(SstError):
     def __init__(self, message=None):
-        if message is None:
+        if message is None:  # TODO: maybe some statistics about Selection?
             message = "It was an easy Selection... how can you Fail this?"
         super().__init__(message)
+
+
+class PropertyNotInitializedError(SstError):
+    """Raise when property is accessed before its attribute is initialized"""
+
+    def __init__(self, property_name: str, attribute_name: str):
+        self.property: str = property_name
+        self.attribute: str = attribute_name
+
+        msg = f"Missing '{attribute_name}' for property '{property_name}'"
+        super().__init__(msg)
+
+    def _modify_if_needed(self, rows: list[str]):
+        """Inject property and attribute details into Error Panel"""
+
+        property: str = c.y(self.property)
+        attribute: str = c.r(self.attribute)
+        line = f"{c.c('missing')}   {attribute} (required by {property})"
+
+        rows.insert(1, line)
+        del rows[2:]

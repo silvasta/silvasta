@@ -4,11 +4,13 @@ __all__: list[str] = [
     "NotImplementedDispatchError",
     "NotImplementedMixinError",
     "TuiSelectorError",
+    "PropertyNotInitializedError",
 ]
 
 from .base import (
     NotImplementedDispatchError,
     NotImplementedMixinError,
+    PropertyNotInitializedError,
     RegistrySyncError,
     SstError,
     TuiSelectorError,

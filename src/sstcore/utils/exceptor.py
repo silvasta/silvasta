@@ -148,7 +148,8 @@ class Exceptor:
 
         except BaseException as error:
             _error = str(error) or f"{error!r}"
-            printer.danger(f"{c.r('Error Detected')} {_error}")
+            # printer.danger(f"{c.r('Error Detected')} {_error}")
+            printer.dip(head="Error Detected", text=_error, color="red")
 
             if task.handler:
                 try:
