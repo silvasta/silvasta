@@ -22,7 +22,19 @@ def main() -> None:
     fire.Fire(ExceptorLaunch)
 
 
+one: ErrorList = [
+    ExceptorTask(
+        error=NotImplementedDispatchError,
+        args=("hello", 11),
+        kwargs={"test": 112},
+    )
+]
+
+
 class ExceptorLaunch:
+    def one(self):
+        Exceptor(one)
+
     def list(self):
         Exceptor(all_tasks)
 

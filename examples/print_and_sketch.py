@@ -7,7 +7,7 @@ from loguru import logger
 from sstcore import printer
 from sstcore.data import SstFile
 from sstcore.exceptions import NotImplementedDispatchError
-from sstcore.utils.paint import ColorBox
+from sstcore.utils.color import ColorBox
 from sstcore.utils.tree import SimpleTreeNode, examples
 
 c: ColorBox = printer.colorbox()
