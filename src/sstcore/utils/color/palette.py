@@ -26,18 +26,12 @@ class Palette:
     white: ColorName = "white"
 
     # семантические роли
-    title: ThemeRole = ThemeRole(base="cyan", inverted="bold white on cyan")
-    danger: ThemeRole = ThemeRole(base="red", inverted="bold black on red")
-    success: ThemeRole = ThemeRole(
-        base="green", inverted="bold white on green"
-    )
-    warning: ThemeRole = ThemeRole(
-        base="yellow", inverted="bold black on yellow"
-    )
-    special: ThemeRole = ThemeRole(
-        base="purple", inverted="bold white on purple"
-    )
-    info: ThemeRole = ThemeRole(base="white", inverted="black on white")
+    title = ThemeRole(base="cyan", inverted="bold white on cyan")
+    danger = ThemeRole(base="red", inverted="bold black on red")
+    success = ThemeRole(base="green", inverted="bold white on green")
+    warning = ThemeRole(base="yellow", inverted="bold black on yellow")
+    special = ThemeRole(base="purple", inverted="bold white on purple")
+    info = ThemeRole(base="white", inverted="black on white")
 
     def to_rich_dict(self) -> dict[str, str]:
         """Dynamically export all colors and roles for rich.Theme"""

@@ -20,7 +20,7 @@ c: ColorBox = ColorBox.bold()
 
 
 def module_path(
-    any: Any,
+    obj: Any,
     project_color: str = "cyan",
     module_color: str = "green",
     target_color: str = "special",
@@ -33,10 +33,11 @@ def module_path(
 
     # TEST: colorize functions, check how that works
 
-    target: type = any if hasattr(any, "__name__") else type(any)
+    target: type = obj if hasattr(any, "__name__") else type(obj)
     raw_project, *raw_modules = target.__module__.split(".")
 
     project: str = c(raw_project, project_color)
+    # INFO: len(modules) can be 0, consider for further color splits
     modules: list[str] = [c(module, module_color) for module in raw_modules]
     cls_or_instance = f"{c(target.__name__, target_color)}"
 

@@ -15,25 +15,22 @@ type Style = TextStyle | str
 
 
 class ColorBox:
-    """
-    Provide Simple and Fast Color Supply.
+    """Provide Simple and Fast Color Supply"""
 
-    - Markup Text with selected Palette colors and attached Style
-    """
-
-    def __call__(self, text: Stringable, color: ColorName = "") -> str:
+    def __call__(
+        self, text: Stringable, color: ColorName | None = None
+    ) -> str:
         """Wrap Text inside Color and Style markup if well defined"""
 
-        if not (markup := self._markup(color)):
-            # Happens for: (style=normal, color="")
-            return str(text)  # cast for: Stringable -> str
+        if not (markup := self._markup(color)):  # for: (style=normal,color="")
+            return str(text)  # because: Stringable -> str
 
         return f"[{markup}]{text}[/]"
 
-    def _markup(self, color: ColorName) -> str:
+    def _markup(self, color: ColorName | None) -> str:
         """Assemble style and color, strip to compact string or even empty"""
 
-        return f"{self._style.to_rich()} {color}".strip()
+        return f"{self._style.to_rich()} {color or ''}".strip()
 
     def __init__(
         self,
@@ -43,9 +40,26 @@ class ColorBox:
     ):
         """Build ColorBox with overridable defaults for Palette and Style"""
         self._palette: Palette = palette
-        # Convert str -> StrEnum while input StrEnum is not affected
-        self._style: TextStyle = TextStyle(style)
+        self._style: TextStyle = TextStyle(style)  # safe for TextStyle
         self._shortcuts_enabled: bool = shortcuts
+
+    def switch(
+        self,
+        palette: Palette | None = None,
+        style: Style | None = None,
+        shortcuts: bool | None = None,
+    ):
+        """Attach new Palette or TextStyle to existing ColorBox or toggle shortcuts"""
+        if palette is not None:
+            self._palette: Palette = palette
+        if style is not None:
+            self._style: TextStyle = TextStyle(style)
+        if shortcuts is not None:
+            self._shortcuts_enabled: bool = shortcuts
+
+    @property
+    def palette(self) -> Palette:
+        return self._palette
 
     @classmethod
     def bold(cls, palette: Palette = BASE_PALETTE):
