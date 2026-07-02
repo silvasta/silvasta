@@ -35,7 +35,7 @@ def default_config_loader(setting_file: Path | None = None) -> ConfigManager:
         settings_cls=SstSettings,
         paths_cls=SstPaths,
         setting_file=setting_file,
-        project_name="sstcore",
+        project_name="sstcore",  # TODO: make changeable in project with default
     )
 
 

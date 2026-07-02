@@ -4,7 +4,7 @@ from typing import cast
 import typer
 
 from ..utils import HomeSetup, PathGuard, day_count, printer
-from ..utils.paint import ColorBox
+from ..utils.color import ColorBox
 from .defaults import SstDefaults
 from .names import ParsedName, SstNames
 
@@ -77,7 +77,7 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         except FileNotFoundError:
             # MOVE: to pathguard error handling, or cli,
             #         - but with __rich__ cli print
-            c: ColorBox = ColorBox.with_mode("bold")
+            c: ColorBox = ColorBox.bold()
             text = (
                 f"{c.red('Missing .env File!')}"
                 f" {c.white(self.dot_env_unconfirmed)}"
