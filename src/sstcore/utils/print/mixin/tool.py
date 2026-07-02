@@ -27,8 +27,8 @@ class ToolMixin(BasePrinter):
     ):
         """Create colorful Debug Dict if desired with types of key and value"""
         if header:
-            header: str = self._prepare(header, color="bold white")
-            title: str = self._prepare("Dict Inspection", color="white")
+            header: str = self.color(header, color="bold white")
+            title: str = self.color("Dict Inspection", color="white")
             self.panel(header, title=title, title_align="right", style=style)
 
         table: Table = toolbox.dict_table(

@@ -14,7 +14,7 @@ class FormatMixin(BasePrinter):
     """Ensure Input is printable"""
 
     @debug_log_or_print(anyway=False)
-    def format(self, target: Any, indent=0) -> Any:
+    def format(self, target: Any, indent: int = 0) -> Any:
         """Check Target type and return printable format"""
 
         # If it has an indent and is already a Rich object, wrap it in Padding
@@ -47,10 +47,10 @@ class FormatMixin(BasePrinter):
             return self.indent(f"[blue]{target}/[/]", indent)
 
         if target.parent != Path("."):
-            return self.indent(  # LATER: color files by type?
+            # LATER: adapt for relative paths not reachable from cwd
+            return self.indent(
                 f"[blue]{target.parent}/[/][white]{target.name}[/]"
-                # LATER: fix for relative paths called from different location
-            )
+            )  # LATER: color files by type?
 
         return self.indent(target.name)
 

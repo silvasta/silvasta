@@ -8,7 +8,7 @@ from rich.tree import Tree
 from ..tree import SimpleTreeNode
 
 
-def path_exists_table(
+def path_exists_table(  # IDEA: dont't pass only format, but a printer Protocol?
     paths: list[Path], _format: Callable[[Any], str], title=None, header="Path"
 ) -> Table:
     """Check if Paths exist and visualize in Table"""

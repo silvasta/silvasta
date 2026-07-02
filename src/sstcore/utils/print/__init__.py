@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from .base import BasePrinter
 from .mixin.color import ColorMixin
-from .mixin.format import FormatMixin  # AI: this one is main target
+from .mixin.format import FormatMixin
 from .mixin.layout import LayoutMixin
 from .mixin.tool import ToolMixin
 

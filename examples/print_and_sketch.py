@@ -1,22 +1,24 @@
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 from loguru import logger
+from rich.color import ANSI_COLOR_NAMES, Color
+from rich.style import Style
 
 from sstcore import printer
-from sstcore.data import SstFile
-from sstcore.exceptions import NotImplementedDispatchError
 from sstcore.utils.color import ColorBox
+from sstcore.utils.color.style import TextStyle
 from sstcore.utils.tree import SimpleTreeNode, examples
 
 c: ColorBox = printer.color_box
 
 
-def main():
+def main():  # LATER: use fire.Fire for cli?
+    """Dispatch tasks with manual index"""
+
     select: list[int] = []
 
-    select.extend([-1])
+    select.extend([-1])  # INFO: toggle by comment # (delete and see the issue)
 
     functions: list[Callable] = [
         show_tree_graph,
@@ -25,8 +27,13 @@ def main():
         show_attributes,
         test_padding,
         experiment_t_string,
-        find_color,
+        show_all_rich_colors,  # INFO: good one
+        show_rich_style_attributes,
+        rich_by_number,
     ]
+
+    # LATER: Use ListSelector? maybe optional
+
     for run in select:
         functions[run]()
 
@@ -35,23 +42,46 @@ def main():
 
 
 def latest():
-    fail_attempts: list[Any] = [
-        SstFile(local_path=Path("test.py")),
-        Path("hello/from.py"),
-    ]
-    for fail in fail_attempts:
-        try:
-            printer.title(fail)
-        except NotImplementedDispatchError as error:
-            printer(f"{error=}")
-            printer.title(str(fail))
+    printer.title("hello")
 
 
-def find_color():
+def dip_example():
+    # TODO: transform dip to arg that affects frame,head color but not text
+    printer.dip("Sachmis", "sent as the Eye", color="cyan")
+    printer.dip("Targets Destoyed", "area cleared", color="green")
+    printer.dip("thunder", "is comming", color="yellow")
+    printer.dip("Fire", "no regret and forward", color="red")
+
+
+def rich_by_number():
+    rich_default_color: Color = Color.default()
+    printer(rich_default_color)
+    # TODO: extract rgb below for sst_colorbox.purple
+    # -> or use the nvim-todo colors?
+    printer(Color.from_rgb(red=124, green=58, blue=237))
+    printer(Color.from_ansi(129))
+    printer(Color.from_ansi(6))
+    printer.dip("PPPPPPPPPPPPPP", "hello", "cyan")
+
+
+def show_rich_style_attributes():
+    printer(rich_styles_raw)
+    printer.panel("test")
+    printer.dict_table(rich_styles_raw)
+    rich_styles: list[str] = list(set(rich_styles_raw.values()))
+    for style in rich_styles:
+        example: str = f"This is how '{style}' Text looks"
+        target = f"Style: {style} - Example: [{style}]{example}[/]"
+        printer.panel(target)
+        printer(target)
+
+
+def show_all_rich_colors():
     logger.remove()
     example: str = "This is how colored Text looks"
-    for color in data.keys():
-        printer.panel(target=f"{color} - {c(example, color)}", frame=color)
+    for color in rich_colors.keys():
+        target = f"{color} - {c(example, color)}"
+        printer.panel(target, frame=color)
 
 
 def show_tree_graph():
@@ -89,15 +119,10 @@ def show_colors():
 
 
 def show_attributes():
-    def _show(attribute: str):
-        if attribute != "default":
-            printer._color_box.set(attribute)
-        printer.header(f"This is the {attribute}")
-
-    _show(attribute="default")
-    _show(attribute="invert")
-    _show(attribute="bold")
-    _show(attribute="normal")
+    for style in TextStyle:
+        printer.color_box.switch(style=style)
+        printer.header(f"This is the {style}")
+        printer.cyan(style)
 
 
 def test_padding(pad=(1, 3)):
@@ -126,7 +151,35 @@ def experiment_t_string():
     printer(result)
 
 
-data = {
+_this_is = Style.STYLE_ATTRIBUTES
+rich_styles_raw: dict[str, str] = {
+    "dim": "dim",
+    "d": "dim",
+    "bold": "bold",
+    "b": "bold",
+    "italic": "italic",
+    "i": "italic",
+    "underline": "underline",
+    "u": "underline",
+    "blink": "blink",
+    "blink2": "blink2",
+    "reverse": "reverse",
+    "r": "reverse",
+    "conceal": "conceal",
+    "c": "conceal",
+    "strike": "strike",
+    "s": "strike",
+    "underline2": "underline2",
+    "uu": "underline2",
+    "frame": "frame",
+    "encircle": "encircle",
+    "overline": "overline",
+    "o": "overline",
+}
+
+
+_this_is = ANSI_COLOR_NAMES
+rich_colors: dict[str, int] = {
     "aquamarine1": 122,
     "aquamarine3": 79,
     "black": 0,

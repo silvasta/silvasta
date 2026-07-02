@@ -5,20 +5,58 @@ from typing import Any
 
 from rich import inspect
 from rich.console import Console
-from rich.control import strip_control_codes  # NEXT:
+from rich.control import strip_control_codes
 from rich.panel import Panel
 from rich.theme import Theme
 
+from sstcore.utils import ColorBox
+from sstcore.utils.color import Palette
+
 from ..color.palette import BASE_PALETTE
 from ..log.inspect import debug_log_or_print
-from ..parse.rich_str_name import StyledName  # FIX:
 
 
-# Посмотри, я узнал что это будет полезный!
+# AI_IGNORE: until next mark
 def test_this_somewhennnn(text: str) -> str:
     """Fix broken or undesired color pattern"""
     inspect(text)  # LATER: inspect rich.inspect
-    return strip_control_codes(text)  # NEXT:
+    return strip_control_codes(text)  # COLLECT:
+
+    # TASK: check where to appply this
+    # def log_plain(self, message: str) -> None:
+    #     """Для логов: гарантированно plain-текст, без Rich-тегов."""
+    #     clean = (
+    #         strip_control_codes(message)
+    #         if isinstance(message, str)
+    #         else str(message)
+    #     )
+    #     # Тут можно пробросить в logger.info(clean)
+    #     self._console.print(clean)
+    # TASK: check where to appply this
+    # from ..parse.rich_str_name import StyledName
+    # def styled_name(self, sn: StyledName, **values) -> str:
+    #     """Удобный хелпер: возвращает Rich-строку или plain,  от флага."""
+    #     if self.use_colors:
+    #         return sn.as_rich(**values)
+    #     return sn.as_str(**values)
+    #
+
+
+# TASK:
+# @dataclass
+# class PanelStyle:
+#     title: str | None = None
+#     text_style: str | None = None
+#     frame: str | None = "cyan"
+#     padding: tuple = (1, 1)
+# class BasePrinter:
+#     def panel(self, target: Any, style: PanelStyle | None = None, **kwargs) -> None:
+#         style = style or PanelStyle() # Load defaults
+#         # LATER: the comment below, how to get autocomplete at caller?
+#         # - import dataclass, init, for sure works. without import?
+#         # Now you have IDE autocomplete for style.frame, style.title, etc.
+
+# AI_READ: until next mark: listen
 
 
 class BasePrinter:
@@ -36,12 +74,13 @@ class BasePrinter:
     def name_and_version(self) -> str:
         return f"{self.project_name} v{self.project_version}"
 
-    def __init__(self):
-        self.modus: self.Modus = self.Modus.RICH
+    def __init__(self, palette: Palette | None = None):
+        self.palette: Palette = palette or BASE_PALETTE
         self.setup_theme()
+        self.modus: self.Modus = self.Modus.RICH
 
     def setup_theme(self, theme: dict[str, str] | None = None):
-        self._rich_theme = Theme(theme or BASE_PALETTE.to_rich_dict())
+        self._rich_theme = Theme(theme or self.palette.to_rich_dict())
         self.console = Console(theme=self._rich_theme)
 
     def preview_themes(self):
@@ -54,71 +93,79 @@ class BasePrinter:
         """Finally Print Target"""
 
         match self.modus:
-            case self.Modus.NULL:
-                pass
             case self.Modus.STANDARD:
                 print(self.format(target))
+            case self.Modus.NULL:
+                pass
 
-            case self.Modus.RICH:  # Engine and Core of all Printers
-                indent: int = self._extract_indent(kwargs)  # MOVE: but  where?
-                self.console.print(self.format(target, indent), **kwargs)
+            case self.Modus.RICH:  # Engine and Core of printer
+                indent: int = kwargs.pop("indent", kwargs.pop("_i", 0))
+                _i_hope_it_renders = self.format(target, indent)
+                self.console.print(_i_hope_it_renders, **kwargs)
 
-    def _extract_indent(self, kwargs):  # MOVE: but  where?
-        """Filter and Modify kwargs to find indent and ensure Console input"""
-        indent: int = kwargs.pop("_i", 0)  # alias as second priority
-        return kwargs.pop("indent", 0) or indent
+    # LATER: check if panel kwargs pop gets to big
+    # PANEL_KWARGS = {"box", "safe_box", "expand", "padding", "subtitle", "border_style"}
+    # @debug_log_or_print(anyway=True)
+    # def panel(self, target: Any, **kwargs) -> None:
+    #     # ... pop custom args ...
+    #     # Split kwargs: one dict for Panel, one for the Printer
+    #     p_kwargs = {k: v for k, v in kwargs.items() if k in self.PANEL_KWARGS}
+    #     print_kwargs = {k: v for k, v in kwargs.items() if k not in self.PANEL_KWARGS}
+    #     panel_obj = Panel(..., **p_kwargs)
+    #     self(panel_obj, **print_kwargs) # Now both layers get their specific settings!
 
     @debug_log_or_print(anyway=False)
-    def panel(
-        self, target: Any, title=None, text_style=None, frame=None, **kwargs
-    ) -> None:
+    def panel(self, target: Any, **kwargs) -> None:
         """Provide General Panel Interface and Print prepared Target"""
-        self(
-            Panel(
-                renderable=self._prepare(target, color=text_style),
-                title=self._prepare(title, color="white"),
-                border_style=kwargs.pop("border_style", frame),
-                **kwargs,
-            )
+
+        # kwargs for panel
+        title: str | None = kwargs.pop("title", None)
+        text_style: str | None = kwargs.pop("text_style", None)
+        frame: str | None = kwargs.pop("frame", None)
+
+        kwargs["border_style"] = frame or "cyan"  # LATER: -> defaults
+
+        # kwargs for __call__
+        indent: int = kwargs.pop("indent", kwargs.pop("_i", 0))
+
+        panel_ready_for_execution = Panel(
+            renderable=self._panel_target(target, color=text_style),
+            title=self._panel_title(title, color="white"),
+            **kwargs,
         )
+        self(panel_ready_for_execution, indent=indent)
 
-    def log_plain(self, message: str) -> None:
-        # NEXT: check where to appply this
-        """Для логов: гарантированно plain-текст, без Rich-тегов."""
-        clean = (
-            strip_control_codes(message)
-            if isinstance(message, str)
-            else str(message)
-        )
-        # Тут можно пробросить в logger.info(clean)
-        self._console.print(clean)
+    def _panel_target(self, target: Any, color: str | None = None) -> str:
+        """Ensure target is renderable and apply color if provided"""
 
-    def styled_name(self, sn: StyledName, **values) -> str:
-        # NEXT: check where to appply this
-        """Удобный хелпер: возвращает Rich-строку или plain,  от флага."""
-        if self.use_colors:
-            return sn.as_rich(**values)
-        return sn.as_str(**values)
+        if target is None or not (text := self.format(target)):
+            return ""  # Safe fallback for Rich renderable
 
-    def format(self, target: Any, *args, **kwargs) -> Any:
+        return self.color(text, color)
+
+    def _panel_title(
+        self, title: str | None, color: str | None = None
+    ) -> str | None:
+        """Ensure title is valid and apply color if provided"""
+
+        if title is None or not (text := self.format(title)):
+            return None  # Safe fallback for ignoring title ("" creates hole)
+
+        return self.color(text, color)
+
+    def format(self, target: Any, indent=0) -> Any:
         """Install Base for FormatMixin"""
+        # AI_QUESTION: when using protocol, maybe delete this?
         return target
 
-    def color(self, text: str, color: str) -> str:
-        """Install Base for ColorMixin"""
-        return text
+    @property
+    def _cb(self) -> ColorBox:  # NOTE: placeholder for protocol
+        raise NotImplementedError
 
-    def _prepare(self, target: Any, color: str | None) -> str:
-        """Check Format and Color"""
-        if (
-            target is None
-        ):  # WARN: None needed for empty title, but None fails as target, eg in panel...
-            return target
-        if not (text := self.format(target)):
-            return ""
-        if color is None:
-            return text
-        return self.color(text, color)
+    def color(self, text: str, color: str | None) -> str:
+        """Install Base for ColorMixin"""
+        # AI_QUESTION: when using protocol, maybe delete this?
+        return text
 
     class Modus(Enum):
         RICH = auto()
@@ -127,15 +174,15 @@ class BasePrinter:
 
     def mute(self):
         """Send all prints to nowhere"""
-        self.modus: self.Modus = self.Modus.NULL
+        self.modus = self.Modus.NULL
 
     def unmute(self):
         """Switch to regular Printer output"""
-        self.modus: self.Modus = self.Modus.RICH
+        self.modus = self.Modus.RICH
 
     def no_fancy(self):
         """Switch to Python standard print"""
-        self.modus: self.Modus = self.Modus.STANDARD
+        self.modus = self.Modus.STANDARD
 
     @contextmanager
     def _in_context(self, strategy: Callable):
@@ -144,7 +191,7 @@ class BasePrinter:
             strategy()
             yield
         finally:
-            self.modus: self.Modus = modus_before
+            self.modus = modus_before
 
     def muted(self):
         return self._in_context(strategy=self.mute)
