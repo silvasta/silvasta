@@ -5,6 +5,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
 
+from sstcore.utils.print.mixin._boxes import BoxLibrary
+
 from ...config import ConfigManager
 from ...utils import printer
 from ...utils.color import ColorBox
@@ -46,7 +48,7 @@ def intro(project_name):
         c.cyan(f"Welcome to {c.white(project_name)}")
         if random.getrandbits(1)
         else c.white(f"Welcome to {c.cyan(project_name)}"),
-        box=printer.BOX_OPEN,
+        box=BoxLibrary().EDGE,
     )
     printer.box_mini("Setup Config and Log", mode=_random.mode_1)
 
@@ -88,9 +90,9 @@ def _log_and_config_file(path, title):
     else:
         frame = "white"
     if _log_and_config_file_dispatch % 2 == 0:
-        box = printer.BOX_MINI
+        box = BoxLibrary().EDGE
     else:
-        box = printer.BOX_OPEN
+        box = BoxLibrary().OPEN
 
     printer.title(path, title=title, frame=frame, box=box)
 
