@@ -6,15 +6,15 @@ from typing import cast
 
 from loguru import logger
 
-from ._config import PathConfig, PathInput, _state
+from ._input import PathArg, PathInput, _state
 
 
 def _ensure_input(path_input: PathInput) -> Path:
     """Extract PathInput and provide validated Paths"""
 
-    # LATER: somehow combine with PathConfig?
+    # LATER: somehow combine with PathArg?
 
-    if isinstance(path_input, PathConfig):
+    if isinstance(path_input, PathArg):
         path = Path(path_input.target)
         resolve: bool = path_input.resolve
         check_exists: bool = path_input.check_exists
@@ -57,7 +57,7 @@ def dir_main[**P](
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     # Case 1: Used as a Function Call (PathGuard.dir(path))
-    if isinstance(target, (Path, str, PathConfig)):
+    if isinstance(target, (Path, str, PathArg)):
         return _ensure_dir_logic(target)
 
     # Case 2: Used as a Decorator (@PathGuard.dir)
@@ -121,7 +121,7 @@ def file_main[**P](
     """Ensure path is file or write default content and | or Raise"""
 
     # CASE 1: Function Call -> PathGuard.file(path)
-    if isinstance(target, (Path, str, PathConfig)):
+    if isinstance(target, (Path, str, PathArg)):
         return _ensure_file_logic(target, raise_error, default_content)
 
     # CASE 2: Bare Decorator -> @PathGuard.file
@@ -210,7 +210,7 @@ def unique_main[**P](
     """
 
     # Case 1: Direct call (PathGuard.unique(path))
-    if isinstance(target, (Path, str, PathConfig)):
+    if isinstance(target, (Path, str, PathArg)):
         return _get_unique_candidate(target, ensure_parent)
 
     # Case 2: Bare Decorator (@PathGuard.unique)

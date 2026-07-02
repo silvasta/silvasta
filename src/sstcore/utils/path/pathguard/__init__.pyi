@@ -1,9 +1,14 @@
+__all__: list[str] = [
+    "PathGuard",
+    "PathArg",
+    "PathInput",
+]
 from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, overload
 
-from ._config import PathConfig, PathInput
+from ._input import PathArg, PathInput
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
@@ -15,7 +20,7 @@ class PathGuard:
 
         def check_conflict(self, target: Path) -> Path: ...
 
-    Config = PathConfig
+    PathArg = PathArg
 
     @staticmethod
     def debug(enable: bool) -> None: ...
@@ -124,5 +129,3 @@ class PathGuard:
     def split_read_print_path(
         target: Any, local_root: Path | None = None
     ) -> list[tuple[Path, Path]] | tuple[Path, Path]: ...
-
-__all__ = ["PathGuard", "PathConfig", "PathInput"]

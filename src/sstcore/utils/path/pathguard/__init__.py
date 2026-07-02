@@ -1,4 +1,11 @@
-from ._config import PathConfig, PathInput, _state
+"""Unite all Path Tools under PathGuard"""
+
+__all__: list[str] = [
+    "PathGuard",
+    "PathArg",
+    "PathInput",
+]
+
 from ._ensure import (
     dir_main,
     file_main,
@@ -11,6 +18,7 @@ from ._helper import (
     relative_string,
     split_read_print_path,
 )
+from ._input import PathArg, PathInput, _state
 from ._operate import (
     SyncMode,
     copy,
@@ -22,30 +30,28 @@ from ._operate import (
     trash,
 )
 
-__all__: list[str] = [
-    "PathGuard",
-    "PathConfig",
-    "PathInput",
-]
-
 
 class PathGuard:
-    """Centralized path enforcement toolkit"""
+    """
+    Enable Safety and Comfort for Path access and File System operations
+
+    - Demand level of input validation by PathInput and PathXXX
+    """
 
     SyncMode = SyncMode
-    Config = PathConfig
+    PathArg = PathArg
 
     @staticmethod
     def debug(enable: bool):
         _state.debug = enable
 
-    # --- Category 1: Structural Guards & Decorators ---
+    """Category 1: Protect Path access operations to avoid File System fails"""
     dir = staticmethod(dir_main)
     file = staticmethod(file_main)
     unique = staticmethod(unique_main)
     find_sequence = staticmethod(find_sequence)
 
-    # --- Category 2: Maintenance & Destruction Ops ---
+    """Category 2: Perform File Transfer operations with comfort and safety"""
     remove = staticmethod(remove)
     trash = staticmethod(trash)
     prune = staticmethod(prune)
@@ -54,7 +60,7 @@ class PathGuard:
     hardlink = staticmethod(hardlink)
     symlink = staticmethod(symlink)
 
-    # --- Category 3: Evaluators & Diagnostics ---
+    """Category 3: Use infrastructure for Relative Path and minor helpers.."""
     relative = staticmethod(relative_main)
     relative_duo = staticmethod(relative_duo)
     relative_string = staticmethod(relative_string)
