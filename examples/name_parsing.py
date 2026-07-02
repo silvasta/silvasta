@@ -8,6 +8,13 @@ from pydantic import BaseModel
 from sstcore.utils import PatternNamer, day_count, printer
 from sstcore.utils.parse import ParsedName, StyledName
 
+# TASK: repair this, update latest changes
+
+# IMPORTANT: styled_name
+# - find fast and flexible setup for: __str|rich__
+# - use this here as testing area
+# Deadline: before next __str|rich__ hack...
+
 
 def main():
     printer.title("Start of name_parsing")
