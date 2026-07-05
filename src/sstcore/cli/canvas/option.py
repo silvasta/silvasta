@@ -1,10 +1,10 @@
 """
-Provide dynamic Option Collection for high-interval visual inspection
+Provide Dynamic Option Collection for high-interval visual inspection
 
 - Replace 1 Canvas function with 1 stable default function...
 - Provide Registry that swiches function (automatic, random, when needed)
 - Mix arguments to create different visual examples
-- Clearly show toggle to always and fast go back to execution mode
+- Clearly show toggle to always and fast go back to regular execution mode
 """
 
 import random
@@ -13,17 +13,22 @@ from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from functools import update_wrapper
 from itertools import product
-from typing import Any, overload
+from typing import Any, Protocol, cast
 
 from ...utils import printer
 from ...utils.color import ColorBox, colorize
 
 c: ColorBox = ColorBox.bold()
 
-type PrintFunc = Callable[[Any], None]
+type PrintFunc = Callable[..., None]
 
 
 class SelectMode(StrEnum):
+    # LATER: this as govern
+    # - attach here small dataclass with needed SelectState
+    # - create method to swich in between states,
+    #   including special args (eg weights cycle id)
+    # - finally provide current index, based on input and state
     FIXED = auto()
     RANDOM = auto()
     SEQUENTIAL = auto()
@@ -32,58 +37,68 @@ class SelectMode(StrEnum):
 
 
 @dataclass
-class VariantMeta:
+class VariantMeta[FuncT: PrintFunc]:
+    # IDEA: attach function directly here?
+    # -> reduce _registry to list of FuncVariation ar similar?
+    # now: self._registry: list[tuple[PrintFunc, VariantMeta]] = []
+    # after: self._registry: list[FunctionVariantion] = []
     name: str
     enabled: bool = True
     tags: set[str] = field(default_factory=set)
 
 
-class PrintOptionBase:
+class PrintOptionBase[FuncT: PrintFunc]:
     """Provide Printer Canvas execution with optional random dispatches"""
 
-    def __init__(self):
-        """Prepare Registry and ensure default print option is ready"""
-
-        self._registry: list[tuple[PrintFunc, VariantMeta]] = []
-        self._current: int | None = None
-        self.select_mode: SelectMode = SelectMode.FIXED
-        self.weights: list[float] | None = None
-        self._excluded: set[int] = set()
-        self._cycle_index = 0
-
-        self._set_default_function()
-        if len(self._registry) != 1:
-            raise RuntimeError("Assign exactly 1 default in _set_default!")
-        self._set_more_if_desired()
-
-    def __call__(self, *args, use_default_function=True, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Provide regular usage or dispatch to random selections"""
 
-        if use_default_function or self.select_mode == SelectMode.FIXED:
+        if self.select_mode == SelectMode.FIXED:
             self.set_current(value=0)
 
         self.print_function(*args, **kwargs)
 
-    def __rich__(self) -> str:
-        return colorize.module_path(self, target_color="red")
+    def __init__(self, *, select_mode=SelectMode.FIXED):
+        """Prepare Registry and ensure default print option is ready"""
 
-    def _set_default_function(self):
-        """Attach default print option to registry"""
+        self.select_mode: SelectMode = select_mode
+
+        # used by selection modes # LATER: move to Enum (attached dataclass)?
+        self._cycle_index = 0
+        self.weights: list[float] | None = None
+
+        # registry setup, access and exclude
+        self._registry: list[tuple[FuncT, VariantMeta[FuncT]]] = []
+        self._current: int | None = None
+        self._excluded: set[int] = set()
+
+        self.register(self._load_default_function())
+
+        self._set_more_if_desired()
+
+    def _load_default_function(self) -> FuncT:
+        """Provide default print function option for Registry[0]"""
         raise NotImplementedError
 
     def _set_more_if_desired(self):
         """Assign even more print options or anything else for init"""
+
+    def __str__(self) -> str:
+        return type(self).__name__
+
+    def __rich__(self) -> str:
+        return colorize.module_path(self, target_color="cyan")
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### Registry Access
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
     @property
-    def print_function(self) -> Callable:
+    def print_function(self) -> FuncT:
         return self._registry[self.current_id][0]
 
     @property
-    def current_meta(self) -> VariantMeta:
+    def current_meta(self) -> VariantMeta[FuncT]:
         return self._registry[self.current_id][1]
 
     @property
@@ -110,12 +125,41 @@ class PrintOptionBase:
                 "danger",
             )
 
-    def _valid_index_list(self) -> list[int]:
+    def _valid_index_list(self, with_zero=True) -> list[int]:
+        start: int = 0 if with_zero else 1
         return [
             index
-            for index in range(len(self._registry))
+            for index in range(start, len(self._registry))
             if index not in self._excluded
         ]
+
+    def show(self):
+        printer.lines_with_len(
+            name=self,
+            lines=[self._registry[i][1] for i in self._valid_index_list()],
+        )
+
+    def register(
+        self,
+        target: FuncT,
+        *,
+        name: str | None = None,
+        tags: list[str] | None = None,
+        enabled: bool = True,
+        set_active: bool = False,
+    ) -> FuncT:
+
+        meta: VariantMeta[FuncT] = VariantMeta[FuncT](
+            name=name or getattr(target, "__name__", "function"),
+            enabled=enabled,
+            tags=set(tags or []),
+        )
+        self._registry.append((target, meta))
+
+        if set_active:
+            self.set_current(len(self._registry) - 1)
+
+        return target
 
     def _select(self) -> int:
         """Get new Target Index for Registy Access depending on SelectMode"""
@@ -123,11 +167,12 @@ class PrintOptionBase:
         if not (valid_idx := self._valid_index_list()):
             return 0
 
-        match self.select_mode:
+        match self.select_mode:  # LATER: move check to SelectMode?
             case SelectMode.RANDOM:
                 return random.choice(valid_idx)
 
             case SelectMode.SEQUENTIAL | SelectMode.CYCLE:
+                # NOTE: what is difference, sequential|cycle?
                 idx: int = valid_idx[self._cycle_index % len(valid_idx)]
                 self._cycle_index = (self._cycle_index + 1) % len(valid_idx)
                 return idx
@@ -136,259 +181,161 @@ class PrintOptionBase:
                 if self.weights:
                     weights: list[float] = [self.weights[i] for i in valid_idx]
                     return random.choices(valid_idx, weights=weights, k=1)[0]
+                # LATER: maybe some warn if missing weights
 
         return 0  # for SelectMode.Fixed or missing weights
 
 
-class RegisterMixin:
-    """Inject external decorator registration into PrintOption"""
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### The Unified Protocol
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-    # FIX: Important change:
-    # name: self._print_options -> self._registry
-    # type: list[PrintOption] -> list[tuple[PrintOption,VariantMeta]]
-    # - Just make it work as before
 
-    # TODO: use this new Template but with old overload structure and dispatch logic!
-    # class RegisterMixin:
-    #     """Decorator-based registration with metadata."""
-    #     def register(
-    #         self,
-    #         target: PrintFunc | None = None,
-    #         *,
-    #         name: str | None = None,
-    #         tags: list[str] | None = None,
-    #         enabled: bool = True,
-    #         set_current: bool = False,):
-    #         def _register(func: PrintFunc):
-    #             meta = VariantMeta(
-    #                 name=name or func.__name__,
-    #                 enabled=enabled,
-    #                 tags=set(tags or []),)
-    #             self._registry.append((func, meta))  # type: ignore[attr-defined]
-    #             if set_current:
-    #                 self.set_current(len(self._registry) - 1)  # type: ignore[attr-defined]
-    #             return func
-    #         if callable(target):
-    #             return _register(target)
-    #         return _register
-    # TODO: end.
+class PrintOptionProtocol[FuncT: PrintFunc](Protocol):
+    """Provide type checker with information across all Mixins and Base"""
 
-    @overload
-    def register(self, target: PrintFunc) -> PrintFunc: ...
+    _registry: list[tuple[FuncT, VariantMeta[FuncT]]]
+    _excluded: set[int]
+    _cycle_index: int
+    select_mode: SelectMode
+    weights: list[float] | None
 
-    @overload
-    def register(
-        self, *, set_current: bool = False
-    ) -> Callable[[PrintFunc], PrintFunc]: ...
+    def set_current(self, value: int) -> None: ...
+    def reset(self) -> None: ...
 
     def register(
-        self, target: PrintFunc | None = None, *, set_current: bool = False
-    ) -> Any:
-        """
-        Provide Hybrid decorator to append external functions to registry:
-
-        - @po.register
-        - @po.register(set_current=True)
-        """
-
-        def _add_to_list(func: Callable[[Any], None]):
-            self._print_options.append(func)  # ty:ignore
-            if set_current:
-                self.set_current(value=len(self._print_options) - 1)  # ty:ignore
-
-        # CASE 1: Bare Decorator -> @po.register or simply: po.register(...)
-        if callable(target):
-            _add_to_list(target)
-            return target
-
-        # CASE 2: Decorator with args -> @po.register(set_current=True)
-        if target is None:
-
-            def decorator(func: PrintFunc) -> PrintFunc:
-                _add_to_list(func)
-                return func
-
-            return decorator
-
-
-class FunctionFactoryMixin:
-    """Generates combinatorial variants from parameter grids."""
-
-    def register_grid(
         self,
-        base_func: Callable,
+        target: FuncT,
+        *,
+        name: str | None = None,
+        tags: list[str] | None = None,
+        enabled: bool = True,
+        set_active: bool = False,
+    ) -> Any: ...
+
+    def set_mode(
+        self,
+        mode: SelectMode | None = None,
+        weights: list[float] | None = None,
+    ) -> None: ...
+    def _valid_index_list(self, with_zero: bool) -> list[int]: ...
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Mixins
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+class FunctionFactoryMixin[FuncT: PrintFunc]:
+    """Generate combinatorial variants from parameter grid"""
+
+    def grid[ParamT: Callable[..., None]](
+        self: PrintOptionProtocol[FuncT],
+        template: ParamT,  # LATER: check if and how to enforce this
         param_grid: dict[str, list[Any]],
         filter_func: Callable[[dict], bool] | None = None,
-        common_kwargs: dict | None = None,
+        common_kwargs: dict[str, Any] | None = None,
         tags_prefix: str = "",
-    ):
+    ) -> None:
+        """Assemble Parameter dynamically to PrintFunc and Register"""
+
         common_kwargs: dict[str, Any] = common_kwargs or {}
-
         keys: list[str] = list(param_grid.keys())
-        values: list[Any] = list(param_grid.values())
+        values: list[list[Any]] = list(param_grid.values())
+        count = 0
 
-        count = 0  # TODO: check, maybe easier by some len()?
+        base_name: str = getattr(template, "__name__", "variant")
 
         for combo_values in product(*values):
-            # Use original keys with shuffled values... ?
             params: dict[str, Any] = dict(zip(keys, combo_values, strict=True))
 
-            # TODO: what is filter_func?
             if filter_func and not filter_func(params):
                 continue
 
-            def make_variant(fixed_params: dict):
-                def variant(*args, **call_kwargs):
+            # Extracted closure factory to avoid late-binding issues in loops
+            def make_variant(fixed_params: dict[str, Any]) -> FuncT:
+                # LATER: why not partial?
+                def variant(*args: Any, **call_kwargs: Any) -> None:
                     merged: dict[str, Any] = {
-                        # why so many kwargs?
                         **common_kwargs,
                         **fixed_params,
                         **call_kwargs,
                     }
-                    # TODO: what is base_func?
-                    return base_func(*args, **merged)
+                    return template(*args, **merged)
 
-                # WARN: ty allert -> base_func.__name__
-                # TODO: check maybe use one of the created naming templates
-                variant_name = f"{base_func.__name__}_{'_'.join(f'{k}={v}' for k, v in fixed_params.items())}"
-                # FIX: This should probably be VariantMeta and not internal func: variant...
-                variant.variant_name = variant_name  # type: ignore[attr-defined]
-                # FIX: yes definitely VariantMeta
-                variant.tags = {
-                    tags_prefix,
-                    *(f"{k}_{v}" for k, v in fixed_params.items()),
-                }  # FIX: ok or maybe some kind of closure, unsure if there is no simpler approach
-                update_wrapper(variant, base_func)
-                return variant
+                update_wrapper(variant, template)
+                return cast(FuncT, variant)
 
-            self.register(  # NOTE: repair RegisterMixin first, use maybe Protocol for typing?
-                make_variant(params),
-                name="variant_name",  # FIX: definitely, something messed up
-                tags=list(params.keys()),
-            )  # type: ignore[attr-defined] # NOTE: for example when you get 'fixes' like this
+            # Generate Clean Metadata
+            param_names: str = "_".join(f"{k}={v}" for k, v in params.items())
+            # LATER: better name, unreadable, terrible for e.g. boxes
+            variant_name = f"{base_name}_{param_names}"
+
+            tags: set[str] = {tags_prefix} if tags_prefix else set()
+            tags.update(f"{k}_{v}" for k, v in params.items())
+
+            # Register by VariantMeta approach
+            self.register(
+                target=make_variant(params),
+                name=variant_name,
+                tags=list(tags),
+            )
             count += 1
 
         if count:
-            printer.box_mini(
-                f"Generated {count} variants from grid", frame="blue"
-            )
+            printer(f"{count} PrintOptions from Grid", end=" ")
+            printer(self)
 
 
-class RandomSelectMixin:
-    """Controlled random/sequential exploration."""
+class RandomSelectMixin[FuncT: PrintFunc]:
+    """Control random or sequential exploration of variants"""
 
-    def set_select_mode(
-        self, mode: SelectMode, weights: list[float] | None = None
+    def set_mode(
+        self: PrintOptionProtocol[FuncT],
+        mode: SelectMode | None = None,
+        weights: list[float] | None = None,
     ):
-        self.select_mode: SelectMode = mode
-        # TODO: check if maybe set select_mode without changing weights?
-        self.weights: list[float] | None = weights
-        self.reset()  # ty:ignore # NOTE:  use maybe Protocol for typing?
+        """Change SelectMode or weights"""
+        if mode is not None:
+            self.select_mode: SelectMode = mode
+        if weights is not None:
+            self.weights: list[float] | None = weights
+        self.reset()
 
-    def disable(self, identifier: int | str | PrintFunc):
-        """Disable by index, name, or function."""
-        for i, (func, meta) in enumerate(self._registry):  # type: ignore[attr-defined]
+    def disable(self: PrintOptionProtocol, identifier: int | str | PrintFunc):
+        """Disable by index, name, or function"""
+        for i, (func, meta) in enumerate(self._registry):
             if (
                 i == identifier
                 or (isinstance(identifier, str) and meta.name == identifier)
                 or func == identifier
             ):
-                self._excluded.add(i)  # ty:ignore # NOTE:  use maybe Protocol for typing?
+                self._excluded.add(i)
                 break
 
-    def play_multiple(self, n: int = 2):
-        # TODO: check what this is doing,
-        # idea is to print n different styled but same layouts in a row
-        """Queue n non-default variants for sequential playback."""
-        valid = [  # TODO: check self._valid_index_list, maybe with some arg for i=1?
-            i
-            for i in range(1, len(self._registry))  # ty:ignore # NOTE:  use maybe Protocol for typing?
-            if i not in self._excluded  # ty:ignore # NOTE:  use maybe Protocol for typing?
-        ]  # type: ignore[attr-defined]
-        if valid:
-            # FIX: what happens with chosen?
-            _chosen: list[int] = random.sample(valid, min(n, len(valid)))
-            # Force sequential mode for next calls
-            self.set_select_mode(SelectMode.SEQUENTIAL)
-            self._cycle_index = (
-                0  # will start from first chosen via _select logic
-            )
+    def play_multiple(self: PrintOptionProtocol):
+        """Queue non-default variants for sequential playback"""
+
+        if not (all_targets := self._valid_index_list(with_zero=False)):
+            return
+
+        # TEST: check how this works with a few runs
+
+        # NOTE: unsure if and for what this makes sense at all...
+        # Instead of dynamically creating a sub-queue (which requires altering the
+        # Base _select logic), we pick a random valid starting point and force
+        # the sequencer mode so the next `n` executions will flow naturally in a row.
+        start_index: int = random.choice(all_targets)
+
+        self.set_mode(SelectMode.SEQUENTIAL)
+
+        # Point cycle index at chosen start location within the valid list
+        self._cycle_index: int = all_targets.index(start_index)
 
 
-class PrintOption(
-    FunctionFactoryMixin, RandomSelectMixin, RegisterMixin, PrintOptionBase
+class PrintOption[FuncT: PrintFunc](
+    FunctionFactoryMixin[FuncT],
+    RandomSelectMixin[FuncT],
+    PrintOptionBase[FuncT],
 ):
     """Mix full setup of all PrintOptionMixins"""
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Example Usage (This will be deleted after Debug)
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
-class MainIntro(PrintOption):
-    # NEXT: check how well this applies to .safe_typer
-    def _set_default_function(self):
-        def default(project_name: str):
-            printer.title(
-                c.cyan(f"Welcome to {c.white(project_name)}"),
-                box=printer.BOX_OPEN,
-            )
-
-        self.register(default, name="stable_default")
-
-    def _set_more_if_desired(self):
-        # Factory example
-        self.register_grid(
-            # NEXT: check how well control is with this func stratregy setup
-            base_func=self._intro_template,
-            param_grid={
-                "box": [printer.BOX_OPEN, printer.BOX_MINI, printer.BOX_FULL],
-                "frame": ["cyan", "blue", "purple"],
-            },
-            filter_func=lambda p: (
-                not (p["frame"] == "purple" and p["box"] is printer.BOX_MINI)
-            ),  # ugly combo
-            tags_prefix="intro",
-        )
-
-    # NEXT: study different group and attach methods for multiple funcs
-    #  (check as well if they are reusable over multiple Canvas Prints)
-    def _intro_template(
-        self, project_name: str, box=printer.BOX_OPEN, frame="cyan", **_
-    ):
-        # INFO: parametrized functions to test different styles
-        #
-        printer.title(  # WARN: same as _set_default_function!!
-            # IMPORTANT: reference to default and to here from same template!
-            c.cyan(f"Welcome to {c.white(project_name)}"),
-            box=box,
-            frame=frame,
-        )
-
-    # IMPORTANT: Core principles of this module:
-    # - Reduce needed templates or layouts to absolute minimum
-    # - Avoid any issue that can happen from updating duplicates
-    # Highest Goal is to provide Simple usage and API but advanced Features.
-    # -> Take the initial pain of increased internal complexity needed for that
-
-
-if __name__ == "__main__":
-    intro = MainIntro()  # exported via __init__.py
-
-# Usage: canvas.safe_typer.intro("flux") or with use_default_function=False
-
-# IMPORTANT: check:  Final Plan — Closing This Topic
-# from:  9678_dynamic-print-options_x-g420
-
-# NOTE: stuff like
-# #class VisualExperiment:
-#     def __init__(self):
-#         self.options = [intro, status, ...]
-#     def random_tour(self):
-#         for opt in self.options:
-#             opt.set_selection_mode("random")
-#             opt.reset()
-#     def disable_ugly(self, tag):
-#         for opt in self.options:
-#             opt.disable(...)

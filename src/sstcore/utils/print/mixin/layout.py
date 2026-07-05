@@ -13,6 +13,30 @@ class LayoutMixin(BasePrinter):
 
     _boxes = BoxLibrary()
 
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    ### Latest Test of new Box layouts! (Promising!)
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+    def line(self, style: str = ""):
+        """Print Horizontal Line"""
+        self(Rule(style=style or "cyan"))
+
+    # REFACTOR: keep nice boxes, reduce rest
+    # IDEA: something like dot accessed boxes?
+    # -> printer.box.full|top|dash... ?
+
+    def box_full(self, target, frame=""):
+        """Print Partial underlined Target and open a Scroll"""
+        return self.box(target, frame, box=self._boxes.EDGE)
+
+    def box_top(self, target, frame=""):
+        """Print Overlined Target and open a Scroll"""
+        return self.box(target, frame, box=self._boxes.UP)
+
+    def box_bottom(self, target, frame=""):
+        """Print Underlined Target and close a Scroll"""
+        return self.box(target, frame, box=self._boxes.DOWN)
+
     def mini_box(
         self, target, frame="", mode: Literal["up", "down", "both"] = "both"
     ):
@@ -60,7 +84,7 @@ class LayoutMixin(BasePrinter):
     def md(self, text, *args, header: int = 0, **kwargs):
         """Render Markdown in Terminal, optional with desired Header-Level"""
 
-        kwargs.setdefault("style", "info")
+        kwargs.setdefault("style", "white")  # LATER: default from ... ?
 
         if not (0 <= header <= 6):
             warn = (f"Markdown {header=} invalid! (H1 to H6) using default=0",)
@@ -92,7 +116,7 @@ class LayoutMixin(BasePrinter):
         """Provide default Frame with Title"""
 
         # LATER: check as well the title.inverted, how to provide arg for that?
-        frame: str | None = kwargs.pop("frame", self._cb.title)
+        frame: str | None = kwargs.pop("frame", "cyan")
 
         title: str = title or self.name_and_version
         self.header(
@@ -119,7 +143,9 @@ class LayoutMixin(BasePrinter):
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def lines(self, lines: list, style="title", title=None, header=None):
+    def lines(
+        self, lines: list, style="cyan", title=None, header=None
+    ):  # LATER: default from ... ?
         """Provide Lines optional with inverted style header"""
 
         # LATER: check for better access to ColorBox.palette themes
@@ -130,7 +156,9 @@ class LayoutMixin(BasePrinter):
 
         self.panel(lines, title=title, frame=style, title_align="right")
 
-    def lines_with_len(self, name, lines: list, style: str = "title"):
+    def lines_with_len(
+        self, name, lines: list, style: str = "cyan"
+    ):  # LATER: default from ... ?
         """Provide Lines with Statistic"""
         header = f"{name}: {len(lines)}"
         self.lines(header=header, title=name, lines=lines, style=style)
@@ -148,37 +176,3 @@ class LayoutMixin(BasePrinter):
             padding=padding,
             **kwargs,
         )
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Latest Test of new Box layouts! (Promising!)
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def line(self, style: str = ""):
-        """Print Horizontal Line"""
-        self(Rule(style=style or "cyan"))
-
-    def box_mini(
-        self, target, frame="", mode: Literal["up", "down", "all"] = "all"
-    ):
-        """Print Partial underlined Target and open a Scroll"""
-        match mode:
-            case "up":
-                box = self._boxes.MINI_UP
-            case "down":
-                box = self._boxes.MINI_DOWN
-            case "all":
-                box = self._boxes.MINI
-
-        return self.box(target, frame, box=box)
-
-    def box_full(self, target, frame=""):
-        """Print Partial underlined Target and open a Scroll"""
-        return self.box(target, frame, box=self._boxes.EDGE)
-
-    def box_top(self, target, frame=""):
-        """Print Overlined Target and open a Scroll"""
-        return self.box(target, frame, box=self._boxes.UP)
-
-    def box_bottom(self, target, frame=""):
-        """Print Underlined Target and close a Scroll"""
-        return self.box(target, frame, box=self._boxes.DOWN)

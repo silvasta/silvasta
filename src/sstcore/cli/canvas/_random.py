@@ -38,7 +38,3 @@ def get_skewed_pairs() -> tuple[ModeType, ModeType]:
     second = random.choices(modes, weights=weights, k=1)[0]
 
     return first, second
-
-
-# REMOVE: after selection
-mode_1, mode_2 = get_skewed_pairs()

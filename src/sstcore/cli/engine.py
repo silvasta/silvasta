@@ -7,14 +7,12 @@ import typer
 from loguru import logger
 
 from ..config import ConfigManager
-from ..config.loader import default_config_loader
-from ..utils import printer
+from ..config.loader import ConfigLoader, default_config_loader
 from ..utils.log import LogSetupResult, setup_logging
 from ..utils.log.setup import setup_minimal_logging
 from . import args, canvas
 
 type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
-type ConfigLoader = Callable[[Path | None], ConfigManager]
 
 
 class SafeTyper(typer.Typer):
@@ -37,6 +35,8 @@ class SafeTyper(typer.Typer):
         return list(self._error_handlers.keys())
 
     def __init__(self, config_loader: ConfigLoader | None = None, **kwargs):
+        """Load Typer and prepare custom setup"""
+
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(**kwargs)
 
@@ -58,7 +58,7 @@ class SafeTyper(typer.Typer):
         # @app.register_error_handler(TuiSelectorError)
         # def handle_tui_selector(error: TuiSelectorError):
         #     printer.danger(f"Selector failed: {error}")
-        # - use that handler has always first (or even all) arguments like:
+        # - use that handler always has first (or even single) argumentslike:
         # - error:Exception, grab this
 
         def decorator(handler: Callable[[Any], None]):
@@ -86,7 +86,7 @@ class SafeTyper(typer.Typer):
                     logger.error(f"Initial Error: {error}")
                     sys.exit(2)
 
-            # INFO:Fallback for unhandled structural issues
+            # INFO: Fallback for unhandled structural issues
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)
 
@@ -113,30 +113,27 @@ class SafeTyper(typer.Typer):
         setting_file: Path | None,
     ):
         """Setup Config and Logging and show Status"""
+
+        # Use minimal output for bootstap fails but shadow bootstap noise
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
 
         config: ConfigManager = self._config_loader(setting_file)
-        # Wait for Printer until Injection in config_loader!
+        # Wait for Printer until Injection in config_loader is done!
 
-        result: LogSetupResult = setup_logging(
+        log_result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
             param=config.settings.log,
         )
         if not quiet:
             canvas.safe_typer.intro(project_name=ctx.info_name)
-            canvas.safe_typer.ConfigSetup(config, self._config_loader)()
-            canvas.safe_typer.main_callback_log_setup(result)
+            canvas.safe_typer.setup(config, self._config_loader, log_result)
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice subapp title"""
-        # MOVE: canvas
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        printer.title(f"Launching attached App: {ctx.info_name}!")
+        canvas.safe_typer.sub_callback(ctx.info_name or "subapp")
 
-    def print_setup_status(self, show_handler=False):
+    def print_setup_status(self, show_all_exceptions=False):
         """Launch Summary of Status after assembly"""
         exceptions: list = self.exceptions_of_all_handler
-        canvas.safe_typer.Status(self, exceptions, show_handler)
+        canvas.safe_typer.status(self, exceptions, show_all_exceptions)

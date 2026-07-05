@@ -33,7 +33,7 @@ def module_path(
 
     # TEST: colorize functions, check how that works
 
-    target: type = obj if hasattr(any, "__name__") else type(obj)
+    target: type = obj if hasattr(obj, "__name__") else type(obj)
     raw_project, *raw_modules = target.__module__.split(".")
 
     project: str = c(raw_project, project_color)

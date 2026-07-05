@@ -19,6 +19,13 @@ utils_app = SafeTyper(
 )
 
 
+@utils_app.command()
+def empty():
+    """Launch default setup without any other exectution"""
+    printer("Start of 'empty' function...")
+    printer.danger("END")
+
+
 @utils_app.command("monitor")
 def launch_monitor(file: sargs.File = None):  # NOTE: CLI hint not amazing...
     """Log Console Monitor: Watch new log file entries!"""
