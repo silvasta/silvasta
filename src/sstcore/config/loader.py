@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from pathlib import Path
 
 from loguru import logger
@@ -6,6 +7,8 @@ from ..utils import HomeSetup
 from .manager import ConfigManager
 from .paths import SstPaths
 from .settings import SstSettings
+
+type ConfigLoader = Callable[[Path | None], ConfigManager]
 
 _config: ConfigManager | None = None
 
