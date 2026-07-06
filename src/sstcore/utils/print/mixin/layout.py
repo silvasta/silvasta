@@ -143,9 +143,7 @@ class LayoutMixin(BasePrinter):
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def lines(
-        self, lines: list, style="cyan", title=None, header=None
-    ):  # LATER: default from ... ?
+    def lines(self, lines: list, style="cyan", title=None, header=None):
         """Provide Lines optional with inverted style header"""
 
         # LATER: check for better access to ColorBox.palette themes
@@ -156,9 +154,7 @@ class LayoutMixin(BasePrinter):
 
         self.panel(lines, title=title, frame=style, title_align="right")
 
-    def lines_with_len(
-        self, name, lines: list, style: str = "cyan"
-    ):  # LATER: default from ... ?
+    def lines_with_len(self, name, lines: list, style: str = "cyan"):
         """Provide Lines with Statistic"""
         header = f"{name}: {len(lines)}"
         self.lines(header=header, title=name, lines=lines, style=style)

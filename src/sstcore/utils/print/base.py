@@ -15,8 +15,9 @@ from sstcore.utils.color import Palette
 from ..color.palette import BASE_PALETTE
 from ..log.inspect import debug_log_or_print
 
-
 # AI_IGNORE: until next mark
+
+
 def test_this_somewhennnn(text: str) -> str:
     """Fix broken or undesired color pattern"""
     inspect(text)  # LATER: inspect rich.inspect
@@ -56,11 +57,12 @@ def test_this_somewhennnn(text: str) -> str:
 #         # - import dataclass, init, for sure works. without import?
 #         # Now you have IDE autocomplete for style.frame, style.title, etc.
 
-# AI_READ: until next mark: listen
-
 
 class BasePrinter:
     """Provide Frame for easy access Rich Console setup"""
+
+    # AI_FOCUS: here should the __cli__ finally be printed
+    # - processing maybe in cli or somewhere else, execution in printer() or layout
 
     _debug: bool = False
     _log: bool = False
@@ -103,7 +105,7 @@ class BasePrinter:
                 _i_hope_it_renders = self.format(target, indent)
                 self.console.print(_i_hope_it_renders, **kwargs)
 
-    # LATER: check if panel kwargs pop gets to big
+    # LATER: check when panel kwargs pop gets to big
     # PANEL_KWARGS = {"box", "safe_box", "expand", "padding", "subtitle", "border_style"}
     # @debug_log_or_print(anyway=True)
     # def panel(self, target: Any, **kwargs) -> None:
@@ -154,17 +156,15 @@ class BasePrinter:
         return self.color(text, color)
 
     def format(self, target: Any, indent=0) -> Any:
-        """Install Base for FormatMixin"""
-        # AI_QUESTION: when using protocol, maybe delete this?
+        # LATER: when using protocol, maybe delete this?
         return target
 
     @property
-    def _cb(self) -> ColorBox:  # NOTE: placeholder for protocol
+    def _cb(self) -> ColorBox:
         raise NotImplementedError
 
     def color(self, text: str, color: str | None) -> str:
-        """Install Base for ColorMixin"""
-        # AI_QUESTION: when using protocol, maybe delete this?
+        # LATER: when using protocol, maybe delete this?
         return text
 
     class Modus(Enum):

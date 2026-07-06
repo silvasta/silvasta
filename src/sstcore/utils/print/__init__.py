@@ -1,10 +1,10 @@
 """
 The Printer - Fast and Beautiful Access to rich.Console!
 
-This submodule provides a configurable 'Printer' class constructed dynamiacally
-using optional mixins (Format, Color, Layout, Tool) and the simple Colorbox.
-It exposes a pre-configured global `printer` instance or the factory function.
-"""  # LATER: write less condensed
+Dynamiacally build the configurable 'Printer' with optional Mixins.
+
+- Expose pre-configured global `printer` instance and factory function
+"""
 
 __all__: list[str] = [
     "printer",

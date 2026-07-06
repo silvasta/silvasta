@@ -8,25 +8,25 @@ class ColorMixin(BasePrinter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # AI_TASK: this in protocoll, avaliable for other mixins
+        # LATER: this in protocoll, avaliable for other mixins
         self.color_box = ColorBox()
 
     @property
     def name_and_version(self) -> str:
         """Style the top right title of printer.title Panel"""
         name: str = self._cb.cyan(self.project_name)
-        # AI_TASK: MAYBE this in protocoll, avaliable for other mixins
+        # LATER: MAYBE this in protocoll, avaliable for other mixins
         return f"{name} v{self.project_version}"
 
     @property
     def _cb(self) -> ColorBox:
         """Provide Short access to attached ColorBox"""
-        # AI_TASK: FOR SURE this in protocol, used mostly internally
+        # LATER: FOR SURE this in protocol, used mostly internally
         return self.color_box
 
     def color(self, text: str, color: str | None = None) -> str:
         """Apply color and in ColorBox predefined style attribute (bold,...)"""
-        # AI_TASK: this in protocoll, if deleting in base
+        # LATER: this in protocoll, if deleting in base
         return self.color_box(text, color) if text else ""
 
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
