@@ -11,15 +11,15 @@ from ..color import ColorBox, Palette
 from ..color.palette import BASE_PALETTE
 from ..log.inspect import debug_log_or_print
 
-# LATER: final split for PrinterMixins, ideas:
-# - _debug,_log,_split together with dunders (maybe project) to meta mixin
-# - project_name,project_version maybe to new object? (showing DTO render)
-# - panel together with other base components (Markdown,Rule) in new mixin
-# - header and box derivatives stay as layout
-
 
 class BasePrinter:
     """Provide Frame for easy access Rich Console setup"""
+
+    # IDEA: final split for PrinterMixin and Base:
+    # - _debug,_log,_split together with dunders (maybe project) to meta mixin
+    # - project_name,project_version maybe to new object? (showing DTO render)
+    # - panel together with other base components (Markdown,Rule) in new mixin
+    # - header and box derivatives stay as layout
 
     _debug: bool = False
     _log: bool = False

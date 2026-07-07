@@ -4,7 +4,7 @@ Handle CLI Event
 - call printer.format
 
 """
-# IDEA: move to __init__?? otherwise cli
+# IDEA: move to __init__?? otherwise cli because no printer available
 
 from ...events.bus import Event
 
