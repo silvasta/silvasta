@@ -1,5 +1,3 @@
-# TODO: explain
-
 import sys
 from pathlib import Path
 
@@ -7,6 +5,8 @@ from loguru import logger
 
 from ..path import PathGuard
 from .param import LogParam, LogSetupResult
+
+# from .sink import serialize_to_ndjson
 
 
 def setup_minimal_logging(level: str = "WARNING"):
@@ -18,8 +18,6 @@ def setup_minimal_logging(level: str = "WARNING"):
         format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
     )
 
-
-# NEXT: loggggg
 
 # Cache Result to prevent multiple calls
 _setup_result: LogSetupResult | None = None
@@ -43,7 +41,7 @@ def setup_logging(
 
     If all options are unused or fail, LogParam defaults are applied
 
-    """  # MOVE: to top? here short?
+    """
     global _setup_result
 
     if _setup_result is not None:
@@ -57,7 +55,7 @@ def setup_logging(
     logger.remove()
 
     if not quiet:  # Terminal output
-        format_parts: list[str] = [
+        format_parts: list[str] = [  # MOVE: to format
             "<green>{time:HH:mm:ss}</green>",
             "<level>{level: <8}</level>",
             "<cyan>{name}</cyan>:<cyan>{function}</cyan>"
@@ -69,17 +67,33 @@ def setup_logging(
             format=" | ".join(format_parts),
             colorize=True,
         )
+    # AI_TASK: discuss new sink to json without disabling the others
+
     # File output
     if log_to_file or log_file:
+        log_file_path: Path = _ensure_log_file(log_param, log_file)
         logger.add(
-            log_file_path := _ensure_log_file(log_param, log_file),
+            sink=log_file_path,
             level="DEBUG",  # Always keep debug detail for files
+            # IDEA: 3 - format=lambda r: serialize_to_ndjson(r),
             rotation=log_param.rotation,
             retention=log_param.retention,
             compression="zip",
             backtrace=True,  # Note: this can reveal sensitive data!
             diagnose=True,  # Shows variable values in logs!
             enqueue=True,  # Thread-safe
+        )
+
+        # IMPORTANT: attach serialize_to_ndjson
+
+        # IDEA: 4
+        log_file_json: Path = log_file_path.with_suffix(".jsonl")
+        logger.add(
+            log_file_json,
+            serialize=True,  # activate JSON
+            level="DEBUG",
+            rotation=log_param.rotation,
+            enqueue=True,
         )
     if not quiet and not log_to_file:
         print("Warning: Logging is completely disabled.")

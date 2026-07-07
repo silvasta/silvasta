@@ -20,6 +20,44 @@ from . import args, canvas
 
 type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
 
+# COLLECT: something like this for CLI
+# # sstcore/cli/engine.py
+# from ..events.bus import bus
+# class SafeTyper(typer.Typer):
+#     def _run_main_callback(...):
+#         # ... existing config and log setup ...
+#         # WIRE THE BUS TO THE PRINTER
+#         bus.subscribe("ui.panel", lambda e: printer(e.payload["target"]))
+#         bus.subscribe("ui.success", lambda e: printer.success(e.payload["msg"]))
+#         # WIRE THE BUS TO LOGURU
+#         def log_event(e):
+#             t = e.payload.get("target")
+#             if hasattr(t, "__log__"):
+#                 dto = t.__log__()
+#                 logger.bind(**dto.metrics).log(dto.level.upper(), dto.message)
+#         bus.subscribe("sys.log", log_event)
+
+
+# COLLECT: idea CLI
+# class SafeTyper(typer.Typer):
+#     def __init__(self, config_loader: ConfigLoader | None = None, **kwargs):
+#         super().__init__(**kwargs)
+#         self.event_bus = EventBus()
+#         self._config_loader: ConfigLoader = config_loader or default_config_loader
+#         self._error_handlers: ErrorHandlerDict = {}
+#         self._attach_internal_callback()
+#         # Attach telemetry/visual handlers right at runtime initialization
+#         self._wire_default_observers()
+#     def _wire_default_observers(self) -> None:
+#         """Hooks the system logging and printing modules directly to the Event Bus."""
+#         # Passive telemetry hook: Everything moving across the bus is written as a debug trace log
+#         def telemetry_logger(event: Event) -> None:
+#             # Route objects with custom properties to file logs automatically
+#             logger.debug(
+#                 f"[{event.sender}] Event '{event.name}' emitted.",
+#                 extra={"event_payload": event.payload})
+#         self.event_bus.subscribe_all(telemetry_logger)
+
 
 class SafeTyper(typer.Typer):
     """
