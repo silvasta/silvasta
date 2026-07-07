@@ -1,23 +1,20 @@
+"""
+Setup Loguru for Console, *.log or *.json
+
+Load param from ConfigManager.setup_info.log or create fresh setup.
+
+If all options are unused or fail, LogParam defaults are applied.
+
+"""
+
 import sys
 from pathlib import Path
 
 from loguru import logger
 
 from ..path import PathGuard
+from .format import load_format_pattern, ndjson_formatter
 from .param import LogParam, LogSetupResult
-
-# from .sink import serialize_to_ndjson
-
-
-def setup_minimal_logging(level: str = "WARNING"):
-    """Kill noise immediately. Users see almost nothing during bootstrap."""
-    logger.remove()
-    logger.add(
-        lambda msg: print(msg, end=""),
-        level=level,
-        format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
-    )
-
 
 # Cache Result to prevent multiple calls
 _setup_result: LogSetupResult | None = None
@@ -31,17 +28,14 @@ def setup_logging(
     param: LogParam | None = None,
 ) -> LogSetupResult:
     """
-    Setup Loguru for Console or File output and provide applied param.
-
-    Load param from ConfigManager.setup_info.log or create fresh setup
+    Setup Loguru for Console or File output and return applied param.
 
     - log_file overrides log_to_file
     - otherwise and if needed, LogParam provides path components
     - LogSetupResult provides the finally applied paths and settings
 
-    If all options are unused or fail, LogParam defaults are applied
+    """  # TODO: something about json
 
-    """
     global _setup_result
 
     if _setup_result is not None:
@@ -55,27 +49,18 @@ def setup_logging(
     logger.remove()
 
     if not quiet:  # Terminal output
-        format_parts: list[str] = [  # MOVE: to format
-            "<green>{time:HH:mm:ss}</green>",
-            "<level>{level: <8}</level>",
-            "<cyan>{name}</cyan>:<cyan>{function}</cyan>"
-            " - <level>{message}</level>",
-        ]
         logger.add(
-            sys.stderr,
+            sink=sys.stderr,
             level=log_param.log_level,
-            format=" | ".join(format_parts),
+            format=load_format_pattern(),
             colorize=True,
         )
-    # AI_TASK: discuss new sink to json without disabling the others
 
-    # File output
     if log_to_file or log_file:
         log_file_path: Path = _ensure_log_file(log_param, log_file)
         logger.add(
             sink=log_file_path,
             level="DEBUG",  # Always keep debug detail for files
-            # IDEA: 3 - format=lambda r: serialize_to_ndjson(r),
             rotation=log_param.rotation,
             retention=log_param.retention,
             compression="zip",
@@ -84,16 +69,15 @@ def setup_logging(
             enqueue=True,  # Thread-safe
         )
 
-        # IMPORTANT: attach serialize_to_ndjson
+        # LATER: make toggles inside param and include .json in result
 
-        # IDEA: 4
-        log_file_json: Path = log_file_path.with_suffix(".jsonl")
         logger.add(
-            log_file_json,
-            serialize=True,  # activate JSON
+            sink=log_file_path.with_suffix(".jsonl"),
+            format=ndjson_formatter,
             level="DEBUG",
             rotation=log_param.rotation,
-            enqueue=True,
+            retention=log_param.retention,
+            enqueue=True,  # Keeps JSON writing thread-safe
         )
     if not quiet and not log_to_file:
         print("Warning: Logging is completely disabled.")
@@ -106,5 +90,15 @@ def setup_logging(
 
 @PathGuard.file(default_content="", raise_error=False)
 def _ensure_log_file(log_param: LogParam, log_file: Path | None) -> Path:
-    """Select log path and ensure there is a File"""
+    """Ensure at least empty log file exists"""
     return log_file or log_param.log_file
+
+
+def setup_minimal_logging(level: str = "WARNING"):
+    """Kill noise immediately for clean bootstrap but show critical issues"""
+    logger.remove()
+    logger.add(
+        lambda msg: print(msg, end=""),
+        level=level,
+        format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
+    )

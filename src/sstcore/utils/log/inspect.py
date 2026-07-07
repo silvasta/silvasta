@@ -6,7 +6,7 @@ from rich import print as rich_print
 
 from ..color import ColorBox
 
-# REFACTOR: check what remains after events established
+# REFACTOR: check what remains useful after events established
 
 
 def debug_log_or_print(anyway: bool = False):

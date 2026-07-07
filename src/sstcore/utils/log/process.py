@@ -1,39 +1,39 @@
 """
-Handle CLI Event
+Process __log__ Event
 
-- call printer.format
+- bind to logger and let it write the json
 
 """
-# IDEA: move to __init__?? could stay as well,
-# idea was together with __cli__, in cli?
+
+from typing import Any
 
 from loguru import logger
 
 from ...events.bus import Event
-
-# NEXT: proper handler
-
-
-def handle_log_event(event: Event):
-    raise NotImplementedError
+from ...events.dto import LogDTO
+from ...events.protocol import LogSerializable
 
 
-# IDEA: 1 - regular log string
-def smart_log(obj, message=""):
-    if hasattr(obj, "__log__"):
-        dto = obj.__log__()
-        # Route it to loguru with the requested level
-        getattr(logger, dto.level)(f"{message} {dto.message}")
+def process_log_event(event: Event):
+    """Bridges events from EventBus to Loguru"""
+
+    target: Any = event.payload.get("target") or event.payload.get("obj")
+
+    # Base context to inject into every log from bus
+    bind_context: dict[str, Any] = {
+        "sender": event.sender,
+        "event_name": event.name,
+    }
+
+    if isinstance(target, LogSerializable):
+        dto: LogDTO = target.__log__()
+        # Bind the raw object for the formatter, plus bus context
+        logger.bind(raw_obj=target, **bind_context).log(
+            dto.level.upper(), dto.message
+        )
     else:
-        logger.info(str(obj))
-
-
-# IDEA: 4 - bind json (maybe move function later on to proper place)
-def process_log_event(event):
-    target = event.payload.get("target")
-    if hasattr(target, "__log__"):
-        dto = target.__log__()  # Returns LogDTO
-        # Bind the metrics so they appear as top-level JSON keys
-        logger.bind(**dto.metrics).log(dto.level.upper(), dto.message)
-    else:
-        logger.info(str(target))
+        # Fallback for standard strings/dicts passing through the bus
+        logger.bind(**bind_context).log(
+            event.payload.get("level", "INFO").upper(),
+            str(target or event.payload),
+        )
