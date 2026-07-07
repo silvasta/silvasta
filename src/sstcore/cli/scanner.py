@@ -1,3 +1,13 @@
+"""
+Scan Folder and assemble summary
+
+- use scanner with predefined filtes to get Paths
+- build PathTree and select from TUI
+- write (plain text files) to combined summary file
+  - use suffix [.md .txt .xml] to dispatch summary type
+
+"""
+
 import json
 from pathlib import Path
 
@@ -31,12 +41,8 @@ def folder_scanner(
 
     if filter is None:
         # filter: PathFilter = _setup_filter()
-        # IMPORTANT: make it work local!
+        # FIX: make it work local!
         # - so far needs "fake pyproject.toml" to work in random folder...
-        # FIX:
-        # FIX:
-        # FIX:
-        # FIX:
         filter = ProjectFilter(require_all=set(), require_any=set())
 
     printer(filter)
@@ -66,6 +72,11 @@ def folder_scanner(
 
 
 def _setup_filter() -> PathFilter:
+    # NEXT: check if wanted for this bump
+    # TODO: FilterBox!!!
+    # create module inside filter that collects predefined filter,
+    # provide together with different options and toggles,
+    # -> maybe controlled with tui selector and json cache
     return ProjectFilter(
         exclude={
             ".git",

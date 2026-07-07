@@ -1,3 +1,9 @@
+"""
+Extend typer.Typer
+
+- Read details in SafeTyper
+"""
+
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -17,7 +23,7 @@ type ErrorHandlerDict = dict[type[BaseException], Callable[[Any], None]]
 
 class SafeTyper(typer.Typer):
     """
-    Lead Custom Typer App Setup with Config, Log and Error handling
+    Lead Custom Typer Setup with Config, Log and Error handling
 
     - Provide Framework with basic callback attach and start prints
     - Ensure Loguru is ready and loaded with custom settings
@@ -50,6 +56,7 @@ class SafeTyper(typer.Typer):
         return type(self).__name__
 
     # TODO: def __repr__(self): def __rich__(self):
+    # - __cli__ and __log__
 
     def register_error_handler(self, exception: type[BaseException]):
         """Decorator: Attach Exception with custom Handler to Registry"""

@@ -1,5 +1,5 @@
 """
-Launch 'utils_app' with 3 Example Functions
+Launch 'utils_app' with Example Functions
 
 Amazing
 - scanner: scan folder, select from filetree, merge to summary file

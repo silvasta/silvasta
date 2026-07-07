@@ -1,3 +1,5 @@
+# TODO: explain
+
 from collections.abc import Callable
 from pathlib import Path
 
@@ -38,7 +40,8 @@ def default_config_loader(setting_file: Path | None = None) -> ConfigManager:
         settings_cls=SstSettings,
         paths_cls=SstPaths,
         setting_file=setting_file,
-        project_name="sstcore",  # TODO: make changeable in project with default
+        project_name="sstcore",
+        # TODO: how to change name in small project that uses default?
     )
 
 

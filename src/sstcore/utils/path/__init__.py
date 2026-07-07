@@ -1,3 +1,5 @@
+# TODO: explain
+
 from .homes import HomeSetup, XdgHomes
 from .pathguard import PathArg, PathGuard, PathInput
 from .search import (

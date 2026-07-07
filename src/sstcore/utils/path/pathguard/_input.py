@@ -6,7 +6,8 @@ type PathInput = Path | str | PathArg
 
 
 @dataclass(frozen=True, slots=True)
-class PathArg:
+# IDEA: PathTarget? yes but for func(target:PathTarget,source:PathTarget) ...?
+class PathArg:  # NEXT: final name (and preferably checks below) error
     """
     Encapsulate Validation and Normalization behavior for Target
 

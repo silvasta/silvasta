@@ -4,6 +4,8 @@ NOTHING IMPLEMENTED AND TESTED (only collected)
 Provide Manager for File Diff, most likely working with inodes and hardlinks
 """
 
+# TASK: DiffFileManager - together with hardlink registry
+
 import difflib
 import time
 from pathlib import Path

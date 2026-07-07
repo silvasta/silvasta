@@ -1,3 +1,5 @@
+# TODO: explain
+
 from collections.abc import Callable
 from typing import Protocol
 
@@ -5,7 +7,7 @@ from .palette import BASE_PALETTE, ColorName, Palette
 from .style import TextStyle
 
 
-class Stringable(Protocol):
+class Stringable(Protocol):  # MOVE: protocol?
     """Let objects with __str__ pass the ty check"""
 
     def __str__(self) -> str: ...

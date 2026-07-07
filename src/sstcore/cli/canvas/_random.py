@@ -1,9 +1,7 @@
 """
-Maybe provide some general (random) dispatch functionalities
+TEMPORARY
 
-- select 1 out of n functions to display
-- select pairs
-- select sometimes pairs but sometimes arrange otherwise...
+Remove everything after all ideas collected and implemented!
 """
 
 import random
@@ -16,13 +14,14 @@ type ModeType = Literal["up", "down", "all"]  # MOVE: printer.layout?
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-# REMOVE: after selection
 def get_skewed_pairs() -> tuple[ModeType, ModeType]:
     """Give partially Random modes to compare prints over time"""
 
     modes: list[ModeType] = ["up", "down", "all"]
     # 1. Pick the first mode completely at random (1/3 chance each)
     first: ModeType = random.choice(modes)
+
+    # COLLECT: this somehow for some mixin or even better, enum selector
 
     # 2. Define weights for the second choice based on the first choice.
     # We give the matching mode a 50% weight, and split the remaining 50%

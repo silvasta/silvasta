@@ -1,5 +1,7 @@
 from rich.box import Box
 
+# NEXT: boxBox
+
 
 class BoxLibrary:  # IDEA: Enum!! best for select
     """Library of custom Rich Box layouts for the Printer."""

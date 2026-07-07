@@ -1,3 +1,5 @@
+# TODO: explain
+
 from .defaults import SstDefaults
 from .loader import get_config
 from .manager import ConfigManager

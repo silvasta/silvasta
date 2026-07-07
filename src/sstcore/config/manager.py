@@ -1,3 +1,12 @@
+"""
+Orchestrate Config and Settings
+
+- Launch bootstrap and home setup
+- Load and save Settings from file
+- Provide access to Defaults, Names and Paths
+
+"""
+
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -59,6 +68,8 @@ class ConfigManager[
 
     def __str__(self) -> str:
         return type(self).__name__
+
+    # NEXT: proper __fmt__
 
     def __repr__(self) -> str:
         settings: str = type(self.settings).__name__

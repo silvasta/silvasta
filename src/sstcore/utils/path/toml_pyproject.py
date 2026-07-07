@@ -1,3 +1,5 @@
+# TODO: explain
+
 import tomllib
 from functools import lru_cache
 from pathlib import Path

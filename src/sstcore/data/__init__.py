@@ -1,3 +1,5 @@
+# TODO: explain
+
 from .files import (
     FileRegistry,
     FileSystemManager,

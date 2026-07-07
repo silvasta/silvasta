@@ -1,3 +1,5 @@
+# TODO: explain
+
 import random
 
 from .nodes import SimpleTreeNode

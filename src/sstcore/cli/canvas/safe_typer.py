@@ -27,8 +27,6 @@ from .option import PrintOption, SelectMode
 c: ColorBox = ColorBox.bold()
 boxes = BoxLibrary()
 
-# AI: this as overview about current printer handling,
-# (when extracted and isolated from cli and core)
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ###  Intro
@@ -104,14 +102,15 @@ class ConfigLoaderCanvas(PrintOption[ConfigSignature]):
         )
         return partial(self._template, mode=mode, styler=styler)
 
-    def _param_grid(self):  # NOTE: unused at moment
+    def _param_grid(self):  # NOTE: unused at moment, Mode "both" best so far
         param_grid: dict[str, list[Mode]] = {
             "mode": ["up", "both", "down"],
-        }  # NOTE: Mode "both" most likely major
+        }
         self.grid(self._template, param_grid=param_grid)
 
 
 def _config_module_path_2(config: ConfigManager, loader: ConfigLoader) -> None:
+    # MOVE: do stuff like this in colorize
     project, *modules = loader.__module__.split(".")
     module: str = ".".join([c.cyan(project), *modules])
     _loader = f"{c.white(getattr(loader, '__name__', 'loader_func'))}"

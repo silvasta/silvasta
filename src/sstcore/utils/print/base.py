@@ -15,8 +15,6 @@ from sstcore.utils.color import Palette
 from ..color.palette import BASE_PALETTE
 from ..log.inspect import debug_log_or_print
 
-# AI_IGNORE: until next mark
-
 
 def test_this_somewhennnn(text: str) -> str:
     """Fix broken or undesired color pattern"""

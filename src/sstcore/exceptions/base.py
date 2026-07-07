@@ -1,3 +1,5 @@
+# TODO: explain
+
 from typing import Any
 
 from rich.panel import Panel
@@ -5,6 +7,11 @@ from rich.panel import Panel
 from ..utils.color import ColorBox
 
 c = ColorBox()
+
+# NEXT: exceptions - must be complete until bump
+# TASK: here is precise work without any failure needed
+# - ensure root is 100% perfect
+# - check all others at least twice
 
 
 class SstError(Exception):
@@ -57,6 +64,9 @@ class SstError(Exception):
         return "nothing attached"
 
 
+# TASK: PathGuard Error??
+
+
 class RegistrySyncError(SstError):
     """Raise when FileRegistry State mismatches physical local disk"""
 
@@ -95,7 +105,7 @@ class NotImplementedMixinError(SstError, NotImplementedError):
 
 class TuiSelectorError(SstError):
     def __init__(self, message=None):
-        if message is None:  # TODO: maybe some statistics about Selection?
+        if message is None:
             message = "It was an easy Selection... how can you Fail this?"
         super().__init__(message)
 

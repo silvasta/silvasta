@@ -3,8 +3,7 @@ from typing import Annotated
 
 import typer
 
-# IMPORTANT: Save, store args to config (if possible)
-# TASK: Find proper generalized annotations
+# TODO: Find proper generalized annotations
 # - check:
 #   - sachmis
 #   - grab

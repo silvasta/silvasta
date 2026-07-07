@@ -1,3 +1,5 @@
+# NEXT: explain
+
 __all__: list[str] = [
     "LogSetupResult",
     "LogParam",

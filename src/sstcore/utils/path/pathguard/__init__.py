@@ -36,7 +36,9 @@ class PathGuard:
     Enable Safety and Comfort for Path access and File System operations
 
     - Demand level of input validation by PathInput and PathXXX
-    """
+    """  # TODO: finish PathGuard doc
+
+    # NEXT: format!
 
     SyncMode = SyncMode
     PathArg = PathArg

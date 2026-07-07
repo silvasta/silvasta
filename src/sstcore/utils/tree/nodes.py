@@ -1,3 +1,5 @@
+# TODO: explain
+
 from collections import defaultdict, deque
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -7,6 +9,7 @@ from typing import Self
 
 @dataclass(frozen=True)
 class SimpleTreeNode:
+    # TODO: explain
     name: str
     id: str | None = None
     branches: Sequence[Self] = field(default_factory=list)
@@ -22,6 +25,7 @@ class SimpleTreeNode:
 
 @dataclass(frozen=True)
 class PathTreeNode(SimpleTreeNode):
+    # TODO: explain
     path: Path = field(default_factory=Path)
 
     @property

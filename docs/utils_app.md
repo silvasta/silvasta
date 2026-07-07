@@ -1,3 +1,5 @@
+<!-- NEXT: tools: explain functions -->
+
 # How to launch utils_app
 
 ## Folder Scanner

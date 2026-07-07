@@ -124,7 +124,7 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         return self.backwards_parsing(target)
 
     @singledispatchmethod
-    @staticmethod  # LATER: format_brackets[T] and  -> T | list[T]:
+    @staticmethod  # NEXT: stringable[T] and  -> T | list[str]:
     def format_brackets(target: str | list[str]):
         raise NotImplementedDispatchError(target)
 

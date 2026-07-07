@@ -1,3 +1,5 @@
+# TODO: explain
+
 import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -5,7 +7,7 @@ from functools import wraps
 
 from loguru import logger
 
-# TASK: check utc for entire project, maybe other library
+# TASK: check utc for entire project, maybe pendulum or stay with builtin
 
 
 @dataclass

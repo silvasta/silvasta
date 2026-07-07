@@ -1,6 +1,12 @@
+# TODO: explain
+
+# NEXT: this as paint.py??
 from dataclasses import dataclass, fields
 
 type ColorName = str
+
+# NEXT: as well stringly access to named colors
+# required in PrintOption.grid ("blue" is still better than handover c.blue)
 
 
 @dataclass(frozen=True)

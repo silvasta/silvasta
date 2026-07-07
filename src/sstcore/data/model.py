@@ -1,3 +1,5 @@
+# TODO: explain
+
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,6 +13,8 @@ class SstModel(BaseModel):
     """Extended Defaults to pydantic.BaseModel"""
 
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    # NEXT: attach new __fmt__
 
     @classmethod
     def build_from_file(cls, path: Path) -> Self:

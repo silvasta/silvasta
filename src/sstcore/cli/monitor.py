@@ -1,3 +1,10 @@
+"""
+Read from end of logfile and Display new entries
+
+- so far with slightly colored lines of regular .log
+"""
+# TASK: New Monitor - maybe 1 for regular log and 1 for redered json log?
+
 import sys
 import time
 from pathlib import Path
@@ -25,6 +32,9 @@ def log_monitor(log_path: Path | None = None):
 def launch_tail_log_console(log_file: Path):
     """Launch console with live log prints from file assuming it is valid"""
 
+    # NOTE: this worked somehow well, it did its job, tailing was amazing,
+    # -> format and display was ok but not beautiful...
+
     printer.title(
         [f"Tailing {printer._format(log_file)} ..."],
         title="Loguru Monitor",
@@ -40,7 +50,7 @@ def launch_tail_log_console(log_file: Path):
                 time.sleep(0.1)
                 continue
 
-            match line:  # FIX: broken... since  when??
+            match line:
                 case LogPatterns.DEBUG:
                     style: str = "bold yellow"
                 case LogPatterns.INFO:

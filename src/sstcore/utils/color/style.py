@@ -2,6 +2,7 @@ from enum import StrEnum, auto
 
 
 class TextStyle(StrEnum):
+    # TODO: explain
     NORMAL = auto()
     BOLD = auto()
     DIM = auto()  # LATER: check if or how it is visible in alacritty

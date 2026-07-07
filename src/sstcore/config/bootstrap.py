@@ -1,3 +1,10 @@
+"""
+Prepare for boot
+
+- search for config file, until found
+- check project meta
+"""
+
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from importlib.metadata import PackageNotFoundError, version

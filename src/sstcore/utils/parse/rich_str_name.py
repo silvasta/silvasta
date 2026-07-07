@@ -2,6 +2,8 @@ from typing import Any
 
 from rich.control import strip_control_codes
 
+# NEXT: mix with styled_name.StyledName
+
 
 class StyledName:
     """

@@ -1,3 +1,5 @@
+# TODO: explain
+
 import sys
 from pathlib import Path
 
@@ -16,6 +18,8 @@ def setup_minimal_logging(level: str = "WARNING"):
         format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
     )
 
+
+# NEXT: loggggg
 
 # Cache Result to prevent multiple calls
 _setup_result: LogSetupResult | None = None
@@ -39,7 +43,7 @@ def setup_logging(
 
     If all options are unused or fail, LogParam defaults are applied
 
-    """
+    """  # MOVE: to top? here short?
     global _setup_result
 
     if _setup_result is not None:

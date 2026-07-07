@@ -6,11 +6,10 @@ from loguru import logger
 from ..search import find_project_root, get_project_root
 from .xdg import XdgHomes
 
-# IMPORTANT: needed for config.bootstrap and master setting file search
-# IDEA:
-# Use Enum or similar as guard of uniqueness and dispatch,
-# but with an approach that is more data friendly,
+# TASK: HomeSetup - make it interchangeable at any time
+# IDEA: Use Enum or similar as guard of uniqueness and dispatch,
 # - somehow paired with dataclass but able to boot all 3 together?
+# -> so far too unstable and error prone...
 
 
 class HomeSetup(StrEnum):

@@ -1,3 +1,10 @@
+"""
+Collect and assemble mini-tools for example app
+
+- transform util functions to Typer executables with Arg handling
+"""
+# NEXT: this == tools? why utils?
+
 from pathlib import Path
 
 from ..tui import TreeSelectorApp
@@ -15,7 +22,7 @@ def main() -> None:
 utils_app = SafeTyper(
     name="utils",
     help="FolderScanner and Log Console Monitor",
-    # NEXT: check if config?
+    # INFO: loads default ConfigManager inside
 )
 
 
@@ -27,7 +34,7 @@ def empty():
 
 
 @utils_app.command("monitor")
-def launch_monitor(file: sargs.File = None):  # NOTE: CLI hint not amazing...
+def launch_monitor(file: sargs.File = None):  # TODO: improveCLI hint
     """Log Console Monitor: Watch new log file entries!"""
     log_monitor(log_path=file)
 
@@ -39,6 +46,9 @@ def launch_folder_scanner(
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.BY_SELECTION,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
+    # FIX: default args somehow corrupted...
+    # - as well default filters, they work but fileter sometimes not as desired
+    # -> must be usable at any file system location
     folder_scanner(scan_root, output_file, sort_method=sort)
 
 

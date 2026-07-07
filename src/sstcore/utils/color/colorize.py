@@ -18,6 +18,8 @@ from .box import ColorBox
 
 c: ColorBox = ColorBox.bold()
 
+# NEXT: this will heavily grow soon...
+
 
 def module_path(
     obj: Any,

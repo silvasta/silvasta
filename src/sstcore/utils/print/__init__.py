@@ -1,9 +1,10 @@
 """
-The Printer - Fast and Beautiful Access to rich.Console!
+The Printer - Fast and Beautiful Access to Rich Console!
 
-Dynamiacally build the configurable 'Printer' with optional Mixins.
+Dynamiacally build the 'Printer' with optional Mixins.
 
-- Expose pre-configured global `printer` instance and factory function
+- Expose pre-configured global printer instance and factory function
+
 """
 
 __all__: list[str] = [

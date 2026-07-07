@@ -1,3 +1,4 @@
+# TODO: very good text
 from importlib.metadata import PackageNotFoundError, version
 
 from .utils.path import PathGuard
@@ -14,13 +15,3 @@ __all__: list[str] = [
     "PathGuard",
     "printer",
 ]
-
-# TODO: quick improvements
-# - ProjectFilter, default args -> config.json
-# - FolderScanner, methods and args, summaryfile->targetenum
-# - TreeSelector, remember past selection(s)
-
-# TASK:
-# - time management, UTC, maybe new lib
-# - Exceptions, and how to link to SafeTyper
-# - DiffFileManager, together with hardlink

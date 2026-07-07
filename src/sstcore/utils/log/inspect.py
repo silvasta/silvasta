@@ -6,6 +6,8 @@ from rich import print as rich_print
 
 from ..color import ColorBox
 
+# NEXT: check reusability
+
 
 def debug_log_or_print(anyway: bool = False):
     """Check class attributes for log or print then scan args and kwargs"""

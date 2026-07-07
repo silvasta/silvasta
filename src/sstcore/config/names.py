@@ -1,3 +1,5 @@
+# TODO: explain
+
 from functools import cached_property
 
 from pydantic import ConfigDict
@@ -7,6 +9,7 @@ from ..utils.parse import ParsedName, StyledName
 
 
 class SstNames(BaseSettings):
+    # TODO: explain
     model_config = ConfigDict(extra="allow")
 
     project: str = "sstcore"
@@ -17,7 +20,7 @@ class SstNames(BaseSettings):
 
     @cached_property
     def sstfile_dates(self) -> StyledName:
-        # TODO: compare this with Printer and Colorbox -> find best setup
+        # NEXT: compare this with Printer and Colorbox -> find best setup
         return StyledName.parse_style(
             style_pattern=(
                 "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"

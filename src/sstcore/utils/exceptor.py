@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Self
 
 from sstcore import printer
-from sstcore.cli.engine import SafeTyper
+from sstcore.cli.engine import SafeTyper  # WARN: this worked before, but...
 from sstcore.utils.color import ColorBox
 
 c: ColorBox = ColorBox.bold()
@@ -19,6 +19,10 @@ c: ColorBox = ColorBox.bold()
 
 type ErrorHandler = Callable[[Any], None]
 type ErrorList = list[type[BaseException] | ExceptorTask]
+
+# NEXT: check with latest __fmt__
+
+# MOVE: maybe to CLI, together with other utils, tools
 
 
 @dataclass
@@ -88,6 +92,7 @@ class Exceptor:
 
             printer(c(f"  Finished {task}\n", color="dim italic"))
 
+    # NEXT: here Exceptor
     def __rich__(self) -> str:
         return f"{c.c(type(self).__name__)} {'Start of Launch'}..."
 

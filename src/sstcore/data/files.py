@@ -1,3 +1,5 @@
+# TODO: explain
+
 import filecmp
 import hashlib
 from collections.abc import Callable
@@ -22,13 +24,11 @@ from ..utils import (
 )
 from ..utils.tree import build_path_tree
 
-# IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
-
 
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
-    # LATER: check if path is needed for more general setup
+    # TODO: check if using path instead of local_path?
     local_path: Path  # relative from local filedir
     keywords: set = Field(default_factory=set)
 
@@ -36,18 +36,18 @@ class SstFile(BaseModel):
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     def __str__(self):
-        return f"{self.__class__.__name__}(local_path={self.local_path})"
+        return f"{type(self).__name__}(local_path={self.local_path})"
 
     @property
-    def is_temp_file(self) -> bool:  # LATER: check if needed
+    def is_temp_file(self) -> bool:  # TODO: check if needed
         return self.local_path == Path()
 
-    # TODO: colorful
+    # NEXT: colorful check all (pseudo) formats here below
 
     @property
     def description(self) -> str:
         """Extensive description formatted with Rich Color String"""
-        config: ConfigManager = get_config()  # TODO: names placement
+        config: ConfigManager = get_config()
         return config.names.sstfile_dates.styled(self._description)
 
     @property
@@ -58,7 +58,7 @@ class SstFile(BaseModel):
     @property
     def raw_description(self) -> str:
         """Raw description without any coloring"""
-        config: ConfigManager = get_config()  # TODO: names placement
+        config: ConfigManager = get_config()
         return config.names.sstfile_dates(self._description)
 
     @property
@@ -75,8 +75,7 @@ class SstFile(BaseModel):
 
     @property
     def added_at(self) -> str:
-        # LATER: pendulum,arrow,dateutil or custom
-        # + timestamp_format somehow to Defaults
+        # NEXT: timestamp_format inside __cli__????
         return self.first_tracked.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
     def confirm_local_status(self, local_dir: Path) -> bool:
@@ -131,6 +130,10 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
 
 
 class FileRegistry[FilesT: SstFile](BaseModel):
+    # NEXT: think about split!
+    # MOVE: to new .registry
+    # -> still to big, how to split?
+    # LATER: compare as well with ArborealRegistry from sachmis
     """Provide Container for Files and Tools for FileSystem Operations"""
 
     local_root: Path
@@ -599,5 +602,5 @@ class SstFileRegistry(FileRegistry[SstFile]):
         return SstFile(local_path=path)
 
 
-class FileSystemManager:
+class FileSystemManager:  # REMOVE: ???
     """Manager for operations on Local Files"""

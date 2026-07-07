@@ -4,6 +4,8 @@ from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+# REFACTOR: namer to namer? regex below stays?
+
 
 class PatternNamer:
     """Factory for bidirectional connection of filename and keywords"""
@@ -43,6 +45,7 @@ class PatternNamer:
 
         return regex_parts
 
+    # NEXT: check everything with format
     def format(self, **kwargs) -> str:
         """Create formatted string from keyword arguments"""
 
@@ -96,7 +99,7 @@ class RegexMatch:
 
 @dataclass(frozen=True)
 class LogPatterns:
-    """Centralized log patterns for dot-access in match statements."""
+    """Centralized log patterns for dot-access in match statements"""
 
     DEBUG = RegexMatch(r".*DEBUG.*")
     INFO = RegexMatch(r".*INFO.*")
@@ -105,6 +108,7 @@ class LogPatterns:
     SUCCESS = RegexMatch(r".*SUCCESS.*")
 
 
+# NEXT: make this more visible
 def grep_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
     """Yield line if it matches pattern"""
 

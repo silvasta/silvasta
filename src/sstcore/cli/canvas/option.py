@@ -4,7 +4,8 @@ Provide Dynamic Option Collection for high-interval visual inspection
 - Replace 1 Canvas function with 1 stable default function...
 - Provide Registry that swiches function (automatic, random, when needed)
 - Mix arguments to create different visual examples
-- Clearly show toggle to always and fast go back to regular execution mode
+
+- Ensure Toggle to move easy and fast back to regular execution mode
 """
 
 import random
@@ -29,6 +30,7 @@ class SelectMode(StrEnum):
     # - create method to swich in between states,
     #   including special args (eg weights cycle id)
     # - finally provide current index, based on input and state
+    # Ensure something like a (global?) toggle?
     FIXED = auto()
     RANDOM = auto()
     SEQUENTIAL = auto()
@@ -38,7 +40,7 @@ class SelectMode(StrEnum):
 
 @dataclass
 class VariantMeta[FuncT: PrintFunc]:
-    # IDEA: attach function directly here?
+    # LATER: attach function directly here?
     # -> reduce _registry to list of FuncVariation ar similar?
     # now: self._registry: list[tuple[PrintFunc, VariantMeta]] = []
     # after: self._registry: list[FunctionVariantion] = []
@@ -172,7 +174,7 @@ class PrintOptionBase[FuncT: PrintFunc]:
                 return random.choice(valid_idx)
 
             case SelectMode.SEQUENTIAL | SelectMode.CYCLE:
-                # NOTE: what is difference, sequential|cycle?
+                # LATER: what is difference, sequential|cycle?
                 idx: int = valid_idx[self._cycle_index % len(valid_idx)]
                 self._cycle_index = (self._cycle_index + 1) % len(valid_idx)
                 return idx
@@ -316,15 +318,14 @@ class RandomSelectMixin[FuncT: PrintFunc]:
     def play_multiple(self: PrintOptionProtocol):
         """Queue non-default variants for sequential playback"""
 
-        if not (all_targets := self._valid_index_list(with_zero=False)):
-            return
-
-        # TEST: check how this works with a few runs
-
         # NOTE: unsure if and for what this makes sense at all...
         # Instead of dynamically creating a sub-queue (which requires altering the
         # Base _select logic), we pick a random valid starting point and force
         # the sequencer mode so the next `n` executions will flow naturally in a row.
+
+        if not (all_targets := self._valid_index_list(with_zero=False)):
+            return
+
         start_index: int = random.choice(all_targets)
 
         self.set_mode(SelectMode.SEQUENTIAL)

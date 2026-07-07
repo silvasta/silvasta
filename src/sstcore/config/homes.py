@@ -1,3 +1,5 @@
+# TODO: explain
+
 from enum import StrEnum, auto
 from pathlib import Path
 
@@ -6,7 +8,8 @@ from loguru import logger
 from ..utils.path import PathGuard, XdgHomes, get_project_root
 
 
-class HomeSetup(StrEnum):
+class HomeSetup(StrEnum):  # TEST: launching outside project dir
+    # TODO: explain
     GLOBAL = auto()
     PROJECT = auto()
     LOCAL = auto()
