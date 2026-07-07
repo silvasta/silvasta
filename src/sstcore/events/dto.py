@@ -12,10 +12,18 @@ from typing import Any
 @dataclass
 class LogDTO:
     message: str
-    level: str = "info"
+    level: str = "INFO"
     metrics: dict[str, Any] = field(default_factory=dict)
-    # TODO: metrics is clear, but extra?
     extra: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Provide clean dictionary for log injection"""
+        return {
+            "message": self.message,
+            "level": self.level.upper(),
+            **self.metrics,
+            **self.extra,
+        }
 
 
 ### Log
@@ -25,8 +33,6 @@ class LogDTO:
 type CliDTO = PanelDTO | LineDTO | TableDTO
 
 
-# AI_QUESTION: what about CliDTO as base for e.g. PanelDto(CliDTO)?
-# (current approach, create type alias with all types inside .protocol)
 @dataclass
 class PanelDTO:
     """Provide information to render default panel (3-5 lines)"""
@@ -58,6 +64,6 @@ class LineDTO:
 class TableDTO:
     """Provide information to render Table"""
 
-    # TODO: what is needed?
+    # FIX: create proper Table setup
     data: list[dict]
     headers: list[str] | None = None
