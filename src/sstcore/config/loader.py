@@ -1,4 +1,35 @@
-# TODO: explain
+"""
+Hold and prepare Global Singleton ConfigManager instance.
+
+- Provide protected access to initial setup (unlock with flag)
+- Prepare ready-to-use loader for CLI, or any other purpose
+- Handle infrastructure for project setups with custom loader
+- Expose global Singleton: `config: ConfigManager = sst_config()`
+  (easy access e.g.: `sst_config().paths.summary_file(.xml)`)
+
+Example for Projects:
+
+```py
+# sachmis.config.manager:
+from sstcore.config import ConfigManager
+from sstcore.config.loader import setup_config_manager, sst_config
+
+from .defaults import Defaults
+from .names import Names
+from .paths import Paths
+from .settings import Settings
+
+type SachmisConfig = ConfigManager[Settings, Names, Defaults, Paths]
+
+def config_loader(setting_file: Path | None = None) -> SachmisConfig:
+    return setup_config_manager(
+        settings_cls=Settings,
+        paths_cls=Paths,
+        setting_file=setting_file,
+        project_name="sachmis",
+    )
+```
+"""
 
 from collections.abc import Callable
 from pathlib import Path
@@ -10,13 +41,15 @@ from .manager import ConfigManager
 from .paths import SstPaths
 from .settings import SstSettings
 
-type ConfigLoader = Callable[[Path | None], ConfigManager]
-
 _config: ConfigManager | None = None
 
+type ConfigLoader = Callable[[Path | None], ConfigManager]
 
-def get_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
-    """Provide Cached ConfigManager Singleton"""
+# LATER: this pattern for EventBus or EventSystem?
+
+
+def sst_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
+    """Fetch Global Singleton ConfigManager instance"""
 
     global _config
 
@@ -25,27 +58,29 @@ def get_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
 
         if _allow_uninitialized:
             logger.warning("Load config with SstSettings and SstPaths")
-            return sst_config_loader(SstSettings, SstPaths)
+            return setup_config_manager(SstSettings, SstPaths)
 
         raise RuntimeError("No access to config without bootstrap!")
+
     logger.debug("provide cached config")
 
     return _config
 
 
-def default_config_loader(setting_file: Path | None = None) -> ConfigManager:
-    """Prepare Loader for DefaultConfig"""
+def sst_config_loader(
+    setting_file: Path | None = None, project_name: str = "sstcore"
+) -> ConfigManager:
+    """Prepare Loader function ready to setup ConfigManager"""
 
-    return sst_config_loader(
+    return setup_config_manager(
         settings_cls=SstSettings,
         paths_cls=SstPaths,
         setting_file=setting_file,
-        project_name="sstcore",
-        # TODO: how to change name in small project that uses default?
+        project_name=project_name,
     )
 
 
-def sst_config_loader[TSettings: SstSettings, TPaths: SstPaths](
+def setup_config_manager[TSettings: SstSettings, TPaths: SstPaths](
     settings_cls: type[TSettings],
     paths_cls: type[TPaths],
     setting_file: Path | None = None,

@@ -96,7 +96,7 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         return scan_root / ".sst_scanner_cache.json"
 
     @PathGuard.unique(ensure_parent=True)
-    def summary_file(self, suffix: str = "md") -> Path:
+    def summary_file(self, suffix: str = ".md") -> Path:
         return self.data_dir / summary_file(
             {"day": str(day_count()), "suffix": suffix}
         )
