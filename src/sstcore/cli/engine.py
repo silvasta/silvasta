@@ -5,7 +5,6 @@ Extend typer.Typer
 """
 
 import sys
-from collections.abc import Callable
 from pathlib import Path
 
 import typer
@@ -17,12 +16,7 @@ from ..events.core import EventSystem, SystemLoader, build_event_system
 from ..utils.log import LogSetupResult, setup_logging
 from ..utils.log.setup import setup_minimal_logging
 from . import args, canvas
-
-type ErrorType = type[BaseException]
-type ErrorHandler = Callable[
-    [BaseException], None  # NEXT: more than just BaseException?
-]
-type ErrorHandlerDict = dict[ErrorType, ErrorHandler]
+from .handler import ErrorRegistry
 
 
 class SafeTyper(typer.Typer):
@@ -39,6 +33,7 @@ class SafeTyper(typer.Typer):
         self,
         config_loader: ConfigLoader | None = None,
         system_loader: SystemLoader | None = None,
+        error_registry: ErrorRegistry | None = None,
         **kwargs,
     ):
         """Load Typer and prepare custom setup"""
@@ -46,10 +41,9 @@ class SafeTyper(typer.Typer):
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(**kwargs)
 
-        self._config_loader: ConfigLoader = config_loader or sst_config_loader
-        self._error_handlers: ErrorHandlerDict = {}
+        self.errors: ErrorRegistry = error_registry or ErrorRegistry()
 
-        # AI_TASK: maybe system_loader replaces/includes config_loader?
+        self._config_loader: ConfigLoader = config_loader or sst_config_loader
         self._system_loader: SystemLoader = system_loader or build_event_system
 
         self._attach_internal_callback()
@@ -103,9 +97,8 @@ class SafeTyper(typer.Typer):
         canvas.safe_typer.sub_callback(ctx.info_name or "subapp")
 
     def print_setup_status(self, show_all_exceptions=False):
-        """Print summary of status after assembly"""  # REFACTOR: maybe to... ?
-        exceptions: list = self.exceptions_of_all_handler
-        canvas.safe_typer.status(self, exceptions, show_all_exceptions)
+        """Print summary of status after assembly"""
+        canvas.safe_typer.status(self, self.errors.all, show_all_exceptions)
 
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
@@ -113,60 +106,10 @@ class SafeTyper(typer.Typer):
             return super().__call__(*args, **kwargs)
 
         except Exception as error:
-            if handler := self._error_handlers.get(type(error)):
-                try:
-                    handler(error)
-                    sys.exit(1)
+            if handler := self.errors.get(exception_type=type(error)):
+                # LATER: check __mro__ for derived exceptions!
+                handler.execute_safe(error)  # -> NoReturn!
 
-                except SystemExit:
-                    raise  #  Let handlers dictate their own exit codes
-
-                except Exception as handler_fail:
-                    logger.critical(f"Error handler failed: {handler_fail}")
-                    logger.error(f"Initial Error: {error}")
-                    sys.exit(2)
-
-            # INFO: Fallback for unhandled structural issues
+            # Fallback for unhandled structural issues
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ###  ERROR Handler
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    @property
-    def n_handler(self) -> int:
-        return len(self._error_handlers)
-
-    @property
-    def exceptions_of_all_handler(self) -> list[ErrorType]:
-        """List Exception class of all registred handler"""
-        return list(self._error_handlers.keys())
-
-    def register_error_handler(self, exception: ErrorType):
-        """Decorator: Attach Exception with custom Handler to Registry"""
-
-        # TODO: improve type, why attach Exception basically twice?
-        # @app.register_error_handler(TuiSelectorError)
-        # def handle_tui_selector(error: TuiSelectorError):
-        #     printer.danger(f"Selector failed: {error}")
-        # - use that handler always has first (or even single) argument:
-        # - error:Exception, grab this
-
-        def decorator(handler: ErrorHandler):
-            self._error_handlers[exception] = handler
-            return handler
-
-        return decorator
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ###  EVENT Handler
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def set_event_system_factory(  # NEXT: check if needed, how to modify
-        self, factory: Callable[[ConfigManager], EventSystem]
-    ):
-        # AI: this was one idea, might be to slow for the main callback?
-        """Allow projects to provide a custom EventSystem builder (like config_loader)."""
-        self._event_system_factory = factory
-        return factory  # decorator friendly
