@@ -1,9 +1,11 @@
 """
-Provide typed Data Transfer Objects for the EventBus
+Provide typed DataTransferObjects for the EventBus
 
 - CliDto for __cli__ and printer
 - LogDto for __log__ and logger
 """
+
+# TASK: resolve this to -> log|print?
 
 from dataclasses import dataclass, field
 from typing import Any

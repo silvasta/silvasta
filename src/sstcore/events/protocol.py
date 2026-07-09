@@ -1,9 +1,11 @@
 """
-Provide type information (and checks) for classes
+Provide type information and support instance checks
 
 - CliDto for __cli__ and printer
 - LogDto for __log__ and logger
 """
+
+# TASK: resolve this to -> log|print?
 
 from typing import Protocol, runtime_checkable
 

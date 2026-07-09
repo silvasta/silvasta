@@ -15,6 +15,8 @@ from .dto import CliDTO, LogDTO, PanelDTO
 # - ...text: __str/rich__ but one with colors
 # - ...dict: __repr/log__ but different return and purpose
 
+# NEXT: find order!
+
 
 class BaseViewMixin:  # AI: how to ensure BaseModel, derive?
     """
