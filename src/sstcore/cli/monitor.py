@@ -9,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-from ..config import get_config
+from ..config import sst_config
 from ..utils import PathGuard, printer
 from ..utils.parse import LogPatterns
 
@@ -17,7 +17,7 @@ from ..utils.parse import LogPatterns
 def log_monitor(log_path: Path | None = None):
     """Show tail log display"""
     log_file: Path = PathGuard.file(
-        target=log_path or get_config().settings.log.log_file,
+        target=log_path or sst_config().settings.log.log_file,
         default_content="",
         raise_error=False,
     )

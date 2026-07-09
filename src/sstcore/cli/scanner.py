@@ -13,7 +13,7 @@ from pathlib import Path
 
 import typer
 
-from ..config import get_config
+from ..config import sst_config
 from ..tui import TreeSelectorApp
 from ..utils import (
     FolderScanner,
@@ -36,7 +36,7 @@ def folder_scanner(
     """Launch Scanner, select from Filesystem Tree and write to file"""
 
     scan_root: Path = scan_root or get_project_root()
-    output_file: Path = output_file or get_config().paths.summary_file()
+    output_file: Path = output_file or sst_config().paths.summary_file()
     output_file: Path = PathGuard.unique(output_file)
 
     if filter is None:
@@ -50,6 +50,7 @@ def folder_scanner(
     scanner = FolderScanner(scan_root=scan_root, filter=filter)
     tree: PathTreeNode = scanner.tree()
 
+    # TODO: flag for reload, no cache
     previous_selection: list[Path] = _load_previous_selection(scan_root)
 
     selector = TreeSelectorApp(
@@ -102,7 +103,7 @@ def _setup_filter() -> PathFilter:
 
 
 def _load_previous_selection(scan_root: Path) -> list[Path]:
-    cache_file: Path = get_config().paths.scanner_cache_file(scan_root)
+    cache_file: Path = sst_config().paths.scanner_cache_file(scan_root)
     if cache_file.exists():
         try:
             with open(cache_file, encoding="utf-8") as f:
@@ -114,7 +115,7 @@ def _load_previous_selection(scan_root: Path) -> list[Path]:
 
 
 def _save_selection_cache(scan_root: Path, selected_files: list[Path]) -> None:
-    cache_file: Path = get_config().paths.scanner_cache_file(scan_root)
+    cache_file: Path = sst_config().paths.scanner_cache_file(scan_root)
     try:
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump([str(p) for p in selected_files], f, indent=2)

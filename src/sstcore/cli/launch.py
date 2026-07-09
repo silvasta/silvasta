@@ -43,6 +43,7 @@ def launch_monitor(file: sargs.File = None):  # TODO: improveCLI hint
 def launch_folder_scanner(
     scan_root: sargs.Root = None,
     output_file: sargs.File = None,
+    # TODO: flag for reload, no cach
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.BY_SELECTION,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
