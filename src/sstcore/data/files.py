@@ -12,7 +12,7 @@ from typing import Any, Self
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..config import ConfigManager, get_config
+from ..config import ConfigManager, sst_config
 from ..exceptions import NotImplementedDispatchError, RegistrySyncError
 from ..utils import (
     FilterSet,
@@ -47,7 +47,7 @@ class SstFile(BaseModel):
     @property
     def description(self) -> str:
         """Extensive description formatted with Rich Color String"""
-        config: ConfigManager = get_config()
+        config: ConfigManager = sst_config()
         return config.names.sstfile_dates.styled(self._description)
 
     @property
@@ -58,7 +58,7 @@ class SstFile(BaseModel):
     @property
     def raw_description(self) -> str:
         """Raw description without any coloring"""
-        config: ConfigManager = get_config()
+        config: ConfigManager = sst_config()
         return config.names.sstfile_dates(self._description)
 
     @property
