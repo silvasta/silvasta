@@ -25,7 +25,7 @@ class BasePrinter:
     _log: bool = False
     _strict: bool = False
 
-    # Inject Name and Version inside Project bootstrap
+    # Inject Name and Version during bootstrap
     project_name: str = "App"
     project_version: str = "0.0.0"
 

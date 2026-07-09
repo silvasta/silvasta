@@ -21,7 +21,7 @@ class FormatMixin(BasePrinter):
     def format(self, target: Any, indent: int = 0) -> Any:
         """Check Target type and return printable format"""
 
-        if isinstance(target, CliRenderable):  # AI: here is an easy dispatch
+        if isinstance(target, CliRenderable):
             return self._render_dto(target.__cli__())
 
         # If it has an indent and is already a Rich object, wrap it in Padding
