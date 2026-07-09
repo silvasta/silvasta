@@ -12,7 +12,7 @@ from sstcore.config import (
     SstPaths,
     SstSettings,
 )
-from sstcore.config.loader import get_config, sst_config_loader
+from sstcore.config.loader import sst_config, sst_config_loader
 from sstcore.exceptions import TuiSelectorError
 from sstcore.utils import printer
 
@@ -82,7 +82,7 @@ def config_loader(setting_file: Path | None = None) -> CustomConfig:
 
 def config() -> CustomConfig:
     """Fetch config Singleton and raise if not already initialized"""
-    return get_config(_allow_uninitialized=False)
+    return sst_config(_allow_uninitialized=False)
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
