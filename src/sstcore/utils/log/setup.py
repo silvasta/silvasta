@@ -69,7 +69,7 @@ def setup_logging(
             enqueue=True,  # Thread-safe
         )
 
-        # LATER: make toggles inside param and include .json in result
+        # TODO: make toggles inside param and include .json in result
 
         logger.add(
             sink=log_file_path.with_suffix(".jsonl"),
@@ -83,7 +83,8 @@ def setup_logging(
         print("Warning: Logging is completely disabled.")
 
     _setup_result = LogSetupResult.from_param(
-        log_file=log_file_path, selected_param=log_param
+        log_file=log_file_path,  # WARN: ensure log_file_path is set
+        selected_param=log_param,
     )
     return _setup_result
 

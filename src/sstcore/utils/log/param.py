@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from ..path.search import any_root
 
-# NEXT: optimize for pipeline
+# NEXT: adapt to current pipeline
 
 
 class LogParam(BaseModel):
