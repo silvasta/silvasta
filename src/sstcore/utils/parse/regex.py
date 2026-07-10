@@ -68,14 +68,19 @@ class PatternNamer:
         raise ValueError(f"No match: {formatted_string=} and {self.pattern=}")
 
 
+# NEXT: make this more visible
+# NEXT: make this more visible
+# NEXT: make this more visible
+
+
 class RegexMatch:
     r"""
     Compile Regex Pattern and apply it to Equality checks
 
-    Example usage:
-    match line:
-        case RegexMatch(r".*\[DEBUG\].*") as m:
-            print(f"Debug found: {m.match.group(0)}")
+    Example:
+        match line:
+            case RegexMatch(r".*\[DEBUG\].*") as m:
+                print(f"Debug found: {m.match.group(0)}")
     """
 
     def __init__(self, pattern: str):
@@ -97,6 +102,11 @@ class RegexMatch:
         return self.match is not None
 
 
+# NEXT: make this more visible
+# NEXT: make this more visible
+# NEXT: make this more visible
+
+
 @dataclass(frozen=True)
 class LogPatterns:
     """Centralized log patterns for dot-access in match statements"""
@@ -108,6 +118,10 @@ class LogPatterns:
     SUCCESS = RegexMatch(r".*SUCCESS.*")
 
 
+# NEXT: make this more visible
+# NEXT: make this more visible
+# NEXT: make this more visible
+# NEXT: make this more visible
 # NEXT: make this more visible
 def grep_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
     """Yield line if it matches pattern"""

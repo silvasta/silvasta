@@ -19,16 +19,21 @@ def load_format_pattern() -> str:
     level = "<level>{level: <8}</level>"
     name = "<cyan>{name}</cyan>"
     func = " <cyan>{function}</cyan>"
-    msg = "<level>{message}</level>"
+    message = "<level>{message}</level>"
 
-    return f"{time} | {level} | {name}:{func} - {msg}"
+    return f"{time} | {level} | {name}:{func} - {message}"
 
 
 def ndjson_formatter(record) -> str:
-    """Format event to make it serializable for loguru"""
+    """
+    Format event to make it serializable for loguru
+
+    - Return template token pointing to an injected extra field
+      (bypass loguru template placeholder engine issues with raw JSON braces)
+    """
 
     payload: dict[str, Any] = {
-        "timestamp": record["time"].isoformat(),
+        "time": record["time"].isoformat(),
         "level": record["level"].name,
         "message": record.get("message", ""),
         "module": record.get("name"),
@@ -43,14 +48,17 @@ def ndjson_formatter(record) -> str:
         try:
             dto: LogDTO = raw_obj.__log__()
             payload.update(dto.to_dict())
-        except Exception as err:
-            payload["serialization_error"] = str(err)
+        except Exception as error:
+            payload["serialization_error"] = str(error)
 
     for k, v in extra.items():
         if isinstance(v, (str, int, float, bool, type(None))):
             payload[k] = v
 
-        elif isinstance(v, (list, dict)):  # LATER: here if lines went to long
-            payload[k] = v
+        elif isinstance(v, (list, dict)):
+            payload[k] = v  # LATER: start here if lines went to long
 
-    return json.dumps(payload, ensure_ascii=False) + "\n"
+    record["extra"]["raw_ndjson"] = json.dumps(payload, ensure_ascii=False)
+    # inject the serialized string into the record's extra namespace
+
+    return "{extra[raw_ndjson]}\n"

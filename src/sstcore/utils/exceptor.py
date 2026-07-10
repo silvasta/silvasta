@@ -78,7 +78,7 @@ class Exceptor:
 
     def __call__(self):
         printer.line()
-        printer.box(self, box=printer.BOX_FULL)
+        printer.box(self)
 
         for task in self.tasks:
             printer.box(f"{c.cyan('Next')} {task}")
@@ -118,7 +118,7 @@ class Exceptor:
         def throw():
             self._current_task()
 
-        n_handler: int = len(self.app._error_handlers)
+        n_handler: int = self.app.errors.n_handler
         n_tasks: int = len(self.tasks)
 
         printer.header(f"{self.app} {n_handler=} for {n_tasks=}")

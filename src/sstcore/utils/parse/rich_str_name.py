@@ -67,36 +67,44 @@ class StyledName:
 
 
 # NEXT: check this before next manual renaiming
-class AlicaDataHandler:
-    # Шаблон один раз, в классе или в конфиге
-    _NAME_TEMPLATE = StyledName.from_rich_template(
-        rich_template="[bold red]{handler}[/] ({green}{tree_dag}[/] and {green}{internal_dag}[/])",
-        keys=["handler", "tree_dag", "internal_dag"],
-    )
+# NEXT: check this before next manual renaiming
+# NEXT: check this before next manual renaiming
+# NEXT: check this before next manual renaiming
+# NEXT: check this before next manual renaiming
+# class AlicaDataHandler:
+#     # Шаблон один раз, в классе или в конфиге
+#     _NAME_TEMPLATE = StyledName.from_rich_template(
+#         rich_template="[bold red]{handler}[/] ({green}{tree_dag}[/] and {green}{internal_dag}[/])",
+#         keys=["handler", "tree_dag", "internal_dag"],
+#     )
+#
+#     def __str__(self) -> str:
+#         return self._NAME_TEMPLATE.as_str(
+#             handler=type(self).__name__,
+#             tree_dag=self._tree_dag_name(),
+#             internal_dag=self._internal_dag_name(),
+#         )
+#
+#     def __rich__(self) -> str:
+#         return self._NAME_TEMPLATE.as_rich(
+#             handler=type(self).__name__,
+#             tree_dag=self._tree_dag_name(),
+#             internal_dag=self._internal_dag_name(),
+#         )
+#
 
-    def __str__(self) -> str:
-        return self._NAME_TEMPLATE.as_str(
-            handler=type(self).__name__,
-            tree_dag=self._tree_dag_name(),
-            internal_dag=self._internal_dag_name(),
-        )
 
-    def __rich__(self) -> str:
-        return self._NAME_TEMPLATE.as_rich(
-            handler=type(self).__name__,
-            tree_dag=self._tree_dag_name(),
-            internal_dag=self._internal_dag_name(),
-        )
-
-
-class GeminiDataHandler:
-    _NAME_TEMPLATE = StyledName.from_rich_template(
-        rich_template="[bold red]{handler}[/] ({green}{tree_dag}[/] ...)",
-        keys=["handler", "tree_dag", "internal_dag"],
-    )
-
-    def __str__(self) -> str:
-        return self._NAME_TEMPLATE.as_clean(**self._get_template_kwargs())
-
-    def __cli__(self) -> str:
-        return self._NAME_TEMPLATE.as_rich(**self._get_template_kwargs())
+# NEXT: check this before next manual renaiming
+# NEXT: check this before next manual renaiming
+# NEXT: check this before next manual renaiming
+# class GeminiDataHandler:
+#     _NAME_TEMPLATE = StyledName.from_rich_template(
+#         rich_template="[bold red]{handler}[/] ({green}{tree_dag}[/] ...)",
+#         keys=["handler", "tree_dag", "internal_dag"],
+#     )
+#
+#     def __str__(self) -> str:
+#         return self._NAME_TEMPLATE.as_clean(**self._get_template_kwargs())
+#
+#     def __cli__(self) -> str:
+#         return self._NAME_TEMPLATE.as_rich(**self._get_template_kwargs())

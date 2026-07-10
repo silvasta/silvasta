@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from loguru import logger
+from rich.console import ConsoleRenderable, RichCast
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
@@ -13,6 +14,17 @@ from ....events.protocol import CliRenderable
 from ...log.inspect import debug_log_or_print
 from ..base import BasePrinter
 
+# INFO: rich.console.RenderableType is as follows:
+type RenderableType = ConsoleRenderable | RichCast | str
+
+# IDEA: use this for rich checks:
+type RichRenderable = ConsoleRenderable | RichCast
+
+# IDEA: cut names:
+# RichRenderable -> RichRender
+# CliRenderable -> CliRender
+# LogSerializable -> LogSerial
+
 
 class FormatMixin(BasePrinter):
     """Ensure Input is printable"""
@@ -21,6 +33,7 @@ class FormatMixin(BasePrinter):
     def format(self, target: Any, indent: int = 0) -> Any:
         """Check Target type and return printable format"""
 
+        # IMPORTANT: make switch to bypass __cli__ and execute __rich__
         if isinstance(target, CliRenderable):
             return self._render_dto(target.__cli__())
 
@@ -45,11 +58,20 @@ class FormatMixin(BasePrinter):
                 border_style=dto.frame,
             )
         if isinstance(dto, TableDTO):  # WARN: dummy function
+            self(f"table: {dto}")
             table = Table(title=dto.title, style=dto.style, show_header=True)
-            for col in dto.columns:
+            headers: list[str] = dto.headers or (
+                list(dto.data[0].keys()) if dto.data else []
+            )
+            # COLLECT: util to transform tabular data
+            for col in headers:
                 table.add_column(col)
-            for row in dto.rows:
-                table.add_row(*(str(cell) for cell in row))
+            for row in dto.data:
+                table.add_row(
+                    *(str(row.get(col, "")) for col in headers)
+                    if isinstance(row, dict)
+                    else row
+                )
             return table
 
         return dto

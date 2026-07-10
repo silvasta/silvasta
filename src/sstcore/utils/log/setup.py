@@ -1,10 +1,9 @@
 """
-Setup Loguru for Console, *.log or *.json
+Setup Loguru for console and files (*.log and *.json)
 
-Load param from ConfigManager.setup_info.log or create fresh setup.
-
-If all options are unused or fail, LogParam defaults are applied.
-
+Usage:
+  - Check params from ConfigManager.setup_info.log
+    (synced to json setting file by SstSettings)
 """
 
 import sys
@@ -31,10 +30,11 @@ def setup_logging(
     Setup Loguru for Console or File output and return applied param.
 
     - log_file overrides log_to_file
-    - otherwise and if needed, LogParam provides path components
+    - LogParam provides path components and other defaults if needed
     - LogSetupResult provides the finally applied paths and settings
 
-    """  # TODO: something about json
+    If all options are unused or fail, LogParam defaults are applied.
+    """
 
     global _setup_result
 
@@ -79,11 +79,14 @@ def setup_logging(
             retention=log_param.retention,
             enqueue=True,  # Keeps JSON writing thread-safe
         )
+    else:
+        log_file_path = None
+
     if not quiet and not log_to_file:
         print("Warning: Logging is completely disabled.")
 
     _setup_result = LogSetupResult.from_param(
-        log_file=log_file_path,  # WARN: ensure log_file_path is set
+        log_file=log_file_path,  # WARN: ensure log_file_path exists
         selected_param=log_param,
     )
     return _setup_result
