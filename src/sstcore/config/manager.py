@@ -1,9 +1,14 @@
 """
 Orchestrate Config and Settings
 
-- Launch bootstrap and home setup
-- Load and save Settings from file
+- Launch bootstrap, home setup and govern results
+- Load and save Settings from and to file
 - Provide access to Defaults, Names and Paths
+
+Usage in Projects:
+  - Create custom components (mainly fill Defaults, Names and Paths)
+  - Launch with config_loader, collect instance if desired
+  - Access by instance or global singleton, forget about this setup
 
 """
 

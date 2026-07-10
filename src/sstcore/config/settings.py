@@ -1,4 +1,10 @@
-# TODO: explain
+"""
+Provide Interface for serializable Components
+
+- Synchronize Defaults, Names and LogParam from and to disk
+- Ensure reliable and observable setting file handling
+
+"""
 
 import json
 from collections import deque
@@ -20,8 +26,8 @@ from .names import SstNames
 class SstSettings(BaseSettings):
     """Container for Defaults and Names and Frame for setting file"""
 
-    names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
+    names: SstNames = Field(default_factory=SstNames)
     log: LogParam = Field(default_factory=LogParam)
 
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))

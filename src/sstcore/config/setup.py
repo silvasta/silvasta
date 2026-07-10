@@ -12,7 +12,7 @@ Example for Projects:
 ```py
 # sachmis.config.manager:
 from sstcore.config import ConfigManager
-from sstcore.config.loader import setup_config_manager, sst_config
+from sstcore.config.setup import setup_config_manager, sst_config
 
 from .defaults import Defaults
 from .names import Names
@@ -43,17 +43,13 @@ from .settings import SstSettings
 
 _config: ConfigManager | None = None
 
-# FIX:
-type ConfigLoader = Callable[[Path | None], ConfigManager]
-
-# LATER: this pattern for EventBus or EventSystem?
+type ConfigLoader = Callable[[Path | None], ConfigManager]  # FIX:
 
 
 def sst_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
     """Fetch Global Singleton ConfigManager instance"""
 
     global _config
-
     if _config is None:
         logger.warning("Config accessed before Bootstrap!")
 
@@ -62,7 +58,6 @@ def sst_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
             return setup_config_manager(SstSettings, SstPaths)
 
         raise RuntimeError("No access to config without bootstrap!")
-
     logger.debug("provide cached config")
 
     return _config
@@ -92,7 +87,6 @@ def setup_config_manager[TSettings: SstSettings, TPaths: SstPaths](
     """Load ConfigManager explicit as one-time initialization"""
 
     global _config
-
     if _config is not None:
         logger.warning(
             "ConfigManager is already initialized, ignoring override!"

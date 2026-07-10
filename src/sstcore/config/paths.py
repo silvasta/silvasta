@@ -1,4 +1,10 @@
-# TODO: explain
+"""
+Compose and Ensure Paths independent of system or location
+
+- Assemble from Defaults, Names, HomeSetup and any desired input
+- Use PathGuard to ensure existance, uniqueness or writability
+
+"""
 
 from pathlib import Path
 from typing import cast
