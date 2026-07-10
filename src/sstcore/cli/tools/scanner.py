@@ -1,7 +1,7 @@
 """
-Scan Folder and assemble summary
+Scan Folder and assemble Summary
 
-- use scanner with predefined filtes to get Paths
+- use scanner with predefined filter to get Paths
 - build PathTree and select from TUI
 - write (plain text files) to combined summary file
   - use suffix [.md .txt .xml] to dispatch summary type
@@ -13,56 +13,47 @@ from pathlib import Path
 
 import typer
 
-from ..config import sst_config
-from ..tui import TreeSelectorApp
-from ..utils import (
+from ...tui import TreeSelectorApp
+from ...utils import (
     FolderScanner,
     PathFilter,
     PathGuard,
     PathTreeNode,
+    Printer,
     ProjectFilter,
-    printer,
 )
-from ..utils.path import get_project_root
-from ..utils.scanner import write_summary_file
+from ...utils import printer as backup_printer
+from ...utils.scanner import write_summary_file
 
 
 def folder_scanner(
-    scan_root: Path | None = None,
-    output_file: Path | None = None,
+    scan_root: Path,
+    output_file: Path,
+    cache_file: Path | None = None,
+    sort: str = TreeSelectorApp.Sort.SELECTION,
+    printer: Printer | None = None,
     filter: PathFilter | None = None,
-    sort_method: str = "",
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
 
-    scan_root: Path = scan_root or get_project_root()
-    output_file: Path = output_file or sst_config().paths.summary_file()
     output_file: Path = PathGuard.unique(output_file)
+    printer: Printer = printer or backup_printer
 
-    if filter is None:
-        # filter: PathFilter = _setup_filter()
-        # FIX: make it work local!
-        # - so far needs "fake pyproject.toml" to work in random folder...
+    if filter is None:  # filter: PathFilter = _setup_filter()
         filter = ProjectFilter(require_all=set(), require_any=set())
-
-    printer(filter)
 
     scanner = FolderScanner(scan_root=scan_root, filter=filter)
     tree: PathTreeNode = scanner.tree()
-
-    # TODO: flag for reload, no cache
-    previous_selection: list[Path] = _load_previous_selection(scan_root)
-
+    previous: list[Path] = _load(cache_file, printer) if cache_file else []
     selector = TreeSelectorApp(
-        sst_tree=tree, sort_method=sort_method, pre_select=previous_selection
+        sst_tree=tree, sort_method=sort, pre_select=previous
     )
-    if selected_files := selector.run():
-        _save_selection_cache(scan_root, selected_files)
-        printer.lines_with_len(name="Selected Files", lines=selected_files)
-    else:
+    if not (selected_files := selector.run()):
         printer.warn("Action cancelled by user.")
         raise typer.Exit()
+    printer.lines_with_len(name="Selected Files", lines=selected_files)
 
+    _save(cache_file, selected_files, printer) if cache_file else None
     data: str = write_summary_file(selected_files, output_file)
 
     printer.lines(
@@ -73,7 +64,6 @@ def folder_scanner(
 
 
 def _setup_filter() -> PathFilter:
-    # NEXT: check if wanted for this bump
     # TODO: FilterBox!!!
     # create module inside filter that collects predefined filter,
     # provide together with different options and toggles,
@@ -102,8 +92,7 @@ def _setup_filter() -> PathFilter:
     )
 
 
-def _load_previous_selection(scan_root: Path) -> list[Path]:
-    cache_file: Path = sst_config().paths.scanner_cache_file(scan_root)
+def _load(cache_file: Path, printer: Printer) -> list[Path]:
     if cache_file.exists():
         try:
             with open(cache_file, encoding="utf-8") as f:
@@ -114,14 +103,13 @@ def _load_previous_selection(scan_root: Path) -> list[Path]:
     return []
 
 
-def _save_selection_cache(scan_root: Path, selected_files: list[Path]) -> None:
-    cache_file: Path = sst_config().paths.scanner_cache_file(scan_root)
+def _save(cache_file: Path, selected: list[Path], printer: Printer) -> None:
     try:
         with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump([str(p) for p in selected_files], f, indent=2)
+            json.dump([str(p) for p in selected], f, indent=2)
     except OSError as e:
         printer.warn(f"Could not save selection cache: {e}")
 
 
 if __name__ == "__main__":
-    folder_scanner()
+    folder_scanner(scan_root=Path.cwd(), output_file=Path("summary.xml"))

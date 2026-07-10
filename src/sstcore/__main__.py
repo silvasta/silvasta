@@ -20,9 +20,9 @@ from . import printer
 
 def main() -> None:
     check_cli_installed()
-    from .cli import tool_app
+    from .cli import tools
 
-    tool_app()
+    tools()
 
 
 def check_cli_installed():

@@ -9,9 +9,9 @@ import sys
 import time
 from pathlib import Path
 
-from ..config import sst_config
-from ..utils import PathGuard, printer
-from ..utils.parse import LogPatterns
+from ...config import sst_config
+from ...utils import PathGuard, printer
+from ...utils.parse import LogPatterns
 
 
 def log_monitor(log_path: Path | None = None):

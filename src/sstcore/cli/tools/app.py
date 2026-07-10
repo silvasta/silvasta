@@ -8,12 +8,16 @@ from pathlib import Path
 
 from typer import Context
 
-from ..config import ConfigManager
-from ..events import EventBus
-from ..tui import TreeSelectorApp
-from ..utils.print import printer
-from . import args as sargs
-from .engine import SafeTyper
+from sstcore.core import System
+from sstcore.utils.path import any_root
+from sstcore.utils.scanner.summary_file import SummaryFileBox
+
+from ...config import SstPaths
+from ...events import EventBus
+from ...tui import TreeSelectorApp
+from ...utils.print import printer
+from .. import args as sargs
+from ..engine import SafeTyper
 from .monitor import log_monitor
 from .scanner import folder_scanner
 
@@ -26,7 +30,7 @@ app = SafeTyper(name="tools", help="Basic equipment for development")
 
 
 @app.command()
-def empty(ctx: Context):
+def empty(ctx: Context):  # WARN: remove in sstcore/main
     """Launch default setup without any other exectution"""
     bus: EventBus = ctx.obj["bus"]
     printer("Start of 'empty' function...")
@@ -36,7 +40,7 @@ def empty(ctx: Context):
 
 
 @app.command("monitor")
-def launch_monitor(file: sargs.File = None):  # TODO: improveCLI hint
+def launch_monitor(file: sargs.LogFile = None):  # TODO: improveCLI hint
     """Log Console Monitor: Watch new log file entries!"""
     log_monitor(log_path=file)
 
@@ -45,16 +49,23 @@ def launch_monitor(file: sargs.File = None):  # TODO: improveCLI hint
 def launch_folder_scanner(
     ctx: Context,
     scan_root: sargs.Root = None,
-    output_file: sargs.File = None,
-    # TODO: flag for reload, no cach
-    sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.BY_SELECTION,
+    output_file: sargs.OutputFile = None,
+    file_type: SummaryFileBox = SummaryFileBox.MD,  # TODO: help text
+    reset: sargs.CleanState = False,
+    sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
-    # FIX: default args somehow corrupted...
-    # - as well default filters, they work but fileter sometimes not as desired
-    # -> must be usable at any file system location
-    _config: ConfigManager = ctx.obj["config"]  # TODO: take paths
-    folder_scanner(scan_root, output_file, sort_method=sort)
+    system: System = ctx.obj["system"]
+    # FIX: config.paths fails if executed outside the project,
+    # anyway needed to change home setup (dynamically) when publishing
+    paths: SstPaths = system.config.paths
+    if output_file is None:
+        output_file: Path = paths.summary_file(suffix=file_type)
+    scan_root: Path = scan_root or any_root()
+    cache_file: Path | None = (
+        None if reset else paths.scanner_cache_file(scan_root)
+    )
+    folder_scanner(scan_root, output_file, cache_file, sort, printer)
 
 
 @app.command("print")

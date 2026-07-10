@@ -18,7 +18,7 @@ from sstcore.utils.color.palette import ColorName
 from sstcore.utils.print.mixin._boxes import BoxLibrary
 
 from ...config import ConfigManager
-from ...config.loader import ConfigLoader
+from ...config.setup import ConfigLoader
 from ...utils import printer
 from ...utils.color import ColorBox, colorize
 from ...utils.log import LogSetupResult

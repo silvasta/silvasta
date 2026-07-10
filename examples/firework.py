@@ -71,7 +71,7 @@ app = SafeTyper(
 )
 
 
-@app.register_error_handler(TuiSelectorError)
+@app.errors.handle()
 def handle_tui_selector(error: TuiSelectorError):
     printer.danger(f"Selector failed: {error}")
 
@@ -84,7 +84,7 @@ class MissingFileError(FileNotFoundError):
         return type(self).__name__
 
 
-@app.register_error_handler(MissingFileError)
+@app.errors.handle()
 def handle_missing_file(error: MissingFileError):
     scroll: list[str] = [
         f"  Start of handling: {error}",
