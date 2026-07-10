@@ -20,9 +20,9 @@ from . import printer
 
 def main() -> None:
     check_cli_installed()
-    from .cli import utils_app
+    from .cli import tool_app
 
-    utils_app()
+    tool_app()
 
 
 def check_cli_installed():
@@ -36,10 +36,10 @@ def check_cli_installed():
     if not cli_is_installed:
         # paint
         error: str = printer.color_box.red("Problem with Installation")
-        _sst = escape("'sstcore[cli]'")
-        uv: str = printer.color_box.cyan(f"uv add {_sst}")
+        sst_cli = escape("'sstcore[cli]'")
+        uv: str = printer.color_box.cyan(f"uv add {sst_cli}")
         or_: str = printer.color_box.green("or")
-        pip: str = printer.color_box.cyan(f"pip install {_sst}")
+        pip: str = printer.color_box.cyan(f"pip install {sst_cli}")
 
         # canvas
         text: list[str] = [

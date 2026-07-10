@@ -16,14 +16,14 @@ utils_app: Combine following utils inside example app
 
 from . import args as sargs
 from .engine import SafeTyper
-from .launch import utils_app
 from .monitor import log_monitor
 from .scanner import folder_scanner
+from .tools import app as tool_app
 
 __all__: list = [
     "SafeTyper",
     "sargs",
-    "utils_app",
+    "tool_app",
     "folder_scanner",
     "log_monitor",
 ]

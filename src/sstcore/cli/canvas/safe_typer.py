@@ -154,16 +154,18 @@ config_loader = ConfigLoaderCanvas(select_mode=SelectMode.RANDOM)
 log_or_config_path = ConfigAndLogPanel(select_mode=SelectMode.RANDOM)
 
 
-def setup(config: ConfigManager, loader: Callable, log_result: LogSetupResult):
+def setup(
+    config: ConfigManager, loader: Callable, log_result: LogSetupResult | None
+):
     """Provide main callback text"""
 
     config_loader(config, loader)
     log_or_config_path(config.setting_file, mode="config")
 
-    if log_result.print_at_setup:
+    if log_result and log_result.print_at_setup:
         printer(log_result)
 
-    if log_result.log_file:
+    if log_result and log_result.log_file:
         log_or_config_path(log_result.log_file, mode="log")
     else:
         printer.dip("LogFile", "No setup active for tracking Events", "yellow")
