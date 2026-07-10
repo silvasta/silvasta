@@ -15,7 +15,9 @@ from typing import cast
 from dotenv import load_dotenv
 from loguru import logger
 
-from ..utils import HomeSetup, Printer, day_count
+from sstcore.utils.log import LogSetupResult
+
+from ..utils import HomeSetup, day_count
 from .bootstrap import BootDefaults, BootResult, ConfigBootstrap
 from .defaults import SstDefaults
 from .names import SstNames
@@ -30,6 +32,8 @@ class ConfigManager[
     TPaths: SstPaths,
 ]:
     """Bundle Container and Factories and provide access as Singleton"""
+
+    log_result: LogSetupResult | None = None  # TODO: where to place?
 
     def __init__(
         self,
@@ -79,8 +83,9 @@ class ConfigManager[
         return f"{self}[{settings}, {paths}, {defaults},{names}]"
 
     def _fill_printer(self):
-        Printer.project_name = self.project_name
-        Printer.project_version = self.project_version
+        # Printer.project_name = self.project_name
+        # Printer.project_version = self.project_version
+        pass  # REMOVE: when established in System
 
     @property
     def names(self) -> TNames:

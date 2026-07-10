@@ -23,7 +23,6 @@ def handle_log_event(event: Event):
         "sender": event.sender,
         "event_name": event.name,
     }
-
     if isinstance(target, LogSerializable):
         dto: LogDTO = target.__log__()
         logger.bind(raw_obj=target, **bind_context).log(

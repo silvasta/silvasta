@@ -43,6 +43,7 @@ from .settings import SstSettings
 
 _config: ConfigManager | None = None
 
+# FIX:
 type ConfigLoader = Callable[[Path | None], ConfigManager]
 
 # LATER: this pattern for EventBus or EventSystem?
