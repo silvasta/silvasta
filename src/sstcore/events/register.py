@@ -1,17 +1,10 @@
-"""
-Prepare EventHandler and default subscriptions for EventBus
-
-- cli
-- log
-- telemetry
-
-"""  # TODO:
+"""Prepare EventHandler and default registry for EventBus"""
 
 from collections.abc import Callable
+from enum import StrEnum
 
 from loguru import logger
 
-# IDEA: use Python 3.15 lazy load? check decouple
 from ..utils.log.event_handler import handle_log_event
 from ..utils.print.event_handler import handle_cli_event
 from .bus import EventBus, EventHandler
@@ -19,7 +12,18 @@ from .bus import EventBus, EventHandler
 type BusRegistrationFunc = Callable[[EventBus], None]
 
 
-# LATER: develeop system for event_names
+class SysEvent(StrEnum):  # TEST:
+    LOG = "sys.log"
+    WARN = "sys.warn"
+    ERROR = "sys.error"
+
+
+class UiEvent(StrEnum):  # TEST:
+    PANEL = "ui.panel"
+    TABLE = "ui.table"
+    LINE = "ui.line"
+
+
 def register_default_event_handler(bus: EventBus) -> None:
     """Attach EventHandler to EventBus registry by event_name"""
 
@@ -35,22 +39,22 @@ def register_default_event_handler(bus: EventBus) -> None:
 log_handler = EventHandler(
     name="LoguruBridge",
     func=handle_log_event,
-    fail_loud=True,  # PARAM: check after test
+    fail_loud=True,  # PARAM: decide defaults after tests
 )
 
 cli_handler = EventHandler(
     name="CliPrinter",
     func=handle_cli_event,
-    fail_loud=True,  # PARAM: check after test
+    fail_loud=True,  # PARAM: decide defaults after tests
 )
 
 telemetry_handler = EventHandler(
-    name="telemetry",
-    func=lambda event: logger.debug(
-        "Event: {name} | sender={sender} | keys={keys}",
-        name=event.name,
+    name="Telemetry",
+    func=lambda event: logger.debug(  # FIX: lambda as name in logs...
+        "Event: {event_name} | sender={sender} | keys={keys}",
+        event_name=event.name,
         sender=event.sender,
         keys=list(event.payload.keys()),
     ),
-    fail_loud=True,  # PARAM: check after test
+    fail_loud=True,  # PARAM: set False in sstcore/main
 )

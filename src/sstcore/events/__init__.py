@@ -1,10 +1,10 @@
 """
 Wire the Event Infrastructure.
 
-Provide decoupled EventBus and MODERN BOOTSTRAP MECHANICS.
-"""  # TODO:
+- Provide EventBus with loader, handler and global access if needed
 
-# TASK: export strategy
+"""
+
 __all__: list[str] = [
     "Event",
     "EventHandler",
@@ -13,6 +13,10 @@ __all__: list[str] = [
     "BusRegistrationFunc",
 ]
 
+# TASK: export strategy
+# - DTO? protocol?
+# - view?
+
 from .bus import Event, EventBus, EventHandler
-from .loader import sst_bus
 from .register import BusRegistrationFunc
+from .setup import sst_bus

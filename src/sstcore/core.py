@@ -1,14 +1,9 @@
 """
-Wire the Event Infrastructure.
+Assemble the System!
 
-Prepare default EventBus subscriprions and assemble the current EventSystem
+- Load and combine all global instances in 1 System
 
-- sstbus: preconfigure global Singleton
-
-- EventSystem: container for bus, and...
-  - NOTE: preview for future box with config, printer, bus, ...
-
-"""  # TODO: synchronize with config description text (and setup?)
+"""
 
 from pathlib import Path
 from typing import Any, Self
@@ -18,7 +13,7 @@ from loguru import logger
 from sstcore.utils.log import LogSetupResult
 
 from .config import ConfigManager
-from .config.loader import ConfigLoader, sst_config_loader
+from .config.setup import ConfigLoader, sst_config_loader
 from .events import BusRegistrationFunc, EventBus
 from .events.register import register_default_event_handler
 from .utils import Printer, printer, setup_logging
@@ -56,6 +51,7 @@ class System:
         setting_file: Path | None = None,
         verbose: bool = False,
         quiet: bool = False,
+        use_default_bus_handler: bool = True,
         attach: BusRegistrationFunc | None = None,
         custom_printer: Printer | None = None,
     ) -> Self:
@@ -65,23 +61,27 @@ class System:
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
 
         loader: ConfigLoader = config_loader or sst_config_loader
+        # create global singleton with sst_config_loader
         config: ConfigManager = loader(setting_file)
 
-        log_result: LogSetupResult = setup_logging(  # MOVE: result->config
+        log_result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
             param=config.settings.log,
         )
-        config.log_result = log_result
+        config.log_result = log_result  # LATER: better attach
 
-        bus = EventBus()
-        register_default_event_handler(bus)
+        bus = EventBus()  # obviously no singleton, what if ever needed?
+        if use_default_bus_handler:
+            register_default_event_handler(bus)
         if attach:  # BusRegistrationFunc
             attach(bus)
 
         used_printer: Printer = custom_printer or printer
+        # printer (so far) always exists as (stateles) global singleton
 
         system: Self = cls(config=config, printer=used_printer, bus=bus)
+        # TODO: use the bus!
         logger.info(f"System ready for {printer.name_and_version}")
 
         return system
