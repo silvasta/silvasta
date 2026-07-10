@@ -2,9 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from loguru import logger  # IDEA: use Python 3.15 lazy load? check decouple
-
-type BusRegistrationFunc = Callable[[EventBus], None]
+from loguru import logger
 
 
 @dataclass(frozen=True)
@@ -27,8 +25,6 @@ class EventHandler:
     def __str__(self) -> str:
         return f"EventHandler[{self.name}]"  # LATER: check events.view
 
-    # NEXT: check separate: EventHandler.__call__ and EventHandler.safe_execute
-
     def __call__(self, event: Event) -> None:
         """Execute handler function and manage fail if flag is set"""
         try:
@@ -43,8 +39,6 @@ class EventHandler:
 
 class EventBus:
     """Enable decoupled state propagation for synchronous Events"""
-
-    # AI_TASK: decorator for attach, here and|or System?
 
     def __init__(self) -> None:
         self._subscribers: dict[str, list[EventHandler]] = {}
