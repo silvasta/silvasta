@@ -7,11 +7,11 @@ Handle CLI Event
 
 from typing import Any
 
-from ...events.bus import Event
+from ..view.protocol import EventProtocol
 from . import printer  # WARN: printer?
 
 
-def handle_cli_event(event: Event) -> None:
+def handle_cli_event(event: EventProtocol) -> None:
     """Bridge __cli__ events from EventBus to Printer"""
 
     target: Any = event.payload.get("target") or event.payload.get("obj")

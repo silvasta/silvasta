@@ -8,8 +8,8 @@ Prepare Formatter for emited Events
 import json
 from typing import Any
 
-from ...events.dto import LogDTO
-from ...events.protocol import LogSerializable
+from ..view.dto import LogDTO
+from ..view.protocol import LogSerializable
 
 
 def load_format_pattern() -> str:

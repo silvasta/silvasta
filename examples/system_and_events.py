@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from sstcore.config import ConfigManager
 from sstcore.core import System
 from sstcore.events import EventBus
-from sstcore.events.dto import CliDTO, LogDTO, PanelDTO, TableDTO
-from sstcore.events.protocol import CliRenderable, LogSerializable
 from sstcore.utils import Printer
+from sstcore.utils.view.dto import CliDTO, LogDTO, PanelDTO, TableDTO
+from sstcore.utils.view.protocol import CliRenderable, LogSerializable
 
 
 def main():

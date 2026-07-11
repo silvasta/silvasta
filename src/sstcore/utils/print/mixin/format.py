@@ -9,9 +9,9 @@ from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
 
-from ....events.dto import PanelDTO, TableDTO
-from ....events.protocol import CliRenderable
 from ...log.inspect import debug_log_or_print
+from ...view.dto import PanelDTO, TableDTO
+from ...view.protocol import CliRenderable
 from ..base import BasePrinter
 
 # INFO: rich.console.RenderableType is as follows:
