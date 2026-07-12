@@ -8,13 +8,13 @@ from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from ...exceptions import NotImplementedDispatchError
-from .regex import PatternNamer
+from .name import NamePattern
 
 
-class ParsedName[ModelT: BaseModel](BaseModel):
+class ParsedName[ModelT: BaseModel](BaseModel):  # TASK: why BaseModel?
     pattern: str
-    _namer: PatternNamer = PrivateAttr()
-    keys: list[str] = Field(default_factory=list)
+    _namer: NamePattern = PrivateAttr()  # TODO: maybe cached_property?
+    keys: list[str] = Field(default_factory=list)  # TODO: why?
 
     model_cls: type[ModelT] | None = Field(default=None, exclude=True)
 
@@ -46,7 +46,7 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         self, formatted_string: str
     ) -> dict[str, Any] | ModelT:
 
-        if self.strip_increments:
+        if self.strip_increments:  # WARN: strips as well "tree_id_12"
             # Strip PathGuard Increments (like "_1", "_42") before extension
             pattern: str = r"_\d+(?=\.|$)"
             clean_string: str = re.sub(pattern, "", formatted_string)
@@ -124,7 +124,7 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         return self.backwards_parsing(target)
 
     @singledispatchmethod
-    @staticmethod  # NEXT: stringable[T] and  -> T | list[str]:
+    @staticmethod
     def format_brackets(target: str | list[str]):
         raise NotImplementedDispatchError(target)
 
@@ -148,6 +148,8 @@ class ParsedName[ModelT: BaseModel](BaseModel):
         cls, key_indexes: list[int] | None = None
     ) -> Self:
         """Use key and pattern factory in derived class for constructor"""
+
+        # AI_TASK: check if any issues with removing this
 
         raw_keys: list[str] = cls._load_predefined_keys()
 
@@ -177,7 +179,9 @@ class ParsedName[ModelT: BaseModel](BaseModel):
     @model_validator(mode="after")
     def _sync_namer_and_keys(self) -> Self:
         """Runs automatically whenever the model is instantiated or updated."""
-        self._namer = PatternNamer(self.pattern)
+        self._namer = NamePattern(self.pattern)
+
+        # AI_QUESTION: similar to this as simple key extracter?
 
         # 1. If schema provided, auto-populate keys from the model fields
         if self.model_cls and not self.keys:

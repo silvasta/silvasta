@@ -4,15 +4,15 @@ from typing import Self
 
 from pydantic import PrivateAttr
 
+from .name import NamePattern
 from .parsed_name import ParsedName
-from .regex import PatternNamer
 
 
 class StyledName(ParsedName):  # TASK: adapt to new ParsedName
     style_pattern: str
     styles: list[str]
 
-    _styler: PatternNamer | None = PrivateAttr(default=None)
+    _styler: NamePattern | None = PrivateAttr(default=None)
     _styled: bool = PrivateAttr(default=False)
 
     def _sync_styler_and_styles(self):
@@ -22,7 +22,7 @@ class StyledName(ParsedName):  # TASK: adapt to new ParsedName
         for i, style in enumerate(self.styles, start=1):
             rich_template: str = rich_template.replace(f"{{style{i}}}", style)
 
-        self._styler = PatternNamer(rich_template)
+        self._styler = NamePattern(rich_template)
 
     def _forward_parsing(self, clean_target: dict[str, str]) -> str:
         """Used for override and intercept in StyledName"""
