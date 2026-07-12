@@ -111,5 +111,32 @@ def _save(cache_file: Path, selected: list[Path], printer: Printer) -> None:
         printer.warn(f"Could not save selection cache: {e}")
 
 
+# TASK: db_cache
+# def _load(cache_file: Path | None, printer: Printer, scan_root: Path) -> list[Path]:
+#     # cache_file игнорируем: теперь всё в SQLite
+#     records = get_recent_selections(scan_root=scan_root, limit=1)
+#     if not records:
+#         return []
+#     record = records[0]
+#     try:
+#         paths_str = json.loads(record.selected_paths)
+#         return [Path(p) for p in paths_str if Path(p).exists()]
+#     except Exception:
+#         printer.warn("Failed to read selection from cache. Starting fresh.")
+#         return []
+# def _save(cache_file: Path | None, selected: list[Path], printer: Printer, filter_mode=None, extra_inc=None, extra_exc=None):
+#     # cache_file игнорируем
+#     try:
+#         save_selection(
+#             scan_root=Path.cwd(),  # или передай из folder_scanner
+#             selected=selected,
+#             filter_mode=filter_mode,
+#             extra_include=extra_inc,
+#             extra_exclude=extra_exc,
+#         )
+#     except Exception as e:
+#         printer.warn(f"Could not save selection cache: {e}")
+
+
 if __name__ == "__main__":
     folder_scanner(scan_root=Path.cwd(), output_file=Path("summary.xml"))
