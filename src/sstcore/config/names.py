@@ -28,7 +28,7 @@ class SstNames(BaseSettings):
 
     @cached_property
     def sstfile_dates(self) -> StyledName:
-        # NEXT: compare this with Printer and Colorbox -> find best setup
+        # AI: here this huge monster should be much easier controllable
         return StyledName.parse_style(
             style_pattern=(
                 "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"

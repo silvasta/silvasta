@@ -14,17 +14,6 @@ from ...view.dto import PanelDTO, TableDTO
 from ...view.protocol import CliRenderable
 from ..base import BasePrinter
 
-# INFO: rich.console.RenderableType is as follows:
-type RenderableType = ConsoleRenderable | RichCast | str
-
-# IDEA: use this for rich checks:
-type RichRenderable = ConsoleRenderable | RichCast
-
-# IDEA: cut names:
-# RichRenderable -> RichRender
-# CliRenderable -> CliRender
-# LogSerializable -> LogSerial
-
 
 class FormatMixin(BasePrinter):
     """Ensure Input is printable"""
@@ -37,8 +26,8 @@ class FormatMixin(BasePrinter):
         if isinstance(target, CliRenderable):
             return self._render_dto(target.__cli__())
 
-        # If it has an indent and is already a Rich object, wrap it in Padding
-        if hasattr(target, "__rich__") or hasattr(target, "__rich_console__"):
+        if isinstance(target, (ConsoleRenderable, RichCast)):
+            # If it has an indent and is already Rich object, wrap it in Padding
             return Padding(target, (0, 0, 0, indent)) if indent else target
 
         if isinstance(target, str):

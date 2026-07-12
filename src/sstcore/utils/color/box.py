@@ -19,6 +19,10 @@ type Style = TextStyle | str
 class ColorBox:
     """Provide Simple and Fast Color Supply"""
 
+    @property
+    def palette(self) -> Palette:
+        return self._palette
+
     def __call__(
         self, text: Stringable, color: ColorName | None = None
     ) -> str:
@@ -58,10 +62,6 @@ class ColorBox:
             self._style: TextStyle = TextStyle(style)
         if shortcuts is not None:
             self._shortcuts_enabled: bool = shortcuts
-
-    @property
-    def palette(self) -> Palette:
-        return self._palette
 
     @classmethod
     def bold(cls, palette: Palette = BASE_PALETTE):

@@ -13,9 +13,6 @@ __all__: list[str] = [
     "BusRegistrationFunc",
 ]
 
-# TASK: export strategy
-# - DTO? protocol?
-# - view?
 
 from .bus import Event, EventBus, EventHandler
 from .register import BusRegistrationFunc

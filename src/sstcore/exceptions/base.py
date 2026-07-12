@@ -64,6 +64,8 @@ class SstError(Exception):
         return "nothing attached"
 
 
+# IMPORTANT: MixinError! maybe BusError?
+
 # TASK: PathGuard Error??
 
 

@@ -52,7 +52,7 @@ def assemble_summary_file(
     return "\n\n".join(parts) if parts else "\n\n"
 
 
-class SummaryFileBox(StrEnum):
+class SummaryFileBox(StrEnum):  # NEXT: TOML
     """Provide parts for Summary selection without missing any"""
 
     MD = auto()

@@ -63,13 +63,6 @@ class EventBus:
         """Attach handler as subscriber to specific event"""
         self._subscribers.setdefault(event_name, []).append(handler)
 
-    def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
-        """Filter specific subscribers by name LATER: by wildcard"""
-        # TODO: how to filter for example "ui.*"?
-        # -> first define wildcard strategy: "name.*"
-        # -> then find solution here
-        return self._subscribers.get(event_name, [])
-
     def emit(self, event_name: str, sender: str, **payload) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
@@ -80,6 +73,10 @@ class EventBus:
 
         for handler in self._get_event_subscribers(event_name):
             handler(event)
+
+    def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
+        """Filter specific subscribers by name LATER: by wildcard"""
+        return self._subscribers.get(event_name, [])
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### Different Ideas
@@ -97,7 +94,7 @@ class EventBus:
                 matched_handlers.extend(handlers)
         return matched_handlers
 
-    # AI_QUESTION: why not just using the enum/datastructre for that?
+    # IDEA: why not just using the enum/datastructre for that?
 
     def _get_event_subscribers2(self, event_name: str) -> list[EventHandler]:
         handlers = self._subscribers.get(event_name, []).copy()
@@ -114,34 +111,34 @@ class EventBus:
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-from .names import EventName, Events  # or your chosen approach
-
-
-class _EventBus:
-    # ... existing __init__, subscribe, subscribe_all ...
-
-    def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
-        """Support exact matches + wildcards via fnmatch (cached)."""
-        return self._match_subscribers(event_name)
-
-    # @lru_cache(maxsize=512)
-    def _match_subscribers(self, event_name: str) -> list[EventHandler]:
-        matched: list[EventHandler] = []
-        for pattern, handlers in self._subscribers.items():  # ty:ignore
-            if fnmatch.fnmatch(event_name, pattern) or fnmatch.fnmatch(
-                pattern, event_name
-            ):
-                matched.extend(handlers)
-        return matched
-
-    def emit(
-        self, event_name: str | EventName, sender: str, **payload: Any
-    ) -> None:
-        name_str = str(event_name)
-        if (
-            not Events.is_known_event(name_str) and "*" not in name_str
-        ):  # from simple version
-            logger.warning(
-                f"Unknown event emitted: {name_str} (sender={sender})"
-            )
-        # ... rest unchanged, create Event(name=name_str, ...)
+# from .names import EventName, Events  # or your chosen approach
+#
+#
+# class _EventBus:
+#     # ... existing __init__, subscribe, subscribe_all ...
+#
+#     def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
+#         """Support exact matches + wildcards via fnmatch (cached)."""
+#         return self._match_subscribers(event_name)
+#
+#     # @lru_cache(maxsize=512)
+#     def _match_subscribers(self, event_name: str) -> list[EventHandler]:
+#         matched: list[EventHandler] = []
+#         for pattern, handlers in self._subscribers.items():  # ty:ignore
+#             if fnmatch.fnmatch(event_name, pattern) or fnmatch.fnmatch(
+#                 pattern, event_name
+#             ):
+#                 matched.extend(handlers)
+#         return matched
+#
+#     def emit(
+#         self, event_name: str | EventName, sender: str, **payload: Any
+#     ) -> None:
+#         name_str = str(event_name)
+#         if (
+#             not Events.is_known_event(name_str) and "*" not in name_str
+#         ):  # from simple version
+#             logger.warning(
+#                 f"Unknown event emitted: {name_str} (sender={sender})"
+#             )
+#         # ... rest unchanged, create Event(name=name_str, ...)

@@ -53,7 +53,7 @@ def launch_folder_scanner(
     file_type: SummaryFileBox = SummaryFileBox.MD,  # TODO: help text
     reset: sargs.CleanState = False,
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
-    # filter:FilterBox=FilterBox.EMPTY # NEXT:
+    # filter:FilterBox=FilterBox.EMPTY # TODO:
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
     system: System = ctx.obj["system"]

@@ -20,7 +20,7 @@ c: ColorBox = ColorBox.bold()
 type ErrorHandler = Callable[[Any], None]
 type ErrorList = list[type[BaseException] | ExceptorTask]
 
-# NEXT: check with latest __fmt__
+# TODO: check with latest __fmt__
 
 # MOVE: maybe to CLI, together with other utils, tools
 
