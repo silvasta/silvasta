@@ -8,12 +8,14 @@ Provide type information Protocol and support instance checks
 
 from typing import Any, Protocol, runtime_checkable
 
+from rich.console import ConsoleRenderable, RichCast
+
 from .dto import CliDTO, LogDTO
 
 
 @runtime_checkable
 class EventProtocol(Protocol):
-    """Structural blueprint for any read-only event payload."""
+    """Show the handler in utils how an event looks"""
 
     @property
     def name(self) -> str: ...
@@ -33,3 +35,19 @@ class CliRenderable(Protocol):
 @runtime_checkable
 class LogSerializable(Protocol):
     def __log__(self) -> LogDTO: ...
+
+
+type RichRenderable = ConsoleRenderable | RichCast
+
+
+class MixinSentinel:
+    """Imitate a Mixin and replace None"""
+
+    def __cli__(self) -> CliDTO:
+        raise NotImplementedError
+
+    def __log__(self) -> LogDTO:
+        raise NotImplementedError
+
+    def __rich__(self) -> RichRenderable:
+        raise NotImplementedError

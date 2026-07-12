@@ -9,32 +9,6 @@ Provide typed DataTransferObjects for the EventBus
 from dataclasses import dataclass, field
 from typing import Any
 
-# NOTE: resolve this and split to -> log|print?
-# pro: resolve most of the dependency crossing (except for .bus.Event)
-# con: overview and organisation is better here
-
-
-@dataclass
-class LogDTO:
-    message: str
-    level: str = "INFO"
-    metrics: dict[str, Any] = field(default_factory=dict)
-    extra: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Provide clean dictionary for log injection"""
-        return {
-            "message": self.message,
-            "level": self.level.upper(),
-            **self.metrics,
-            **self.extra,
-        }
-
-
-### Log
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Print
-
 type CliDTO = PanelDTO | LineDTO | TableDTO
 
 
@@ -83,3 +57,25 @@ class TableDTO:
     headers: list[str] | None = None
     title: str | None = None
     style: str = "cyan"
+
+
+### Print
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Log
+
+
+@dataclass
+class LogDTO:
+    message: str
+    level: str = "INFO"
+    metrics: dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Provide clean dictionary for log injection"""
+        return {
+            "message": self.message,
+            "level": self.level.upper(),
+            **self.metrics,
+            **self.extra,
+        }
