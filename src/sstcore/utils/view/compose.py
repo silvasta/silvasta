@@ -66,6 +66,10 @@ class ViewBuilder:
     def compose[Class: type](self, cls: Class) -> Class:
         """Inject selected Mixins to new Subclass of target cls"""
 
+        # NEXT: robust compose!
+        # - MixinError
+        # - catch or throw?
+
         bases: tuple[type, ...] = self.mixins + (cls,)
         namespace: dict[str, Any] = {
             "__module__": cls.__module__,

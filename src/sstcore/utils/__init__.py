@@ -31,7 +31,7 @@ __all__: list = [
     "FolderScanner",
     "SimpleTreeNode",
     "PathTreeNode",
-    "PatternNamer",
+    "NamePattern",
     "ColorBox",
 ]
 
@@ -39,7 +39,7 @@ __all__: list = [
 from .color import ColorBox
 from .filter import FilterSet, PathFilter, ProjectFilter
 from .log import setup_logging
-from .parse import PatternNamer
+from .parse import NamePattern
 from .path import HomeSetup, PathGuard, XdgHomes
 from .print import Printer, create_printer, printer
 from .scanner import FolderScanner

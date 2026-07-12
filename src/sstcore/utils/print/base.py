@@ -57,6 +57,9 @@ class BasePrinter:
             case self.Modus.NULL:
                 pass
 
+            # IMPORTANT: create new: self.Mode.EMIT
+            # -> toggle printer, same interface but routed trough central
+
             case self.Modus.RICH:  # Engine and Core of printer
                 indent: int = kwargs.pop("indent", kwargs.pop("_i", 0))
                 _i_hope_it_renders = self.format(target, indent)

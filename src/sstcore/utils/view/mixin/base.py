@@ -14,6 +14,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from sstcore.utils.parse import ParsedName
+
 
 def get_display_name(obj: Any) -> str:
     """Common pattern used by str, rich, cli mixins."""
@@ -42,3 +44,17 @@ class ViewMixinBase:
 
     def _get_data(self, exclude: set[str] | None = None) -> dict[str, Any]:
         return get_public_data(self, exclude)
+
+
+class ViewNameBase:
+    """Base class for view mixins that allows pattern injection."""
+
+    # Classes using this mixin can override this template!
+    _NAME_TEMPLATE = ParsedName("[bold cyan]{cls_name}[/] (id={id})")
+
+    def _get_template_kwargs(self) -> dict:
+        """Extracts data for the template. Classes can override this."""
+        return {
+            "cls_name": type(self).__name__,
+            "id": getattr(self, "id", "N/A"),
+        }
