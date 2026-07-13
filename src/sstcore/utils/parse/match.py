@@ -9,14 +9,15 @@ Compile regex pattern and Match
 import re
 import time
 from collections.abc import Generator, Iterable
-from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 __all__: list[str] = [
     "RegexMatch",
-    "yield_from_list",  # TODO: 50% sure
-    "tail_log_file",  # TODO: 50% sure
-    "LogPatterns",  # TODO: 75% sure (with increased usability?)
+    "MatchRules",
+    "LogPattern",
+    "RegexMatchBox",
 ]
 
 
@@ -44,69 +45,125 @@ class RegexMatch:
 
     def __eq__(self, actual):
         if not isinstance(actual, str):
-            return False
+            return False  # Error?
         self.match: re.Match | None = re.fullmatch(self.pattern, actual)
         return self.match is not None
 
 
-# IDEA: RegexBox,MatchBox, RegexMatcher? RegexMatchBox
-# - apply RegexMatch inside a preconfigurable Box
-# - insert something like LogPatterns but for custom input
-# - apply yield_from_list and other execution pattern
-# Goal 1: work like tail_log_file but not hard code
-# - stream from list is easy, from file as well, from routed pipeline??
-# Strategy Pattern:
-# - send execution function inside Box or use Functor together with RegexMatch
-
-
-# NEXT: to less flexible
-@dataclass(frozen=True)
-class LogPatterns:
-    """Provide compiled Log pattern for Match"""
-
-    DEBUG = RegexMatch(r".*DEBUG.*")
-    INFO = RegexMatch(r".*INFO.*")
-    WARNING = RegexMatch(r".*WARNING.*")
-    ERROR = RegexMatch(r".*ERROR.*")
-    SUCCESS = RegexMatch(r".*SUCCESS.*")
-
-
-# NEXT: standalone without any value
-def yield_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
-    """Match lines with pattern and yield hits"""
-    regex = RegexMatch(pattern)
-    for line in lines:
-        if line == regex:
-            yield line
-
-
-def tail_log_file(log_file: Path) -> Generator[str]:
+class MatchRules(StrEnum):
     """
-    Continuously read end of log file and yield matches with log pattern
+    Govern the behaviour of attached RegexMatches
 
-    - (intended as example, template and storage...)
+    - Return their predefined Value
+    or
+    - Execute their predefined Function
+
+    TODO: something else?
     """
 
-    with open(log_file) as file:
-        file.seek(0, 2)  # Move to end of file
+    _regex: re.Pattern  # WARN: problems with Enum?
+    result: Any  # WARN: problems with Enum?
 
-        while True:
-            if not (line := file.readline()):
-                time.sleep(0.1)
-                continue
+    def __new__(cls, pattern: str, result: Any = None):
+        # Store pattern as the string value of the enum member
+        obj = str.__new__(cls, pattern)
+        obj._value_ = pattern
+        obj.pattern = pattern
+        obj.result = result
+        obj._regex = RegexMatch(pattern)
+        return obj
 
-            match line:  # NEXT: Enum inside RegexBox? MatchBox?
-                case LogPatterns.DEBUG:
-                    style: str = "bold yellow"
-                case LogPatterns.INFO:
-                    style: str = "bold white"
-                case LogPatterns.WARNING:
-                    style: str = "bold magenta"
-                case LogPatterns.ERROR:
-                    style: str = "bold red"
-                case LogPatterns.SUCCESS:
-                    style: str = "bold green"
-                case _:
-                    style = "dataclass broken..."
+    def matches(self, text: str) -> bool:
+        # REMOVE: when is this ever needed??
+        # IDEA: this -> __eq__ ?
+        """Test if this pattern matches the text."""
+        return text == self._regex
 
-            yield style
+    def process(self, text: str) -> Any:
+        # REMOVE: when is this ever needed??
+        """Return configured result or call handler if result is callable."""
+        if callable(self.result):
+            # Pass both text and the match object (with captured groups)
+            return self.result(text, self._regex.match)
+        return self.result if self.result is not None else text
+
+
+class LogPattern(MatchRules):
+    # TODO: default RegexMatchBox with this?
+    # - this is actually frequetly used in the Bus, Cli or Tui
+    """Provide MatchRules log defaults, mainly targeting loguru"""
+
+    # ISSUE: tuple assign is compact, and it needs to be done only once
+    # - still the maintainability and comfort decay to zero
+    # - Requirement: type safe and hard hard to fail, both violated!
+    # TASK: work out better concept:
+    # Idea 1, define MatchRules.action that returns a value or calls function
+    # Idea 2, create Functor dataclass, equiped with every meta needed,
+    # - like pattern, value|function and all potential args for this
+    # - pro: bundled compact setup, hard to fail, easily changed if needed
+    # - con: annoying assignment for simple pattern:str,value:str
+    # Idea 3: Base: split -> static return, or -> dynamic execution
+    DEBUG = (r".*?\bDEBUG\b.*", "bold yellow")
+    INFO = (r".*?\bINFO\b.*", "bold white")
+    WARNING = (r".*?\bWARNING\b.*", "bold magenta")
+    ERROR = (r".*?\b(?:ERROR|CRITICAL)\b.*", "bold red")
+    SUCCESS = (r".*?\bSUCCESS\b.*", "bold green")
+
+
+class RegexMatchBox:  # TODO: initial T was bad, but ExplainedT with properly declaring useage?
+    """
+    Collect MatchRuleSet and provide Interface for Actions
+
+    - Compare incoming string with assigned Rules
+    - On hit:
+      - provide predefined value
+        or
+      - execute assigned function
+
+    """
+
+    def __init__(self, core: type[MatchRules], default: Any = None):
+        if not (issubclass(core, MatchRules)):
+            raise TypeError("pattern_enum must be a subclass of MatchPattern")
+        self.default: Any = default
+        # NEXT:
+        self._routes = [
+            # ISSUE: List of tuples? Fail! Use the Enum for that!!!!!
+            (re.compile(member.value[0]), member.value[1])
+            for member in core
+        ]
+
+    def __call__(self, text: str) -> Any:
+        """Match string for Result or get default?"""
+        if not text or not isinstance(text, str):
+            return self.default  # default for wrong type?
+
+        for pattern, action in self._routes:
+            if match := pattern.search(text):
+                # ISSUE: does not fulfill architectural requirements!
+                # Beside this ty: │   │    info: Attempted to call intersection type `str & Top[(...) -> object]` ty (call-top-callable) [128, 24]
+                # I don't wire up an ultra safe Enum setup... to rely on tuple decomposition!
+                return action(text, match) if callable(action) else action
+
+    def process(self, lines: Iterable[str]) -> Generator[Any]:
+        for line in lines:
+            # NOTE: check if check here makes sense, or better centralized at 1 place
+            if isinstance(line, str) and (cleaned := line.strip()):
+                yield cleaned, self(cleaned)
+
+    def tail(
+        self, file: Path, sleep: float = 0.1
+    ) -> Generator[Any]:  # TODO: here something with T???
+        # IDEA: [ActionResultType: None] ?? yes it is long but it 100% describes the purpose
+        """Process tail of stream_file and execute Action defined in Enum"""
+
+        with open(file, encoding="utf-8") as stream_file:
+            stream_file.seek(0, 2)  # Move to End of streamed file
+
+            while True:
+                if not (line := stream_file.readline()):
+                    time.sleep(sleep)
+                    continue
+
+                if cleaned := line.strip():
+                    yield cleaned, self(cleaned)
