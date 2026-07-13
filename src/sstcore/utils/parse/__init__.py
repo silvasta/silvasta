@@ -3,17 +3,17 @@ Decompose Strings with Regex
 
 - Pattern, Names, Matches
 
-"""
+"""  # TODO:
 
 from .match import LogPatterns, RegexMatch
-from .name import NamePattern
-from .parsed_name import ParsedName
-from .styled_name import StyledName
+from .name import ParsedName
 
 __all__: list[str] = [
-    "NamePattern",  # NEXT: proper expose
-    "StyledName",
+    # name
+    "NameParser",
     "ParsedName",
+    "ColoredName",
+    "SchemaName",
     # match
     "RegexMatch",
     "LogPatterns",
