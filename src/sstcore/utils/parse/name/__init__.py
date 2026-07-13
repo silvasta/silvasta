@@ -8,8 +8,6 @@ Format and Parse Names in both directions
 __all__: list[str] = [
     # base
     "NamePattern",  # TODO: needed 80% sure
-    "FormatNormalizer",  # TODO: needed 60% sure
-    "ExtractNormalizer",  # TODO: needed 60% sure
     "NameParser",
     # implementations
     "ColoredName",

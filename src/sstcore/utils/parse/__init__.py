@@ -5,8 +5,8 @@ Decompose Strings with Regex
 
 """  # TODO:
 
-from .match import LogPatterns, RegexMatch
-from .name import ParsedName
+from .match import LogMatcher, MatchRule, RegexMatch, RegexMatchBox
+from .name import ColoredName, NameParser, ParsedName, SchemaName
 
 __all__: list[str] = [
     # name
@@ -16,5 +16,8 @@ __all__: list[str] = [
     "SchemaName",
     # match
     "RegexMatch",
-    "LogPatterns",
+    "MatchRule",
+    "RuleHandler",
+    "RegexMatchBox",
+    "LogMatcher",
 ]

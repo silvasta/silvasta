@@ -5,6 +5,10 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 from .base import NameParser
 
+__all__: list[str] = [
+    "SchemaName",
+]
+
 
 class SchemaName(NameParser, BaseModel):
     """

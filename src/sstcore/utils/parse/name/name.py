@@ -3,6 +3,10 @@ from typing import Any, Self
 
 from .base import NameParser
 
+__all__: list[str] = [
+    "Name",
+]
+
 
 class Name(NameParser, str):
     """
@@ -30,14 +34,14 @@ class Name(NameParser, str):
         parser.extract(value)
 
         obj: Self = str.__new__(cls, value)
-        obj._parser = parser
+        obj._parser = parser  # ty:ignore
         return obj
 
     def parse(self) -> dict[str, Any]:
         return self.extract(str(self))
 
-    def format(self, **kwargs: Any) -> Name:
-        new_value = self.format(kwargs)
+    def format(self, keys: dict | list | tuple) -> Name:
+        new_value = self.format(keys)
         return type(self)(new_value)
 
     def __rich__(self) -> str:

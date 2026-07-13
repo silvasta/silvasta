@@ -5,6 +5,10 @@ from pydantic import BaseModel
 
 from .base import NameParser
 
+__all__: list[str] = [
+    "ParsedName",
+]
+
 
 class ParsedName[ModelT: BaseModel](NameParser):
     """Switch bidirectional between Keywords and String"""

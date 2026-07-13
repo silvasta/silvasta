@@ -96,11 +96,11 @@ class NamePattern(NameBase):
         self._regex, self.keys = self._compile_pattern(pattern)
         self.pattern = pattern
 
-    def format(self, keywords: dict[str, str]) -> str:
+    def format(self, keys: dict[str, str]) -> str:
         """Format string with keywords and pattern"""
-        if missing := set(self.keys) - set(keywords.keys()):
+        if missing := set(self.keys) - set(keys.keys()):
             raise ValueError(f"{self} Missing keys: {missing}")
-        return self.pattern.format(**keywords)
+        return self.pattern.format(**keys)
 
     def extract(self, name: str) -> dict[str, str]:
         """Extract keywords from string or Raise"""  # LATER: safe mode with -> None
@@ -117,7 +117,7 @@ class FormatNormalizer(NamePattern):
     ) -> dict[str, str]:
         """Convert datetimes and ensure all keys are present"""
 
-        keywords: dict[str, str | datetime] = (
+        keys: dict[str, str | datetime] = (
             target
             if isinstance(target, dict)
             else {key: target[i] for i, key in enumerate(self.keys)}
@@ -128,13 +128,13 @@ class FormatNormalizer(NamePattern):
                 if isinstance(val, datetime)
                 else val  # IDEA: str(val)??
             )
-            for key, val in keywords.items()
+            for key, val in keys.items()
         }
 
-    def format(self, keywords: dict | list | tuple) -> str:
+    def format(self, keys: dict | list | tuple) -> str:
         """Render normalized keywords"""
-        keywords: dict[str, str] = self.normalize(keywords)
-        return super().format(keywords)
+        keys: dict[str, str] = self.normalize(keys)
+        return super().format(keys)
 
 
 class ExtractNormalizer(NamePattern):
@@ -203,8 +203,3 @@ class NameParser(FormatNormalizer, ExtractNormalizer):  # TODO: DispatchName
     def _(self, target: dict | list | tuple) -> str:
         """Send Dict, List and Tuple to FormatNormalizer"""
         return self.format(target)
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Final Results for Export (in progress...)
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --

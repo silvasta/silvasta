@@ -6,6 +6,10 @@ from rich.control import strip_control_codes
 
 from .base import NameParser
 
+__all__: list[str] = [
+    "ColoredName",
+]
+
 
 class ColoredName(NameParser):
     """Provide a Colored and a Regular Name with the same Pattern"""

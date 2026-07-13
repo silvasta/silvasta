@@ -12,7 +12,6 @@ from typing import Any, Self
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..config import ConfigManager, sst_config
 from ..exceptions import NotImplementedDispatchError, RegistrySyncError
 from ..utils import (
     FilterSet,
@@ -23,6 +22,17 @@ from ..utils import (
     ProjectFilter,
 )
 from ..utils.tree import build_path_tree
+
+# TODO:
+# from Names:
+# @cached_property
+# def sstfile_dates(self) -> StyledName:
+#     return StyledName.parse_style(
+#         style_pattern=(
+#             "[{blue}]{name}[/]: [{style2}]{first_tracked}[/]"
+#             " - [{style3}]{last_updated}[/]"),
+#         keys=["name", "first_tracked", "last_updated"],
+#         styles=["blue", "dim", "white"],)
 
 
 class SstFile(BaseModel):
@@ -44,22 +54,25 @@ class SstFile(BaseModel):
 
     # NEXT: colorful check all (pseudo) formats here below
 
-    @property
-    def description(self) -> str:
-        """Extensive description formatted with Rich Color String"""
-        config: ConfigManager = sst_config()
-        return config.names.sstfile_dates.styled(self._description)
+    # @property
+    # # MOVE: to __rich__
+    # def description(self) -> str:
+    #     """Extensive description formatted with Rich Color String"""
+    #     config: ConfigManager = sst_config()
+    #     return config.names.sstfile_dates.styled(self._description)
 
-    @property
-    def _description(self) -> list[str | datetime | Path]:
-        """Constructor for (raw) description text blocks"""
-        return [self.name, self.first_tracked, self.last_updated]
+    # @property
+    # # MOVE: to ColoredName
+    # def _description(self) -> list[str | datetime | Path]:
+    #     """Constructor for (raw) description text blocks"""
+    #     return [self.name, self.first_tracked, self.last_updated]
 
-    @property
-    def raw_description(self) -> str:
-        """Raw description without any coloring"""
-        config: ConfigManager = sst_config()
-        return config.names.sstfile_dates(self._description)
+    # @property
+    # # MOVE: to __str__
+    # def raw_description(self) -> str:
+    #     """Raw description without any coloring"""
+    #     config: ConfigManager = sst_config()
+    #     return config.names.sstfile_dates(self._description)
 
     @property
     def name(self) -> str:
@@ -304,9 +317,9 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         """Check if File is valid local file and attach to Registry"""
 
         if not file.confirm_local_status(self.local_root):
-            logger.error(f"Cannot attach file: {file.raw_description}")
+            logger.error(f"Cannot attach file: {file}")
             if not strict:
-                logger.warning(f"Ignoring: {file.raw_description}")
+                logger.warning(f"Ignoring: {file}")
             else:
                 raise RegistrySyncError("File missing on local disk")
 
@@ -559,7 +572,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             self._clear_files_by_path(files_to_clear=target)
 
         file: FilesT = self.attach_from_path(path=target)
-        logger.debug(f"{action} completed: {file.description}")
+        logger.debug(f"{action} completed: {file=}")  # TODO: repr?
 
         return file
 
