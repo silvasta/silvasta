@@ -12,6 +12,13 @@ from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+__all__: list[str] = [
+    "RegexMatch",
+    "yield_from_list",  # TODO: 50% sure
+    "tail_log_file",  # TODO: 50% sure
+    "LogPatterns",  # TODO: 75% sure (with increased usability?)
+]
+
 
 class RegexMatch:
     r"""
@@ -42,6 +49,29 @@ class RegexMatch:
         return self.match is not None
 
 
+# IDEA: RegexBox,MatchBox, RegexMatcher? RegexMatchBox
+# - apply RegexMatch inside a preconfigurable Box
+# - insert something like LogPatterns but for custom input
+# - apply yield_from_list and other execution pattern
+# Goal 1: work like tail_log_file but not hard code
+# - stream from list is easy, from file as well, from routed pipeline??
+# Strategy Pattern:
+# - send execution function inside Box or use Functor together with RegexMatch
+
+
+# NEXT: to less flexible
+@dataclass(frozen=True)
+class LogPatterns:
+    """Provide compiled Log pattern for Match"""
+
+    DEBUG = RegexMatch(r".*DEBUG.*")
+    INFO = RegexMatch(r".*INFO.*")
+    WARNING = RegexMatch(r".*WARNING.*")
+    ERROR = RegexMatch(r".*ERROR.*")
+    SUCCESS = RegexMatch(r".*SUCCESS.*")
+
+
+# NEXT: standalone without any value
 def yield_from_list(pattern: str, lines: Iterable[str]) -> Generator[str]:
     """Match lines with pattern and yield hits"""
     regex = RegexMatch(pattern)
@@ -65,7 +95,7 @@ def tail_log_file(log_file: Path) -> Generator[str]:
                 time.sleep(0.1)
                 continue
 
-            match line:
+            match line:  # NEXT: Enum inside RegexBox? MatchBox?
                 case LogPatterns.DEBUG:
                     style: str = "bold yellow"
                 case LogPatterns.INFO:
@@ -80,14 +110,3 @@ def tail_log_file(log_file: Path) -> Generator[str]:
                     style = "dataclass broken..."
 
             yield style
-
-
-@dataclass(frozen=True)
-class LogPatterns:
-    """Provide compiled Log pattern for Match"""
-
-    DEBUG = RegexMatch(r".*DEBUG.*")
-    INFO = RegexMatch(r".*INFO.*")
-    WARNING = RegexMatch(r".*WARNING.*")
-    ERROR = RegexMatch(r".*ERROR.*")
-    SUCCESS = RegexMatch(r".*SUCCESS.*")
