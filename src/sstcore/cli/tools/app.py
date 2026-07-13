@@ -8,14 +8,12 @@ from pathlib import Path
 
 from typer import Context
 
-from sstcore.core import System
-from sstcore.utils.path import any_root
-from sstcore.utils.scanner.summary_file import SummaryFileBox
-
 from ...config import SstPaths
-from ...events import EventBus
+from ...system import EventBus, System
 from ...tui import TreeSelectorApp
+from ...utils.path import any_root
 from ...utils.print import printer
+from ...utils.scanner.summary_file import SummaryFileBox
 from .. import args as sargs
 from ..engine import SafeTyper
 from .monitor import log_monitor
@@ -42,6 +40,15 @@ def empty(ctx: Context):  # WARN: remove in sstcore/main
 @app.command("monitor")
 def launch_monitor(file: sargs.LogFile = None):  # TODO: improveCLI hint
     """Log Console Monitor: Watch new log file entries!"""
+    # TASK: Log Monitor 2
+    # - imporve existing match and log tail
+    # - extend log tail to ndjson, use LogDTO.level for match
+    # - create LogDTO panel or other nice rich style print in printer
+    # - simple scroll ndjson log
+    # - simple TUI with scroll + dynamic filter change
+    #   LATER:
+    #   - usage for existing logs
+    #   - usage with live bus connection
     log_monitor(log_path=file)
 
 

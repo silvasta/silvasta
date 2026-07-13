@@ -6,15 +6,14 @@ Read from end of logfile and Display new entries
 # TASK: New Monitor - maybe 1 for regular log and 1 for redered json log?
 
 import sys
-import time
 from pathlib import Path
 
 from ...config import sst_config
 from ...utils import PathGuard, printer
-from ...utils.parse import LogPatterns
+from ...utils.parse import LogMatcher
 
 
-def log_monitor(log_path: Path | None = None):
+def log_monitor(log_path: Path | None = None, sleep=0.1):
     """Show tail log display"""
     log_file: Path = PathGuard.file(
         target=log_path or sst_config().settings.log.log_file,
@@ -22,49 +21,25 @@ def log_monitor(log_path: Path | None = None):
         raise_error=False,
     )
     try:
-        launch_tail_log_console(log_file)
+        launch_tail_log_console(log_file, sleep=sleep)
 
     except KeyboardInterrupt:
         printer.warn("Log file tailing stopped")
         sys.exit(0)
 
 
-def launch_tail_log_console(log_file: Path):
+def launch_tail_log_console(log_file: Path, sleep=0.1):
     """Launch console with live log prints from file assuming it is valid"""
 
-    # NOTE: this worked somehow well, it did its job, tailing was amazing,
-    # -> format and display was ok but not beautiful...
-
     printer.title(
-        [f"Tailing {printer._format(log_file)} ..."],
+        text=[f"Tailing {printer._format(log_file)} ..."],
         title="Loguru Monitor",
         title_align="right",
         frame="purple",
     )
 
-    with open(log_file) as f:
-        f.seek(0, 2)  # Move to end of file
-
-        while True:
-            if not (line := f.readline()):
-                time.sleep(0.1)
-                continue
-
-            match line:
-                case LogPatterns.DEBUG:
-                    style: str = "bold yellow"
-                case LogPatterns.INFO:
-                    style: str = "bold white"
-                case LogPatterns.WARNING:
-                    style: str = "bold magenta"
-                case LogPatterns.ERROR:
-                    style: str = "bold red"
-                case LogPatterns.SUCCESS:
-                    style: str = "bold green"
-                case _:
-                    style = None
-
-            printer(line.strip(), style=style)
+    for line, style in LogMatcher.tail(log_file, sleep=sleep):
+        printer(line, style=style)
 
 
 if __name__ == "__main__":

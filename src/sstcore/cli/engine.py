@@ -12,7 +12,7 @@ from loguru import logger
 from typer import Context
 
 from ..config.setup import ConfigLoader, sst_config_loader
-from ..core import System, fetch_system
+from ..system.core import System, fetch_system
 from . import args, canvas
 from .handler import ErrorRegistry
 
