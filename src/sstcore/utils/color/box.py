@@ -1,17 +1,10 @@
 # TODO: explain
 
 from collections.abc import Callable
-from typing import Protocol
 
+from ...contract.native import Stringable
 from .palette import BASE_PALETTE, ColorName, Palette
 from .style import TextStyle
-
-
-class Stringable(Protocol):  # MOVE: protocol?
-    """Let objects with __str__ pass the ty check"""
-
-    def __str__(self) -> str: ...
-
 
 type Style = TextStyle | str
 

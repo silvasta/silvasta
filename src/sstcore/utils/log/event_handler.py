@@ -9,8 +9,8 @@ from typing import Any
 
 from loguru import logger
 
-from ..view.dto import LogDTO
-from ..view.protocol import EventProtocol, LogSerializable
+from ...contract.log import LogDTO, LogSerializable
+from ...contract.system import EventProtocol
 
 
 def handle_log_event(event: EventProtocol):

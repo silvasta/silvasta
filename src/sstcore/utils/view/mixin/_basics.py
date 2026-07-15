@@ -1,20 +1,37 @@
 """
-Provide shared utils for Mixins
+Provide shared utils for Mixins.
 
 - str/rich or log/repr will need it
 
 """
 
+from ....contract.cli import CliDTO
+from ....contract.external import RichRenderable
+from ....contract.log import LogDTO
+
+
+class MixinSentinel:
+    """Imitate a Mixin to replace None in View selection pipeline"""
+
+    def __cli__(self) -> CliDTO:
+        raise NotImplementedError
+
+    def __log__(self) -> LogDTO:
+        raise NotImplementedError
+
+    def __rich__(self) -> RichRenderable:
+        raise NotImplementedError
+
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Ideas
+### TESTING: New Ideas, work out together with Procets
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-from typing import Any
+from typing import Any  # noqa: E402
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # noqa: E402
 
-from sstcore.utils.parse import ParsedName
+from ...parse import ParsedName  # noqa: E402
 
 
 def get_display_name(obj: Any) -> str:

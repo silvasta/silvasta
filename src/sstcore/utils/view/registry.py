@@ -12,13 +12,11 @@ Store the Mixins in proper Container
 
 from enum import Enum, auto
 
+from ...contract.cli import CliRenderable
+from ...contract.external import RichRenderable
+from ...contract.log import LogSerializable
+from ...contract.native import ReprRenderable, Stringable
 from . import mixin
-from .protocol import (
-    CliRenderable,
-    LogSerializable,
-    MixinSentinel,
-    RichRenderable,
-)
 
 
 class Cli(Enum):
@@ -48,7 +46,7 @@ class Cli(Enum):
                 raise NotImplementedError("Cli.MARKDOWN Mixin")
 
             case self.OFF:
-                return MixinSentinel
+                return mixin.MixinSentinel
 
 
 class Str(Enum):
@@ -57,7 +55,7 @@ class Str(Enum):
     OFF = auto()
 
     @property
-    def mixin(self) -> type:
+    def mixin(self) -> type[Stringable]:
         match self:
             case self.DEFAULT:
                 return mixin.string.NameMixin
@@ -66,7 +64,7 @@ class Str(Enum):
                 return mixin.string.SimpleNameMixin
 
             case self.OFF:
-                return MixinSentinel
+                return mixin.MixinSentinel
 
 
 class Rich(Enum):
@@ -84,7 +82,7 @@ class Rich(Enum):
                 return mixin.rich.SimpleNameMixin
 
             case self.OFF:
-                return MixinSentinel
+                return mixin.MixinSentinel
 
 
 class Repr(Enum):
@@ -93,7 +91,7 @@ class Repr(Enum):
     OFF = auto()
 
     @property
-    def mixin(self) -> type:
+    def mixin(self) -> type[ReprRenderable]:
         match self:
             case self.DEFAULT:
                 return mixin.repr.DataMixin
@@ -102,7 +100,7 @@ class Repr(Enum):
                 return mixin.repr.FullReprMixin
 
             case self.OFF:
-                return MixinSentinel
+                return mixin.MixinSentinel
 
 
 class Log(Enum):
@@ -124,4 +122,4 @@ class Log(Enum):
                 return mixin.log.PydanticDataMixin
 
             case self.OFF:
-                return MixinSentinel
+                return mixin.MixinSentinel

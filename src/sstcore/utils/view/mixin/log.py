@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from ..dto import LogDTO
+from ....contract.log import LogDTO
 
 
 class DebugLogMixin:

@@ -21,9 +21,11 @@ __all__: list[str] = [
     "rich",
     "repr",
     "log",
+    "MixinSentinel",
 ]
 
 from . import cli, log, repr, rich, string
+from ._basics import MixinSentinel
 
 # STRATEGY: further developement
 # - Iteration 1 completed, each category has sufficient Mixins for first runs

@@ -1,13 +1,26 @@
 """
-Provide typed DataTransferObjects for the EventBus
+Provide typed Data Transfer Objects for the EventBus
 
 - CliDTO: Intended for __cli__ and processed by printer
-- LogDTO  Intended for __log__ and processed by logger
 
 """
 
+__all__: list[str] = [
+    "CliRenderable",
+    "CliDTO",
+    "PanelDTO",
+    "LineDTO",
+    "TableDTO",
+]
+
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
+
+
+@runtime_checkable
+class CliRenderable(Protocol):
+    def __cli__(self) -> CliDTO: ...
+
 
 type CliDTO = PanelDTO | LineDTO | TableDTO
 
@@ -57,25 +70,3 @@ class TableDTO:
     headers: list[str] | None = None
     title: str | None = None
     style: str = "cyan"
-
-
-### Print
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Log
-
-
-@dataclass
-class LogDTO:
-    message: str
-    level: str = "INFO"
-    metrics: dict[str, Any] = field(default_factory=dict)
-    extra: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Provide clean dictionary for log injection"""
-        return {
-            "message": self.message,
-            "level": self.level.upper(),
-            **self.metrics,
-            **self.extra,
-        }

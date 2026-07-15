@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, cast
 
-from .protocol import MixinSentinel
+from .mixin import MixinSentinel
 from .registry import Cli, Log, Repr, Rich, Str
 
 

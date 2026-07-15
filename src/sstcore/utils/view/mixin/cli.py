@@ -7,7 +7,7 @@ Compose CliMixins
 
 from typing import Any
 
-from ..dto import LineDTO, PanelDTO
+from ....contract.cli import LineDTO, PanelDTO
 
 # IDEA: use some _specific_attribute(self):return "default" for override
 
