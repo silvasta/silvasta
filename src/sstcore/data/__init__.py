@@ -1,12 +1,6 @@
 # TODO: explain
 
-from .files import (
-    FileRegistry,
-    FileSystemManager,
-    SstFile,
-    SstFileFilter,
-    SstFileRegistry,
-)
+from sstcore.data.model import SstModel
 
 __all__: list[str] = [
     "SstFile",
@@ -14,4 +8,12 @@ __all__: list[str] = [
     "FileRegistry",
     "SstFileRegistry",
     "FileSystemManager",
+    "SstModel",
 ]
+from .files import (
+    FileRegistry,
+    FileSystemManager,
+    SstFile,
+    SstFileFilter,
+    SstFileRegistry,
+)

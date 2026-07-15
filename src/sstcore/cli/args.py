@@ -1,3 +1,4 @@
+# TODO: __all__
 from pathlib import Path
 from typing import Annotated
 
@@ -10,6 +11,8 @@ import typer
 #   - file-analyzer
 #   - tyrus
 #   - SysCo
+
+# IMPORTANT: smart factory!
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ###  Boot

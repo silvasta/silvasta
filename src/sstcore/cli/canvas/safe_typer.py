@@ -7,6 +7,8 @@ Assemble the Prints for SafeTyper
   - in future: connected and reacting to app state
 """
 
+# TODO: __all__, general check
+
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path

@@ -8,7 +8,6 @@ Provide stable, low-level building blocks for this and other projects:
 - Log configuration (sstcore.utils.log)
 - Rich-based printing and styling (sstcore.utils.print, sstcore.utils.color)
 - Scanning and tree construction (sstcore.utils.scanner, sstcore.utils.tree)
-- Time utilities (sstcore.utils.time)
 
 Built on top of these major external dependencies:
 - rich
@@ -31,7 +30,7 @@ __all__: list = [
     "FolderScanner",
     "SimpleTreeNode",
     "PathTreeNode",
-    "NamePattern",
+    # "NamePattern",
     "ColorBox",
 ]
 
@@ -39,7 +38,8 @@ __all__: list = [
 from .color import ColorBox
 from .filter import FilterSet, PathFilter, ProjectFilter
 from .log import setup_logging
-from .parse import NamePattern
+
+# from .parse import NamePattern # TODO: check this, and all others!
 from .path import HomeSetup, PathGuard, XdgHomes
 from .print import Printer, create_printer, printer
 from .scanner import FolderScanner

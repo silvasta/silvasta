@@ -11,13 +11,6 @@ Provide Configuration Pipeline with global access and json support
 
 """
 
-from .defaults import SstDefaults
-from .manager import ConfigManager
-from .names import SstNames
-from .paths import SstPaths
-from .settings import SstSettings
-from .setup import sst_config  # TODO: ConfigLoader?
-
 __all__: list = [
     "ConfigManager",
     "SstSettings",
@@ -26,3 +19,10 @@ __all__: list = [
     "SstNames",
     "sst_config",
 ]
+
+from .defaults import SstDefaults
+from .manager import ConfigManager
+from .names import SstNames
+from .paths import SstPaths
+from .settings import SstSettings
+from .setup import sst_config  # TODO: ConfigLoader?

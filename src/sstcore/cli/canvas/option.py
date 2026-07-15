@@ -8,6 +8,8 @@ Provide Dynamic Option Collection for high-interval visual inspection
 - Ensure Toggle to move easy and fast back to regular execution mode
 """
 
+# TODO: __all__, general check
+
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field
