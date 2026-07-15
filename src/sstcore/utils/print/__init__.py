@@ -28,11 +28,6 @@ from .mixin.tool import ToolMixin
 def create_printer(color=True, tool=True, format=True, layout=True):
     """Stack the selected Mixins and assemble the Printer class!"""
 
-    # COLLECT: mixer pattern, apply where it makes sense:
-    # - here? most likely at most issues with at most minimal gain...
-    # - view! precisily mix the defaults for new classes (check risk first)
-    # - registry, looks tempting but same risk as here
-
     chain: list = []
 
     if format:  # set False for risking crashes

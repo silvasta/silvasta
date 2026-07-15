@@ -7,7 +7,7 @@ Handle CLI Event
 
 from typing import Any
 
-from ..view.protocol import EventProtocol
+from ...contract.system import EventProtocol
 from . import printer  # WARN: printer?
 
 

@@ -45,7 +45,9 @@ class FilterSet[SetType: str | Path | int, ObjectType: Any]:
         """Override for custom validation"""
         return self.fulfills_condition_trio(target_set)
 
-    @debug_log_or_print(anyway=False)
+    @debug_log_or_print(  # REMOVE: as soon as degug strategy implemented
+        anyway=False
+    )
     def _create_target_set(self, target: ObjectType) -> set[SetType]:
         """Override this for specific object handling!"""
         return {target}
