@@ -1,25 +1,46 @@
 """
-Assemble the System!
+sstcore.core - Assemble the System!
 
-- Load and combine all global instances in 1 System
+Load and combine all singletons in one System.
+
+- Use System.bootstrap() for Non-Global Instance
+
+- Inject custom behaviour with System.bootstrap(kwargs)
+
+Zero effort access for scripts and small projects:
+- Initialize Global singleton: fetch_system(_allow_uninitialized=False)
+- Access everywhere without wiring with fetch_system()
+
+Warning:
+- Don't Mix both approaches except you know excactly what you are doing!
+
+Note:
+- This module will likely transform to a package with core.system module
+
+Ideas:
+- Active GlobalEye (similar to Passive EventBus) -> EventInterceptor
+- fetch_system with custom singleton and loader (similar to config)
 
 """
 
+__all__: list = [
+    "System",
+    "fetch_system",
+]
 from pathlib import Path
 from typing import Any, Self
 
-from loguru import logger
-
-from sstcore.utils.log import LogSetupResult
-
-from .config import ConfigManager
-from .config.setup import ConfigLoader, sst_config_loader
-from .events import BusRegistrationFunc, EventBus
-from .events.register import register_default_event_handler
-from .utils import Printer, printer, setup_logging
-from .utils.log.setup import setup_minimal_logging
+from ..config import ConfigManager
+from ..config.setup import ConfigLoader, sst_config_loader
+from ..utils import Printer
+from ..utils import printer as global_printer
+from ..utils.log import LogSetupResult
+from ..utils.log.setup import setup_logging, setup_minimal_logging
+from .event_bus import EventBus
+from .register import BusRegistrationFunc, register_default_event_handler
 
 
+# NEXT: name
 def fetch_system(*, _allow_uninitialized: bool = False) -> System:
     global _system
     if _system is None:
@@ -34,9 +55,14 @@ _system: System | None = None
 
 
 class System:
-    """Hold the EventBus and related components"""
+    """Combine the Essentials to work together as System"""
 
-    def __init__(self, config: ConfigManager, printer: Printer, bus: EventBus):
+    def __init__(
+        self,
+        config: ConfigManager,
+        printer: Printer,
+        bus: EventBus,
+    ):
         self.config: ConfigManager = config
         self.printer: Printer = printer
         self.bus: EventBus = bus
@@ -47,15 +73,16 @@ class System:
     @classmethod
     def bootstrap(
         cls,
+        *,
         config_loader: ConfigLoader | None = None,
         setting_file: Path | None = None,
-        verbose: bool = False,
-        quiet: bool = False,
         use_default_bus_handler: bool = True,
         attach: BusRegistrationFunc | None = None,
-        custom_printer: Printer | None = None,
+        printer: Printer | None = None,
+        verbose: bool = False,
+        quiet: bool = False,
     ) -> Self:
-        """Assemble the EventBus and other components to the EventSystem"""
+        """Assemble Config, wire Bus, ensure Printer and Compose to System"""
 
         # shadow bootstap noise but show minimal output if bootstap fails
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
@@ -68,6 +95,7 @@ class System:
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
             param=config.settings.log,
+            # TODO: where to print? emit print+log here? check canvas
         )
         config.log_result = log_result  # LATER: better attach
 
@@ -77,12 +105,11 @@ class System:
         if attach:  # BusRegistrationFunc
             attach(bus)
 
-        used_printer: Printer = custom_printer or printer
+        system_printer: Printer = printer or global_printer
         # printer (so far) always exists as (stateles) global singleton
 
-        system: Self = cls(config=config, printer=used_printer, bus=bus)
-        # TODO: use the bus!
-        logger.info(f"System ready for {printer.name_and_version}")
+        system: Self = cls(config=config, printer=system_printer, bus=bus)
+        system.emit(event_name="sys.log", sender="System", msg="Setup Ready!")
 
         return system
 

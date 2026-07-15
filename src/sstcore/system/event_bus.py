@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
-from ..utils.view.protocol import EventProtocol
+from ..contract.system import EventProtocol
 
 
 @dataclass(frozen=True)
+# IDEA: move this to contract? forget about protocol and use real Event?
 class Event:
     """Base payload emitted across the pipeline."""
 
@@ -20,7 +21,7 @@ class Event:
 
 
 if TYPE_CHECKING:  # --- SYNCHRONIZATION GUARD ---
-    # This line ensures Event always perfectly matches EventProtocol.
+    # Ensure that EventProtocol always matches Event!
     _: EventProtocol = Event(name="", sender="", payload={})
 
 
@@ -62,6 +63,8 @@ class EventBus:
     def subscribe(self, event_name: str, handler: EventHandler) -> None:
         """Attach handler as subscriber to specific event"""
         self._subscribers.setdefault(event_name, []).append(handler)
+
+    # IDEA: log(LogDTO args) -> LogDTO
 
     def emit(self, event_name: str, sender: str, **payload) -> None:
         """Fire an Event to all global and event-specific subscribers"""

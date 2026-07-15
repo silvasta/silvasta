@@ -7,7 +7,7 @@ from loguru import logger
 
 from ..utils.log.event_handler import handle_log_event
 from ..utils.print.event_handler import handle_cli_event
-from .bus import EventBus, EventHandler
+from .event_bus import EventBus, EventHandler
 
 type BusRegistrationFunc = Callable[[EventBus], None]
 
@@ -26,6 +26,9 @@ class UiEvent(StrEnum):  # TEST:
 
 def register_default_event_handler(bus: EventBus) -> None:
     """Attach EventHandler to EventBus registry by event_name"""
+
+    # TODO: attach live monitor!?
+    # bus.subscribe("sys.log", EventHandler("Monitor", self._handle_event))
 
     for name in ("sys.log", "sys.error", "sys.warn"):
         bus.subscribe(name, log_handler)

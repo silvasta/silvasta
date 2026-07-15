@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from loguru import logger
 
-from .bus import EventBus
+from .event_bus import EventBus
 from .register import register_default_event_handler
 
 _bus: EventBus | None = None
