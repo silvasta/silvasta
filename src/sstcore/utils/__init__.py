@@ -16,32 +16,24 @@ Built on top of these major external dependencies:
 """
 
 __all__: list = [
-    "day_count",
-    "HomeSetup",
-    "XdgHomes",
-    "PathGuard",
     "printer",
-    "Printer",
-    "create_printer",
-    "setup_logging",
+    "PrinterFactory",
+    "ColorBox",
     "FilterSet",
     "PathFilter",
     "ProjectFilter",
     "FolderScanner",
     "SimpleTreeNode",
     "PathTreeNode",
-    # "NamePattern",
-    "ColorBox",
+    "day_count",
+    "PathGuard",
 ]
 
 
 from .color import ColorBox
 from .filter import FilterSet, PathFilter, ProjectFilter
-from .log import setup_logging
-
-# from .parse import NamePattern # TODO: check this, and all others!
-from .path import HomeSetup, PathGuard, XdgHomes
-from .print import Printer, create_printer, printer
+from .path import PathGuard
+from .print import PrinterFactory, printer
 from .scanner import FolderScanner
 from .time import day_count
 from .tree import PathTreeNode, SimpleTreeNode

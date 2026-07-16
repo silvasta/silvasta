@@ -12,10 +12,6 @@ type Style = TextStyle | str
 class ColorBox:
     """Provide Simple and Fast Color Supply"""
 
-    @property
-    def palette(self) -> Palette:
-        return self._palette
-
     def __call__(
         self, text: Stringable, color: ColorName | None = None
     ) -> str:
@@ -25,6 +21,10 @@ class ColorBox:
             return str(text)  # because: Stringable -> str
 
         return f"[{markup}]{text}[/]"
+
+    @property
+    def palette(self) -> Palette:
+        return self._palette
 
     def _markup(self, color: ColorName | None) -> str:
         """Assemble style and color, strip to compact string or even empty"""

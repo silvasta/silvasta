@@ -34,3 +34,19 @@ class LogDTO:
             **self.metrics,
             **self.extra,
         }
+
+    # REMOVE:??
+    def to_ndjson(self) -> str:
+        """For your NDJSON log monitor."""
+        import json
+
+        return json.dumps(self.to_dict())
+
+    def __str__(self) -> str:
+        """Быстрый человекочитаемый формат для отладки"""
+        parts = [f"[{self.level.upper()}] {self.message}"]
+        if self.metrics:
+            parts.append(f"(metrics={self.metrics})")
+        if self.extra:
+            parts.append(f"(extra={self.extra})")
+        return " ".join(parts)

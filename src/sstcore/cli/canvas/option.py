@@ -91,7 +91,7 @@ class PrintOptionBase[FuncT: PrintFunc]:
         return type(self).__name__
 
     def __rich__(self) -> str:
-        return colorize.module_path(self, target_color="cyan")
+        return colorize.modules(self, target_color="cyan")
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### Registry Access

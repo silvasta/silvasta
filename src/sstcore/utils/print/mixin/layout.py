@@ -2,148 +2,29 @@ from typing import Any, Literal
 
 from rich.box import Box
 from rich.markdown import Markdown
-from rich.rule import Rule
 
-from ..base import BasePrinter
-from ._boxes import BoxLibrary
+from sstcore.contract.cli import LineDTO, PanelDTO
+
+from ..blueprint import Printer
+from ..boxes import Boxes
 
 
-class LayoutMixin(BasePrinter):
-    """Provide Design Blocks for Core Layout"""
+class PanelMixin:
+    def panel(self: Printer, target: Any, **kwargs) -> None:
+        """Provide General Panel Interface by pushing a PanelDTO to the core."""
 
-    _boxes = BoxLibrary()
+        self(PanelDTO.from_call(target=target, **kwargs))
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Latest Test of new Box layouts! (Promising!)
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-    def line(self, style: str = ""):
+class LineMixin(PanelMixin):
+    def line(self: Printer, style: str = ""):
         """Print Horizontal Line"""
-        self(Rule(style=style or "cyan"))
+        dto = LineDTO.from_call(style=style or "cyan")
+        self(dto)
 
-    # REFACTOR: keep nice boxes, reduce rest
-    # IDEA: something like dot accessed boxes?
-    # -> printer.box.full|top|dash... ?
-
-    def box_full(self, target, frame=""):
-        """Print Partial underlined Target and open a Scroll"""
-        return self.box(target, frame, box=self._boxes.EDGE)
-
-    def box_top(self, target, frame=""):
-        """Print Overlined Target and open a Scroll"""
-        return self.box(target, frame, box=self._boxes.UP)
-
-    def box_bottom(self, target, frame=""):
-        """Print Underlined Target and close a Scroll"""
-        return self.box(target, frame, box=self._boxes.DOWN)
-
-    def mini_box(
-        self, target, frame="", mode: Literal["up", "down", "both"] = "both"
+    def lines(
+        self: Printer, lines: list, style="cyan", title=None, header=None
     ):
-        match mode:  # MOVE: dispatch in BoxesBox, most likely by Enum
-            case "up":
-                box = self._boxes.MINI_UP
-            case "down":
-                box = self._boxes.MINI_DOWN
-            case "both":
-                box = self._boxes.MINI
-
-        return self.box(target, frame, box=box)
-
-    def box(self, target, frame: str = "", box: Box | None = None):
-        """Print Target inside Custom Layout Box"""
-        self.panel(
-            target=target,
-            box=box or self._boxes.OPEN,
-            border_style=frame or "cyan",
-            expand=True,
-        )
-
-    def dash(self, target, frame: str = "", box: Box | None = None):
-        """Print Target inside Custom Layout Box"""
-        self.panel(  # MERGE: after decision for boxes
-            target=target,
-            box=box or self._boxes.DASH,
-            border_style=frame or "cyan",
-            expand=True,
-        )
-
-    def edge(self, target, frame: str = "", box: Box | None = None):
-        """Print Target inside Custom Layout Box"""
-        self.panel(  # MERGE: after decision for boxes
-            target=target,
-            box=box or self._boxes.EDGE,
-            border_style=frame or "cyan",
-            expand=True,
-        )
-
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-    ### Layouts
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    def md(self, text, *args, header: int = 0, **kwargs):
-        """Render Markdown in Terminal, optional with desired Header-Level"""
-
-        kwargs.setdefault("style", "white")  # LATER: default from ... ?
-
-        if not (0 <= header <= 6):
-            warn = (f"Markdown {header=} invalid! (H1 to H6) using default=0",)
-            self.danger(warn)
-            header = 0
-
-        prefix: str = f"{'#' * header} " if header > 0 else ""
-
-        self(Markdown(f"{prefix}{text}"), *args, **kwargs)
-
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    def header(
-        self, text, text_style: str = "bold white", frame="cyan", **kwargs
-    ):
-        """Provide simple access to title bar"""
-        # NOTE: the white text_style inside colored frame looks amazing
-        self.panel(text, text_style=text_style, frame=frame, **kwargs)
-
-    def dip(self, head, text, color):
-        """Colorize first expressions same as Frame"""
-        # IDEA: extract pattern below and use as template for other layouts
-        # - instead of 5 other dips, create easy arg access down to panel
-        self.header(f"{self.color(head, color)} {text}", frame=color)
-
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    def title(self, text, title="", title_align="right", **kwargs):
-        """Provide default Frame with Title"""
-
-        # LATER: check as well the title.inverted, how to provide arg for that?
-        frame: str | None = kwargs.pop("frame", "cyan")
-
-        title: str = title or self.name_and_version
-        self.header(
-            text, title=title, title_align=title_align, frame=frame, **kwargs
-        )
-
-    # LATER: connect named colors with header and default palette
-
-    def success(self, text):
-        """Provide header for default action"""
-        self.header(text, frame="green")
-
-    def danger(self, text):
-        """Provide header for default action"""
-        self.header(text, frame="red")
-
-    def warn(self, text):
-        """Provide header for default action"""
-        self.header(text, frame="yellow")
-
-    def special(self, text):
-        """Provide header for special action"""
-        self.header(text, frame="purple")
-
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    def lines(self, lines: list, style="cyan", title=None, header=None):
         """Provide Lines optional with inverted style header"""
 
         # LATER: check for better access to ColorBox.palette themes
@@ -154,21 +35,105 @@ class LayoutMixin(BasePrinter):
 
         self.panel(lines, title=title, frame=style, title_align="right")
 
-    def lines_with_len(self, name, lines: list, style: str = "cyan"):
+    def lines_with_len(self: Printer, name, lines: list, style: str = "cyan"):
         """Provide Lines with Statistic"""
         header = f"{name}: {len(lines)}"
         self.lines(header=header, title=name, lines=lines, style=style)
 
+
+class BoxMixin(PanelMixin):
+    def box(
+        self: Printer, target, frame: str = "", box: Box = Boxes.OPEN.value
+    ):
+        """Print Target inside Custom Layout Box"""
+        self.panel(target=target, box=box, border_style=frame or "cyan")
+
+    def box_top(self: Printer, target, frame=""):
+        """Print Overlined Target and open a Scroll"""
+        return self.box(target, frame, box=Boxes.UP.value)
+
+    def box_bottom(self: Printer, target, frame=""):
+        """Print Underlined Target and close a Scroll"""
+        return self.box(target, frame, box=Boxes.DOWN.value)
+
+    def mini_box(
+        self: Printer,
+        target,
+        frame="",
+        mode: Literal["up", "down", "both"] = "both",
+    ):
+        match mode:  # MOVE: dispatch in BoxesBox, most likely by Enum
+            case "up":
+                box = Boxes.MINI_UP.value
+            case "down":
+                box = Boxes.MINI_DOWN.value
+            case "both":
+                box = Boxes.MINI.value
+
+        return self.box(target, frame, box=box)
+
+    def corner(
+        self: Printer, target, frame: str = "", box: Box = Boxes.CORNER.value
+    ):
+        self.panel(target=target, box=box, border_style=frame or "cyan")
+
+
+class HeaderMixin:
+    def header(
+        self: Printer, text: Any, frame: str = "cyan", **kwargs
+    ) -> None:
+        """Provide simple access to title bar via PanelDTO."""
+
+        text_style: str = kwargs.pop("text_style", "bold white")
+
+        self.panel(text, color=text_style, frame=frame, **kwargs)
+
+    def title(self: Printer, text, title="", title_align="right", **kwargs):
+        """Provide default Frame with Title"""
+
+        # LATER: check as well the title.inverted, how to provide arg for that?
+        frame: str | None = kwargs.pop("frame", "cyan")
+
+        title: str = title or self.project_info
+        self.header(
+            text, title=title, title_align=title_align, frame=frame, **kwargs
+        )
+
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def banner(
-        self, target: Any | list[Any], style="cyan", padding=(1, 1), **kwargs
-    ):
-        """Provide fat block that is hard to miss in CLI"""
-        self.panel(
-            target,
-            border_style=f"white on {style}",
-            style=style,
-            padding=padding,
-            **kwargs,
-        )
+    # LATER: connect named colors with header and default palette
+
+    def success(self: Printer, text):
+        """Provide header for default action"""
+        self.header(text, frame="green")
+
+    def danger(self: Printer, text):
+        """Provide header for default action"""
+        self.header(text, frame="red")
+
+    def warn(self: Printer, text):
+        """Provide header for default action"""
+        self.header(text, frame="yellow")
+
+    def special(self: Printer, text):
+        """Provide header for special action"""
+        self.header(text, frame="purple")
+
+    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def dip(self: Printer, head, text, color):
+        """Colorize first expressions same as Frame"""
+        self.header(f"{self.color(head, color)} {text}", frame=color)
+
+
+class MarkdownMixin:
+    def md(self: Printer, text, *args, header: int = 0, **kwargs):
+        """Render Markdown in Terminal, optional with desired Header-Level"""
+
+        prefix: str = f"{'#' * header} " if header > 0 else ""
+
+        self(Markdown(f"{prefix}{text}"), *args, **kwargs)
+
+
+class TableMixin:
+    pass

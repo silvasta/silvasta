@@ -3,61 +3,18 @@ The Printer - Fast and Beautiful Access to Rich Console!
 
 Dynamiacally build the 'Printer' with optional Mixins.
 
-- Expose pre-configured global printer instance and factory function
+- Define functions and types in Printer: Protocol
+- Collect Mixins in PrinterFactory for assemble
+- Expose pre-configured global printer: Printer
 
 """
 
 __all__: list[str] = [
-    "printer",
     "Printer",
-    "create_printer",
+    "PrinterFactory",
+    "printer",
 ]
 
-from typing import TYPE_CHECKING
 
-from .base import BasePrinter
-from .mixin.color import ColorMixin
-from .mixin.format import FormatMixin
-from .mixin.layout import LayoutMixin
-from .mixin.tool import ToolMixin
-
-# REFACTOR: simplify assembling!
-# IDEA: move mixer to print.core or resolve completely
-
-
-def create_printer(color=True, tool=True, format=True, layout=True):
-    """Stack the selected Mixins and assemble the Printer class!"""
-
-    chain: list = []
-
-    if format:  # set False for risking crashes
-        chain.append(FormatMixin)
-    if color:  # set False for no colors (like the same as no printer)
-        chain.append(ColorMixin)
-    if layout:  # set False for no comfort
-        chain.append(LayoutMixin)
-    if tool:  # Actually this works standalone
-        chain.append(ToolMixin)
-
-    chain.append(BasePrinter)
-
-    return type("Printer", tuple(chain), {})
-
-
-_DynamicPrinter = create_printer()
-
-if TYPE_CHECKING:
-
-    class Printer(
-        FormatMixin, ColorMixin, LayoutMixin, ToolMixin, BasePrinter
-    ):
-        """Type-hinting stub for perfect autocomplete."""
-
-        pass
-else:
-    # At runtime, bind the dynamic class to the name 'Printer'
-    Printer = _DynamicPrinter
-
-# AI: assemble and init the printer here is in discussion to change...
-
-printer: Printer = Printer()
+from .compose import PrinterFactory, printer
+from .protocol import Printer

@@ -39,7 +39,7 @@ class Palette:
     special = ThemeRole(base="purple", inverted="bold white on purple")
     info = ThemeRole(base="white", inverted="black on white")
 
-    def to_rich_dict(self) -> dict[str, str]:
+    def to_rich(self) -> dict[str, str]:
         """Dynamically export all colors and roles for rich.Theme"""
         rich_theme = {}
         for field in fields(self):

@@ -1,3 +1,15 @@
+"""
+Still nice idea
+
+- keep for the moment
+
+"""
+
+from typing import Any
+
+from ...contract.log import LogDTO
+
+
 class TelemetryMixin:
     """Shadows semantic printer calls to fire telemetry events before printing."""
 

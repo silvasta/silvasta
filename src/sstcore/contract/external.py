@@ -16,3 +16,5 @@ class RichProtocol(Protocol):
 
 
 type RichRenderable = ConsoleRenderable | RichCast
+
+type RenderableType = ConsoleRenderable | RichCast | str

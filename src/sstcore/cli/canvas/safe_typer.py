@@ -74,7 +74,7 @@ type LoaderStyler = Callable[[ConfigLoader], str]
 
 class ConfigLoaderCanvas(PrintOption[ConfigSignature]):
     def _load_default_function(self):
-        styler: LoaderStyler = colorize.module_path
+        styler: LoaderStyler = colorize.modules
         return partial(self._template, mode="both", styler=styler)
 
     def _template(
@@ -97,7 +97,7 @@ class ConfigLoaderCanvas(PrintOption[ConfigSignature]):
 
     def _config_module_path_1(self, mode: Mode):
         styler: LoaderStyler = partial(
-            colorize.module_path,
+            colorize.modules,
             project_color="purple",
             module_color="green",
             target_color="cyan",
@@ -234,7 +234,7 @@ class SetupStatus(PrintOption[StatusSignature]):
 
     @staticmethod
     def _format_colorful(exception: type[BaseException]) -> str:
-        # TODO: replace by colorize.module_path?
+        # TODO: replace by colorize.modules?
         project, *modules = exception.__module__.split(".")
         module: str = ".".join([c.c(project), *[c.g(m) for m in modules]])
         error = f"{c.red(exception.__name__)}"
