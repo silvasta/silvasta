@@ -13,6 +13,7 @@ from rich.padding import Padding
 from rich.theme import Theme
 
 from ...contract.cli import CliDTO, CliRenderable
+from ...contract.external import RenderableType
 from ..color import Palette
 from ..color.palette import BASE_PALETTE
 from ..view import Cli, Log, Repr, Rich, Str, ViewBuilder, view
@@ -48,7 +49,7 @@ class PrinterBase:
             self.panel(text, frame=style, text_style=style)
 
 
-class PrinterModi(PrinterBase):
+class PrinterModus(PrinterBase):
     """Control state of Modus"""
 
     modus: Modus = Modus.RICH
@@ -91,28 +92,28 @@ class PrinterModi(PrinterBase):
         return self._in_context(strategy=self.mute)
 
 
-class PrinterCore(PrinterModi):
+class PrinterCore(PrinterModus):
     """Execute the printer()"""
 
     def __call__(self: Printer, target, **kwargs):
-        """Single entry point for all printing logic."""
+        """Single entry point for printing logic"""
 
         # 1. Unpack Renderables (Interfaces)
         if isinstance(target, CliRenderable):
-            target = target.__cli__()
+            target: CliDTO = target.__cli__()
 
         # 2. Route DTOs to RenderMixin, Raw data to NormalizeMixin
         if isinstance(target, CliDTO):
             indent: int = target.indent
-            renderable = self.render(target)
+            renderable: RenderableType = self.render(target)
         else:
-            indent = kwargs.pop("indent", 0)
-            renderable = self.normalize(target)
+            indent: int = kwargs.pop("indent", 0)
+            renderable: RenderableType = self.normalize(target)
 
         # 3. Execution
         match self.modus:
             case Modus.PRINT:
-                print(renderable)  # Python fallback
+                print(renderable)
             case Modus.NULL:
                 pass
             case Modus.EMIT:

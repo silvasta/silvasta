@@ -122,12 +122,12 @@ class LineDTO(CliDTO):
 
 @dataclass
 class RuleDTO(CliDTO):
-    """Simple horizontal rule (the "just a line" case that got lost)."""
+    """Dedicated horizontal rule."""
 
+    char: str = "─"
     style: str = "cyan"
-    character: str = "─"
-    _content_field = "no content..."
-    _strict = True
+    _content_field = "char"
+    _strict = False
 
 
 @dataclass

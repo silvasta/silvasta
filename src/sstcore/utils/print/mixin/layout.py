@@ -3,7 +3,7 @@ from typing import Any, Literal
 from rich.box import Box
 from rich.markdown import Markdown
 
-from sstcore.contract.cli import LineDTO, PanelDTO
+from sstcore.contract.cli import LineDTO, PanelDTO, RuleDTO
 
 from ..blueprint import Printer
 from ..boxes import Boxes
@@ -39,6 +39,10 @@ class LineMixin(PanelMixin):
         """Provide Lines with Statistic"""
         header = f"{name}: {len(lines)}"
         self.lines(header=header, title=name, lines=lines, style=style)
+
+    def rule(self: Printer, title: str = "", **kwargs):
+        """Print a horizontal rule with optional title."""
+        self(RuleDTO.from_call(title=title, **kwargs))
 
 
 class BoxMixin(PanelMixin):
@@ -91,8 +95,7 @@ class HeaderMixin:
     def title(self: Printer, text, title="", title_align="right", **kwargs):
         """Provide default Frame with Title"""
 
-        # LATER: check as well the title.inverted, how to provide arg for that?
-        frame: str | None = kwargs.pop("frame", "cyan")
+        frame: str = kwargs.pop("frame", "cyan")
 
         title: str = title or self.project_info
         self.header(

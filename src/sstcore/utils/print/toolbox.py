@@ -1,16 +1,13 @@
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from rich.table import Table
 from rich.tree import Tree
 
+from ..color import colorize
 from ..tree import SimpleTreeNode
 
 
-def path_exists_table(  # IDEA: dont't pass only format, but a printer Protocol?
-    paths: list[Path], _format: Callable[[Any], str], title=None, header="Path"
-) -> Table:
+def path_exists_table(paths: list[Path], title=None, header="Path") -> Table:
     """Check if Paths exist and visualize in Table"""
 
     table = Table(title=title)
@@ -19,7 +16,7 @@ def path_exists_table(  # IDEA: dont't pass only format, but a printer Protocol?
 
     for path in paths:
         status: str = "✅" if path.exists() else ""
-        table.add_row(status, _format(path))
+        table.add_row(status, colorize.path(path))
 
     return table
 
@@ -27,46 +24,44 @@ def path_exists_table(  # IDEA: dont't pass only format, but a printer Protocol?
 def _unpack_bool_tuple(
     show_type: bool | tuple[bool, bool],
 ) -> tuple[bool, bool]:
-
-    if isinstance(show_type, bool):
-        if show_type:
-            return True, True
-        else:
-            return False, False
-    else:
-        return show_type
+    return (
+        show_type
+        if isinstance(show_type, tuple)
+        else (True, True)
+        if show_type
+        else (False, False)
+    )
 
 
 def dict_table(
     target: dict,
-    _format: Callable[[Any], str],
     style="cyan",
     show_type: bool | tuple[bool, bool] = (True, True),
 ) -> Table:
     """Debug Dict"""
 
-    key_type, value_type = _unpack_bool_tuple(show_type)
+    show_key_type, show_value_type = _unpack_bool_tuple(show_type)
 
     table = Table(style=style)
 
     table.add_column("Key", justify="left", style="green")
 
-    if key_type:
+    if show_key_type:
         table.add_column("Type Key", justify="center", style="magenta")
 
     table.add_column("Value", style="blue", justify="left")
 
-    if value_type:
+    if show_value_type:
         table.add_column("Type Value", style="magenta")
 
     for key, value in target.items():
         to_print: list[str] = []
-        to_print.append(_format(key))
-        if key_type:
-            to_print.append(_format(type(key)))
-        to_print.append(_format(value))
-        if value_type:
-            to_print.append(_format(type(value)))
+        to_print.append(key)
+        if show_key_type:
+            to_print.append(type(key).__name__)
+        to_print.append(value)
+        if show_value_type:
+            to_print.append(type(key).__name__)
         table.add_row(*to_print)
 
     return table
