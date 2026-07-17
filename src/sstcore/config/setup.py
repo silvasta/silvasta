@@ -36,7 +36,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from ..utils import HomeSetup
+from ..utils.path import HomeSetup
 from .manager import ConfigManager
 from .paths import SstPaths
 from .settings import SstSettings

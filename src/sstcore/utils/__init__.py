@@ -16,8 +16,9 @@ Built on top of these major external dependencies:
 """
 
 __all__: list = [
-    "printer",
+    "Printer",
     "PrinterFactory",
+    "printer",
     "ColorBox",
     "FilterSet",
     "PathFilter",
@@ -33,7 +34,7 @@ __all__: list = [
 from .color import ColorBox
 from .filter import FilterSet, PathFilter, ProjectFilter
 from .path import PathGuard
-from .print import PrinterFactory, printer
+from .print import Printer, PrinterFactory, printer
 from .scanner import FolderScanner
 from .time import day_count
 from .tree import PathTreeNode, SimpleTreeNode

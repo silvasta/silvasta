@@ -67,6 +67,7 @@ class System:
         self.printer: Printer = printer
         self.bus: EventBus = bus
 
+        # TODO: function of printer? printer.set_...
         self.printer.project_name = config.project_name
         self.printer.project_version = config.project_version
 
@@ -95,7 +96,7 @@ class System:
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
             param=config.settings.log,
-            # TODO: where to print? emit print+log here? check canvas
+            # TODO: where to print? emit print+log here? check scroll
         )
         config.log_result = log_result  # LATER: better attach
 

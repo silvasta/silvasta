@@ -25,7 +25,7 @@ class ParsedName[ModelT: BaseModel](NameParser):
         self.model_cls = model_cls
 
     # TODO: typing for ParsedName.extract
-    def extract(self, name: Path | str) -> dict[str, Any] | ModelT:  # ty:ignoer
+    def extract(self, name: Path | str) -> dict[str, Any] | ModelT:  # ty:ignore
         raw: dict[str, str] = super().extract(name)  # from ExtractNormalizer
         if self.model_cls is not None:
             return self.model_cls.model_validate(raw)

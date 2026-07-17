@@ -11,8 +11,9 @@ from typing import cast
 
 import typer
 
-from ..utils import HomeSetup, PathGuard, day_count, printer
+from ..utils import PathGuard, day_count, printer
 from ..utils.color import ColorBox
+from ..utils.path import HomeSetup
 from .defaults import SstDefaults
 from .names import ParsedName, SstNames
 

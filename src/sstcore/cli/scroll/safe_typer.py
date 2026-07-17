@@ -1,13 +1,18 @@
 """
 Assemble the Prints for SafeTyper
 
-- Handle complexity here and just provide a simple Canvas
+- Handle complexity here and just provide a simple Scroll
 - Use PrintOptions to display different layouts and ideas
   - for now: with easy toggle to final selection
   - in future: connected and reacting to app state
 """
 
-# TODO: __all__, general check
+__all__: list[str] = [
+    "intro",
+    "setup",
+    "sub_callback",
+    "status",
+]
 
 from collections.abc import Callable
 from functools import partial
@@ -16,26 +21,33 @@ from typing import Any, Literal
 
 from rich.box import Box
 
-from sstcore.utils.color.palette import ColorName
-from sstcore.utils.print.mixin._boxes import BoxLibrary
-
 from ...config import ConfigManager
 from ...config.setup import ConfigLoader
 from ...utils import printer
 from ...utils.color import ColorBox, colorize
+from ...utils.color.palette import ColorName
 from ...utils.log import LogSetupResult
+from ...utils.print import boxes
 from .option import PrintOption, SelectMode
 
 c: ColorBox = ColorBox.bold()
-boxes = BoxLibrary()
 
+# TODO: find better solution!
+# - not in engine, to poluting
+# - not at bottom, to hidden
+toggle: dict[str, SelectMode] = {
+    "intro_": SelectMode.FIXED,
+    "setup_": SelectMode.FIXED,
+    "sub___": SelectMode.FIXED,
+    "status": SelectMode.FIXED,
+}
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ###  Intro
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class MainIntroCanvas(PrintOption[Callable[[str], None]]):
+class MainIntroScroll(PrintOption[Callable[[str], None]]):
     def _load_default_function(self):
         return partial(
             self._template, outer="white", inner="cyan", box=boxes.OPEN
@@ -52,13 +64,14 @@ class MainIntroCanvas(PrintOption[Callable[[str], None]]):
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
-            "box": [boxes.OPEN, boxes.EDGE],
+            "box": [boxes.OPEN, boxes.CORNER],
         }
         kwargs: dict[str, str] = {"outer": "white", "inner": "cyan"}
         self.grid(self._template, param_grid, common_kwargs=kwargs)
 
 
-intro = MainIntroCanvas(select_mode=SelectMode.RANDOM)
+# NEXT: control select modes
+intro = MainIntroScroll(select_mode=toggle["intro_"])
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -72,7 +85,7 @@ type ConfigSignature = Callable[[ConfigManager, ConfigLoader], None]
 type LoaderStyler = Callable[[ConfigLoader], str]
 
 
-class ConfigLoaderCanvas(PrintOption[ConfigSignature]):
+class ConfigLoaderScroll(PrintOption[ConfigSignature]):
     def _load_default_function(self):
         styler: LoaderStyler = colorize.modules
         return partial(self._template, mode="both", styler=styler)
@@ -92,10 +105,10 @@ class ConfigLoaderCanvas(PrintOption[ConfigSignature]):
         printer.mini_box(text, mode=mode)
 
     def _set_more_if_desired(self):
-        self.register(self._config_module_path_1(mode="both"))
-        self.register(_config_module_path_2)
+        self.register(self._config_modules_1(mode="both"))
+        self.register(_config_modules_2)
 
-    def _config_module_path_1(self, mode: Mode):
+    def _config_modules_1(self, mode: Mode):
         styler: LoaderStyler = partial(
             colorize.modules,
             project_color="purple",
@@ -111,7 +124,7 @@ class ConfigLoaderCanvas(PrintOption[ConfigSignature]):
         self.grid(self._template, param_grid=param_grid)
 
 
-def _config_module_path_2(config: ConfigManager, loader: ConfigLoader) -> None:
+def _config_modules_2(config: ConfigManager, loader: ConfigLoader) -> None:
     # MOVE: do stuff like this in colorize
     project, *modules = loader.__module__.split(".")
     module: str = ".".join([c.cyan(project), *modules])
@@ -127,33 +140,32 @@ class ConfigAndLogPanel(PrintOption[PathSignature]):
     """Create Log and Config path in same style"""
 
     def _load_default_function(self):
-        return partial(self._template, frame="blue", box=None)
+        return partial(self._template, frame="blue", box=boxes.ROUND)
 
     def _template(
         self,
         path: Path,
         mode: Literal["log", "config"],
         frame: str = "blue",
-        box: Box | None = boxes.EDGE,
+        box: Box = boxes.ROUND,
     ):
         table: dict[str, str] = {
             "log": f"{c.blue('Log')} ",
             "config": f"{c.blue('Config')} ",
         }
-        _box = {} if box is None else {"box": box}
 
-        printer.title(path, title=table[mode], frame=frame, **_box)
+        printer.title(path, title=table[mode], frame=frame, box=box)
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
-            "box": [boxes.OPEN, boxes.EDGE, None],
+            "box": [boxes.OPEN, boxes.CORNER],
             "frame": ["white", "blue"],
         }
         self.grid(self._template, param_grid=param_grid)
 
 
-config_loader = ConfigLoaderCanvas(select_mode=SelectMode.RANDOM)
-log_or_config_path = ConfigAndLogPanel(select_mode=SelectMode.RANDOM)
+config_loader = ConfigLoaderScroll(select_mode=toggle["setup_"])
+log_or_config_path = ConfigAndLogPanel(select_mode=toggle["sub___"])
 
 
 def setup(
@@ -193,7 +205,7 @@ class SetupStatus(PrintOption[StatusSignature]):
     def _load_default_function(self):
         return partial(
             self._template,
-            box1=boxes.EDGE,
+            box1=boxes.CORNER,
             color1="yellow",
             exc_formater=self._format_colorful,
         )
@@ -203,7 +215,7 @@ class SetupStatus(PrintOption[StatusSignature]):
         safe_typer: object,
         exceptions: list[BaseException],
         show_all: bool,
-        box1: Box | None,  # LATER: handle default box other than with None...
+        box1: Box,  # LATER: handle default box other than with None...
         color1: ColorName,
         exc_formater: ExceptionFormater,
     ):
@@ -222,7 +234,7 @@ class SetupStatus(PrintOption[StatusSignature]):
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
-            "box1": [boxes.OPEN, boxes.EDGE, None],
+            "box1": [boxes.OPEN, boxes.CORNER, None],
             "exc_formater": [self._format_raw, self._format_colorful],
         }
         kwargs: dict[str, str] = {"color1": "yellow"}
@@ -241,4 +253,4 @@ class SetupStatus(PrintOption[StatusSignature]):
         return f"{module}.{error}"
 
 
-status = SetupStatus(select_mode=SelectMode.RANDOM)
+status = SetupStatus(select_mode=toggle["status"])

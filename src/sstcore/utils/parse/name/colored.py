@@ -33,13 +33,21 @@ class ColoredName(NameParser):
             raise ValueError(f"{self} missing keys for rich render: {missing}")
         return self.color_pattern.format(**keywords)
 
+    # IDEA: use __fmt__ for representations?
+    # - raw -> __str__
+    # - rich -> __rich__
+    # fail because NameParser is template not fixed schema
+    # - still one could create instance with attached args,
+    # - combine with str as type? ultimate useage but (too?) unsafe
+    # maybe something inbetween ColoredName and Name
+
     def raw(self, target: dict | list | tuple) -> str:
         """Explicit raw alias (same as default __call__)."""
         return self.format(target)
 
     def extract(self, name: Path | str) -> dict[str, Any]:
         """Always extract from the raw (stripped) version."""
-        return super().extract(name)  # uses the raw regex
+        return super().extract(name)
 
     @contextmanager
     def color_mode(self):

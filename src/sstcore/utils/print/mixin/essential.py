@@ -1,3 +1,18 @@
+"""
+Ensure pipeline arguments
+
+- normalize: from Any type to stable string
+- colorize: attach color and color combinations
+
+Note:
+  - still under construction
+  - concept will change
+"""
+
+__all__: list[str] = [
+    "ColorBox",
+    "NormalizeMixin",
+]
 import textwrap
 from functools import singledispatchmethod
 from pathlib import Path
@@ -15,13 +30,15 @@ class NormalizeMixin:
         text = str(target)
         return textwrap.indent(text, " " * indent) if indent else text
 
-    @normalize.register
-    def _(self, target: list, indent: int = 0) -> str:
+    @normalize.register(list)
+    def _(self: Printer, target: list, indent: int = 0) -> str:
         """Flatten lists recursively and maintain indentation."""
-        items: list[str] = [self.normalize(item, indent) for item in target]
+        items: list[str] = [
+            self.normalize(item, indent=indent) for item in target
+        ]
         return "\n".join(items)
 
-    @normalize.register
+    @normalize.register(Path)
     def _(self: Printer, target: Path, indent: int = 0) -> str:
         """Delegate Path coloring to the external colorize utility."""
         text: str = colorize.path(target)

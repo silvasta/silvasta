@@ -60,7 +60,7 @@ def get_recent_selections(
     init_db()
     with Session(engine) as session:
         query = session.query(SelectionRecord).order_by(
-            SelectionRecord.timestamp.desc()
+            SelectionRecord.timestamp
         )
         if scan_root is not None:
             query = query.filter(

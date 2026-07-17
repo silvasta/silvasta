@@ -41,7 +41,7 @@ def check_cli_installed():
         or_: str = printer.color_box.green("or")
         pip: str = printer.color_box.cyan(f"pip install {sst_cli}")
 
-        # canvas
+        # scroll
         text: list[str] = [
             f"{error} Missing CLI dependency...",
             f"fix with {uv} {or_} {pip}",

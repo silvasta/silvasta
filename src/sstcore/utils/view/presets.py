@@ -1,8 +1,23 @@
 """
-Define common Views
+Define common Views and Defaults
 
-- Provide frequently used combinations
+- build_print_view: Default for Printer
 
 """
 
-# INFO: depending on expected size, resolve here and move to __init__
+__all__: list[str] = [
+    "printer_view_builder",
+]
+
+from .compose import ViewBuilder
+from .registry import Cli, Log, Repr, Rich, Str
+
+
+def printer_view_builder() -> ViewBuilder:
+    return ViewBuilder(
+        cli=Cli.BAR,
+        str=Str.DEFAULT,
+        rich=Rich.SHORT,
+        repr=Repr.DEFAULT,
+        log=Log.FULL,
+    )

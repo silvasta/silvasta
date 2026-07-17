@@ -1,12 +1,14 @@
-# TODO: explain
+from dataclasses import dataclass, fields
+
+from rich.theme import Theme
 
 # NEXT: this as paint.py??
-from dataclasses import dataclass, fields
 
 type ColorName = str
 
-# NEXT: as well stringly access to named colors
+# TASK: as well stringly access to named colors
 # required in PrintOption.grid ("blue" is still better than handover c.blue)
+# - check render_table for desired usage
 
 
 @dataclass(frozen=True)
@@ -39,18 +41,22 @@ class Palette:
     special = ThemeRole(base="purple", inverted="bold white on purple")
     info = ThemeRole(base="white", inverted="black on white")
 
-    def to_rich(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Dynamically export all colors and roles for rich.Theme"""
-        rich_theme = {}
+        theme: dict[str, str] = {}
         for field in fields(self):
-            val = getattr(self, field.name)
-            if isinstance(val, ThemeRole):
+            style: str | ThemeRole = getattr(self, field.name)
+            if isinstance(style, ThemeRole):
                 # Export both formats for Rich markup support
-                rich_theme[field.name] = val.base
-                rich_theme[field.name.capitalize()] = val.inverted
-            else:
-                rich_theme[field.name] = str(val)
-        return rich_theme
+                theme[field.name] = style.base
+                theme[field.name.capitalize()] = style.inverted
+            else:  # ensure string
+                theme[field.name] = str(style)
+        return theme
+
+    def to_rich(self) -> Theme:
+        """Dynamically export all colors and roles for rich.Theme"""
+        return Theme(self.to_dict())
 
 
 BASE_PALETTE = Palette()

@@ -13,8 +13,10 @@ __all__: list[str] = [
     "Printer",
     "PrinterFactory",
     "printer",
+    "boxes",
 ]
 
 
+from . import boxes
+from .blueprint import Printer
 from .compose import PrinterFactory, printer
-from .protocol import Printer

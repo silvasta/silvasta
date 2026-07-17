@@ -16,10 +16,6 @@ import fnmatch
 import re
 from functools import cache, lru_cache
 
-from loguru import logger
-
-from .bus import EventHandler
-
 
 class EventName(str):
     """Rich, validated, string-compatible event identifier."""
@@ -86,30 +82,32 @@ def matches_any_pattern(event_name: str, patterns: tuple[str, ...]) -> bool:
 
 # from .names import EventName, Events
 class EventBus:
+    """TEST"""
+
     # ... existing __init__, subscribe, subscribe_all ...
 
-    def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
-        """Support exact matches + wildcards via fnmatch (cached)."""
-        return self._match_subscribers(event_name)
+    # def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
+    #     """Support exact matches + wildcards via fnmatch (cached)."""
+    #     return self._match_subscribers(event_name)
 
-    @lru_cache(maxsize=512)
-    def _match_subscribers(self, event_name: str) -> list[EventHandler]:
-        matched: list[EventHandler] = []
-        for pattern, handlers in self._subscribers.items():
-            if fnmatch.fnmatch(event_name, pattern) or fnmatch.fnmatch(
-                pattern, event_name
-            ):
-                matched.extend(handlers)
-        return matched
-
-    def emit(
-        self, event_name: str | EventName, sender: str, **payload: Any
-    ) -> None:
-        name_str = str(event_name)
-        if (
-            not Events.is_known_event(name_str) and "*" not in name_str
-        ):  # from simple version
-            logger.warning(
-                f"Unknown event emitted: {name_str} (sender={sender})"
-            )
-        # ... rest unchanged, create Event(name=name_str, ...)
+    # @lru_cache(maxsize=512)
+    # def _match_subscribers(self, event_name: str) -> list[EventHandler]:
+    #     matched: list[EventHandler] = []
+    #     for pattern, handlers in self._subscribers.items():
+    #         if fnmatch.fnmatch(event_name, pattern) or fnmatch.fnmatch(
+    #             pattern, event_name
+    #         ):
+    #             matched.extend(handlers)
+    #     return matched
+    #
+    # def emit(
+    #     self, event_name: str | EventName, sender: str, **payload: Any
+    # ) -> None:
+    #     name_str = str(event_name)
+    #     if (
+    #         not Events.is_known_event(name_str) and "*" not in name_str
+    #     ):  # from simple version
+    #         logger.warning(
+    #             f"Unknown event emitted: {name_str} (sender={sender})"
+    #         )
+    #     # ... rest unchanged, create Event(name=name_str, ...)

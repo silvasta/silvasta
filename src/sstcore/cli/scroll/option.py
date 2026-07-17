@@ -1,14 +1,19 @@
 """
 Provide Dynamic Option Collection for high-interval visual inspection
 
-- Replace 1 Canvas function with 1 stable default function...
+- Replace 1 Scroll function with at least 1 stable default function...
 - Provide Registry that swiches function (automatic, random, when needed)
 - Mix arguments to create different visual examples
 
 - Ensure Toggle to move easy and fast back to regular execution mode
 """
 
-# TODO: __all__, general check
+__all__: list[str] = [
+    "PrintFunc",
+    "SelectMode",
+    "VariantMeta",
+    "PrintOption",
+]
 
 import random
 from collections.abc import Callable
@@ -52,7 +57,7 @@ class VariantMeta[FuncT: PrintFunc]:
 
 
 class PrintOptionBase[FuncT: PrintFunc]:
-    """Provide Printer Canvas execution with optional random dispatches"""
+    """Build Printer Scroll with optional random dispatches"""
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """Provide regular usage or dispatch to random selections"""
@@ -78,7 +83,8 @@ class PrintOptionBase[FuncT: PrintFunc]:
 
         self.register(self._load_default_function())
 
-        self._set_more_if_desired()
+        if select_mode != SelectMode.FIXED:  # LATER: _hook even for fixed?
+            self._set_more_if_desired()
 
     def _load_default_function(self) -> FuncT:
         """Provide default print function option for Registry[0]"""
@@ -139,7 +145,7 @@ class PrintOptionBase[FuncT: PrintFunc]:
 
     def show(self):
         printer.lines_with_len(
-            name=self,
+            name=str(self),
             lines=[self._registry[i][1] for i in self._valid_index_list()],
         )
 

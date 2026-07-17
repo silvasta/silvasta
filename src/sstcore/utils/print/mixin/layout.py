@@ -1,22 +1,37 @@
+"""
+Combine primitives and defaults to layouts.
+
+- Printer.panel as the root of most layouts
+
+"""
+
+__all__: list[str] = [
+    "PanelMixin",
+    "LineMixin",
+    "BoxMixin",
+    "HeaderMixin",
+    "MarkdownMixin",
+    "TableMixin",
+]
 from typing import Any, Literal
 
 from rich.box import Box
 from rich.markdown import Markdown
 
-from sstcore.contract.cli import LineDTO, PanelDTO, RuleDTO
-
+from ....contract.cli import LineDTO, PanelDTO, RuleDTO
+from .. import boxes
 from ..blueprint import Printer
-from ..boxes import Boxes
 
 
 class PanelMixin:
     def panel(self: Printer, target: Any, **kwargs) -> None:
         """Provide General Panel Interface by pushing a PanelDTO to the core."""
+        if frame := kwargs.pop("border_style", None):
+            kwargs["frame"] = frame
+        self(PanelDTO.from_call(self.normalize(target), **kwargs))
 
-        self(PanelDTO.from_call(target=target, **kwargs))
 
-
-class LineMixin(PanelMixin):
+class LineMixin:
     def line(self: Printer, style: str = ""):
         """Print Horizontal Line"""
         dto = LineDTO.from_call(style=style or "cyan")
@@ -45,20 +60,18 @@ class LineMixin(PanelMixin):
         self(RuleDTO.from_call(title=title, **kwargs))
 
 
-class BoxMixin(PanelMixin):
-    def box(
-        self: Printer, target, frame: str = "", box: Box = Boxes.OPEN.value
-    ):
+class BoxMixin:
+    def box(self: Printer, target, frame: str = "", box: Box = boxes.OPEN):
         """Print Target inside Custom Layout Box"""
         self.panel(target=target, box=box, border_style=frame or "cyan")
 
     def box_top(self: Printer, target, frame=""):
         """Print Overlined Target and open a Scroll"""
-        return self.box(target, frame, box=Boxes.UP.value)
+        return self.box(target, frame, box=boxes.UP)
 
     def box_bottom(self: Printer, target, frame=""):
         """Print Underlined Target and close a Scroll"""
-        return self.box(target, frame, box=Boxes.DOWN.value)
+        return self.box(target, frame, box=boxes.DOWN)
 
     def mini_box(
         self: Printer,
@@ -66,18 +79,18 @@ class BoxMixin(PanelMixin):
         frame="",
         mode: Literal["up", "down", "both"] = "both",
     ):
-        match mode:  # MOVE: dispatch in BoxesBox, most likely by Enum
+        match mode:
             case "up":
-                box = Boxes.MINI_UP.value
+                box: Box = boxes.MINI_UP
             case "down":
-                box = Boxes.MINI_DOWN.value
+                box: Box = boxes.MINI_DOWN
             case "both":
-                box = Boxes.MINI.value
+                box: Box = boxes.MINI
 
-        return self.box(target, frame, box=box)
+        return self.box(target, frame, box)
 
     def corner(
-        self: Printer, target, frame: str = "", box: Box = Boxes.CORNER.value
+        self: Printer, target, frame: str = "", box: Box = boxes.CORNER
     ):
         self.panel(target=target, box=box, border_style=frame or "cyan")
 
@@ -102,6 +115,10 @@ class HeaderMixin:
             text, title=title, title_align=title_align, frame=frame, **kwargs
         )
 
+    def dip(self: Printer, head, text, color):
+        """Colorize first expressions same as Frame"""
+        self.header(f"{self.color(head, color)} {text}", frame=color)
+
     ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     # LATER: connect named colors with header and default palette
@@ -121,12 +138,6 @@ class HeaderMixin:
     def special(self: Printer, text):
         """Provide header for special action"""
         self.header(text, frame="purple")
-
-    ### -- -- -  -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    def dip(self: Printer, head, text, color):
-        """Colorize first expressions same as Frame"""
-        self.header(f"{self.color(head, color)} {text}", frame=color)
 
 
 class MarkdownMixin:

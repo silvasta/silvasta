@@ -1,5 +1,11 @@
 """Create base infrastructure for events"""
 
+__all__: list[str] = [
+    "Event",
+    "EventHandler",
+    "EventBus",
+]
+
 import fnmatch
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -11,7 +17,6 @@ from ..contract.system import EventProtocol
 
 
 @dataclass(frozen=True)
-# IDEA: move this to contract? forget about protocol and use real Event?
 class Event:
     """Base payload emitted across the pipeline."""
 
@@ -64,8 +69,6 @@ class EventBus:
         """Attach handler as subscriber to specific event"""
         self._subscribers.setdefault(event_name, []).append(handler)
 
-    # IDEA: log(LogDTO args) -> LogDTO
-
     def emit(self, event_name: str, sender: str, **payload) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
@@ -98,6 +101,7 @@ class EventBus:
         return matched_handlers
 
     # IDEA: why not just using the enum/datastructre for that?
+    # - yes but first build it...
 
     def _get_event_subscribers2(self, event_name: str) -> list[EventHandler]:
         handlers = self._subscribers.get(event_name, []).copy()
@@ -127,7 +131,7 @@ class EventBus:
 #     # @lru_cache(maxsize=512)
 #     def _match_subscribers(self, event_name: str) -> list[EventHandler]:
 #         matched: list[EventHandler] = []
-#         for pattern, handlers in self._subscribers.items():  # ty:ignore
+#         for pattern, handlers in self._subscribers.items():
 #             if fnmatch.fnmatch(event_name, pattern) or fnmatch.fnmatch(
 #                 pattern, event_name
 #             ):

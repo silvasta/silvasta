@@ -5,12 +5,17 @@ Produce Rich markup strings from Python objects with semantic coloring
 based on their type, hierarchy, location and other attributes.
 
 Functions:
-    module_path: Colorize by project, modules, target of __module__
+    modules: Colorize by project, modules, target of __module__
 
 Ideas:
     Exceptions, Enums, maybe dataclass, like any special built-in type
     -> from raw to amazing to watch, track and debug in CLI
 """
+
+__all__: list[str] = [
+    "modules",
+    "path",
+]
 
 from collections.abc import Callable
 from pathlib import Path
@@ -21,7 +26,7 @@ from .box import ColorBox
 c: ColorBox = ColorBox.bold()
 
 
-def module_path(
+def modules(
     obj: Any,
     project_color: str = "cyan",
     module_color: str = "green",
@@ -35,9 +40,9 @@ def module_path(
 
     target: type = obj if hasattr(obj, "__name__") else type(obj)
     raw_project, *raw_modules = target.__module__.split(".")
+    # INFO: len(modules) can be 0, consider for further color splits
 
     project: str = c(raw_project, project_color)
-    # INFO: len(modules) can be 0, consider for further color splits
     modules: list[str] = [c(module, module_color) for module in raw_modules]
     cls_or_instance = f"{c(target.__name__, target_color)}"
 
@@ -58,10 +63,15 @@ def path(target: Path) -> str:
     return _color_file_by_type(target)
 
 
+# TODO: private?
 FILE_COLORS: dict[str, Callable[[str], str]] = {
-    # Code / Configs
-    ".py": c.green,
-    ".json": c.yellow,
+    # Code
+    ".py": c.white,
+    ".rs": c.white,
+    # Configs
+    ".json": c.white,
+    ".log": c.white,
+    #
     ".yaml": c.yellow,
     ".yml": c.yellow,
     ".md": c.cyan,

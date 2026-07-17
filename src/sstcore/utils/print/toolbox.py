@@ -1,10 +1,15 @@
+"""Collect Specialized Tools - for special occasions"""
+
 from pathlib import Path
 
 from rich.table import Table
 from rich.tree import Tree
 
+from ...contract.external import RichProtocol
 from ..color import colorize
 from ..tree import SimpleTreeNode
+
+# LATER: colapse with ToolMixin?
 
 
 def path_exists_table(paths: list[Path], title=None, header="Path") -> Table:
@@ -21,48 +26,35 @@ def path_exists_table(paths: list[Path], title=None, header="Path") -> Table:
     return table
 
 
-def _unpack_bool_tuple(
-    show_type: bool | tuple[bool, bool],
-) -> tuple[bool, bool]:
-    return (
-        show_type
-        if isinstance(show_type, tuple)
-        else (True, True)
-        if show_type
-        else (False, False)
-    )
-
-
 def dict_table(
     target: dict,
     style="cyan",
-    show_type: bool | tuple[bool, bool] = (True, True),
+    show_type: bool | tuple[bool, bool] = (False, True),
 ) -> Table:
-    """Debug Dict"""
-
-    show_key_type, show_value_type = _unpack_bool_tuple(show_type)
+    """Visualize Dict as Rich Table"""
 
     table = Table(style=style)
 
-    table.add_column("Key", justify="left", style="green")
+    show_key_type, show_value_type = (
+        show_type if isinstance(show_type, tuple) else (show_type, show_type)
+    )
 
+    table.add_column("Key", justify="left", style="green")
     if show_key_type:
         table.add_column("Type Key", justify="center", style="magenta")
 
     table.add_column("Value", style="blue", justify="left")
-
     if show_value_type:
         table.add_column("Type Value", style="magenta")
 
     for key, value in target.items():
-        to_print: list[str] = []
-        to_print.append(key)
-        if show_key_type:
-            to_print.append(type(key).__name__)
-        to_print.append(value)
-        if show_value_type:
-            to_print.append(type(key).__name__)
-        table.add_row(*to_print)
+        row: list[RichProtocol] = [
+            key,
+            *([type(key).__name__] if show_key_type else []),
+            value,
+            *([type(value).__name__] if show_value_type else []),
+        ]
+        table.add_row(*row)
 
     return table
 
@@ -75,7 +67,7 @@ def tree_graph(
     guide: str = "bold white",
     hide_root=False,
 ) -> Tree:
-    """Visualizes a SimpleTreeNode model as a nested Rich Tree"""
+    """Visualize SimpleTreeNode as nested Rich Tree"""
 
     _node_styles: dict[int, str] = {
         1: "green",
@@ -92,7 +84,6 @@ def tree_graph(
         label=_apply_style(simple_tree.name, color=root),
         guide_style=guide,
         hide_root=hide_root,
-        # style="on white",  # Applies background color to the whole tree area
     )
 
     def build_branch(

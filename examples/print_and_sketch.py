@@ -10,15 +10,15 @@ from sstcore.utils.color import ColorBox
 from sstcore.utils.color.style import TextStyle
 from sstcore.utils.tree import SimpleTreeNode, examples
 
-c: ColorBox = printer.color_box
+c: ColorBox = ColorBox()
 
 
-def main():  # LATER: use fire.Fire for cli?
+def main():  # LATER: use fire.Fire for cli? Or selector?
     """Dispatch tasks with manual index"""
 
     select: list[int] = []
 
-    select.extend([-1])  # INFO: toggle by comment # (delete and see the issue)
+    # select.extend([-1])  # INFO: toggle by comment # (delete and see the issue)
 
     functions: list[Callable] = [
         show_tree_graph,

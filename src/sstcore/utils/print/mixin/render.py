@@ -1,3 +1,15 @@
+"""
+Transform DTO to RichRenderable
+
+- CliDTO: Specialized for CLI
+- LogDTO: Intended for Monitor
+
+"""
+
+__all__: list[str] = [
+    "RenderMixin",
+]
+
 from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
@@ -38,48 +50,54 @@ class RenderMixin:
             case _:
                 raise TypeError(f"No render strategy implemented for {dto}")
 
-    def render_panel(self: Printer, panel: PanelDTO) -> RichRenderable:
-        content: str = self.normalize(panel.text)
-        content: str = self.color(content, panel.color)
-        title: str | None = (
-            self.color(panel.title, "white") if panel.title else None
+    def render_panel(self: Printer, dto: PanelDTO) -> RichRenderable:
+        content: str = self.normalize(dto.text)
+        content: str = self.color(content, dto.color)
+        title: str | None = (  # TODO: color apply inside PanelDTO?
+            # TASK: synchronize with internal layouts
+            self.color(dto.title, "white")  # PARAM: color
+            if dto.title
+            else None
         )
         return Panel(
             renderable=content,
             title=title,
-            title_align=panel.title_align,
-            subtitle=panel.subtitle,
-            border_style=panel.frame,
-            padding=panel.padding,
-            box=panel.box,
-            expand=panel.expand,
+            title_align=dto.title_align,
+            subtitle=dto.subtitle,
+            border_style=dto.frame,
+            padding=dto.padding,
+            box=dto.box,
+            expand=dto.expand,
         )
 
-    def render_line(self: Printer, line: LineDTO) -> RenderableType:
-        text: str = line.text if line.text is not None else "─" * 40
-        return self.color(text, line.style)
+    def render_line(self: Printer, dto: LineDTO) -> RenderableType:
+        text: str = dto.text if dto.text is not None else "─" * 40
+        return self.color(text, dto.style)
 
-    def render_rule(self: Printer, rule: RuleDTO) -> RichRenderable:
-        return Rule(style=rule.style, characters=rule.char)
+    def render_rule(self: Printer, dto: RuleDTO) -> RichRenderable:
+        return Rule(style=dto.style, characters=dto.char)
 
-    def render_table(self: Printer, table: TableDTO) -> RichRenderable:
-        rich_table = Table()
-        if table.headers:
-            for header in table.headers:
-                rich_table.add_column(header)
-        for row in table.data:
-            row_data = row.values() if isinstance(row, dict) else row
-            rich_table.add_row(*(str(item) for item in row_data))
-        return rich_table
+    def render_table(self: Printer, dto: TableDTO) -> RichRenderable:
+        table = Table(style=dto.style)
 
-    def render_markdown(
-        self: Printer, markdown: MarkdownDTO
-    ) -> RenderableType:
-        content = self.normalize(markdown.text)
-        if markdown.header > 0:
-            prefix = "#" * markdown.header + " "
-            return self.color(f"{prefix}{content}", markdown.style)
-        return self.color(content, markdown.style)
+        # LATER: color layout for header and side title,
+        # together with ColorBox and Palette
+
+        for header in dto.header:
+            table.add_column(header)
+
+        for row in dto.rows:
+            prepared_row: list[str] = [self.normalize(value) for value in row]
+            table.add_row(*prepared_row)
+
+        return table
+
+    def render_markdown(self: Printer, dto: MarkdownDTO) -> RenderableType:
+        content: str = self.normalize(dto.text)
+        if dto.header > 0:
+            prefix = "#" * dto.header + " "
+            return self.color(f"{prefix}{content}", dto.style)
+        return self.color(content, dto.style)
 
     def render_log(self: Printer, log: LogDTO) -> RichRenderable:
         _log_tests = [  # TESTING:

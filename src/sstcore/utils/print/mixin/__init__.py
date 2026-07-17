@@ -1,3 +1,12 @@
+"""
+Provide Components to Build or Extend the Printer
+
+- Essentials
+- Layouts
+- Optional
+
+"""
+
 __all__: list[str] = [
     # Essentials
     "ColorMixin",

@@ -22,7 +22,8 @@ from loguru import logger
 
 from sstcore.utils.log import LogSetupResult
 
-from ..utils import HomeSetup, day_count
+from ..utils import day_count
+from ..utils.path import HomeSetup
 from .bootstrap import BootDefaults, BootResult, ConfigBootstrap
 from .defaults import SstDefaults
 from .names import SstNames

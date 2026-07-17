@@ -58,10 +58,11 @@ class Str(Enum):
     def mixin(self) -> type[Stringable]:
         match self:
             case self.DEFAULT:
-                return mixin.string.NameMixin
-
-            case self.SHORT:
                 return mixin.string.SimpleNameMixin
+
+            # TODO: SIMPLE as default, NAME replace SHORT, COMPOSE for _hook
+            case self.SHORT:
+                return mixin.string.NameMixin
 
             case self.OFF:
                 return mixin.MixinSentinel
@@ -79,7 +80,7 @@ class Rich(Enum):
                 return mixin.rich.ModuleNameMixin
 
             case self.SHORT:
-                return mixin.rich.SimpleNameMixin
+                return mixin.rich.SimpleRichNameMixin
 
             case self.OFF:
                 return mixin.MixinSentinel

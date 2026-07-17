@@ -13,7 +13,7 @@ from typer import Context
 
 from ..config.setup import ConfigLoader, sst_config_loader
 from ..system.core import System, fetch_system
-from . import args, canvas
+from . import args, scroll
 from .handler import ErrorRegistry
 
 
@@ -75,8 +75,8 @@ class SafeTyper(typer.Typer):
         ctx.obj["bus"] = system.bus
 
         if not quiet:
-            canvas.safe_typer.intro(project_name=ctx.info_name)
-            canvas.safe_typer.setup(
+            scroll.safe_typer.intro(project_name=ctx.info_name)
+            scroll.safe_typer.setup(
                 system.config,  # TODO: send system! (emit!)
                 self._config_loader,
                 system.config.log_result,
@@ -99,11 +99,11 @@ class SafeTyper(typer.Typer):
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice subapp title"""
-        canvas.safe_typer.sub_callback(ctx.info_name or "subapp")
+        scroll.safe_typer.sub_callback(ctx.info_name or "subapp")
 
     def print_setup_status(self, show_all_exceptions=False):
         """Print summary of status after assembly"""
-        canvas.safe_typer.status(self, self.errors.all, show_all_exceptions)
+        scroll.safe_typer.status(self, self.errors.all, show_all_exceptions)
 
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
