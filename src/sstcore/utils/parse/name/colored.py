@@ -38,7 +38,7 @@ class ColoredName(NameParser):
     # - rich -> __rich__
     # fail because NameParser is template not fixed schema
     # - still one could create instance with attached args,
-    # - combine with str as type? ultimate useage but (too?) unsafe
+    # - combine with str as type? ultimate usage but (too?) unsafe
     # maybe something inbetween ColoredName and Name
 
     def raw(self, target: dict | list | tuple) -> str:

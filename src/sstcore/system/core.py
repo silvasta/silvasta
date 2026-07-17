@@ -12,7 +12,7 @@ Zero effort access for scripts and small projects:
 - Access everywhere without wiring with fetch_system()
 
 Warning:
-- Don't Mix both approaches except you know excactly what you are doing!
+- Don't Mix both approaches except you know exactly what you are doing!
 
 Note:
 - This module will likely transform to a package with core.system module
@@ -85,7 +85,7 @@ class System:
     ) -> Self:
         """Assemble Config, wire Bus, ensure Printer and Compose to System"""
 
-        # shadow bootstap noise but show minimal output if bootstap fails
+        # shadow bootstrap noise but show minimal output if bootstrap fails
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
 
         loader: ConfigLoader = config_loader or sst_config_loader

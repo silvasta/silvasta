@@ -1,7 +1,7 @@
 """
 Exceptor - Massivly load and launch exceptions
 
-- app: Provide Environment and Tracking for Exectuion inside Typer Setup
+- app: Provide Environment and Tracking for Execution inside Typer Setup
 
 """
 
@@ -130,7 +130,7 @@ class Exceptor:
         try:
             with printer.muted():  # silence print, no catch executed here!
                 self.app(["throw"], standalone_mode=False)
-            printer.success(f"{c.g(self.app)} catched the Error")
+            printer.success(f"{c.g(self.app)} caught the Error")
 
         except SystemExit:
             printer.yellow(f"{c.y(self.app)} triggered sys.exit(1)")
@@ -144,7 +144,7 @@ class Exceptor:
                 printer.warn(f"System exception {c.r(_error)} received")
 
     # ------------------------------------------------------------------ #
-    ### Regular Exectuion
+    ### Regular Execution
     # ------------------------------------------------------------------ #
 
     def _raise_exception(self, task: ExceptorTask):

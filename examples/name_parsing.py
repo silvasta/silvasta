@@ -6,18 +6,19 @@ Show examples in isolated environment without any deeper purpose
 """
 
 from contextlib import suppress
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import fire
 from pydantic import BaseModel
 
+from sstcore import System
 from sstcore.config import ConfigManager
-from sstcore.core import System, fetch_system
-from sstcore.events import EventBus
-from sstcore.utils import NamePattern, Printer, day_count, printer
-from sstcore.utils.parse import ParsedName, StyledName
+from sstcore.system import EventBus
+from sstcore.system.core import fetch_system
+from sstcore.utils import Printer, day_count, printer
+from sstcore.utils.parse import ParsedName
+from sstcore.utils.parse.name import NamePattern
 
 # TODO: finish wiring
 sst: System = fetch_system(_allow_uninitialized=True)
@@ -41,14 +42,11 @@ def view(obj: Any):
 
 
 class ParseTasks:
-    def pattern(self):
-        view(NamePattern(pattern1))
-
     def base(self):
         parsed_name()
 
-    def style(self):
-        styled_name()
+    # def style(self):
+    #     styled_name()
 
     def regex(self):
         pattern_namer()
@@ -81,22 +79,23 @@ def parsed_name():
         printer.success("it works!")
 
 
-def styled_name():
-
-    sstfile_dates: StyledName = StyledName.parse_style(
-        style_pattern=(
-            "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
-            " - [{style3}]{last_updated}[/]"
-        ),
-        keys=["name", "first_tracked", "last_updated"],
-        styles=["blue", "red", "white"],
-    )
-
-    # printer(sstfile_dates) # ERROR: rich.errors.MarkupError
-    print(sstfile_dates)
-
-    print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
-    printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
+# def styled_name():
+#
+#     sstfile_dates: ColoredName = StyledName.parse_style(
+#         style_pattern=(
+#             "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
+#             " - [{style3}]{last_updated}[/]"
+#         ),
+#         keys=["name", "first_tracked", "last_updated"],
+#         styles=["blue", "red", "white"],
+#     )
+#
+#     # printer(sstfile_dates) # ERROR: rich.errors.MarkupError
+#     print(sstfile_dates)
+#
+#     print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
+#     printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
+#
 
 
 def parsed_basemodel_name():
@@ -136,7 +135,7 @@ def pattern_namer():
         "topic": "arboreal",
         "suffix": "md",
     }
-    forward: str = namer.format(**name_1)
+    forward: str = namer.format(name_1)
     printer(forward)
 
     backward: dict[str, str] = namer.extract(forward)

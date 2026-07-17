@@ -13,7 +13,7 @@ from .. import toolbox
 from ..blueprint import Printer
 
 # LATER: Tree DTO?
-# LATER: colapse with toolbox?
+# LATER: collapse with toolbox?
 
 
 class ToolMixin:

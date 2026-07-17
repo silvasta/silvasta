@@ -1,5 +1,5 @@
 """
-Prepare Formatter for emited Events
+Prepare Formatter for emitted Events
 
 - Concat colored string with parameter
 - Serialize LogDTO to 1 line JSON

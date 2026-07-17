@@ -4,7 +4,7 @@ Format and Parse Names in both directions
 - NamePattern: pure compilation + core format/extract
 - FormatNormalizer: Convert List|Tuple to Dict and sanizize datetime
 - ExtractNormalizer: Convert Path to str and sanitze increments
-- NameParser: Dispatch input as unified External Acces Point 󰣏
+- NameParser: Dispatch input as unified External Access Point 󰣏
 
 Diamond (NameParser -> both normalizers -> NamePattern) works cleanly via MRO.
 
@@ -162,7 +162,7 @@ class ExtractNormalizer(NamePattern):
 
 # TODO: wire NameBase
 # class DispatchName:
-#     """ __call__ and distribure """
+#     """ __call__ and distribute """
 #     @singledispatchmethod
 #     def __call__(self, target: Any):
 #         raise NotImplementedDispatchError(target)

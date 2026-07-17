@@ -2,7 +2,7 @@
 Compose and Ensure Paths independent of system or location
 
 - Assemble from Defaults, Names, HomeSetup and any desired input
-- Use PathGuard to ensure existance, uniqueness or writability
+- Use PathGuard to ensure existence, uniqueness or writability
 
 """
 

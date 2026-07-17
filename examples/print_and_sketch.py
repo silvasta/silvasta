@@ -25,7 +25,6 @@ def main():  # LATER: use fire.Fire for cli? Or selector?
         show_headers,
         show_colors,
         show_attributes,
-        test_padding,
         experiment_t_string,
         show_all_rich_colors,  # INFO: good one
         show_rich_style_attributes,
@@ -48,8 +47,8 @@ def latest():
 def dip_example():
     # TODO: transform dip to arg that affects frame,head color but not text
     printer.dip("Sachmis", "sent as the Eye", color="cyan")
-    printer.dip("Targets Destoyed", "area cleared", color="green")
-    printer.dip("thunder", "is comming", color="yellow")
+    printer.dip("Targets Destroyed", "area cleared", color="green")
+    printer.dip("thunder", "is coming", color="yellow")
     printer.dip("Fire", "no regret and forward", color="red")
 
 
@@ -123,15 +122,6 @@ def show_attributes():
         printer.color_box.switch(style=style)
         printer.header(f"This is the {style}")
         printer.cyan(style)
-
-
-def test_padding(pad=(1, 3)):
-
-    items: list[str] = ["Original Banner" for _ in range(10)]
-
-    text: str = "\n".join(items)
-
-    printer.banner(target=text, padding=pad)
 
 
 def experiment_t_string():

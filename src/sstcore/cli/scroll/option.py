@@ -2,7 +2,7 @@
 Provide Dynamic Option Collection for high-interval visual inspection
 
 - Replace 1 Scroll function with at least 1 stable default function...
-- Provide Registry that swiches function (automatic, random, when needed)
+- Provide Registry that switches function (automatic, random, when needed)
 - Mix arguments to create different visual examples
 
 - Ensure Toggle to move easy and fast back to regular execution mode
@@ -34,7 +34,7 @@ type PrintFunc = Callable[..., None]
 class SelectMode(StrEnum):
     # LATER: this as govern
     # - attach here small dataclass with needed SelectState
-    # - create method to swich in between states,
+    # - create method to switch in between states,
     #   including special args (eg weights cycle id)
     # - finally provide current index, based on input and state
     # Ensure something like a (global?) toggle?
@@ -50,7 +50,7 @@ class VariantMeta[FuncT: PrintFunc]:
     # LATER: attach function directly here?
     # -> reduce _registry to list of FuncVariation ar similar?
     # now: self._registry: list[tuple[PrintFunc, VariantMeta]] = []
-    # after: self._registry: list[FunctionVariantion] = []
+    # after: self._registry: list[FunctionVariation] = []
     name: str
     enabled: bool = True
     tags: set[str] = field(default_factory=set)
@@ -172,7 +172,7 @@ class PrintOptionBase[FuncT: PrintFunc]:
         return target
 
     def _select(self) -> int:
-        """Get new Target Index for Registy Access depending on SelectMode"""
+        """Get new Target Index for Registry Access depending on SelectMode"""
 
         if not (valid_idx := self._valid_index_list()):
             return 0

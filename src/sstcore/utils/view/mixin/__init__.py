@@ -27,11 +27,11 @@ __all__: list[str] = [
 from . import cli, log, repr, rich, string
 from ._basics import MixinSentinel
 
-# STRATEGY: further developement
+# STRATEGY: further development
 # - Iteration 1 completed, each category has sufficient Mixins for first runs
 # - Discovered patterns for collecting Data and Names form classes
 #   - structure them and apply over all mixins, use .base if needed
-#   - create decoupled setup while using similarity for efficience
+#   - create decoupled setup while using similarity for efficiency
 # - Think about:
 #   - additional Parameter in ViewSpec instead of increasing Mixins
 #   - additional Support Mixins (to avoid duplicated attach) for:

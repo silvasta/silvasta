@@ -3,13 +3,14 @@ Read from end of logfile and Display new entries
 
 - so far with slightly colored lines of regular .log
 """
-# TASK: New Monitor - maybe 1 for regular log and 1 for redered json log?
+# TASK: New Monitor - maybe 1 for regular log and 1 for rendered json log?
 
 import sys
 from pathlib import Path
 
 from ...config import sst_config
 from ...utils import PathGuard, printer
+from ...utils.color import colorize
 from ...utils.parse import LogMatcher
 
 
@@ -32,10 +33,8 @@ def launch_tail_log_console(log_file: Path, sleep=0.1):
     """Launch console with live log prints from file assuming it is valid"""
 
     printer.title(
-        text=[f"Tailing {printer._format(log_file)} ..."],
+        text=[f"Tailing {colorize.path(log_file)} ..."],
         title="Loguru Monitor",
-        title_align="right",
-        frame="purple",
     )
 
     for line, style in LogMatcher.tail(log_file, sleep=sleep):

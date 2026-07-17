@@ -1,13 +1,9 @@
 import pytest
 from pydantic import BaseModel
 
-from sstcore.utils.view import (
-    CliRenderable,
-    LogSerializable,
-    ViewBuilder,
-    view,
-)
-from sstcore.utils.view.dto import LineDTO, LogDTO, PanelDTO
+from sstcore.contract.cli import CliRenderable, LineDTO, PanelDTO
+from sstcore.contract.log import LogDTO, LogSerializable
+from sstcore.utils.view import ViewBuilder, view
 from sstcore.utils.view.registry import Cli, Log, Repr, Rich, Str
 
 
@@ -136,12 +132,12 @@ def test_mro_and_protocols():
 def test_build_method_directly():
     """Standalone `.build()` should produce a usable base class."""
     spec = ViewBuilder(cli=Cli.LINE, repr=Repr.FULL)
-    ViewBase = spec.build("Demo")
+    view_base = spec.build("Demo")
 
-    assert ViewBase.__name__ == "DemoViewBase"
+    assert view_base.__name__ == "DemoViewBase"
     assert len(spec.mixins) == 2
 
-    instance = ViewBase()
+    instance = view_base()
     assert hasattr(instance, "__cli__")
     assert hasattr(instance, "__repr__")
-    assert not any("MixinSentinel" in b.__name__ for b in ViewBase.__mro__)
+    assert not any("MixinSentinel" in b.__name__ for b in view_base.__mro__)

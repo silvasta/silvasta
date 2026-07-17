@@ -2,7 +2,7 @@
 SstError - Root of all Errors with amazing Cli/Log defaults
 
 - others mainly stand-alone
-- (not implemted) RegistrySyncError maybe as Root for derived Registries
+- (not implemented) RegistrySyncError maybe as Root for derived Registries
 """
 
 __all__: list[str] = [

@@ -33,7 +33,7 @@ from .option import PrintOption, SelectMode
 c: ColorBox = ColorBox.bold()
 
 # TODO: find better solution!
-# - not in engine, to poluting
+# - not in engine, to polluting
 # - not at bottom, to hidden
 toggle: dict[str, SelectMode] = {
     "intro_": SelectMode.FIXED,
@@ -196,7 +196,7 @@ def sub_callback(name: str):
 type StatusSignature = Callable[
     [object, list[type[BaseException]], bool], None
 ]
-type ExceptionFormater = Callable[type[BaseException], str]
+type ExceptionFormatter = Callable[type[BaseException], str]
 
 
 class SetupStatus(PrintOption[StatusSignature]):
@@ -207,7 +207,7 @@ class SetupStatus(PrintOption[StatusSignature]):
             self._template,
             box1=boxes.CORNER,
             color1="yellow",
-            exc_formater=self._format_colorful,
+            exc_formatter=self._format_colorful,
         )
 
     def _template(
@@ -217,7 +217,7 @@ class SetupStatus(PrintOption[StatusSignature]):
         show_all: bool,
         box1: Box,  # LATER: handle default box other than with None...
         color1: ColorName,
-        exc_formater: ExceptionFormater,
+        exc_formatter: ExceptionFormatter,
     ):
         _safe_typer = c(safe_typer, color1)
         text_safe = f"{_safe_typer} Ready for Execution"
@@ -227,7 +227,7 @@ class SetupStatus(PrintOption[StatusSignature]):
 
         if show_all:
             for exception in exceptions:
-                printer(exc_formater(exception), _i=4)
+                printer(exc_formatter(exception), _i=4)
 
         printer("Some statistics: ...", _i=2)
         printer.line("yellow")
@@ -235,7 +235,7 @@ class SetupStatus(PrintOption[StatusSignature]):
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
             "box1": [boxes.OPEN, boxes.CORNER, None],
-            "exc_formater": [self._format_raw, self._format_colorful],
+            "exc_formatter": [self._format_raw, self._format_colorful],
         }
         kwargs: dict[str, str] = {"color1": "yellow"}
         self.grid(self._template, param_grid, common_kwargs=kwargs)

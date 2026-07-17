@@ -29,7 +29,7 @@ app = SafeTyper(name="tools", help="Basic equipment for development")
 
 @app.command()
 def empty(ctx: Context):  # WARN: remove in sstcore/main
-    """Launch default setup without any other exectution"""
+    """Launch default setup without any other execution"""
     bus: EventBus = ctx.obj["bus"]
     printer("Start of 'empty' function...")
     printer.danger("END")
@@ -41,7 +41,7 @@ def empty(ctx: Context):  # WARN: remove in sstcore/main
 def launch_monitor(file: sargs.LogFile = None):  # TODO: improveCLI hint
     """Log Console Monitor: Watch new log file entries!"""
     # TASK: Log Monitor 2
-    # - imporve existing match and log tail
+    # - improve existing match and log tail
     # - extend log tail to ndjson, use LogDTO.level for match
     # - create LogDTO panel or other nice rich style print in printer
     # - simple scroll ndjson log

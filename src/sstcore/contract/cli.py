@@ -179,6 +179,8 @@ class TableDTO(CliDTO):
             row_names=list(rows.keys()),
         )
 
+    # WARN: missing  regular args,kwargs!
+
     @classmethod
     def from_col_dicts(cls, cols: dict[str, list[Any]]) -> Self:
         """Transform dict of {col_name: values} to internal structure."""

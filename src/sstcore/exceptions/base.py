@@ -96,7 +96,7 @@ class NotImplementedDispatchError(SstError, NotImplementedError):
 
 
 class NotImplementedMixinError(SstError, NotImplementedError):
-    """Raised when Mixin queue somthing mixed up"""
+    """Raised when Mixin queue something mixed up"""
 
     def __init__(self, base, mixin, func):
         self.base = base

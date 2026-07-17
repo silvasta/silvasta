@@ -131,6 +131,7 @@ def _render_json_line(line: str, level_filter: str | None):
 
 def _render_raw_line(line: str):
     """Fallback for old .log files"""
+
     match line:
         case LogPatterns.DEBUG:
             style = "bold yellow"

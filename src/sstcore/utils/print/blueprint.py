@@ -5,6 +5,10 @@ Sketch the Structure of the Printer
 
 """
 
+from pathlib import Path
+
+from ..tree import SimpleTreeNode
+
 __all__: list[str] = [
     "Printer",
     "Modus",
@@ -143,3 +147,24 @@ class Printer(Protocol):
     def dip(self, head: str, text: str, color: str) -> None: ...
 
     def md(self, text: str, *args, header: int = 0, **kwargs) -> None: ...
+
+    # tool
+    def path_exists_table(
+        self, paths: list[Path], title=None, header="Path"
+    ) -> None: ...
+    def dict_table(
+        self,
+        target: dict,
+        header="Dict Inspection",
+        show_type: bool | tuple[bool, bool] = (True, True),
+        style="green",
+    ): ...
+    def tree_graph(
+        self: Printer,
+        simple_tree: SimpleTreeNode,
+        max_depth: int | None = None,
+        root: str = "bold magenta",
+        node: str = "by_level",
+        guide: str = "bold white",
+        hide_root=False,
+    ) -> None: ...

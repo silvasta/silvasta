@@ -9,7 +9,7 @@ from ...contract.external import RichProtocol
 from ..color import colorize
 from ..tree import SimpleTreeNode
 
-# LATER: colapse with ToolMixin?
+# LATER: collapse with ToolMixin?
 
 
 def path_exists_table(paths: list[Path], title=None, header="Path") -> Table:

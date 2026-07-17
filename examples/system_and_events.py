@@ -4,11 +4,10 @@ import fire
 from pydantic import BaseModel
 
 from sstcore.config import ConfigManager
-from sstcore.core import System
-from sstcore.events import EventBus
+from sstcore.contract.cli import CliRenderable  # , PanelDTO, TableDTO
+from sstcore.contract.log import LogDTO, LogSerializable
+from sstcore.system import EventBus, System
 from sstcore.utils import Printer
-from sstcore.utils.view.dto import CliDTO, LogDTO, PanelDTO, TableDTO
-from sstcore.utils.view.protocol import CliRenderable, LogSerializable
 
 
 def main():
@@ -136,7 +135,7 @@ class SystemExamples:
         self._emit("sys.log", "dto_test", target=dto)
         self._printer.success("Raw DTO test completed")
 
-    def struc(self):
+    def struct(self):
         """Structured logging with metrics/extra data."""
         self._emit(
             "sys.log",
@@ -239,26 +238,28 @@ def demo_4_cli_table(self):
     """Emit arbitrary table configurations as dynamic structured tables."""
     self._printer.title("Demo 4: Table Data Representation", style="blue")
 
-    table_dto = TableDTO(
-        title="SST System Metrics Overview",
-        data=[
-            {"Engine": "sachmis", "Latency": "142ms", "Memory": "42MB"},
-            {
-                "Engine": "gpt-translator",
-                "Latency": "820ms",
-                "Memory": "12MB",
-            },
-            {
-                "Engine": "pipeline-runner",
-                "Latency": "12ms",
-                "Memory": "108MB",
-            },
-        ],
-        headers=["Engine", "Latency", "Memory"],
-        style="cyan",
-    )
+    # FIX: (kw)arg handling in TableDTO(CliDTO) and probably all others
+    # table_dto = TableDTO.from_value_dicts(
+    #     title="SST System Metrics Overview",
+    #     matrix=[
+    #         {"Engine": "sachmis", "Latency": "142ms", "Memory": "42MB"},
+    #         {
+    #             "Engine": "gpt-translator",
+    #             "Latency": "820ms",
+    #             "Memory": "12MB",
+    #         },
+    #         {
+    #             "Engine": "pipeline-runner",
+    #             "Latency": "12ms",
+    #             "Memory": "108MB",
+    #         },
+    #     ],
+    #     headers=["Engine", "Latency", "Memory"],
+    #     style="cyan",
+    # )
 
-    self._bus.emit("ui.table", sender="Dashboard", target=table_dto)
+    self._printer.warn("out of order...")
+    # self._bus.emit("ui.table", sender="Dashboard", target=table_dto)
 
 
 def demo_5_telemetry_monitoring(self):
@@ -297,16 +298,17 @@ class LLMConversationAgent(BaseModel):
             extra={},
         )
 
-    def __cli__(self) -> CliDTO:
-        return PanelDTO(
-            title=f"Agent: {self.name}",
-            content="create proper DTO first",
-            metrics={
-                "Tokens": self.tokens_used,
-                "Messages": len(self.message_history),
-            },
-            frame="yellow",
-        )
+    # def __cli__(self) -> CliDTO:
+    #     # FIX:
+    #     return PanelDTO(
+    #         title=f"Agent: {self.name}",
+    #         content="create proper DTO first",
+    #         metrics={
+    #             "Tokens": self.tokens_used,
+    #             "Messages": len(self.message_history),
+    #         },
+    #         frame="yellow",
+    #     )
 
 
 class SystemHealthStats(BaseModel):
@@ -314,17 +316,16 @@ class SystemHealthStats(BaseModel):
     ram_usage: int = 2048
     active_connections: int = 12
 
-    def __cli__(self) -> TableDTO:
-        # Note: Ensure TableDTO in your codebase matches this or update FormatMixin
-        return TableDTO(
-            title="System Health Monitor",
-            headers=["Metric", "Value"],
-            data=[
-                ["CPU Temp", f"{self.cpu_temp}°C"],
-                ["RAM Usage", f"{self.ram_usage} MB"],
-                ["Connections", str(self.active_connections)],
-            ],
-        )
+    # FIX:
+    # def __cli__(self) -> TableDTO:
+    #     # Note: Ensure TableDTO in your codebase matches this or update FormatMixin
+    #     return TableDTO(
+    #         title="System Health Monitor",
+    #         headers=["Metric", "Value"],
+    #         data=[
+    #             ["CPU Temp", f"{self.cpu_temp}°C"],
+    #             ["RAM Usage", f"{self.ram_usage} MB"],
+    #             ["Connections", str(self.active_connections)], ],)
 
 
 @dataclass
@@ -342,13 +343,13 @@ class SimpleTask:
             metrics={"progress": self.progress, "status": self.status},
         )
 
-    def __cli__(self) -> PanelDTO:
-        return PanelDTO(
-            title=f"Task {self.id}",
-            content=f"Status: {self.status}",
-            metrics={"progress": f"{self.progress:.0%}"},
-            frame="blue",
-        )
+    # FIX:
+    # def __cli__(self) -> PanelDTO:
+    #     return PanelDTO(
+    #         title=f"Task {self.id}",
+    #         content=f"Status: {self.status}",
+    #         metrics={"progress": f"{self.progress:.0%}"},
+    #         frame="blue",)
 
 
 if __name__ == "__main__":

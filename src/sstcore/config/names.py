@@ -2,7 +2,7 @@
 Provide Container for Names and tools for name composition
 
 - Serialize with Settings and distribute with ConfigManager
-- Provide small subset for SstPahts and other sstcore elements
+- Provide small subset for SstPaths and other sstcore elements
 - TBD: Hold pattern strings and tools for (bidirectional) Naming
 
 """
