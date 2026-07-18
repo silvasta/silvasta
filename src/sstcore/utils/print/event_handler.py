@@ -1,17 +1,12 @@
-"""
-Handle CLI Event
-
-- call printer.format
-
-"""
+"""Handle __cli__ Event"""
 
 from typing import Any
 
-from ...contract.system import EventProtocol
-from . import printer  # WARN: printer?
+from ...contract.event import Event
+from .compose import printer
 
 
-def handle_cli_event(event: EventProtocol) -> None:
+def handle_cli_event(event: Event) -> None:
     """Bridge __cli__ events from EventBus to Printer"""
     # LATER: inject printer?
 

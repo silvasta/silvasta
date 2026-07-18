@@ -9,11 +9,11 @@ from typing import Any
 
 from loguru import logger
 
+from ...contract.event import Event
 from ...contract.log import LogDTO, LogSerializable
-from ...contract.system import EventProtocol
 
 
-def handle_log_event(event: EventProtocol):
+def handle_log_event(event: Event):
     """Bridge __log__ events from EventBus to Loguru"""
 
     target: Any = event.payload.get("target") or event.payload.get("obj")

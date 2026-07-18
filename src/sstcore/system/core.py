@@ -40,7 +40,8 @@ from .event_bus import EventBus
 from .register import BusRegistrationFunc, register_default_event_handler
 
 
-# NEXT: name
+# NEXT: name, synchronyze with config, bus - or Delete?
+# - other approach, bootstrap overrides this, for edge cases
 def fetch_system(*, _allow_uninitialized: bool = False) -> System:
     global _system
     if _system is None:
@@ -100,6 +101,7 @@ class System:
         )
         config.log_result = log_result  # LATER: better attach
 
+        # NEXT: use bus_loader function instead?
         bus = EventBus()  # obviously no singleton, what if ever needed?
         if use_default_bus_handler:
             register_default_event_handler(bus)

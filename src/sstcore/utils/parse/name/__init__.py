@@ -21,6 +21,6 @@ from .base import (
     NamePattern,
 )
 from .colored import ColoredName
-from .core import ParsedName
 from .name import Name
+from .parsed import ParsedName
 from .schema import SchemaName

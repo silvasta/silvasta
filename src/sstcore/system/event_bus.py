@@ -1,33 +1,18 @@
 """Create base infrastructure for events"""
 
 __all__: list[str] = [
-    "Event",
     "EventHandler",
     "EventBus",
 ]
 
 import fnmatch
 from collections.abc import Callable
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from functools import lru_cache
 
 from loguru import logger
 
-from ..contract.system import EventProtocol
-
-
-@dataclass(frozen=True)
-class Event:
-    """Base payload emitted across the pipeline."""
-
-    name: str
-    sender: str
-    payload: dict[str, Any] = field(default_factory=dict)
-
-
-if TYPE_CHECKING:  # --- SYNCHRONIZATION GUARD ---
-    # Ensure that EventProtocol always matches Event!
-    _: EventProtocol = Event(name="", sender="", payload={})
+from ..contract.event import Event
 
 
 @dataclass(frozen=True)
@@ -39,7 +24,7 @@ class EventHandler:
     fail_loud: bool = False
 
     def __str__(self) -> str:
-        return f"EventHandler[{self.name}]"  # LATER: check events.view
+        return f"EventHandler[{self.name}]"
 
     def __call__(self, event: Event) -> None:
         """Execute handler function and manage fail if flag is set"""
@@ -49,7 +34,6 @@ class EventHandler:
             if self.fail_loud:  # LATER: custom error?
                 raise RuntimeError(f"Critical Fail: {self}") from error
 
-            # TASK: ensure handler fails are proper logged
             logger.error(f"{self} failed for '{event.name}': {error}")
             logger.debug(f"Traceback for {self}:", exc_info=True)
 
@@ -72,9 +56,10 @@ class EventBus:
     def emit(self, event_name: str, sender: str, **payload) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
+        # WARN: validation payload?
         event = Event(name=event_name, sender=sender, payload=payload)
 
-        for handler in self._global_subscribers:  # structured telemetry, ...
+        for handler in self._global_subscribers:
             handler(event)
 
         for handler in self._get_event_subscribers(event_name):
@@ -84,68 +69,24 @@ class EventBus:
         """Filter specific subscribers by name LATER: by wildcard"""
         return self._subscribers.get(event_name, [])
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Different Ideas
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    def _match_subscribers(self, event_name: str) -> tuple[EventHandler, ...]:
+        """Filter subscribers by wildcard pattern."""
 
-    def _get_event_subscribers1(self, event_name: str) -> list[EventHandler]:
-        return self._match_subscribers(event_name)
-
-    # @lru_cache(maxsize=256)
-    def _match_subscribers(self, event_name: str) -> list[EventHandler]:
+        matched_patterns: tuple[str, ...] = _get_matching_patterns(
+            event_name, tuple(self._subscribers.keys())
+        )  # tuple is hashable -> needed for lru_cache
 
         matched_handlers: list[EventHandler] = []
-        for pattern, handlers in self._subscribers.items():
-            if fnmatch.fnmatch(event_name, pattern):
-                matched_handlers.extend(handlers)
-        return matched_handlers
+        for pattern in matched_patterns:
+            matched_handlers.extend(self._subscribers[pattern])
 
-    # IDEA: why not just using the enum/datastructre for that?
-    # - yes but first build it...
-
-    def _get_event_subscribers2(self, event_name: str) -> list[EventHandler]:
-        handlers = self._subscribers.get(event_name, []).copy()
-
-        # Check wildcards based on namespace (e.g., event "sys.log" matches wildcard "sys.*")
-        namespace = event_name.split(".")[0]
-        wildcard = f"{namespace}.*"
-        handlers.extend(self._subscribers.get(wildcard, []))
-
-        return handlers
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### NAMES
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+        # remove duplicates while preserving order
+        return tuple(dict.fromkeys(matched_handlers))
 
 
-# from .names import EventName, Events  # or your chosen approach
-#
-#
-# class _EventBus:
-#     # ... existing __init__, subscribe, subscribe_all ...
-#
-#     def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
-#         """Support exact matches + wildcards via fnmatch (cached)."""
-#         return self._match_subscribers(event_name)
-#
-#     # @lru_cache(maxsize=512)
-#     def _match_subscribers(self, event_name: str) -> list[EventHandler]:
-#         matched: list[EventHandler] = []
-#         for pattern, handlers in self._subscribers.items():
-#             if fnmatch.fnmatch(event_name, pattern) or fnmatch.fnmatch(
-#                 pattern, event_name
-#             ):
-#                 matched.extend(handlers)
-#         return matched
-#
-#     def emit(
-#         self, event_name: str | EventName, sender: str, **payload: Any
-#     ) -> None:
-#         name_str = str(event_name)
-#         if (
-#             not Events.is_known_event(name_str) and "*" not in name_str
-#         ):  # from simple version
-#             logger.warning(
-#                 f"Unknown event emitted: {name_str} (sender={sender})"
-#             )
-#         # ... rest unchanged, create Event(name=name_str, ...)
+@lru_cache(maxsize=256)
+def _get_matching_patterns(
+    event_name: str, active_patterns: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Execute and especially Cache decoupled from the Bus"""
+    return tuple(p for p in active_patterns if fnmatch.fnmatch(event_name, p))
