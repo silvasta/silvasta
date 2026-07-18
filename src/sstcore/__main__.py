@@ -51,31 +51,5 @@ def check_cli_installed():
         sys.exit(1)
 
 
-def check_cli_installed():
-    """Find required packages or give instructions and quit"""
-
-    cli_installed = (
-        importlib.util.find_spec("typer") is not None
-        and importlib.util.find_spec("textual") is not None
-    )
-
-    if not cli_installed:
-        # paint
-        error: str = printer.colors.red("Problem with Installation")
-        _sst = escape("'sstcore[cli]'")
-        uv: str = printer.colors.cyan(f"uv add {_sst}")
-        or_: str = printer.colors.green("or")
-        pip: str = printer.colors.cyan(f"pip install {_sst}")
-
-        # canvas
-        text: list[str] = [
-            f"{error} Missing CLI dependency...",
-            f"fix with {uv} {or_} {pip}",
-        ]
-        printer.danger(text)
-
-        sys.exit(1)
-
-
 if __name__ == "__main__":
     main()
