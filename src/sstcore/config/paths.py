@@ -1,10 +1,19 @@
+"""
+Compose and Ensure Paths independent of system or location
+
+- Assemble from Defaults, Names, HomeSetup and any desired input
+- Use PathGuard to ensure existence, uniqueness or writability
+
+"""
+
 from pathlib import Path
 from typing import cast
 
 import typer
 
-from ..utils import HomeSetup, PathGuard, day_count, printer
-from ..utils.paint import ColorBox
+from ..utils import PathGuard, day_count, printer
+from ..utils.color import ColorBox
+from ..utils.path import HomeSetup
 from .defaults import SstDefaults
 from .names import ParsedName, SstNames
 
@@ -77,7 +86,7 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         except FileNotFoundError:
             # MOVE: to pathguard error handling, or cli,
             #         - but with __rich__ cli print
-            c: ColorBox = printer.colorbox()
+            c: ColorBox = ColorBox.bold()
             text = (
                 f"{c.red('Missing .env File!')}"
                 f" {c.white(self.dot_env_unconfirmed)}"
@@ -94,7 +103,7 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         return scan_root / ".sst_scanner_cache.json"
 
     @PathGuard.unique(ensure_parent=True)
-    def summary_file(self, suffix: str = "md") -> Path:
+    def summary_file(self, suffix: str = ".md") -> Path:
         return self.data_dir / summary_file(
             {"day": str(day_count()), "suffix": suffix}
         )

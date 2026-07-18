@@ -8,6 +8,7 @@ from ..path import PathGuard
 from ..print import printer
 
 
+# TODO: only: write (use module as summary_file.name)
 def write_summary_file(
     files: list[Path], output_file: Path, local_root: Path | None = None
 ) -> str:
@@ -17,6 +18,7 @@ def write_summary_file(
     return data
 
 
+# TODO: only: assemble (use module as summary_file.name)
 def assemble_summary_file(
     files: list[Path],
     output_file: Path,
@@ -29,6 +31,7 @@ def assemble_summary_file(
     - local_root is for creating the relative paths inside the summary
 
     """
+    files: list[Path] = [file for file in files if file.is_absolute()]
 
     summary: SummaryFileBox = SummaryFileBox.type_from_path(output_file)
 
@@ -49,7 +52,7 @@ def assemble_summary_file(
     return "\n\n".join(parts) if parts else "\n\n"
 
 
-class SummaryFileBox(StrEnum):
+class SummaryFileBox(StrEnum):  # NEXT: TOML
     """Provide parts for Summary selection without missing any"""
 
     MD = auto()

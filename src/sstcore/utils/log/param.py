@@ -1,3 +1,5 @@
+# TODO: explain
+
 from pathlib import Path
 from typing import Self
 
@@ -5,12 +7,14 @@ from pydantic import BaseModel, Field
 
 from ..path.search import any_root
 
+# NEXT: adapt to current pipeline
+
 
 class LogParam(BaseModel):
     """Handle Input Param for log and provide defaults"""
 
     # setup behaviour
-    print_at_setup: bool = True
+    print_at_setup: bool = False
 
     # dir and file
     log_dir: Path = Field(default_factory=any_root)

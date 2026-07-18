@@ -1,6 +1,8 @@
+<!-- NEXT: proper readme! -->
+
 # Base of all Projects - `sstcore`
 
-<!-- LATER: as soon as online  -->
+<!-- TODO: as soon as online  -->
 <!-- [![PyPI version](https://img.shields.io/pypi/v/sstcore.svg)](https://pypi.org/project/sstcore/) -->
 <!-- [![Python versions](https://img.shields.io/pypi/pyversions/sstcore.svg)](https://pypi.org/project/sstcore/) -->
 
@@ -29,6 +31,7 @@
 
 ```bash
 # Basic
+# IMPORTANT: use uv as primary tool!
 pip install sstcore
 
 # Recommended

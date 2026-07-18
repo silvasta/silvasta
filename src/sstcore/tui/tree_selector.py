@@ -1,4 +1,4 @@
-from enum import StrEnum, auto
+from enum import StrEnum
 
 from loguru import logger
 from textual.app import App, ComposeResult
@@ -73,10 +73,10 @@ class TreeSelectorApp(App[list]):
     class Sort(StrEnum):
         """Govern Action Selection and Execution"""
 
-        BY_SELECTION = auto()
-        ALPHABETIC = auto()
+        SELECTION = "s"  # follow order of selection
+        ALPHABETIC = "a"
 
-    sort_method: Sort = Sort.BY_SELECTION
+    sort_method: Sort = Sort.SELECTION
 
     def __init__(
         self,

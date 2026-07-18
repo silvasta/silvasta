@@ -13,16 +13,16 @@
     "dot_env_content": ""
   },
   "log": {
-    "print_at_setup": true,
+    "print_at_setup": false,
     "log_dir": "/home/silvan/PolyBox/Code/sstcore/latest/logs",
     "log_filename": "sstcore.log",
     "log_level": "INFO",
     "retention": "1 week",
     "rotation": "5 MB"
   },
-  "last_updated": "2026-06-19T02:50:42.152737Z",
+  "last_updated": "2026-06-21T15:29:00.541054Z",
   "updates": [
-    "2026-06-19T02:50:42.152737Z"
+    "2026-06-21T15:29:00.541054Z"
   ],
   "update_maxlen": 79
 }

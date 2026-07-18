@@ -22,6 +22,7 @@ PROJECT_IGNORE_DIRS: set[str] = {
     "target",
 }
 
+# NEXT: defaults, maybe Box?
 
 PROJECT_ALLOWED_EXTS: set[str] = {
     ".py",

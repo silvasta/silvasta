@@ -1,3 +1,5 @@
+# TODO: explain
+
 import os
 from dataclasses import dataclass
 from enum import StrEnum, auto
@@ -6,6 +8,7 @@ from pathlib import Path
 
 @dataclass
 class XdgDefaults:
+    # TODO: explain
     data: str = ".local/share"
     state: str = ".local/state"
     config: str = ".config"
@@ -14,6 +17,7 @@ class XdgDefaults:
 
 
 class XdgHomes(StrEnum):
+    # TODO: explain
     DATA = auto()
     STATE = auto()
     CONFIG = auto()

@@ -5,7 +5,6 @@ from typing import Any
 
 from loguru import logger
 
-from ._config import PathConfig, PathInput, _state
 from ._ensure import (
     _ensure_dir_logic,
     _ensure_input,
@@ -13,6 +12,7 @@ from ._ensure import (
     find_sequence,
 )
 from ._helper import relative_string
+from ._input import PathArg, PathInput, _state
 
 
 class SyncMode(StrEnum):
@@ -55,7 +55,7 @@ def rotate(
     # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
-        PathConfig.from_path_input(source, must_exists=True)
+        PathArg.from_path_input(source, must_exists=True)
     )
     _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
@@ -88,7 +88,7 @@ def copy(
     # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
-        PathConfig.from_path_input(source, must_exists=True)
+        PathArg.from_path_input(source, must_exists=True)
     )
     _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
@@ -112,7 +112,7 @@ def hardlink(
     # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
-        PathConfig.from_path_input(source, must_exists=True)
+        PathArg.from_path_input(source, must_exists=True)
     )
     _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
@@ -144,7 +144,7 @@ def symlink(
     # LATER: similar pipeline as in _clear_file_or_folder
 
     _source: Path = _ensure_input(
-        PathConfig.from_path_input(source, must_exists=True, resolve=True)
+        PathArg.from_path_input(source, must_exists=True, resolve=True)
     )
     _target: Path = _ensure_input(target)
     sync_mode = SyncMode(sync_mode)
@@ -176,7 +176,7 @@ def _clear_file_or_folder(
 
     try:
         _target: Path = _ensure_input(
-            PathConfig.from_path_input(target, must_exists=True)
+            PathArg.from_path_input(target, must_exists=True)
         )
         clear_strategy(_target)
         logger.success(f"{clear}: {target}")

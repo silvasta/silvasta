@@ -1,12 +1,33 @@
+"""
+Show examples in isolated environment without any deeper purpose
+
+- Platform to test and show Parsed Names and Styles
+
+"""
+
 from contextlib import suppress
-from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import fire
 from pydantic import BaseModel
 
-from sstcore.utils import PatternNamer, day_count, printer
-from sstcore.utils.parse import ParsedName, StyledName
+from sstcore import System
+from sstcore.config import ConfigManager
+from sstcore.system import EventBus
+from sstcore.system.core import fetch_system
+from sstcore.utils import Printer, day_count, printer
+from sstcore.utils.parse import ParsedName
+from sstcore.utils.parse.name import NamePattern
+
+# TODO: finish wiring
+sst: System = fetch_system(_allow_uninitialized=True)
+
+config: ConfigManager = sst.config
+bus: EventBus = sst.bus
+_printer: Printer = sst.printer  # LATER: replace below?
+
+pattern1: str = "{day}_summary.{suffix}"
 
 
 def main():
@@ -14,21 +35,27 @@ def main():
     fire.Fire(ParseTasks)
 
 
-class ParseTasks:
-    def model(self):
-        parsed_basemodel_name()
+def view(obj: Any):
+    printer(str(obj))
+    printer(repr(obj))
+    printer(obj)
 
+
+class ParseTasks:
     def base(self):
         parsed_name()
 
-    def style(self):
-        styled_name()
+    # def style(self):
+    #     styled_name()
 
     def regex(self):
         pattern_namer()
 
     def error(self):
         show_error()
+
+    def model(self):
+        parsed_basemodel_name()
 
 
 def parsed_name():
@@ -52,6 +79,25 @@ def parsed_name():
         printer.success("it works!")
 
 
+# def styled_name():
+#
+#     sstfile_dates: ColoredName = StyledName.parse_style(
+#         style_pattern=(
+#             "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
+#             " - [{style3}]{last_updated}[/]"
+#         ),
+#         keys=["name", "first_tracked", "last_updated"],
+#         styles=["blue", "red", "white"],
+#     )
+#
+#     # printer(sstfile_dates) # ERROR: rich.errors.MarkupError
+#     print(sstfile_dates)
+#
+#     print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
+#     printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
+#
+
+
 def parsed_basemodel_name():
     printer.title("Start of parsed_basemodel_name")
 
@@ -65,59 +111,45 @@ def parsed_basemodel_name():
         model_cls=TreeInfoSchema,
         strip_extension=True,  # Safely handles Path("t_42_math.json")
     )
-
     # Backwards parsing returns the BaseModel directly!
     tree_data = tree_parser(Path("t_42_math.json"))
 
+    printer("tree_data", end=": ")
     printer(tree_data)
+    printer(f"{tree_data}")
+    printer(f"{tree_data=}")
 
-    print(tree_data.sprout_id)  # 42 (as int)
-    print(tree_data.topic)  # "math"
+    printer(tree_data.sprout_id)  # 42 (as int)
+    printer(tree_data.topic)  # "math"
 
     printer(tree_parser)
 
 
-def styled_name():
-
-    sstfile_dates: StyledName = StyledName.parse_style(
-        style_pattern=(
-            "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
-            " - [{style3}]{last_updated}[/]"
-        ),
-        keys=["name", "first_tracked", "last_updated"],
-        styles=["blue", "red", "white"],
-    )
-
-    print(sstfile_dates)
-    print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
-    printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
-
-
 def pattern_namer():
-    namer = PatternNamer("{date}_{topic}_sstcore.{suffix}")
+    namer = NamePattern("{date}_{topic}_sstcore.{suffix}")
 
-    print(namer)
+    printer(namer)
 
     name_1: dict[str, str] = {
         "date": f"{day_count()}",
         "topic": "arboreal",
         "suffix": "md",
     }
-    forward: str = namer.format(**name_1)
-    print(forward)
+    forward: str = namer.format(name_1)
+    printer(forward)
 
     backward: dict[str, str] = namer.extract(forward)
-    print(backward)
+    printer(backward)
 
     random_fine: dict[str, str] = namer.extract("9598_code_sstcore.py")
-    print(random_fine)
+    printer(random_fine)
 
     with suppress(ValueError):
         random_bad: dict[str, str] = namer.extract("9_code_stcore.py")
-        print(random_bad)
+        printer(random_bad)
 
     random_1: dict[str, str] = namer.extract("93-59_sstcore_sstcore.p")
-    print(random_1)
+    printer(random_1)
 
 
 def show_error():

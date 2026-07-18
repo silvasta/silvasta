@@ -1,3 +1,5 @@
+# TODO: explain
+
 from .home_setup import HomeSetup
 from .xdg import XdgDefaults, XdgHomes
 

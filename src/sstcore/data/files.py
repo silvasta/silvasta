@@ -1,3 +1,5 @@
+# TODO: explain
+
 import filecmp
 import hashlib
 from collections.abc import Callable
@@ -10,7 +12,6 @@ from typing import Any, Self
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..config import ConfigManager, get_config
 from ..exceptions import NotImplementedDispatchError, RegistrySyncError
 from ..utils import (
     FilterSet,
@@ -22,13 +23,22 @@ from ..utils import (
 )
 from ..utils.tree import build_path_tree
 
-# IMPORTANT: check 9642_0_x-g420_final-check-file-operations.md
+# TODO:
+# from Names:
+# @cached_property
+# def sstfile_dates(self) -> StyledName:
+#     return StyledName.parse_style(
+#         style_pattern=(
+#             "[{blue}]{name}[/]: [{style2}]{first_tracked}[/]"
+#             " - [{style3}]{last_updated}[/]"),
+#         keys=["name", "first_tracked", "last_updated"],
+#         styles=["blue", "dim", "white"],)
 
 
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 
-    # LATER: check if path is needed for more general setup
+    # TODO: check if using path instead of local_path?
     local_path: Path  # relative from local filedir
     keywords: set = Field(default_factory=set)
 
@@ -36,30 +46,33 @@ class SstFile(BaseModel):
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     def __str__(self):
-        return f"{self.__class__.__name__}(local_path={self.local_path})"
+        return f"{type(self).__name__}(local_path={self.local_path})"
 
     @property
-    def is_temp_file(self) -> bool:  # LATER: check if needed
+    def is_temp_file(self) -> bool:  # TODO: check if needed
         return self.local_path == Path()
 
-    # TODO: colorful
+    # NEXT: colorful check all (pseudo) formats here below
 
-    @property
-    def description(self) -> str:
-        """Extensive description formatted with Rich Color String"""
-        config: ConfigManager = get_config()  # TODO: names placement
-        return config.names.sstfile_dates.styled(self._description)
+    # @property
+    # # MOVE: to __rich__
+    # def description(self) -> str:
+    #     """Extensive description formatted with Rich Color String"""
+    #     config: ConfigManager = sst_config()
+    #     return config.names.sstfile_dates.styled(self._description)
 
-    @property
-    def _description(self) -> list[str | datetime | Path]:
-        """Constructor for (raw) description text blocks"""
-        return [self.name, self.first_tracked, self.last_updated]
+    # @property
+    # # MOVE: to ColoredName
+    # def _description(self) -> list[str | datetime | Path]:
+    #     """Constructor for (raw) description text blocks"""
+    #     return [self.name, self.first_tracked, self.last_updated]
 
-    @property
-    def raw_description(self) -> str:
-        """Raw description without any coloring"""
-        config: ConfigManager = get_config()  # TODO: names placement
-        return config.names.sstfile_dates(self._description)
+    # @property
+    # # MOVE: to __str__
+    # def raw_description(self) -> str:
+    #     """Raw description without any coloring"""
+    #     config: ConfigManager = sst_config()
+    #     return config.names.sstfile_dates(self._description)
 
     @property
     def name(self) -> str:
@@ -75,8 +88,7 @@ class SstFile(BaseModel):
 
     @property
     def added_at(self) -> str:
-        # LATER: pendulum,arrow,dateutil or custom
-        # + timestamp_format somehow to Defaults
+        # NEXT: timestamp_format inside __cli__????
         return self.first_tracked.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
     def confirm_local_status(self, local_dir: Path) -> bool:
@@ -131,6 +143,10 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
 
 
 class FileRegistry[FilesT: SstFile](BaseModel):
+    # NEXT: think about split!
+    # MOVE: to new .registry
+    # -> still to big, how to split?
+    # LATER: compare as well with ArborealRegistry from sachmis
     """Provide Container for Files and Tools for FileSystem Operations"""
 
     local_root: Path
@@ -301,9 +317,9 @@ class FileRegistry[FilesT: SstFile](BaseModel):
         """Check if File is valid local file and attach to Registry"""
 
         if not file.confirm_local_status(self.local_root):
-            logger.error(f"Cannot attach file: {file.raw_description}")
+            logger.error(f"Cannot attach file: {file}")
             if not strict:
-                logger.warning(f"Ignoring: {file.raw_description}")
+                logger.warning(f"Ignoring: {file}")
             else:
                 raise RegistrySyncError("File missing on local disk")
 
@@ -556,7 +572,7 @@ class FileRegistry[FilesT: SstFile](BaseModel):
             self._clear_files_by_path(files_to_clear=target)
 
         file: FilesT = self.attach_from_path(path=target)
-        logger.debug(f"{action} completed: {file.description}")
+        logger.debug(f"{action} completed: {file=}")  # TODO: repr?
 
         return file
 
@@ -599,5 +615,5 @@ class SstFileRegistry(FileRegistry[SstFile]):
         return SstFile(local_path=path)
 
 
-class FileSystemManager:
+class FileSystemManager:  # REMOVE: ???
     """Manager for operations on Local Files"""

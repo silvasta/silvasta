@@ -4,8 +4,8 @@ from pathlib import Path
 from loguru import logger
 
 from ....exceptions import NotImplementedDispatchError
-from ._config import PathConfig, PathInput
 from ._ensure import _ensure_input
+from ._input import PathArg, PathInput
 
 
 def relative_main(
@@ -13,8 +13,8 @@ def relative_main(
 ) -> Path:
     """Find Relative Path starting at Root (or CWD) downwards to Target"""
 
-    _target = _ensure_input(PathConfig.from_path_input(target, resolve=True))
-    _root = _ensure_input(PathConfig.from_path_input(root, resolve=True))
+    _target = _ensure_input(PathArg.from_path_input(target, resolve=True))
+    _root = _ensure_input(PathArg.from_path_input(root, resolve=True))
 
     if strict:
         try:

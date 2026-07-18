@@ -3,8 +3,8 @@ from pathlib import Path
 from pydantic import Field
 
 from sstcore import PathGuard
-from sstcore.cli import SafeTyper, utils_app
-from sstcore.cli.launch import launch_folder_scanner, launch_monitor
+from sstcore.cli import SafeTyper, tools
+from sstcore.cli.tools.app import launch_folder_scanner, launch_monitor
 from sstcore.config import (
     ConfigManager,
     SstDefaults,
@@ -12,7 +12,7 @@ from sstcore.config import (
     SstPaths,
     SstSettings,
 )
-from sstcore.config.loader import get_config, sst_config_loader
+from sstcore.config.setup import sst_config, sst_config_loader
 from sstcore.exceptions import TuiSelectorError
 from sstcore.utils import printer
 
@@ -73,8 +73,6 @@ def config_loader(setting_file: Path | None = None) -> CustomConfig:
     """Prepare Loader for CustomConfig injected to CLI"""
 
     return sst_config_loader(
-        settings_cls=Settings,
-        paths_cls=Paths,
         setting_file=setting_file,
         project_name="sachmis",
     )
@@ -82,7 +80,7 @@ def config_loader(setting_file: Path | None = None) -> CustomConfig:
 
 def config() -> CustomConfig:
     """Fetch config Singleton and raise if not already initialized"""
-    return get_config(_allow_uninitialized=False)
+    return sst_config(_allow_uninitialized=False)
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -119,7 +117,7 @@ app.command(name="monitor")(launch_monitor)
 
 
 # Attach SubApp with new Level of Namespace
-app.add_typer(typer_instance=utils_app)
+app.add_typer(typer_instance=tools)
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -130,7 +128,7 @@ app.add_typer(typer_instance=utils_app)
 def attach_handlers(app: SafeTyper) -> None:
     """Assemble Handler in separate file and attach to app with this"""
 
-    @app.register_error(TuiSelectorError)
+    @app.errors.handle(exit_code=2, name="Tui Selector")
     def handle_tui_selector(error: TuiSelectorError):
         printer.danger(f"Selector failed: {error}")
 

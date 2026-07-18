@@ -1,3 +1,17 @@
+"""
+Orchestrate Config and Settings
+
+- Launch bootstrap, home setup and govern results
+- Load and save Settings from and to file
+- Provide access to Defaults, Names and Paths
+
+Usage in Projects:
+  - Create custom components (mainly fill Defaults, Names and Paths)
+  - Launch with config_loader, collect instance if desired
+  - Access by instance or global singleton, forget about this setup
+
+"""
+
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -6,7 +20,10 @@ from typing import cast
 from dotenv import load_dotenv
 from loguru import logger
 
-from ..utils import HomeSetup, Printer, day_count
+from sstcore.utils.log import LogSetupResult
+
+from ..utils import day_count
+from ..utils.path import HomeSetup
 from .bootstrap import BootDefaults, BootResult, ConfigBootstrap
 from .defaults import SstDefaults
 from .names import SstNames
@@ -21,6 +38,8 @@ class ConfigManager[
     TPaths: SstPaths,
 ]:
     """Bundle Container and Factories and provide access as Singleton"""
+
+    log_result: LogSetupResult | None = None  # TODO: where to place?
 
     def __init__(
         self,
@@ -60,6 +79,8 @@ class ConfigManager[
     def __str__(self) -> str:
         return type(self).__name__
 
+    # NEXT: proper __fmt__
+
     def __repr__(self) -> str:
         settings: str = type(self.settings).__name__
         paths: str = type(self.settings).__name__
@@ -68,8 +89,9 @@ class ConfigManager[
         return f"{self}[{settings}, {paths}, {defaults},{names}]"
 
     def _fill_printer(self):
-        Printer.project_name = self.project_name
-        Printer.project_version = self.project_version
+        # Printer.project_name = self.project_name
+        # Printer.project_version = self.project_version
+        pass  # REMOVE: when established in System
 
     @property
     def names(self) -> TNames:

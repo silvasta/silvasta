@@ -1,3 +1,5 @@
+# TODO: explain
+
 from . import examples
 from .nodes import PathTreeNode, SimpleTreeNode, build_path_tree
 

@@ -1,3 +1,11 @@
+"""
+Provide Interface for serializable Components
+
+- Synchronize Defaults, Names and LogParam from and to disk
+- Ensure reliable and observable setting file handling
+
+"""
+
 import json
 from collections import deque
 from datetime import UTC, datetime
@@ -18,8 +26,8 @@ from .names import SstNames
 class SstSettings(BaseSettings):
     """Container for Defaults and Names and Frame for setting file"""
 
-    names: SstNames = Field(default_factory=SstNames)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
+    names: SstNames = Field(default_factory=SstNames)
     log: LogParam = Field(default_factory=LogParam)
 
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -35,7 +43,6 @@ class SstSettings(BaseSettings):
         """Refresh datetime and save current status to json"""
         before: datetime = self.last_updated
         self.touch()
-        # TEST: Logs beautifully as: "Settings updated after 1d 6h 22m"?
         duration: str = nice_duration(before, after=self.last_updated)
         logger.info(f"Settings updated after {duration}")
         path.write_text(self.json_content(), encoding="utf-8")
@@ -55,16 +62,6 @@ class SstSettings(BaseSettings):
             indent=2,
         )
 
-    @model_validator(mode="after")
-    def enforce_deque_maxlen(self) -> Self:
-        desired_maxlen: int = self.update_maxlen
-        if self.updates.maxlen != desired_maxlen:
-            self.updates: deque[datetime] = deque(
-                iterable=self.updates,
-                maxlen=desired_maxlen,
-            )
-        return self
-
     def touch(self):
         """Update datetime and check maxlen of saved updates"""
         n_saved_update_times: int = self.update_maxlen
@@ -75,3 +72,13 @@ class SstSettings(BaseSettings):
             logger.success(f"Changed: {n_saved_update_times=} ({before=})")
         self.updates.append(update := datetime.now(UTC))
         self.last_updated: datetime = update
+
+    @model_validator(mode="after")
+    def enforce_deque_maxlen(self) -> Self:
+        desired_maxlen: int = self.update_maxlen
+        if self.updates.maxlen != desired_maxlen:
+            self.updates: deque[datetime] = deque(
+                iterable=self.updates,
+                maxlen=desired_maxlen,
+            )
+        return self

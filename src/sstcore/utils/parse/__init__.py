@@ -1,13 +1,23 @@
-from .parsed_name import ParsedName
-from .regex import LogPatterns, PatternNamer, RegexMatch
-from .styled_name import StyledName
+"""
+Decompose Strings with Regex
 
-# LATER: maybe subfolder for *_name?
+- Pattern, Names, Matches
+
+"""  # TODO:
+
+from .match import LogMatcher, MatchRule, RegexMatch, RegexMatchBox
+from .name import ColoredName, NameParser, ParsedName, SchemaName
 
 __all__: list[str] = [
-    "LogPatterns",
-    "RegexMatch",
-    "PatternNamer",
-    "StyledName",
+    # name
+    "NameParser",
     "ParsedName",
+    "ColoredName",
+    "SchemaName",
+    # match
+    "RegexMatch",
+    "MatchRule",
+    "RuleHandler",
+    "RegexMatchBox",
+    "LogMatcher",
 ]

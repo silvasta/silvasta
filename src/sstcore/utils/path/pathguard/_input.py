@@ -2,12 +2,21 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Self
 
-type PathInput = Path | str | PathConfig
+type PathInput = Path | str | PathArg
 
 
 @dataclass(frozen=True, slots=True)
-class PathConfig:
-    """Encapsulate Validation and Normalization behavior for Target Path"""
+# IDEA: PathTarget? yes but for func(target:PathTarget,source:PathTarget) ...?
+class PathArg:  # NEXT: final name (and preferably checks below) error
+    """
+    Encapsulate Validation and Normalization behavior for Target
+
+    Defines how the path should be interpreted and validated:
+      - target: the path itself
+      - resolve: whether to resolve symlinks and normalize
+      - check_exists: whether existence is checked (but not required)
+      - must_exists: whether the path *must* exist (strict mode)
+    """
 
     target: Path | str
     resolve: bool = False
@@ -24,7 +33,7 @@ class PathConfig:
     ) -> Self:
         args: dict = {}
 
-        if isinstance(path_input, PathConfig):
+        if isinstance(path_input, PathArg):
             args |= asdict(path_input)
         elif isinstance(path_input, (str, Path)):
             args["target"] = path_input
