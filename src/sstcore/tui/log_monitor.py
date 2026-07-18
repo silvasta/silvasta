@@ -19,7 +19,7 @@ from textual.widgets import (
 from ..contract.log import LogDTO
 
 PREDEFINED_CATCHES: dict[str, Callable[[LogDTO], bool]] = {
-    "🌐 All Logs": lambda dto: True,  # <--- Add this line
+    "🌐 All Logs": lambda _dto: True,  # <--- Add this line
     "🔥 All Errors": lambda dto: dto.level in ("ERROR", "CRITICAL"),
     "💾 DB Timeouts": lambda dto: (
         "timeout" in dto.message.lower()
@@ -211,7 +211,7 @@ class LogMonitorApp(App):
             # Visually reset the OptionList selection to the top
             self.query_one("#catch-list", OptionList).highlighted = 0
         else:
-            self.active_catch_name = selected_catch
+            self.active_catch_name = str(selected_catch)
             self.notify(f"Filtering by: {self.active_catch_name}")
 
         # Repopulate the table with the new filter applied

@@ -6,13 +6,11 @@ Collect and assemble mini-tools for example app
 
 from pathlib import Path
 
-from loguru import logger
 from typer import Context, Option
 
 from ...config import SstPaths
-from ...contract.cli import PanelDTO
 from ...contract.log import LogDTO
-from ...system import EventBus, System
+from ...system import System
 from ...tui import TreeSelectorApp
 from ...tui.log_monitor import LogMonitorApp
 from ...utils.path import PathGuard, any_root
@@ -31,30 +29,8 @@ def main() -> None:
 app = SafeTyper(name="tools", help="Basic equipment for development")
 
 
-@app.command()
-def empty(ctx: Context):  # WARN: remove in sstcore/main
-    """Launch default setup without any other execution"""
-    bus: EventBus = ctx.obj["bus"]
-    printer("Start of 'empty' function...")
-    printer.danger("END")
-    bus.emit(event_name="ui.panel", sender="empty", payload=ctx)
-    logger.debug("hello")
-    logger.success("it works")
-    panel = PanelDTO(text="dto check")
-    bus.emit(
-        event_name="sys.log",
-        sender="empty",
-        payload=panel,
-    )
-    printer(panel)
-    bus.emit(
-        event_name="sys.log", sender="empty", payload={"a": 1, "b": Path()}
-    )
-    printer.success("End")
-
-
-@app.command()
-def monitor2(
+@app.command("monitor")
+def launch_log_monitor_2(
     ctx: Context,
     file: sargs.LogFile = None,
     tail: bool = Option(True, help="Keep watching the file for new entries"),
@@ -74,18 +50,9 @@ def monitor2(
     app.run()
 
 
-@app.command()
-def monitor1(file: sargs.LogFile = None):  # TODO: improveCLI hint
+@app.command("monitor1")
+def launch_log_monitor_1(file: sargs.LogFile = None):  # TODO: improveCLI hint
     """Log Console Monitor: Watch new log file entries!"""
-    # TASK: Log Monitor 2
-    # - improve existing match and log tail
-    # - extend log tail to ndjson, use LogDTO.level for match
-    # - create LogDTO panel or other nice rich style print in printer
-    # - simple scroll ndjson log
-    # - simple TUI with scroll + dynamic filter change
-    #   LATER:
-    #   - usage for existing logs
-    #   - usage with live bus connection
     log_monitor(log_path=file)
 
 

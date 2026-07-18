@@ -106,10 +106,12 @@ def _wrap_for_md(path: Path, content: str) -> str:
     match path.suffix:
         case ".rs":
             return _rust(path, content)
-        case ".tex" | ".cls":
-            return _tex(path, content)
         case ".py" | ".pyi":
             return _py(path, content)
+        case ".toml":
+            return _toml(path, content)
+        case ".tex" | ".cls":
+            return _tex(path, content)
         case ".lua":
             return _lua(path, content)
         case _:
@@ -132,6 +134,15 @@ def _rust(path, content):
     return f"""
 ```rust
 // {path}
+{content}
+```
+"""
+
+
+def _toml(path, content):
+    return f"""
+```toml
+# {path}
 {content}
 ```
 """

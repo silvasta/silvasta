@@ -7,7 +7,7 @@ Provide Engine for easy access to Rich Console setup
 
 from contextlib import contextmanager
 
-from rich.console import Console
+from rich.console import Console, ConsoleRenderable, RichCast
 from rich.padding import Padding
 from rich.theme import Theme
 
@@ -130,7 +130,11 @@ class PrinterCore(PrinterModus):
             renderable: RenderableType = self.render(target)
         else:
             indent: int = kwargs.pop("indent", 0)
-            renderable: RenderableType = self.normalize(target)
+            if isinstance(target, (ConsoleRenderable, RichCast)):
+                # WARN: fail fixed for rich.Panel or others???
+                renderable: RenderableType = target
+            else:
+                renderable: RenderableType = self.normalize(target)
 
         if indent and renderable is not None:
             renderable = Padding(renderable, (0, 0, 0, indent))

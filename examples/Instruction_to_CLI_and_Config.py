@@ -4,7 +4,7 @@ from pydantic import Field
 
 from sstcore import PathGuard
 from sstcore.cli import SafeTyper, tools
-from sstcore.cli.tools.app import launch_folder_scanner, launch_monitor
+from sstcore.cli.tools.app import launch_folder_scanner, launch_log_monitor_2
 from sstcore.config import (
     ConfigManager,
     SstDefaults,
@@ -86,7 +86,7 @@ app = SafeTyper(
 
 # Attach Single Commands (as well recommended with decorator)
 app.command(name="scanner")(launch_folder_scanner)
-app.command(name="monitor")(launch_monitor)
+app.command(name="monitor")(launch_log_monitor_2)
 
 
 # Attach SubApp with new Level of Namespace
@@ -106,7 +106,7 @@ def attach_handlers(app: SafeTyper) -> None:
         printer.danger(f"Selector failed: {error}")
 
 
-# Execute this in same file as app is created
+# Execute this in same file as the app is created
 attach_handlers(app)
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --

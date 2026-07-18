@@ -14,8 +14,6 @@ class SstModel(BaseModel):
 
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
-    # NEXT: attach new __fmt__
-
     @classmethod
     def build_from_file(cls, path: Path) -> Self:
         """Load saved state from json and build Model"""
