@@ -6,12 +6,16 @@ Collect and assemble mini-tools for example app
 
 from pathlib import Path
 
-from typer import Context
+from loguru import logger
+from typer import Context, Option
 
 from ...config import SstPaths
+from ...contract.cli import PanelDTO
+from ...contract.log import LogDTO
 from ...system import EventBus, System
 from ...tui import TreeSelectorApp
-from ...utils.path import any_root
+from ...tui.log_monitor import LogMonitorApp
+from ...utils.path import PathGuard, any_root
 from ...utils.print import printer
 from ...utils.scanner.summary_file import SummaryFileBox
 from .. import args as sargs
@@ -34,11 +38,44 @@ def empty(ctx: Context):  # WARN: remove in sstcore/main
     printer("Start of 'empty' function...")
     printer.danger("END")
     bus.emit(event_name="ui.panel", sender="empty", payload=ctx)
+    logger.debug("hello")
+    logger.success("it works")
+    panel = PanelDTO(text="dto check")
+    bus.emit(
+        event_name="sys.log",
+        sender="empty",
+        payload=panel,
+    )
+    printer(panel)
+    bus.emit(
+        event_name="sys.log", sender="empty", payload={"a": 1, "b": Path()}
+    )
     printer.success("End")
 
 
-@app.command("monitor")
-def launch_monitor(file: sargs.LogFile = None):  # TODO: improveCLI hint
+@app.command()
+def monitor2(
+    ctx: Context,
+    file: sargs.LogFile = None,
+    tail: bool = Option(True, help="Keep watching the file for new entries"),
+):
+    system: System = ctx.obj["system"]
+    _log_file: Path = PathGuard.file(
+        target=file or system.config.settings.log.log_file,
+        default_content="",
+        raise_error=False,
+    )
+    log_file = Path("/home/silvan/sstcore/logs/sstcore.jsonl")
+
+    def render_adapter(dto: LogDTO):
+        return printer.render(dto)  # NEXT: check adapter
+
+    app = LogMonitorApp(log_file, render_func=render_adapter, tail=tail)
+    app.run()
+
+
+@app.command()
+def monitor1(file: sargs.LogFile = None):  # TODO: improveCLI hint
     """Log Console Monitor: Watch new log file entries!"""
     # TASK: Log Monitor 2
     # - improve existing match and log tail
