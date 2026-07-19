@@ -1,4 +1,4 @@
-"""Create base infrastructure for events"""
+"""Provide Infrastructure for the Events"""
 
 __all__: list[str] = [
     "EventHandler",
@@ -88,5 +88,5 @@ class EventBus:
 def _get_matching_patterns(
     event_name: str, active_patterns: tuple[str, ...]
 ) -> tuple[str, ...]:
-    """Execute and especially Cache decoupled from the Bus"""
+    """Cache pattern matching decoupled from the Bus"""
     return tuple(p for p in active_patterns if fnmatch.fnmatch(event_name, p))

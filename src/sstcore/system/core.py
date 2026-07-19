@@ -36,6 +36,7 @@ from ..utils import Printer
 from ..utils import printer as global_printer
 from ..utils.log import LogSetupResult
 from ..utils.log.setup import setup_logging, setup_minimal_logging
+from .emitter import Emitter
 from .event_bus import EventBus
 from .register import BusRegistrationFunc, register_default_event_handler
 
@@ -119,3 +120,12 @@ class System:
     def emit(self, event_name: str, sender: str, **payload: Any) -> None:
         """Increase convenience for bus access"""
         self.bus.emit(event_name, sender, **payload)
+
+    @property
+    # WARN: untested
+    def emitter(self) -> Emitter:
+        if not hasattr(self, "_emitter"):
+            self._emitter = Emitter(
+                bus=self.bus, default_sender=self.config.project_name
+            )
+        return self._emitter

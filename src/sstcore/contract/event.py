@@ -15,10 +15,9 @@ __all__: list[str] = [
     "DataEvent",
 ]
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Protocol
 
 
 @dataclass(frozen=True)
@@ -27,13 +26,13 @@ class Event:
 
     name: str
     sender: str
-    payload: dict = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
 
 
-# IDEA: why not creating an Event locally and send it to the Bus?
-
-# TODO: modify for preloaded shortcuts, or maybe Functor
-type EmitFunc = Callable[[str, str, Any], None]
+class EmitFunc(Protocol):
+    def __call__(
+        self, event_name: str, sender: str, **payload: Any
+    ) -> None: ...
 
 
 class CliEvent(StrEnum):

@@ -8,6 +8,8 @@ Hold and prepare Global Singleton EventBus instance.
 
 """
 
+# TODO: synchronize with setup especially of System, and config/printer
+
 from collections.abc import Callable
 
 from loguru import logger
