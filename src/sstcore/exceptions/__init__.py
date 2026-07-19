@@ -1,5 +1,5 @@
 """
-SstError - Root of all Errors with amazing Cli/Log defaults
+SstError - Root of all Errors with amazing Cli and Log Defaults
 
 - others mainly stand-alone
 - (not implemented) RegistrySyncError maybe as Root for derived Registries

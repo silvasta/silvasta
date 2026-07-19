@@ -1,13 +1,28 @@
-# TODO: explain
+"""
+Define the Shape of Exceptions
+
+- SstError: The Root
+
+"""
+
+__all__: list[str] = [
+    "SstError",
+    "RegistrySyncError",
+    "NotImplementedDispatchError",
+    "NotImplementedMixinError",
+    "TuiSelectorError",
+    "PropertyNotInitializedError",
+]
 
 from typing import Any
 
-from rich.panel import Panel
-
-from ..utils.color import ColorBox
+from ..contract.cli import PanelDTO
+from ..contract.log import LogDTO
+from ..utils.color import ColorBox  # WARN: ColorBox???
 
 c = ColorBox()
 
+# IDEA: PathGuard Error??
 # NEXT: exceptions - must be complete until bump
 # TASK: here is precise work without any failure needed
 # - ensure root is 100% perfect
@@ -15,68 +30,73 @@ c = ColorBox()
 
 
 class SstError(Exception):
-    """Root of all Custom Exceptions"""
+    """Define the View and Behaviour of Custom Errors"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Store Kwargs as builtins.Exception only handles Args"""
         self.kwargs: dict = kwargs
-        # Exception handles *args and stores them in self.args
-        super().__init__(*args)  # Do NOT pass kwargs up to Exception
+        super().__init__(*args)
 
-    def __repr__(self):
-        attrs: str = ", ".join(
-            f"{k}={v!r}"
-            for k, v in vars(self).items()
-            if not k.startswith("_")
-        )
-        return f"{type(self).__name__}({attrs})"
+    def _modify_if_needed(self, rows: list[str]) -> None:
+        """Use this for modification in Subclasses"""
 
-    def __rich__(self):
-        """Provide Panel Template"""
+    @property
+    def _default(self) -> str:
+        return "nothing attached"
+
+    def __cli__(self) -> PanelDTO:
+        """Provide Data Transfer Object for CLI Rendering"""
 
         rows: list[str] = [
-            f"{c.r(self._name)}",
+            f"{c.r(self.name)}",
             f"{c.c('args')}    {self.args or self._default}",
             f"{c.c('kwargs')}  {self.kwargs or self._default}",
         ]
 
         self._modify_if_needed(rows)
 
-        return Panel(
-            "\n".join(rows),
-            title=c(self._title, color="bold white"),
-            border_style="red",
+        return PanelDTO(
+            text="\n".join(rows),
+            title=self.__rich__(),
+            frame="red",
             title_align="right",
         )
 
-    def _modify_if_needed(self, rows: list[str]):
-        """Use this for modification in Subclasses"""
-
     @property
-    def _title(self):
-        return f"{type(self).__name__[:-5]}{c.red('Error')}"
-
-    @property
-    def _name(self):
+    def name(self) -> str:
+        """Provide Name like __str__ because Exceptions use it for message"""
         return type(self).__name__
 
-    @property
-    def _default(self):
-        return "nothing attached"
+    def __rich__(self) -> str:
+        """Provide colorized Name"""
+        return f"{self.name[:-5]}{c.red('Error')}"
+
+    def __repr__(self):
+        """Provide Structured Data flattened to string"""
+        attributes: list[str] = [f"args={self.args!r}"]
+        attributes.extend(
+            f"{k}={v!r}"
+            for k, v in vars(self).items()
+            if not k.startswith("_")
+        )
+        return f"{self.name}({', '.join(attributes)})"
+
+    def __log__(self) -> LogDTO:
+        """Provide Structured Data for Log"""
+        return LogDTO(
+            message=str(self) or self.name,
+            level="ERROR",
+            metrics={"args": self.args, "kwargs": self.kwargs},
+            extra={"error_type": self.name},
+        )
 
 
-# IMPORTANT: MixinError! maybe BusError?
-
-# TASK: PathGuard Error??
-
-
-class RegistrySyncError(SstError):
+class RegistrySyncError(SstError):  # LATER: setup for FileTrackerRegistry
     """Raise when FileRegistry State mismatches physical local disk"""
-
-    # LATER: setup for different FileTrackerRegistry
 
 
 class NotImplementedDispatchError(SstError, NotImplementedError):
-    """Raise on missing TargetType for singledispatchmethod"""
+    """Raise on missing TargetType for singledispatch(method)"""
 
     def __init__(self, first: Any, *args: Any, **kwargs):
         self.first = first
@@ -96,7 +116,7 @@ class NotImplementedDispatchError(SstError, NotImplementedError):
 
 
 class NotImplementedMixinError(SstError, NotImplementedError):
-    """Raised when Mixin queue something mixed up"""
+    """Raise when Mixin queue somehow messed up"""
 
     def __init__(self, base, mixin, func):
         self.base = base
@@ -106,6 +126,8 @@ class NotImplementedMixinError(SstError, NotImplementedError):
 
 
 class TuiSelectorError(SstError):
+    """Raise when App cannot continue after Selection by User"""
+
     def __init__(self, message=None):
         if message is None:
             message = "It was an easy Selection... how can you Fail this?"
