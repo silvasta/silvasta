@@ -13,12 +13,12 @@ from ..exceptions import NotImplementedDispatchError
 
 
 @dataclass(frozen=True)
-class ErrorHandler[E: BaseException]:
+class ErrorHandler[Error: BaseException]:
     """Functor: Handle CLI Exception and Terminate"""
 
-    name: str  # LATER: think about how to generalize
-    func: Callable[[E], None]
-    exception_type: type[E]
+    name: str
+    func: Callable[[Error], None]
+    exception_type: type[Error]
     exit_code: int = 1
 
     @classmethod
@@ -29,7 +29,7 @@ class ErrorHandler[E: BaseException]:
 
         sig: inspect.Signature = inspect.signature(func)
         first_param: inspect.Parameter = next(iter(sig.parameters.values()))
-        inferred_type: type[E] = first_param.annotation
+        inferred_type: type[Error] = first_param.annotation
 
         return cls(
             name=name or getattr(func, "__name__", "handler"),
@@ -42,8 +42,9 @@ class ErrorHandler[E: BaseException]:
         return f"ErrorHandler[{self.exception_type.__name__}]"
 
     # LATER: think about how and if using: __call__
+    # - synchronize with EventHandler
 
-    def execute_safe(self, error: E) -> NoReturn:
+    def execute_safe(self, error: Error) -> NoReturn:
         """Executes the handler, then terminates the CLI safely."""
         try:
             self.func(error)

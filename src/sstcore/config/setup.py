@@ -7,29 +7,15 @@ Hold and prepare Global Singleton ConfigManager instance.
 - Expose global Singleton: `config: ConfigManager = sst_config()`
   (easy access e.g.: `sst_config().paths.summary_file(.xml)`)
 
-Example for Projects:
-
-```py
-# sachmis.config.manager:
-from sstcore.config import ConfigManager
-from sstcore.config.setup import setup_config_manager, sst_config
-
-from .defaults import Defaults
-from .names import Names
-from .paths import Paths
-from .settings import Settings
-
-type SachmisConfig = ConfigManager[Settings, Names, Defaults, Paths]
-
-def config_loader(setting_file: Path | None = None) -> SachmisConfig:
-    return setup_config_manager(
-        settings_cls=Settings,
-        paths_cls=Paths,
-        setting_file=setting_file,
-        project_name="sachmis",
-    )
-```
 """
+
+__all__: list[str] = [
+    "ConfigLoader",
+    "sst_config_loader",
+    "sst_config",
+    "set_global_config",
+    "create_config_manager",
+]
 
 from collections.abc import Callable
 from pathlib import Path
@@ -41,68 +27,87 @@ from .manager import ConfigManager
 from .paths import SstPaths
 from .settings import SstSettings
 
-_config: ConfigManager | None = None
+type ConfigLoader = Callable[..., ConfigManager]
 
-type ConfigLoader = Callable[[Path | None], ConfigManager]  # FIX:
+
+def sst_config_loader(
+    settings_cls=SstSettings,
+    paths_cls=SstPaths,
+    project_name: str = "sstcore",
+    home_setup: HomeSetup = HomeSetup.PROJECT,
+    project_root: Path | None = None,
+    #
+    use_global: bool = False,
+) -> ConfigLoader:
+    """Prepare Loader function ready to setup ConfigManager"""
+
+    def loader(
+        setting_file: Path | None = None,
+    ) -> ConfigManager:
+        return create_config_manager(
+            settings_cls=settings_cls,
+            paths_cls=paths_cls,
+            setting_file=setting_file,
+            project_name=project_name,
+            project_root=project_root,
+            home_setup=home_setup,
+            #
+            use_global=use_global,
+        )
+
+    return loader
+
+
+_config: ConfigManager | None = None
 
 
 def sst_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
-    """Fetch Global Singleton ConfigManager instance"""
+    """Fetch Global ConfigManager Singleton"""
 
     global _config
     if _config is None:
-        logger.warning("Config accessed before Bootstrap!")
-
-        if _allow_uninitialized:
-            logger.warning("Load config with SstSettings and SstPaths")
-            return setup_config_manager(SstSettings, SstPaths)
-
-        raise RuntimeError("No access to config without bootstrap!")
-    logger.debug("provide cached config")
+        raise RuntimeError("No access to global _config without bootstrap!")
+    logger.debug("provide cached _config")
 
     return _config
 
 
-def sst_config_loader(
-    setting_file: Path | None = None, project_name: str = "sstcore"
-) -> ConfigManager:
-    """Prepare Loader function ready to setup ConfigManager"""
-
-    return setup_config_manager(
-        settings_cls=SstSettings,
-        paths_cls=SstPaths,
-        setting_file=setting_file,
-        project_name=project_name,
-    )
-
-
-def setup_config_manager[TSettings: SstSettings, TPaths: SstPaths](
-    settings_cls: type[TSettings],
-    paths_cls: type[TPaths],
+def create_config_manager[TSettings: SstSettings, TPaths: SstPaths](
+    settings_cls: type[TSettings] | None,
+    paths_cls: type[TPaths] | None,
     setting_file: Path | None = None,
     project_name: str = "",
     project_root: Path | None = None,
     home_setup: HomeSetup = HomeSetup.PROJECT,
+    #
+    use_global: bool = False,
 ) -> ConfigManager:
     """Load ConfigManager explicit as one-time initialization"""
 
-    global _config
-    if _config is not None:
-        logger.warning(
-            "ConfigManager is already initialized, ignoring override!"
-        )
-        return _config
-
-    logger.info("Setup ConfigManager with explicit parameters...")
-
-    _config = ConfigManager(
-        settings_cls=settings_cls,
-        paths_cls=paths_cls,
+    config: ConfigManager = ConfigManager(
+        settings_cls=settings_cls or SstSettings,
+        paths_cls=paths_cls or SstPaths,
         setting_file=setting_file,
         project_name=project_name,
         project_root=project_root,
         home_setup=home_setup,
     )
-    logger.info("ConfigManager setup completed")
+    logger.info("ConfigManager setup complete")
+    if use_global:
+        set_global_config(config)
 
-    return _config
+    return config
+
+
+def set_global_config(config: ConfigManager | None) -> None:
+    """Register local System as new System or replace former"""
+
+    global _config
+    if _config is not None:
+        logger.warning(f"Replacing existing global _config: {_config!r}")
+    _config = config
+
+    if _config is None:
+        logger.info("Global config set to 'None'")
+    else:
+        logger.info(f"New config set as global: {_config!r}")

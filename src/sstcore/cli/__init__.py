@@ -1,7 +1,7 @@
 """
 Provide Setup for quick access to advanced Typer features
 
-- SafeTyper: Register ExceptionHandlers and bootstrap Typer with Log and Config
+- SafeTyper: Bootstrap Log and Config, Register Error- and EventHandler
 
 - sargs: Provide generalized Typer Arguments and Options
 

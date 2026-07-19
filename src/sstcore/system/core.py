@@ -14,9 +14,6 @@ Zero effort access for scripts and small projects:
 Warning:
 - Don't Mix both approaches except you know exactly what you are doing!
 
-Note:
-- This module will likely transform to a package with core.system module
-
 Ideas:
 - Active GlobalEye (similar to Passive EventBus) -> EventInterceptor
 - fetch_system with custom singleton and loader (similar to config)
@@ -25,35 +22,30 @@ Ideas:
 
 __all__: list = [
     "System",
-    "fetch_system",
+    "SystemLoader",
+    "sst_system_loader",
+    "sst_system",
+    "set_global_system",
+    "set_all_globals",
+    "remove_all_globals",
 ]
+
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Self
 
+from loguru import logger
+
 from ..config import ConfigManager
-from ..config.setup import ConfigLoader, sst_config_loader
+from ..config.setup import ConfigLoader, set_global_config, sst_config_loader
+from ..contract.event import CoreEvent, EventName
 from ..utils import Printer
 from ..utils import printer as global_printer
 from ..utils.log import LogSetupResult
 from ..utils.log.setup import setup_logging, setup_minimal_logging
+from .bus import EventBus
 from .emitter import Emitter
-from .event_bus import EventBus
-from .register import BusRegistrationFunc, register_default_event_handler
-
-
-# NEXT: name, synchronyze with config, bus - or Delete?
-# - other approach, bootstrap overrides this, for edge cases
-def fetch_system(*, _allow_uninitialized: bool = False) -> System:
-    global _system
-    if _system is None:
-        if _allow_uninitialized:
-            _system = System.bootstrap()
-        else:
-            raise RuntimeError("System not bootstrapped")
-    return _system
-
-
-_system: System | None = None
+from .setup import BusLoader, set_global_bus, sst_bus_loader
 
 
 class System:
@@ -69,63 +61,137 @@ class System:
         self.printer: Printer = printer
         self.bus: EventBus = bus
 
-        # TODO: function of printer? printer.set_...
         self.printer.project_name = config.project_name
+        # TODO: function of printer? printer.set_...
         self.printer.project_version = config.project_version
+
+    @property
+    def emitter(self) -> Emitter:  # TEST: use Emitter in Project
+        if not hasattr(self, "_emitter"):
+            self._emitter = Emitter(
+                bus=self.bus, default_sender=self.config.project_name
+            )
+        return self._emitter
+
+    def emit(self, event_name: EventName, sender: str, **payload: Any) -> None:
+        """Increase convenience for bus access"""
+        self.bus.emit(event_name, sender, **payload)
 
     @classmethod
     def bootstrap(
         cls,
         *,
         config_loader: ConfigLoader | None = None,
-        setting_file: Path | None = None,
-        use_default_bus_handler: bool = True,
-        attach: BusRegistrationFunc | None = None,
+        bus_loader: BusLoader | None = None,
         printer: Printer | None = None,
+        setting_file: Path | None = None,
         verbose: bool = False,
         quiet: bool = False,
+        use_globals: bool = False,
     ) -> Self:
         """Assemble Config, wire Bus, ensure Printer and Compose to System"""
 
-        # shadow bootstrap noise but show minimal output if bootstrap fails
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
+        # shadow bootstrap noise but show minimal output if bootstrap fails
 
-        loader: ConfigLoader = config_loader or sst_config_loader
-        # create global singleton with sst_config_loader
-        config: ConfigManager = loader(setting_file)
+        config_loader: ConfigLoader = config_loader or sst_config_loader()
+        config: ConfigManager = config_loader(setting_file)
 
         log_result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
             quiet=quiet,
             param=config.settings.log,
-            # TODO: where to print? emit print+log here? check scroll
-        )
-        config.log_result = log_result  # LATER: better attach
+        )  # LATER: attach with config.func(*) and update LogSetupParam
+        config.log_result = log_result
 
-        # NEXT: use bus_loader function instead?
-        bus = EventBus()  # obviously no singleton, what if ever needed?
-        if use_default_bus_handler:
-            register_default_event_handler(bus)
-        if attach:  # BusRegistrationFunc
-            attach(bus)
+        bus_loader: BusLoader = bus_loader or sst_bus_loader()
+        bus: EventBus = bus_loader()
 
         system_printer: Printer = printer or global_printer
-        # printer (so far) always exists as (stateles) global singleton
 
         system: Self = cls(config=config, printer=system_printer, bus=bus)
-        system.emit(event_name="sys.log", sender="System", msg="Setup Ready!")
+        system.emit(event_name=CoreEvent.BUS_READY, sender="System")
+
+        if use_globals:
+            set_all_globals(system, config, bus)
 
         return system
 
-    def emit(self, event_name: str, sender: str, **payload: Any) -> None:
-        """Increase convenience for bus access"""
-        self.bus.emit(event_name, sender, **payload)
 
-    @property
-    # WARN: untested
-    def emitter(self) -> Emitter:
-        if not hasattr(self, "_emitter"):
-            self._emitter = Emitter(
-                bus=self.bus, default_sender=self.config.project_name
-            )
-        return self._emitter
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### setup
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+type SystemLoader = Callable[..., System]
+
+
+def sst_system_loader(  # intended for user
+    config_loader: ConfigLoader | None = None,
+    bus_loader: BusLoader | None = None,
+    printer: Printer | None = None,
+    use_all_globals: bool = False,
+) -> SystemLoader:
+    """Prepare Loader function ready to setup System"""
+
+    def loader(  # collected in SafeTyper
+        setting_file: Path | None = None,
+        verbose: bool = False,
+        quiet: bool = False,
+        # allow override from cli
+        use_globals: bool = use_all_globals,
+    ) -> System:
+        system: System = System.bootstrap(
+            config_loader=config_loader,
+            bus_loader=bus_loader,
+            printer=printer,
+            setting_file=setting_file,
+            verbose=verbose,
+            quiet=quiet,
+            #
+            use_globals=use_globals,
+        )
+        return system
+
+    return loader
+
+
+_system: System | None = None
+
+
+def sst_system() -> System:
+    """Fetch Global System Singleton"""
+
+    global _system
+    if _system is None:
+        raise RuntimeError("No access to global _system without bootstrap!")
+    logger.debug("provide cached _system")
+
+    return _system
+
+
+def set_global_system(system: System | None) -> None:
+    """Register local System as new System or replace former"""
+
+    global _system
+    if _system is not None:
+        logger.warning(f"Replacing existing global _system: {_system!r}")
+
+    _system = system
+
+    if _system is None:
+        logger.info("Global system set to 'None'")
+    else:
+        logger.info(f"New system set as global: {_system!r}")
+
+
+def set_all_globals(
+    system: System | None, config: ConfigManager | None, bus: EventBus | None
+):
+    set_global_system(system)
+    set_global_config(config)
+    set_global_bus(bus)
+
+
+def remove_all_globals():
+    set_all_globals(system=None, config=None, bus=None)

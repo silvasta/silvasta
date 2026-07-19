@@ -8,56 +8,87 @@ Hold and prepare Global Singleton EventBus instance.
 
 """
 
-# TODO: synchronize with setup especially of System, and config/printer
-
+__all__: list[str] = [
+    "BusLoader",
+    "sst_bus_loader",
+    "sst_bus",
+    "create_event_bus",
+    "set_global_bus",
+]
 from collections.abc import Callable
 
 from loguru import logger
 
-from .event_bus import EventBus
-from .register import register_default_event_handler
+from .bus import EventBus
+from .register import BusRegistrationFunc, register_default_event_handler
+
+type BusLoader = Callable[..., EventBus]
+
+
+def sst_bus_loader(
+    bus_registration: BusRegistrationFunc | None = None,
+    use_default_registration=True,
+    #
+    use_global=False,
+) -> BusLoader:
+    """Prepare Loader function ready to setup EventBus"""
+
+    def loader() -> EventBus:
+        return create_event_bus(
+            bus_registration=bus_registration,
+            use_default_registration=use_default_registration,
+            use_global=use_global,
+        )
+
+    return loader
+
 
 _bus: EventBus | None = None
 
-type BusLoader = Callable[[], EventBus]
 
-
-def sst_bus(*, _allow_uninitialized: bool = False) -> EventBus:
-    """Fetch Global Singleton EventBus instance"""
+def sst_bus() -> EventBus:
+    """Fetch Global EventBus Singleton"""
 
     global _bus
     if _bus is None:
-        logger.warning("Bus accessed before Bootstrap!")
-
-        if _allow_uninitialized:
-            logger.warning("Loading Bus with default setup")
-            return setup_event_bus()
-
-        raise RuntimeError("No access to bus without bootstrap!")
-    logger.debug("provide cached config")
+        raise RuntimeError("No access to global _bus without bootstrap!")
+    logger.debug("provide cached bus")
 
     return _bus
 
 
-def sst_bus_loader() -> EventBus:
-    """Prepare Loader function ready to setup EventBus"""
-
-    return setup_event_bus()
-
-
-def setup_event_bus():
+def create_event_bus(
+    bus_registration: BusRegistrationFunc | None = None,
+    use_default_registration=True,
+    #
+    use_global=False,
+) -> EventBus:
     """Load EventBus explicit as one-time initialization"""
 
+    bus = EventBus()
+
+    if use_default_registration:
+        register_default_event_handler(bus)
+
+    if bus_registration:
+        bus_registration(bus)
+
+    logger.info("EventBus setup complete")
+    if use_global:
+        set_global_bus(bus)
+
+    return bus
+
+
+def set_global_bus(bus: EventBus | None) -> None:
+    """Register local EventBus as new EventBus or replace former"""
     global _bus
     if _bus is not None:
-        logger.warning("EventBus is already initialized, ignoring override!")
-        return _bus
+        logger.warning(f"Replacing existing global _bus: {_bus!r}")
 
-    logger.info("Setup EventBus with default handler...")
+    _bus = bus
 
-    _bus = EventBus()
-    register_default_event_handler(_bus)
-
-    logger.info("EventBus setup completed")
-
-    return _bus
+    if _bus is None:
+        logger.info("Global bus set to 'None'")
+    else:
+        logger.info(f"New bus set as global: {_bus!r}")

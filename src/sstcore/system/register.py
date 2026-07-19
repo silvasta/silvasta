@@ -8,13 +8,15 @@ from loguru import logger
 from ..contract.event import CliEvent, CoreEvent, DataEvent
 from ..utils.log.event_handler import handle_log_event
 from ..utils.print.event_handler import handle_cli_event
-from .event_bus import EventBus, EventHandler
+from .bus import EventBus, EventHandler
 
 type BusRegistrationFunc = Callable[[EventBus], None]
 
 
 def register_default_event_handler(bus: EventBus) -> None:
-    """Attach EventHandler to EventBus registry by event_name"""
+    """Attach EventHandler to EventBus registry by Event- Name or Pattern"""
+
+    logger.info("Setup EventBus with Default Handler...")
 
     critical_events: tuple[StrEnum, ...] = (
         DataEvent.REGISTRY_ERROR,
@@ -34,6 +36,8 @@ def register_default_event_handler(bus: EventBus) -> None:
 
     # Global Subscriptions
     bus.subscribe_all(TELEMETRY_HANDLER)
+
+    # TODO: collect events without any handler
 
 
 LOG_HANDLER = EventHandler(

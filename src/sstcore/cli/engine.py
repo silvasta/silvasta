@@ -9,20 +9,15 @@ from pathlib import Path
 
 import typer
 from loguru import logger
-from typer import Context
 
-from ..config.setup import ConfigLoader, sst_config_loader
-from ..system.core import System, fetch_system
+from ..system.core import System, SystemLoader, sst_system_loader
+from ..utils.path import HomeSetup
+from ..utils.view import presets, view
 from . import args, scroll
 from .handler import ErrorRegistry
 
 
-def get_system(ctx: Context) -> System:
-    if isinstance(ctx.obj, dict) and "system" in ctx.obj:
-        return ctx.obj["system"]
-    return fetch_system(_allow_uninitialized=True)
-
-
+@view(spec=presets.safe_typer_view_builder())
 class SafeTyper(typer.Typer):
     """
     Lead Custom Typer Setup with Config, Log and Error handling
@@ -33,9 +28,12 @@ class SafeTyper(typer.Typer):
 
     """  # TODO: text to system
 
+    system: System
+    errors: ErrorRegistry
+
     def __init__(
         self,
-        config_loader: ConfigLoader | None = None,
+        system_loader: SystemLoader | None = None,
         error_registry: ErrorRegistry | None = None,
         **kwargs,
     ):
@@ -44,10 +42,8 @@ class SafeTyper(typer.Typer):
         kwargs.setdefault("no_args_is_help", True)
         super().__init__(**kwargs)
 
+        self._system_loader: SystemLoader | None = system_loader
         self.errors: ErrorRegistry = error_registry or ErrorRegistry()
-        self.system: System | None = None
-
-        self._config_loader: ConfigLoader = config_loader or sst_config_loader
 
         self._attach_internal_callback()
 
@@ -60,26 +56,27 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Config and Logging and show Status"""
 
-        system: System = System.bootstrap(
-            config_loader=self._config_loader,
-            setting_file=setting_file,
-            verbose=verbose,
-            quiet=quiet,
-        )
-        self.system: System = system
+        loader: SystemLoader = self._system_loader or sst_system_loader()
 
+        self.system: System = loader(
+            setting_file=setting_file, verbose=verbose, quiet=quiet
+        )
         ctx.obj = ctx.obj or {}
-        ctx.obj["system"] = system
-        ctx.obj["config"] = system.config
-        ctx.obj["printer"] = system.printer
-        ctx.obj["bus"] = system.bus
+        ctx.obj.update(
+            {
+                "system": self.system,
+                "config": self.system.config,
+                "printer": self.system.printer,
+                "bus": self.system.bus,
+            }
+        )
 
         if not quiet:
             scroll.safe_typer.intro(project_name=ctx.info_name)
             scroll.safe_typer.setup(
-                system.config,  # TODO: send system! (emit!)
-                self._config_loader,
-                system.config.log_result,
+                self.system.config,  # TODO: send system! (emit!)
+                loader,
+                self.system.config.log_result,
             )
 
     def _attach_internal_callback(self):
@@ -94,6 +91,7 @@ class SafeTyper(typer.Typer):
         ):
             if ctx.parent is None:
                 self._run_main_callback(ctx, verbose, quiet, setting_file)
+                # AI: here the forwardes error_registry and system_loader is forwarded, or ignored?
             else:
                 self._run_sub_callback(ctx)
 

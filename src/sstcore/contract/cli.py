@@ -29,7 +29,7 @@ class CliRenderable(Protocol):
     def __cli__(self) -> CliDTO: ...
 
 
-class _DtoBase:
+class _DtoBase:  # LOG???
     def __cli__(self) -> Self:
         return self
 

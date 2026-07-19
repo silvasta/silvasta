@@ -1,8 +1,14 @@
-"""Provide Infrastructure for the Events"""
+"""
+Provide Infrastructure for Events
+
+- EventBus: Route Events by name to registred EventHandler
+- EventHandler: Process Event with optional Error handling
+
+"""
 
 __all__: list[str] = [
-    "EventHandler",
     "EventBus",
+    "EventHandler",
 ]
 
 import fnmatch
@@ -12,12 +18,12 @@ from functools import lru_cache
 
 from loguru import logger
 
-from ..contract.event import Event
+from ..contract.event import Event, EventName, EventPattern
 
 
 @dataclass(frozen=True)
 class EventHandler:
-    """Process Events from the bus in observable Environment"""
+    """Process Events emmited from the bus in observable Environment"""
 
     name: str
     func: Callable[[Event], None]
@@ -25,6 +31,9 @@ class EventHandler:
 
     def __str__(self) -> str:
         return f"EventHandler[{self.name}]"
+
+    # LATER: think about generic
+    # - synchronize with ErrorHandler
 
     def __call__(self, event: Event) -> None:
         """Execute handler function and manage fail if flag is set"""
@@ -42,51 +51,51 @@ class EventBus:
     """Enable decoupled state propagation for synchronous Events"""
 
     def __init__(self) -> None:
-        self._subscribers: dict[str, list[EventHandler]] = {}
+        self._subscribers: dict[EventPattern, list[EventHandler]] = {}
         self._global_subscribers: list[EventHandler] = []
 
     def subscribe_all(self, handler: EventHandler) -> None:
         """Attach global handler as subscriber to all events"""
         self._global_subscribers.append(handler)
 
-    def subscribe(self, event_name: str, handler: EventHandler) -> None:
+    def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
         """Attach handler as subscriber to specific event"""
-        self._subscribers.setdefault(event_name, []).append(handler)
+        self._subscribers.setdefault(name, []).append(handler)
 
-    def emit(self, event_name: str, sender: str, **payload) -> None:
+    def emit(self, event_name: EventName, sender: str, **payload) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
-        # WARN: validation payload?
         event = Event(name=event_name, sender=sender, payload=payload)
 
         for handler in self._global_subscribers:
             handler(event)
 
-        for handler in self._get_event_subscribers(event_name):
+        for handler in self._match_subscribers(event_name):
             handler(event)
 
-    def _get_event_subscribers(self, event_name: str) -> list[EventHandler]:
-        """Filter specific subscribers by name LATER: by wildcard"""
-        return self._subscribers.get(event_name, [])
+    def _match_subscribers(
+        self, event_name: EventName
+    ) -> tuple[EventHandler, ...]:
+        """Filter subscribers by event name and wildcard pattern"""
 
-    def _match_subscribers(self, event_name: str) -> tuple[EventHandler, ...]:
-        """Filter subscribers by wildcard pattern."""
+        subscribers: tuple[EventPattern, ...] = tuple(self._subscribers.keys())
 
-        matched_patterns: tuple[str, ...] = _get_matching_patterns(
-            event_name, tuple(self._subscribers.keys())
-        )  # tuple is hashable -> needed for lru_cache
+        matched_handlers: list[EventHandler] = [
+            handler
+            for pattern in _get_patterns(event_name, subscribers)
+            for handler in self._subscribers[pattern]
+        ]
 
-        matched_handlers: list[EventHandler] = []
-        for pattern in matched_patterns:
-            matched_handlers.extend(self._subscribers[pattern])
-
-        # remove duplicates while preserving order
         return tuple(dict.fromkeys(matched_handlers))
 
 
 @lru_cache(maxsize=256)
-def _get_matching_patterns(
-    event_name: str, active_patterns: tuple[str, ...]
-) -> tuple[str, ...]:
-    """Cache pattern matching decoupled from the Bus"""
-    return tuple(p for p in active_patterns if fnmatch.fnmatch(event_name, p))
+def _get_patterns(
+    event_name: EventName, active_patterns: tuple[EventPattern, ...]
+) -> tuple[EventPattern, ...]:
+    """Match pattern and cache results decoupled from the Bus"""
+    return tuple(
+        pattern
+        for pattern in active_patterns
+        if fnmatch.fnmatch(event_name, pattern)
+    )

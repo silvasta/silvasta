@@ -1,7 +1,7 @@
 """
 Wire the Event Infrastructure.
 
-- Provide EventBus with loader, handler and global access if needed
+- Provide EventBus with loader, handler and if needed, global access
 
 """  # TODO: adapt, move to Bus
 
@@ -9,13 +9,15 @@ __all__: list[str] = [
     "System",
     "EventBus",
     "EventHandler",
-    "Event",
     "BusRegistrationFunc",
     "sst_bus",
+    "EmitFunctor",
+    "Emitter",
 ]
 
 
+from .bus import EventBus, EventHandler
 from .core import System
-from .event_bus import Event, EventBus, EventHandler
+from .emitter import EmitFunctor, Emitter
 from .register import BusRegistrationFunc
 from .setup import sst_bus
