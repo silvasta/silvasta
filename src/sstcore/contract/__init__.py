@@ -1,5 +1,5 @@
 """
-Define the Shape and Structure of Classes.
+Define the Shape and Structure of Functions and Classes.
 
 - Check the description in the by topic sorted modules
 

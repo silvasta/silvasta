@@ -12,7 +12,8 @@ from rich.padding import Padding
 from rich.theme import Theme
 
 from ...contract.cli import CliDTO, CliRenderable
-from ...contract.external import RenderableType
+from ...contract.external import RenderableType, RichRenderable
+from ...contract.log import LogDTO, LogSerializable
 from ..color import Palette, colorize
 from ..color.palette import BASE_PALETTE
 from .blueprint import Modus, Printer
@@ -23,6 +24,13 @@ class PrinterMeta:
 
     project_name: str = "App"
     project_version: str = "0.0.0"
+
+    def set_project_meta(self, name: str = "", version: str = "") -> None:
+        """Attach Project specific information for Printer layouts"""
+        if name:
+            self.project_name: str = name
+        if version:
+            self.project_version: str = name
 
     @property
     def project_info(self) -> str:
@@ -38,16 +46,20 @@ class PrinterBase(PrinterMeta):
     def __init__(self: Printer, palette: Palette | None = None):
         self.palette: Palette = palette or BASE_PALETTE
         self.load_theme()
-        # NO super() here, this is Level 0
 
-        # LATER:
-        # printer.load(dict_theme or palette or rich_theme or console)?
-        # - check as well ColorBox/Palette, reduce to 1 point
+    def print(self: Printer, *args, **kwargs):
+        """Forward directly to Console"""
+        # LATER: maybe at least normalize?
+        self.console.print(*args, **kwargs)
 
     def load_theme(self: Printer, theme: dict[str, str] | None = None):
         """Attach theme to printer and apply to Console"""
         self.theme: Theme = Theme(theme) if theme else self.palette.to_rich()
         self.console = Console(theme=self.theme)
+
+        # LATER:
+        # printer.load(dict_theme or palette or rich_theme or console)?
+        # - check as well ColorBox/Palette, reduce to 1 point
 
     def preview_themes(self: Printer):
         """Show all styles of rich Theme in Panel"""
@@ -107,6 +119,7 @@ class PrinterCore(PrinterModus):
             case Modus.DEBUG:
                 print("Renderable: ", target, "kwargs: ", kwargs)
                 return
+            # TODO: case PRINT: -> console?
             case Modus.NULL:
                 return
             case Modus.EMIT:
@@ -114,29 +127,35 @@ class PrinterCore(PrinterModus):
             case Modus.RICH:
                 pass
 
-        if isinstance(target, type):
-            target: str = colorize.modules(  # MOVE: normalize
-                target,
-                project_color="cyan",
-                module_color="green",
-                target_color="purple",
-            )
+        match target:
+            case type():
+                target: str = colorize.modules(  # MOVE: normalize
+                    target,
+                    project_color="cyan",
+                    module_color="green",
+                    target_color="purple",
+                )
+            case CliRenderable():
+                target: CliDTO = target.__cli__()
+            case LogSerializable():
+                target: LogDTO = target.__log__()
 
-        if isinstance(target, CliRenderable):
-            target: CliDTO = target.__cli__()
+        match target:
+            case CliDTO() | LogDTO():
+                renderable: RichRenderable = self.render(target)
+                print("dto")
+            case ConsoleRenderable() | RichCast():
+                renderable: RichRenderable = target
+            case _:
+                # FIX: pydantic goes trough..
+                renderable: str = self.normalize(target)
 
-        if isinstance(target, CliDTO):  # TODO: log?
-            indent: int = target.indent
-            renderable: RenderableType = self.render(target)
-        else:
-            indent: int = kwargs.pop("indent", 0)
-            if isinstance(target, (ConsoleRenderable, RichCast)):
-                # WARN: fail fixed for rich.Panel or others???
-                renderable: RenderableType = target
-            else:
-                renderable: RenderableType = self.normalize(target)
+        indent: int = getattr(target, "indent", kwargs.pop("indent", 0))
 
-        if indent and renderable is not None:
-            renderable = Padding(renderable, (0, 0, 0, indent))
+        i_hope_it_renders: RenderableType = (
+            Padding(renderable, (0, 0, 0, indent))
+            if indent and renderable is not None
+            else renderable
+        )
 
-        self.console.print(renderable, **kwargs)
+        self.console.print(i_hope_it_renders, **kwargs)

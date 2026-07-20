@@ -16,8 +16,18 @@ from .registry import Cli, Log, Repr, Rich, Str
 def printer_view_builder() -> ViewBuilder:
     return ViewBuilder(
         cli=Cli.BAR,
-        str=Str.DEFAULT,
+        str=Str.SHORT,
         rich=Rich.SHORT,
         repr=Repr.DEFAULT,
+        log=Log.FULL,
+    )
+
+
+def safe_typer_view_builder() -> ViewBuilder:
+    return ViewBuilder(
+        cli=Cli.PANEL,
+        str=Str.SHORT,
+        rich=Rich.MODULE,
+        repr=Repr.FULL,
         log=Log.FULL,
     )

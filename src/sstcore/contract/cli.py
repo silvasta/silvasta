@@ -104,7 +104,7 @@ class PanelDTO(CliDTO):
     subtitle_align: AlignMethod = "right"
     box: Box = ROUNDED
     expand: bool = True
-    padding: tuple = (0, 0)
+    padding: tuple = (0, 1)
     metrics: dict[str, Any] = field(default_factory=dict)
 
     _content_field = "text"
