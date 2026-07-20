@@ -11,6 +11,12 @@ from .xdg import XdgHomes
 # - somehow paired with dataclass but able to boot all 3 together?
 # -> so far too unstable and error prone...
 
+# NEXT: use detection from CWD, with some defaults
+# - split into crititcal and other files
+# - critical: settings, some data
+# - other: summary_file, caches, some data
+# Maybe as well some global, but avoid trap for multiple installs on 1 system
+
 
 class HomeSetup(StrEnum):
     GLOBAL = auto()
@@ -31,6 +37,7 @@ class HomeSetup(StrEnum):
 
         self._project_name: str | None = project_name
         self._project_root: Path | None = project_root or find_project_root()
+
         self._local_root: Path | None = local_root
 
         # print("xxxx")
@@ -45,6 +52,7 @@ class HomeSetup(StrEnum):
             case HomeSetup.PROJECT:
                 if self._project_root is None:
                     logger.info("HomeSetup.PROJECT Boots with toml_search!")
+                    # FIX: crash yes but catch when switch to local is desired
                 self._project_root: Path = project_root or get_project_root()
                 # print("xxxx")
                 # print(f"x2 project_root: {self._project_root}")
@@ -83,6 +91,8 @@ class HomeSetup(StrEnum):
 
     @property
     def root(self) -> Path:
+        # NEXT:
+        # TODO: auto switch to local
         # print(f"x4project_root: {self._project_root}")
         # print(self._local_root)
         # print("xxxx")

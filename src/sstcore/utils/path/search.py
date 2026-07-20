@@ -28,27 +28,21 @@ def recursive_parent(path: Path, parent_dir_name: str) -> Path | None:
 
 
 def any_root() -> Path:
-    return find_project_root(strict=False) or Path.cwd()
+    return find_project_root() or Path.cwd()
 
 
 def find_project_root(
     start: Path | None = None,
     indicator: str = "pyproject.toml",
-    strict=False,
 ) -> Path | None:
-    """Call Recursive Root search function with Project arguments"""
+    """Search Project Root"""
     start: Path = start or Path.cwd()
 
     if project_root := recursive_root(path=start, indicator=indicator):
         logger.debug(f"found {project_root=}")
         return project_root
-
-    msg = f"recursive_root failed for: {indicator=}, {start=}"
-    if strict:
-        logger.error(msg)  # LATER: ProjectRootMissingError? with indicator,
-        raise FileNotFoundError("No Project Root found!")
     else:
-        logger.info(msg)
+        logger.info(f"No Project Root found: {indicator=}, {start=}")
         return None
 
 
@@ -56,9 +50,10 @@ def get_project_root(
     start: Path | None = None,
     indicator: str = "pyproject.toml",
 ) -> Path:
-    """Get project root or FileNotFoundError."""
-    if not (project_root := find_project_root(start, indicator, strict=True)):
-        logger.error("utils.path.search: (find_)project_root pipeline broken!")
-        raise FileNotFoundError("No Project Root found!")
+    """Project Root or Raise"""
 
-    return project_root
+    if project_root := find_project_root(start, indicator):
+        return project_root
+
+    # TASK: together with PathGuardError, including indicator
+    raise FileNotFoundError(f"No Project Root found: {indicator=}, {start=}")

@@ -53,13 +53,17 @@ class SafeTyper(typer.Typer):
         verbose: bool,
         quiet: bool,
         setting_file: Path | None,
+        home: HomeSetup = HomeSetup.PROJECT,
     ):
         """Setup Config and Logging and show Status"""
 
         loader: SystemLoader = self._system_loader or sst_system_loader()
 
         self.system: System = loader(
-            setting_file=setting_file, verbose=verbose, quiet=quiet
+            verbose=verbose,
+            quiet=quiet,
+            setting_file=setting_file,
+            home=home,
         )
         ctx.obj = ctx.obj or {}
         ctx.obj.update(
@@ -88,10 +92,12 @@ class SafeTyper(typer.Typer):
             verbose: args.Verbose = False,
             quiet: args.Quiet = False,
             setting_file: args.SettingFile = None,
+            home: HomeSetup = HomeSetup.PROJECT,
         ):
             if ctx.parent is None:
-                self._run_main_callback(ctx, verbose, quiet, setting_file)
-                # AI: here the forwardes error_registry and system_loader is forwarded, or ignored?
+                self._run_main_callback(
+                    ctx, verbose, quiet, setting_file, home
+                )
             else:
                 self._run_sub_callback(ctx)
 

@@ -11,16 +11,11 @@ from typing import cast
 
 import typer
 
-from ..utils import PathGuard, day_count, printer
+from ..utils import PathGuard, printer
 from ..utils.color import ColorBox
 from ..utils.path import HomeSetup
 from .defaults import SstDefaults
-from .names import ParsedName, SstNames
-
-summary_file = ParsedName(  # MOVE: but where?
-    pattern="{day}_summary.{suffix}",
-    keys=["day", "suffix"],
-)
+from .names import SstNames
 
 
 class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
@@ -103,7 +98,8 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         return scan_root / ".sst_scanner_cache.json"
 
     @PathGuard.unique(ensure_parent=True)
+    # NEXT:
+    # TODO: auto switch to local
     def summary_file(self, suffix: str = ".md") -> Path:
-        return self.data_dir / summary_file(
-            {"day": str(day_count()), "suffix": suffix}
-        )
+        filename: str = self._names.summary_file(suffix=suffix)
+        return self.data_dir / filename

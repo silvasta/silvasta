@@ -20,6 +20,9 @@ Ideas:
 
 """
 
+from sstcore.config.manager import SstConfig
+from sstcore.utils.path import HomeSetup
+
 __all__: list = [
     "System",
     "SystemLoader",
@@ -51,13 +54,13 @@ from .setup import BusLoader, set_global_bus, sst_bus_loader
 class System:
     """Combine the Essentials to work together as System"""
 
-    def __init__(
+    def __init__[Config: SstConfig](
         self,
-        config: ConfigManager,
+        config: Config,
         printer: Printer,
         bus: EventBus,
     ):
-        self.config: ConfigManager = config
+        self.config: Config = config
         self.printer: Printer = printer
         self.bus: EventBus = bus
 
@@ -78,15 +81,17 @@ class System:
         self.bus.emit(event_name, sender, **payload)
 
     @classmethod
-    def bootstrap(
+    def bootstrap[Config: SstConfig](
         cls,
         *,
-        config_loader: ConfigLoader | None = None,
+        config_loader: ConfigLoader[Config] | None = None,
         bus_loader: BusLoader | None = None,
         printer: Printer | None = None,
         setting_file: Path | None = None,
         verbose: bool = False,
         quiet: bool = False,
+        home: HomeSetup = HomeSetup.PROJECT,
+        #
         use_globals: bool = False,
     ) -> Self:
         """Assemble Config, wire Bus, ensure Printer and Compose to System"""
@@ -94,8 +99,10 @@ class System:
         setup_minimal_logging("DEBUG" if verbose else "WARNING")
         # shadow bootstrap noise but show minimal output if bootstrap fails
 
-        config_loader: ConfigLoader = config_loader or sst_config_loader()
-        config: ConfigManager = config_loader(setting_file)
+        config_loader: ConfigLoader[Config] = (
+            config_loader or sst_config_loader()
+        )
+        config: Config = config_loader(setting_file, home)
 
         log_result: LogSetupResult = setup_logging(
             log_level_override="DEBUG" if verbose else None,
@@ -126,8 +133,8 @@ class System:
 type SystemLoader = Callable[..., System]
 
 
-def sst_system_loader(  # intended for user
-    config_loader: ConfigLoader | None = None,
+def sst_system_loader[Config: SstConfig](  # intended for user
+    config_loader: ConfigLoader[Config] | None = None,
     bus_loader: BusLoader | None = None,
     printer: Printer | None = None,
     use_all_globals: bool = False,
@@ -135,9 +142,10 @@ def sst_system_loader(  # intended for user
     """Prepare Loader function ready to setup System"""
 
     def loader(  # collected in SafeTyper
-        setting_file: Path | None = None,
         verbose: bool = False,
         quiet: bool = False,
+        setting_file: Path | None = None,
+        home: HomeSetup = HomeSetup.PROJECT,
         # allow override from cli
         use_globals: bool = use_all_globals,
     ) -> System:
@@ -145,9 +153,10 @@ def sst_system_loader(  # intended for user
             config_loader=config_loader,
             bus_loader=bus_loader,
             printer=printer,
-            setting_file=setting_file,
             verbose=verbose,
             quiet=quiet,
+            setting_file=setting_file,
+            home=home,
             #
             use_globals=use_globals,
         )

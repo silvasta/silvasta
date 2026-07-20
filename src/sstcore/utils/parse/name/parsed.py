@@ -13,7 +13,7 @@ __all__: list[str] = [
 class ParsedName[ModelT: BaseModel](NameParser):
     """Switch bidirectional between Keywords and String"""
 
-    model_cls: type[ModelT] | None = None
+    model_cls: type[ModelT] | None = None  # LATER: needed?
 
     def __init__(
         self,

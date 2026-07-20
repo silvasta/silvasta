@@ -23,14 +23,14 @@ from pathlib import Path
 from loguru import logger
 
 from ..utils.path import HomeSetup
-from .manager import ConfigManager
+from .manager import ConfigManager, SstConfig
 from .paths import SstPaths
 from .settings import SstSettings
 
-type ConfigLoader = Callable[..., ConfigManager]
+type ConfigLoader[Config: ConfigManager] = Callable[..., Config]
 
 
-def sst_config_loader(
+def sst_config_loader[Config: SstConfig](
     settings_cls=SstSettings,
     paths_cls=SstPaths,
     project_name: str = "sstcore",
@@ -38,11 +38,12 @@ def sst_config_loader(
     project_root: Path | None = None,
     #
     use_global: bool = False,
-) -> ConfigLoader:
+) -> ConfigLoader[Config]:
     """Prepare Loader function ready to setup ConfigManager"""
 
-    def loader(
+    def loader(  # CLI input
         setting_file: Path | None = None,
+        home: HomeSetup = home_setup,
     ) -> ConfigManager:
         return create_config_manager(
             settings_cls=settings_cls,
@@ -50,7 +51,7 @@ def sst_config_loader(
             setting_file=setting_file,
             project_name=project_name,
             project_root=project_root,
-            home_setup=home_setup,
+            home_setup=home,
             #
             use_global=use_global,
         )

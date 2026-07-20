@@ -12,6 +12,8 @@ from functools import cached_property
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
+from ..contract.native import Stringable
+from ..utils import day_count
 from ..utils.parse import ParsedName
 
 
@@ -27,5 +29,10 @@ class SstNames(BaseSettings):
     plot_dir: str = "plots"
 
     @cached_property
-    def summary_file(self) -> ParsedName:
+    def _summary_file(self) -> ParsedName:
         return ParsedName(pattern="{day}_summary.{suffix}")
+
+    def summary_file(self, day: Stringable = "", suffix: str = "md") -> str:
+        return self._summary_file(
+            {"day": day or day_count(), "suffix": suffix.lstrip(".")}
+        )

@@ -26,7 +26,15 @@ def main() -> None:
     app()
 
 
-app = SafeTyper(name="tools", help="Basic equipment for development")
+app = SafeTyper(
+    name="tools",
+    help="Basic equipment for development",
+    # system_loader=sst_system_loader( # TEST: load inside SafeTyper
+    #     config_loader=sst_config_loader(
+    #         home_setup=HomeSetup.LOCAL,
+    #     )
+    # ),
+)
 
 
 @app.command("monitor")

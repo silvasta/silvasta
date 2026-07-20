@@ -30,6 +30,8 @@ from .names import SstNames
 from .paths import SstPaths
 from .settings import SstSettings
 
+type SstConfig = ConfigManager[SstSettings, SstNames, SstDefaults, SstPaths]
+
 
 class ConfigManager[
     TSettings: SstSettings,
