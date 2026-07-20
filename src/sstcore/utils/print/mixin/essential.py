@@ -9,14 +9,17 @@ Note:
   - concept will change
 """
 
+from pydantic import BaseModel
+
 __all__: list[str] = [
     "ColorBox",
     "NormalizeMixin",
 ]
-import textwrap
 from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
+
+from rich.console import ConsoleRenderable, RichCast
 
 from ....contract.cli import LineDTO
 from ...color import ColorBox, colorize
@@ -25,24 +28,25 @@ from ..blueprint import Printer
 
 class NormalizeMixin:
     @singledispatchmethod
-    def normalize(self: Printer, target: Any, indent: int = 0) -> str:
-        """Fallback: stringify and apply optional indentation."""
-        text = str(target)
-        return textwrap.indent(text, " " * indent) if indent else text
+    def normalize(self: Printer, target: Any) -> str:  # TODO:-> RenderableType
+        """Fallback: unknown target to str"""
+        return str(target)
+
+    @normalize.register(ConsoleRenderable | RichCast | str | BaseModel)
+    def _(self: Printer, target):
+        """Don't touch already ready objects"""
+        return target
 
     @normalize.register(list)
-    def _(self: Printer, target: list, indent: int = 0) -> str:
+    def _(self: Printer, target: list) -> str:
         """Flatten lists recursively and maintain indentation."""
-        items: list[str] = [
-            self.normalize(item, indent=indent) for item in target
-        ]
+        items: list[str] = [self.normalize(item) for item in target]
         return "\n".join(items)
 
     @normalize.register(Path)
-    def _(self: Printer, target: Path, indent: int = 0) -> str:
+    def _(self: Printer, target: Path) -> str:
         """Delegate Path coloring to the external colorize utility."""
-        text: str = colorize.path(target)
-        return textwrap.indent(text, " " * indent) if indent else text
+        return colorize.path(target)
 
 
 class ColorMixin:

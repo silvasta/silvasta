@@ -40,6 +40,7 @@ class ViewBuilder:
 
     def __post_init__(self):
         if not self.mixins:
+            # FIX: create shutdown toggle, 0 mixins when triggered
             raise ValueError("Select at least 1 Mixin for ViewBuilder!")
 
     def _pattern(self, name):

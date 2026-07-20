@@ -15,8 +15,7 @@ class DataMixin:
         return f"{type(self).__name__}({attrs})"
 
 
-class FullReprMixin:
+class FullReprMixin:  # COLLECT: the pattern for repr,log,even cli
     def __repr__(self) -> str:
-        # COLLECT: there is some pattern for repr,log,even cli
         attrs = ", ".join(f"{k}={v!r}" for k, v in vars(self).items())
         return f"{type(self).__name__}({attrs})"

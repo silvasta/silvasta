@@ -46,8 +46,8 @@ class Printer(Protocol):
     """
     Define the Interface of the Printer
 
-    - Type hint dynamically built printers
     - Support Mixin implementation
+    - Type hint dynamically built printers
 
     """
 
@@ -57,11 +57,14 @@ class Printer(Protocol):
 
     @property
     def project_info(self) -> str: ...
+    def set_project_meta(self, name: str, version: str) -> None: ...
 
     # base
     palette: Palette
     theme: Theme
     console: rich.Console
+
+    def print(self, *args, **kwargs): ...
 
     def load_theme(self, theme: dict[str, str] | None = None) -> None: ...
     def preview_themes(self) -> None: ...

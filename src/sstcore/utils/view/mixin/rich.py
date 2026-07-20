@@ -14,7 +14,6 @@ c: ColorBox = ColorBox.bold()
 
 class SimpleRichNameMixin:  # TODO: synchronize with str, use StyledName
     def __rich__(self) -> str:
-        # IDEA: maybe getattr _name_color with some default
         return c.cyan(type(self).__name__)
 
 

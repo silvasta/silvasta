@@ -50,18 +50,17 @@ class Cli(Enum):
 
 
 class Str(Enum):
-    DEFAULT = auto()  # LATER: change! DEFAULT -> ?
+    NAME = auto()
     SHORT = auto()
     OFF = auto()
 
     @property
     def mixin(self) -> type[Stringable]:
         match self:
-            case self.DEFAULT:
+            case self.SHORT:
                 return mixin.string.SimpleNameMixin
 
-            # TODO: SIMPLE as default, NAME replace SHORT, COMPOSE for _hook
-            case self.SHORT:
+            case self.NAME:
                 return mixin.string.NameMixin
 
             case self.OFF:
@@ -69,18 +68,18 @@ class Str(Enum):
 
 
 class Rich(Enum):
-    DEFAULT = auto()
+    MODULE = auto()
     SHORT = auto()
     OFF = auto()
 
     @property
     def mixin(self) -> type[RichRenderable]:
         match self:
-            case self.DEFAULT:
-                return mixin.rich.ModuleNameMixin
-
             case self.SHORT:
                 return mixin.rich.SimpleRichNameMixin
+
+            case self.MODULE:
+                return mixin.rich.ModuleNameMixin
 
             case self.OFF:
                 return mixin.MixinSentinel

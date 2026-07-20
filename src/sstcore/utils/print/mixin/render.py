@@ -31,8 +31,10 @@ from ..blueprint import Printer
 
 
 class RenderMixin:
-    def render(self: Printer, dto: CliDTO) -> RichRenderable:
+    def render(self: Printer, dto: CliDTO | LogDTO) -> RichRenderable:
         """Centralized render dispatcher using pattern matching."""
+
+        # IDEA: this as singledispatchmethod? probably never fitted that well
 
         match dto:
             case PanelDTO() as panel:
@@ -100,6 +102,7 @@ class RenderMixin:
         return self.color(content, dto.style)
 
     def render_log(self: Printer, log: LogDTO) -> RichRenderable:
+        """Test different Log renderings until final version is found"""
         _log_tests = [  # TESTING:
             _render_log_3,
             _render_log_1,

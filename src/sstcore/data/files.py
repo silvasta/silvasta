@@ -23,17 +23,6 @@ from ..utils import (
 )
 from ..utils.tree import build_path_tree
 
-# TODO:
-# from Names:
-# @cached_property
-# def sstfile_dates(self) -> StyledName:
-#     return StyledName.parse_style(
-#         style_pattern=(
-#             "[{blue}]{name}[/]: [{style2}]{first_tracked}[/]"
-#             " - [{style3}]{last_updated}[/]"),
-#         keys=["name", "first_tracked", "last_updated"],
-#         styles=["blue", "dim", "white"],)
-
 
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
@@ -51,28 +40,6 @@ class SstFile(BaseModel):
     @property
     def is_temp_file(self) -> bool:  # TODO: check if needed
         return self.local_path == Path()
-
-    # NEXT: colorful check all (pseudo) formats here below
-
-    # @property
-    # # MOVE: to __rich__
-    # def description(self) -> str:
-    #     """Extensive description formatted with Rich Color String"""
-    #     config: ConfigManager = sst_config()
-    #     return config.names.sstfile_dates.styled(self._description)
-
-    # @property
-    # # MOVE: to ColoredName
-    # def _description(self) -> list[str | datetime | Path]:
-    #     """Constructor for (raw) description text blocks"""
-    #     return [self.name, self.first_tracked, self.last_updated]
-
-    # @property
-    # # MOVE: to __str__
-    # def raw_description(self) -> str:
-    #     """Raw description without any coloring"""
-    #     config: ConfigManager = sst_config()
-    #     return config.names.sstfile_dates(self._description)
 
     @property
     def name(self) -> str:
