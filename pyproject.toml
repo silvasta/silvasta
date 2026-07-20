@@ -60,8 +60,16 @@ all = ["sstcore[cli]"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
+[tool.ty.src]
+include = ["src", "examples"]
+exclude = [
+  "src/sstcore/utils/_functor",    #
+  "src/sstcore/system/emitter.py", # FIX:
+]
+
 [tool.ruff]
 line-length = 79
+exclude = ["src/sstcore/utils/_functor", "tests"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -77,17 +85,18 @@ select = [
   "UP", # pyupgrade
 ]
 
-ignore = [ # TODO: __doc__
+ignore = [
   "E501",
   # --- The "Don't Force Me to Write Comments" Rules ---
-  "D104", #  15  #  5  # Missing docstring in public package
-  "D101", #  16  #  5  # Missing docstring in public class
-  "D100", #  43  #  4  # Missing docstring in public module
-  "D107", #  14  #  3  # Missing docstring in __init__
-  "D103", #   7  #  3  # Missing docstring in public function
+  # Code  # coun # importance # description
+  "D104", #   6  #  5  # Missing docstring in public package
+  "D101", #  63  #  5  # Missing docstring in public class
+  "D100", #  33  #  4  # Missing docstring in public module
+  "D107", #  21  #  3  # Missing docstring in __init__
+  "D103", #  43  #  3  # Missing docstring in public function
   "D102", # 125  #  2  # Missing docstring in public method
-  "D106", #   8  #  1  # Missing docstring in public nested class
-  "D105", #   8  #  1  # Missing docstring in magic method
+  "D106", #   0  #  1  # Missing docstring in public nested class
+  "D105", #  38  #  1  # Missing docstring in magic method
 
   # --- The "Stop Micromanaging My Punctuation" Rules ---
   "D400", # First line must end with a period
@@ -101,7 +110,7 @@ ignore = [ # TODO: __doc__
   "D202", # No blank lines allowed after function docstring
 ]
 
-# TASK: use this to filter
+# LATER: use this to filter
 # [tool.ruff.lint.per-file-ignores]
 # # Keep tracking progress, but allow mixins and low-priority files to remain quiet
 # "src/sstcore/utils/print/mixin/*.py" = ["D101", "D102"]
