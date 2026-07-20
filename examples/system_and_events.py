@@ -4,8 +4,10 @@ import fire
 from pydantic import BaseModel
 
 from sstcore.config import ConfigManager
-from sstcore.contract.cli import CliRenderable  # , PanelDTO, TableDTO
-from sstcore.contract.log import LogDTO, LogSerializable
+from sstcore.contract.event import CliEvent, EventName
+
+# from sstcore.contract.cli import CliRenderable  # , PanelDTO, TableDTO
+from sstcore.contract.log import LogDTO  # , LogSerializable
 from sstcore.system import EventBus, System
 from sstcore.utils import Printer
 
@@ -30,12 +32,12 @@ class SystemExamples:
     def _bus(self) -> EventBus:
         return self._system.bus
 
-    def _emit(self, event_name: str, sender: str, **payload) -> None:
+    def _emit(self, event_name: EventName, sender: str, **payload) -> None:
         """Increase convenience for bus access"""
         self._bus.emit(event_name, sender, **payload)
 
-    def protocol(self):
-        check_protocol_on_instance(self._printer)
+    # def protocol(self):
+    #     check_protocol_on_instance(self._printer)
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### gcf1
@@ -59,20 +61,20 @@ class SystemExamples:
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### alice
 
-    def simple(self):
-        emit_simple(self._system)
-
-    def metric(self):
-        emit_with_metrics(self._system)
-
-    def panel(self):
-        emit_ui_panel(self._system, agent=LLMConversationAgent())
-
-    def tele(self):
-        emit_global_telemetry(self._system)
-
-    def error(self):
-        emit_error_context(self._system)
+    # def simple(self):
+    #     emit_simple(self._system)
+    #
+    # def metric(self):
+    #     emit_with_metrics(self._system)
+    #
+    # def panel(self):
+    #     emit_ui_panel(self._system, agent=LLMConversationAgent())
+    #
+    # def tele(self):
+    #     emit_global_telemetry(self._system)
+    #
+    # def error(self):
+    #     emit_error_context(self._system)
 
     ### alice
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -88,73 +90,76 @@ class SystemExamples:
     def tdto(self):
         """Emit a Table DTO rendering."""
         stats = SystemHealthStats()
-        self._emit("ui.table", sender="G3.1", target=stats)
+
+        self._emit(CliEvent.RENDER_TABLE, sender="G3.1", target=stats)
 
     # --- Mode 5: UI Line / Raw ---
     def line(self):
         target = "[bold green]This is a success message![/bold green]"
-        self._emit("ui.line", "g3", target=target)
+        self._emit(CliEvent.RENDER_PANEL, "g3", target=target)
 
     ### g35f
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### g420
 
-    # ==================== EMIT EXAMPLES ====================
-    def base(self):
-        """Simple string events."""
-        self._emit("sys.info", "basic_test", message="Hello from basic emit")
-        self._emit(
-            "ui.line",
-            "basic_test",
-            message="This is a simple line",
-            style="green",
-        )
-        self._printer.success("Basic emit test completed")
-
-    def object(self):
-        agent = LLMConversationAgent()
-        task = SimpleTask(id="task-123", status="running", progress=0.75)
-
-        self._emit("ui.panel", "object_test", target=agent)  # -> CliRenderable
-        self._emit(
-            "sys.log", "object_test", target=agent
-        )  # -> LogSerializable
-        self._emit("ui.panel", "object_test", target=task)
-        self._emit("sys.log", "object_test", target=task)
-
-        self._printer.success("Object emit test completed")
-
-    def dto(self):
-        """Emit pre-built DTOs directly (useful for precise control)."""
-        dto = LogDTO(
-            message="Manual DTO test",
-            level="WARNING",
-            metrics={"custom": 42, "source": "test"},
-            extra={"batch_id": "BATCH-2026-07-10"},
-        )
-        self._emit("sys.log", "dto_test", target=dto)
-        self._printer.success("Raw DTO test completed")
-
-    def struct(self):
-        """Structured logging with metrics/extra data."""
-        self._emit(
-            "sys.log",
-            "metrics_test",
-            message="Processing batch",
-            level="INFO",
-            metrics={"items": 150, "success_rate": 0.94, "errors": 3},
-            extra={"batch_id": "BATCH-2026-07-10", "tags": ["prod", "daily"]},
-        )
-        self._printer.success("Metrics emit test completed")
+    # ==================== FIX: EMIT EXAMPLES ====================
 
 
-def check_protocol_on_instance(printer: Printer):
-    agent = LLMConversationAgent()
-    if isinstance(agent, CliRenderable):
-        printer.success(f"Agent is {CliRenderable}")
-    if isinstance(agent, LogSerializable):
-        printer.success(f"Agent is {LogSerializable}")
-
+#     def base(self):
+#         """Simple string events."""
+#         self._emit("sys.info", "basic_test", message="Hello from basic emit")
+#         self._emit(
+#             "ui.line",
+#             "basic_test",
+#             message="This is a simple line",
+#             style="green",
+#         )
+#         self._printer.success("Basic emit test completed")
+#
+#     def object(self):
+#         agent = LLMConversationAgent()
+#         task = SimpleTask(id="task-123", status="running", progress=0.75)
+#
+#         self._emit("ui.panel", "object_test", target=agent)  # -> CliRenderable
+#         self._emit(
+#             "sys.log", "object_test", target=agent
+#         )  # -> LogSerializable
+#         self._emit("ui.panel", "object_test", target=task)
+#         self._emit("sys.log", "object_test", target=task)
+#
+#         self._printer.success("Object emit test completed")
+#
+#     def dto(self):
+#         """Emit pre-built DTOs directly (useful for precise control)."""
+#         dto = LogDTO(
+#             message="Manual DTO test",
+#             level="WARNING",
+#             metrics={"custom": 42, "source": "test"},
+#             extra={"batch_id": "BATCH-2026-07-10"},
+#         )
+#         self._emit("sys.log", "dto_test", target=dto)
+#         self._printer.success("Raw DTO test completed")
+#
+#     def struct(self):
+#         """Structured logging with metrics/extra data."""
+#         self._emit(
+#             "sys.log",
+#             "metrics_test",
+#             message="Processing batch",
+#             level="INFO",
+#             metrics={"items": 150, "success_rate": 0.94, "errors": 3},
+#             extra={"batch_id": "BATCH-2026-07-10", "tags": ["prod", "daily"]},
+#         )
+#         self._printer.success("Metrics emit test completed")
+#
+#
+# def check_protocol_on_instance(printer: Printer):
+#     agent = LLMConversationAgent()
+#     if isinstance(agent, CliRenderable):
+#         printer.success(f"Agent is {CliRenderable}")
+#     if isinstance(agent, LogSerializable):
+#         printer.success(f"Agent is {LogSerializable}")
+#
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### gcf1
@@ -193,40 +198,40 @@ def emit_multiple(self):
 ### alice
 
 
-def emit_simple(system: System):
-    system.bus.emit(
-        "sys.log", sender="test", message="Простая отладочная запись"
-    )
-
-
-def emit_with_metrics(system: System):
-    system.bus.emit(
-        "sys.log",
-        sender="test",
-        message="Метрики процесса",
-        metrics={"cpu": 42, "memory_mb": 128},
-    )
-
-
-def emit_ui_panel(system: System, agent):
-    system.bus.emit("ui.panel", sender="test", target=agent)
-
-
-def emit_global_telemetry(system: System):
-    system.bus.emit("internal.heartbeat", sender="test", tick=123)
-
-
-def emit_error_context(system: System):
-    try:
-        _ = 1 / 0
-    except ZeroDivisionError as e:
-        system.bus.emit(
-            "sys.error",
-            sender="test",
-            message="Произошла ошибка",
-            exception=e,
-            context={"step": "preprocess"},
-        )
+# def emit_simple(system: System):
+#     system.bus.emit(
+#         "sys.log", sender="test", message="Простая отладочная запись"
+#     )
+#
+#
+# def emit_with_metrics(system: System):
+#     system.bus.emit(
+#         "sys.log",
+#         sender="test",
+#         message="Метрики процесса",
+#         metrics={"cpu": 42, "memory_mb": 128},
+#     )
+#
+#
+# def emit_ui_panel(system: System, agent):
+#     system.bus.emit("ui.panel", sender="test", target=agent)
+#
+#
+# def emit_global_telemetry(system: System):
+#     system.bus.emit("internal.heartbeat", sender="test", tick=123)
+#
+#
+# def emit_error_context(system: System):
+#     try:
+#         _ = 1 / 0
+#     except ZeroDivisionError as e:
+#         system.bus.emit(
+#             "sys.error",
+#             sender="test",
+#             message="Произошла ошибка",
+#             exception=e,
+#             context={"step": "preprocess"},
+#         )
 
 
 ### alice

@@ -12,20 +12,17 @@ from typing import Any
 import fire
 from pydantic import BaseModel
 
-from sstcore import System
-from sstcore.config import ConfigManager
+from sstcore import ConfigManager, System
 from sstcore.system import EventBus
-from sstcore.system.core import fetch_system
-from sstcore.utils import Printer, day_count, printer
+from sstcore.utils import Printer, day_count
 from sstcore.utils.parse import ParsedName
 from sstcore.utils.parse.name import NamePattern
 
-# TODO: finish wiring
-sst: System = fetch_system(_allow_uninitialized=True)
-
+# Globals
+sst: System = System.bootstrap(use_globals=True)
 config: ConfigManager = sst.config
 bus: EventBus = sst.bus
-_printer: Printer = sst.printer  # LATER: replace below?
+printer: Printer = sst.printer
 
 pattern1: str = "{day}_summary.{suffix}"
 

@@ -12,8 +12,11 @@ from sstcore.config import (
     SstPaths,
     SstSettings,
 )
-from sstcore.config.setup import sst_config, sst_config_loader
+from sstcore.config.setup import (
+    sst_config_loader,
+)
 from sstcore.exceptions import TuiSelectorError
+from sstcore.system.core import sst_system_loader
 from sstcore.utils import printer
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -62,44 +65,8 @@ class Settings(SstSettings):
     defaults: Defaults = Field(default_factory=Defaults)
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### The Manager
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
 type CustomConfig = ConfigManager[Settings, Names, Defaults, Paths]
 
-
-def config_loader(setting_file: Path | None = None) -> CustomConfig:
-    """Prepare Loader for CustomConfig injected to CLI"""
-
-    return sst_config_loader(
-        setting_file=setting_file,
-        project_name="sachmis",
-    )
-
-
-def config() -> CustomConfig:
-    """Fetch config Singleton and raise if not already initialized"""
-    return sst_config(_allow_uninitialized=False)
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### config() Examples
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-printer.special(f"{config()} is Ready!")
-
-printer(config().settings)
-
-config().paths.report_file.touch()
-
-for i in range(config().defaults.print_value):
-    printer.success(f"Success {i}")
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### The CLI
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Create SafeTyper and assemble Functions
@@ -108,7 +75,13 @@ for i in range(config().defaults.print_value):
 app = SafeTyper(
     name="custom",
     help="Dont forget the config loader!",
-    config_loader=config_loader,
+    system_loader=sst_system_loader(
+        config_loader=sst_config_loader(
+            settings_cls=Settings,
+            paths_cls=Paths,
+            project_name="sachmis",
+        )
+    ),
 )
 
 # Attach Single Commands (as well recommended with decorator)
