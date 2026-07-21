@@ -8,12 +8,12 @@ from pathlib import Path
 
 from typer import Context, Option
 
-from ...config import SstPaths
+from ...config import ConfigManager, SstPaths
 from ...contract.log import LogDTO
 from ...system import System
 from ...tui import TreeSelectorApp
 from ...tui.log_monitor import LogMonitorApp
-from ...utils.path import PathGuard, any_root
+from ...utils.path import any_root
 from ...utils.print import printer
 from ...utils.scanner.summary_file import SummaryFileBox
 from .. import args as sargs
@@ -26,15 +26,7 @@ def main() -> None:
     app()
 
 
-app = SafeTyper(
-    name="tools",
-    help="Basic equipment for development",
-    # system_loader=sst_system_loader( # TEST: load inside SafeTyper
-    #     config_loader=sst_config_loader(
-    #         home_setup=HomeSetup.LOCAL,
-    #     )
-    # ),
-)
+app = SafeTyper(name="tools", help="Basic equipment for development")
 
 
 @app.command("monitor")
@@ -43,16 +35,13 @@ def launch_log_monitor_2(
     file: sargs.LogFile = None,
     tail: bool = Option(True, help="Keep watching the file for new entries"),
 ):
-    system: System = ctx.obj["system"]
-    _log_file: Path = PathGuard.file(
-        target=file or system.config.settings.log.log_file,
-        default_content="",
-        raise_error=False,
-    )
-    log_file = Path("/home/silvan/sstcore/logs/sstcore.jsonl")
+    """Log Console Monitor: Analyze log file entries!"""
+
+    config: ConfigManager = ctx.obj["config"]
+    log_file: Path = file or config.log_result.struct_log_file
 
     def render_adapter(dto: LogDTO):
-        return printer.render(dto)  # NEXT: check adapter
+        return printer.render(dto)  # LATER: improve adapter
 
     app = LogMonitorApp(log_file, render_func=render_adapter, tail=tail)
     app.run()
@@ -60,7 +49,7 @@ def launch_log_monitor_2(
 
 @app.command("monitor1")
 def launch_log_monitor_1(file: sargs.LogFile = None):  # TODO: improveCLI hint
-    """Log Console Monitor: Watch new log file entries!"""
+    """Log Console Scroll: Watch new log file entries!"""
     log_monitor(log_path=file)
 
 
@@ -78,14 +67,25 @@ def launch_folder_scanner(
     system: System = ctx.obj["system"]
     # FIX: config.paths fails if executed outside the project,
     # anyway needed to change home setup (dynamically) when publishing
+    # - writes confgi to other project...
     paths: SstPaths = system.config.paths
     if output_file is None:
         output_file: Path = paths.summary_file(suffix=file_type)
     scan_root: Path = scan_root or any_root()
-    cache_file: Path | None = (
-        None if reset else paths.scanner_cache_file(scan_root)
-    )
-    folder_scanner(scan_root, output_file, cache_file, sort, printer)
+    cache_file: Path = paths.scanner_cache_file(scan_root)
+    folder_scanner(scan_root, output_file, cache_file, reset, sort, printer)
+
+
+@app.command("config")
+def config_details_and_write(ctx: Context, write_config: sargs.Write = False):
+    """Print config to Console, optional write new json settings"""
+    config: ConfigManager = ctx.obj["config"]
+    printer(config)
+    printer(config.settings)
+    printer(config.setting_file)
+
+    if write_config:
+        config.save_settings()
 
 
 @app.command("print")
