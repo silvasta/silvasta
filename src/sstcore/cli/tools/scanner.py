@@ -8,6 +8,14 @@ Scan Folder and assemble Summary
 
 """
 
+# TASK: global setup
+# - issue with project root
+#   - if not found:
+#     - improve fix with HomeSetup
+#   - if found:
+#     - avoid creating configs there
+#     - check if data/summary.md is proper
+
 import json
 from pathlib import Path
 
@@ -29,7 +37,8 @@ from ...utils.scanner import write_summary_file
 def folder_scanner(
     scan_root: Path,
     output_file: Path,
-    cache_file: Path | None = None,
+    cache_file: Path,
+    reset_cache: bool = False,
     sort: str = TreeSelectorApp.Sort.SELECTION,
     printer: Printer | None = None,
     filter: PathFilter | None = None,
@@ -44,7 +53,9 @@ def folder_scanner(
 
     scanner = FolderScanner(scan_root=scan_root, filter=filter)
     tree: PathTreeNode = scanner.tree()
-    previous: list[Path] = _load(cache_file, printer) if cache_file else []
+    previous: list[Path] = (
+        _load(cache_file, printer) if not reset_cache else []
+    )
     selector = TreeSelectorApp(
         sst_tree=tree, sort_method=sort, pre_select=previous
     )
@@ -53,7 +64,7 @@ def folder_scanner(
         raise typer.Exit()
     printer.lines_with_len(name="Selected Files", lines=selected_files)
 
-    _save(cache_file, selected_files, printer) if cache_file else None
+    _save(cache_file, selected_files, printer)
     data: str = write_summary_file(selected_files, output_file)
 
     printer.lines(
@@ -139,4 +150,8 @@ def _save(cache_file: Path, selected: list[Path], printer: Printer) -> None:
 
 
 if __name__ == "__main__":
-    folder_scanner(scan_root=Path.cwd(), output_file=Path("summary.xml"))
+    folder_scanner(
+        scan_root=Path.cwd(),
+        output_file=Path("summary.xml"),
+        cache_file=Path(".scanner.json"),
+    )
