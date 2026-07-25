@@ -54,14 +54,6 @@ class EventBus:
         self._subscribers: dict[EventPattern, list[EventHandler]] = {}
         self._global_subscribers: list[EventHandler] = []
 
-    def subscribe_all(self, handler: EventHandler) -> None:
-        """Attach global handler as subscriber to all events"""
-        self._global_subscribers.append(handler)
-
-    def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
-        """Attach handler as subscriber to specific event"""
-        self._subscribers.setdefault(name, []).append(handler)
-
     def emit(self, event_name: EventName, sender: str, **payload) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
@@ -72,6 +64,28 @@ class EventBus:
 
         for handler in self._match_subscribers(event_name):
             handler(event)
+
+    def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
+        """Attach handler as subscriber to specific event"""
+        self._subscribers.setdefault(name, []).append(handler)
+
+    def subscribe_all(self, handler: EventHandler) -> None:
+        """Attach global handler as subscriber to all events"""
+        self._global_subscribers.append(handler)
+
+    @property
+    def n_handler(self) -> int:
+        return len(self._subscribers)
+
+    @property
+    def n_global_handler(self) -> int:
+        return len(self._global_subscribers)
+
+    def __str__(self) -> str:
+        return type(self).__name__
+
+    def __repr__(self) -> str:  # TEST:
+        return f"{self}(  {self.n_global_handler} 󰌌 {self.n_handler} 󰍹 )"
 
     def _match_subscribers(
         self, event_name: EventName

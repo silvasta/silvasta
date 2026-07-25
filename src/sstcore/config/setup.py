@@ -96,9 +96,9 @@ def create_config_manager(
         home_setup=home_setup,
     )
     logger.info("ConfigManager setup complete")
+
     if use_global:
         set_global_config(config)
-
     return config
 
 

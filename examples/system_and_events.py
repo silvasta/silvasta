@@ -4,7 +4,7 @@ import fire
 from pydantic import BaseModel
 
 from sstcore.config import ConfigManager
-from sstcore.contract.event import CliEvent, EventName
+from sstcore.contract.event import EventName
 
 # from sstcore.contract.cli import CliRenderable  # , PanelDTO, TableDTO
 from sstcore.contract.log import LogDTO  # , LogSerializable
@@ -86,17 +86,17 @@ class SystemExamples:
     def tele2(self):
         demo_5_telemetry_monitoring(self)
 
-    # --- Mode 4: UI Table ---
-    def tdto(self):
-        """Emit a Table DTO rendering."""
-        stats = SystemHealthStats()
-
-        self._emit(CliEvent.RENDER_TABLE, sender="G3.1", target=stats)
-
-    # --- Mode 5: UI Line / Raw ---
-    def line(self):
-        target = "[bold green]This is a success message![/bold green]"
-        self._emit(CliEvent.RENDER_PANEL, "g3", target=target)
+    # # --- Mode 4: UI Table ---
+    # def tdto(self):
+    #     """Emit a Table DTO rendering."""
+    #     stats = SystemHealthStats()
+    #
+    #     self._emit(CliEvent.RENDER_TABLE, sender="G3.1", target=stats)
+    #
+    # # --- Mode 5: UI Line / Raw ---
+    # def line(self):
+    #     target = "[bold green]This is a success message![/bold green]"
+    #     self._emit(CliEvent.RENDER_PANEL, "g3", target=target)
 
     ### g35f
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --

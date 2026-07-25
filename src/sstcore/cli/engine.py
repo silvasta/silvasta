@@ -73,6 +73,7 @@ class SafeTyper(typer.Typer):
                 "config": self.system.config,
                 "printer": self.system.printer,
                 "bus": self.system.bus,
+                "emitter": self.system.emitter,
             }
         )
 

@@ -38,10 +38,6 @@ class SstFile(BaseModel):
         return f"{type(self).__name__}(local_path={self.local_path})"
 
     @property
-    def is_temp_file(self) -> bool:  # TODO: check if needed
-        return self.local_path == Path()
-
-    @property
     def name(self) -> str:
         return self.local_path.name
 

@@ -8,6 +8,8 @@ Hold and prepare Global Singleton EventBus instance.
 
 """
 
+from sstcore.contract.event import CoreEvent
+
 __all__: list[str] = [
     "BusLoader",
     "sst_bus_loader",
@@ -73,22 +75,31 @@ def create_event_bus(
     if bus_registration:
         bus_registration(bus)
 
-    logger.info("EventBus setup complete")
+    # logger.info("EventBus setup complete")
+    bus.emit(
+        event_name=CoreEvent.BUS_DIAG,
+        sender="BusSetup",
+        log="EventBus setup complete",
+    )
+
     if use_global:
         set_global_bus(bus)
-
     return bus
 
 
 def set_global_bus(bus: EventBus | None) -> None:
     """Register local EventBus as new EventBus or replace former"""
+    # TODO: emit?
     global _bus
     if _bus is not None:
         logger.warning(f"Replacing existing global _bus: {_bus!r}")
+        # TODO: emit old And new?
 
     _bus = bus
 
     if _bus is None:
+        # TODO: emit?
         logger.info("Global bus set to 'None'")
     else:
+        # TODO: emit?
         logger.info(f"New bus set as global: {_bus!r}")

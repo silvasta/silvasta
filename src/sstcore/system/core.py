@@ -44,12 +44,12 @@ from ..utils import printer as global_printer
 from ..utils.log.setup import setup_minimal_logging
 from ..utils.path import HomeSetup
 from .bus import EventBus
-from .emitter import Emitter
+from .emit import Emitter
 from .setup import BusLoader, set_global_bus, sst_bus_loader
 
 
 class System:
-    """Combine the Essentials to work together as System"""
+    """Combine the Essentials to work together as one System"""
 
     def __init__(
         self,
@@ -60,19 +60,12 @@ class System:
         self.config: ConfigManager = config
         self.printer: Printer = printer
         self.bus: EventBus = bus
+        self.emitter = Emitter(bus=self.bus)
 
         printer.set_project_meta(*config.project_meta)
 
-    @property
-    def emitter(self) -> Emitter:  # TEST: use Emitter in Project
-        if not hasattr(self, "_emitter"):
-            self._emitter = Emitter(
-                bus=self.bus, default_sender=self.config.project_name
-            )
-        return self._emitter
-
     def emit(self, event_name: EventName, sender: str, **payload: Any) -> None:
-        """Increase convenience for bus access"""
+        """Provide direct bus access"""
         self.bus.emit(event_name, sender, **payload)
 
     @classmethod
@@ -161,6 +154,7 @@ def sst_system() -> System:
     global _system
     if _system is None:
         raise RuntimeError("No access to global _system without bootstrap!")
+    # TODO: emit?
     logger.debug("provide cached _system")
 
     return _system
@@ -169,6 +163,7 @@ def sst_system() -> System:
 def set_global_system(system: System | None) -> None:
     """Register local System as new System or replace former"""
 
+    # TODO: emit?
     global _system
     if _system is not None:
         logger.warning(f"Replacing existing global _system: {_system!r}")

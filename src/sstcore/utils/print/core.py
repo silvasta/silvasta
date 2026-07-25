@@ -12,6 +12,7 @@ from rich.padding import Padding
 from rich.theme import Theme
 
 from ...contract.cli import CliDTO, CliRenderable
+from ...contract.event import EmitFunc
 from ...contract.external import RenderableType, RichRenderable
 from ...contract.log import LogDTO, LogSerializable
 from ..color import Palette, colorize
@@ -81,10 +82,17 @@ class PrinterModus(PrinterBase):
         """Switch to Python standard print"""
         self.modus: Modus = Modus.DEBUG
 
-    def wire(self) -> None:
-        """Switch to EventBus setup"""
-        # WARN: bus must be loaded, but where? or just use global bus?
+    def wire(self, _emit: EmitFunc) -> None:
+        """Switch to EventBus. Optionally inject emitter for EMIT mode."""
         self.modus: Modus = Modus.EMIT
+        # LATER:
+        # TASK: most likely drop the current PrinterModus,
+        #   or attach as Enum to PrinterFactory
+        # - beside maybe once the Modus.DEBUG Modus was not useful at all
+        # - if an emit is added then parallel to execution,
+        #   or probably far left in the MRO pipelinea in layouts or tools
+        # - print.compose with intercepting __call__ might be much better,
+        #   or maybe just export a reduced printer as massive DTO builder
 
     def unmute(self) -> None:
         """Switch to regular Printer setup"""
@@ -119,11 +127,17 @@ class PrinterCore(PrinterModus):
             case Modus.DEBUG:
                 print("Renderable: ", target, "kwargs: ", kwargs)
                 return
-            # TODO: case PRINT: -> console?
             case Modus.NULL:
                 return
             case Modus.EMIT:
-                return  # LATER: maybe something, but no circular calls!
+                if hasattr(self, "emitter") and self.emitter is not None:
+                    # REMOVE: completely wrong way around,
+                    # the lousy ViewEmitter as engine for the printer?
+                    # - the printer provides the ultimate CliEmitter core
+                    # - sends all of the perfectly shaped DTOs to emit
+                    # - Modus.EMIT combines DTO creation and emmitting
+                    # right now not urgent.
+                    self.emitter.view(target, level="INFO")  # ty:ignore
             case Modus.RICH:
                 pass
 
@@ -159,3 +173,18 @@ class PrinterCore(PrinterModus):
         )
 
         self.console.print(i_hope_it_renders, **kwargs)
+
+
+class EmitterCore:
+    """Replace the PrinterCore and take the DTOs instead of printing them"""
+
+    def __call__(self, target, **_kwargs) -> CliDTO | LogDTO | None:
+        match target:
+            case CliDTO() | LogDTO():
+                return target
+            case CliRenderable():
+                return target.__cli__()
+            case LogSerializable():
+                return target.__log__()
+            case _:
+                return None

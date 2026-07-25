@@ -15,7 +15,6 @@ __all__: list[str] = [
     "EventName",
     "CliEvent",
     "CoreEvent",
-    "DataEvent",
 ]
 
 from dataclasses import dataclass, field
@@ -37,39 +36,26 @@ class Event:
 
 class EmitFunc(Protocol):
     def __call__(
-        self, event_name: EventName, sender: str, **payload: Any
+        self, event: EventName, sender: str, **payload: Any
     ) -> None: ...
 
 
 class EventName(StrEnum):
-    """Provide clean extension point with autocomplete and typing"""
+    """
+    Provide clean extension point with autocomplete and typing
 
+      Pattern: "{surface}.{entity}.{action}"
 
-# AI: all EventNames below are just drafts so far, defaults will be created together with projects
-# - for sachmis, something like SachmisEvent(EventName) could be sufficient for the beginning
+    """
 
 
 class CliEvent(EventName):
-    INPUT_WARN = "cli.input.warn"
-    RENDER_PANEL = "cli.render.panel"
-    # REMOVE: just render, and ...
-    # - or better, something before
-    # but panel|table is already messaged by DTO
-    RENDER_TABLE = "cli.render.table"
-    EXEC_FAIL = "cli.exec.error"
+    RENDER = "cli.render"  # payload: PanelDTO | TableDTO | ...
+    INPUT = "cli.input"  # payload: log= or cli=
+    EXEC_FAIL = "cli.exec.fail"  # bridge toward process exit / ErrorHandler
 
 
 class CoreEvent(EventName):
     BUS_READY = "core.bus.ready"
-    BUS_WARN = "core.bus.warn"
-    BUS_ERROR = "core.bus.error"
-    ORCHESTRATOR_INFO = "core.orchestrator.info"
-
-
-class DataEvent(EventName):
-    REGISTRY_INFO = "data.registry.info"
-    REGISTRY_WARN = "data.registry.warn"
-    REGISTRY_ERROR = "data.registry.error"
-
-    FS_UPLOAD_SUCCESS = "data.fs.success"
-    FS_UPLOAD_ERROR = "data.fs.error"
+    BUS_DIAG = "core.bus.warn"  # one channel; level in LogDTO
+    LIFECYCLE = "core.system.lifecycle"  # fixed typo

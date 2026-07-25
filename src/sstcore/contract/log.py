@@ -11,7 +11,7 @@ __all__: list[str] = [
 ]
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, Self, runtime_checkable
 
 
 @runtime_checkable
@@ -19,13 +19,22 @@ class LogSerializable(Protocol):
     def __log__(self) -> LogDTO: ...
 
 
+class _DtoBase:
+    def __log__(self) -> Self:
+        return self
+
+    def __str__(self) -> str:
+        return type(self).__name__
+
+
 @dataclass
-class LogDTO:
+class LogDTO(_DtoBase):
     message: str
     level: str = "INFO"
     metrics: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
 
+    # AI_QUESTION: why we dont just use this? for the logger.bind
     def to_dict(self) -> dict[str, Any]:
         """Provide clean dictionary for log injection"""
         return {
