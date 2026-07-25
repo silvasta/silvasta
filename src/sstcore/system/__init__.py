@@ -18,6 +18,6 @@ __all__: list[str] = [
 
 from .bus import EventBus, EventHandler
 from .core import System
-from .emitter import EmitFunctor, Emitter
+from .emit import EmitFunctor, Emitter
 from .register import BusRegistrationFunc
 from .setup import sst_bus

@@ -21,7 +21,7 @@ from ..view import ViewBuilder
 from ..view.presets import printer_view_builder
 from . import mixin
 from .blueprint import Printer
-from .root import PrinterCore
+from .core import PrinterCore
 
 PrinterViewBuilder: ViewBuilder = printer_view_builder()
 

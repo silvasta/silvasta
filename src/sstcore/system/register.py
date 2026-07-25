@@ -1,11 +1,10 @@
 """Prepare EventHandler and default registry for EventBus"""
 
 from collections.abc import Callable
-from enum import StrEnum
 
 from loguru import logger
 
-from ..contract.event import CliEvent, CoreEvent, DataEvent
+from ..contract.event import Event
 from ..utils.log.event_handler import handle_log_event
 from ..utils.print.event_handler import handle_cli_event
 from .bus import EventBus, EventHandler
@@ -16,49 +15,36 @@ type BusRegistrationFunc = Callable[[EventBus], None]
 def register_default_event_handler(bus: EventBus) -> None:
     """Attach EventHandler to EventBus registry by Event- Name or Pattern"""
 
-    logger.info("Setup EventBus with Default Handler...")
+    bus.subscribe("*", CLI_HANDLER)  # if payload has cli=
+    bus.subscribe("*", LOG_HANDLER)  # if payload has log=
 
-    critical_events: tuple[StrEnum, ...] = (
-        DataEvent.REGISTRY_ERROR,
-        DataEvent.FS_UPLOAD_ERROR,
-        CoreEvent.BUS_ERROR,
-        CliEvent.EXEC_FAIL,
-    )
-    for name in critical_events:
-        bus.subscribe(name, LOG_HANDLER)
-
-    # Send all rendering events to the Printer
-    bus.subscribe("cli.render.*", CLI_HANDLER)
-
-    # Capture ANY Warning or Error across the system
-    bus.subscribe("*.*.warn", LOG_HANDLER)
-    bus.subscribe("*.*.error", LOG_HANDLER)
-
-    # Global Subscriptions
     bus.subscribe_all(TELEMETRY_HANDLER)
-
-    # TODO: collect events without any handler
 
 
 LOG_HANDLER = EventHandler(
     name="LoguruBridge",
     func=handle_log_event,
-    fail_loud=True,  # PARAM: decide defaults after tests
+    fail_loud=True,
 )
 
 CLI_HANDLER = EventHandler(
     name="CliPrinter",
     func=handle_cli_event,
-    fail_loud=True,  # PARAM: decide defaults after tests
+    fail_loud=True,
 )
 
-TELEMETRY_HANDLER = EventHandler(
-    name="Telemetry",
-    func=lambda event: logger.debug(  # FIX: lambda as name in logs...
+
+def telemetry(event: Event):
+    logger.debug(
         "Event: {event_name} | sender={sender} | keys={keys}",
         event_name=event.name,
         sender=event.sender,
         keys=list(event.payload.keys()),
-    ),
-    fail_loud=True,  # PARAM: set False in sstcore/main
+    )
+
+
+TELEMETRY_HANDLER = EventHandler(
+    name="Telemetry",
+    func=telemetry,
+    fail_loud=False,
 )

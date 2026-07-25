@@ -7,10 +7,12 @@ from .compose import printer
 
 
 def handle_cli_event(event: Event) -> None:
-    """Bridge __cli__ events from EventBus to Printer"""
-    # LATER: inject printer?
+    """Bridge __cli__ events from the EventBus to the Printer"""
 
-    target: Any = event.payload.get("target") or event.payload.get("obj")
+    cli_payload: Any | None = event.payload.get("cli")
 
-    if target is not None:
-        printer(target)  # Let the full mixin stack do its job
+    if cli_payload is None:
+        return
+
+    # TODO: hand in printer from bootstrap
+    printer(cli_payload)

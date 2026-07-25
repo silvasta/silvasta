@@ -1,28 +1,28 @@
 {
+  "defaults": {
+    "timestamp_format": "%Y-%m-%d_%H-%M-%S",
+    "input_date_formats": ["%d-%m-%Y", "%Y-%m-%d"],
+    "dot_env_content": ""
+  },
   "names": {
     "project": "sstcore",
     "data_dir": "data",
     "plot_dir": "plots"
   },
-  "defaults": {
-    "timestamp_format": "%Y-%m-%d_%H-%M-%S",
-    "input_date_formats": [
-      "%d-%m-%Y",
-      "%Y-%m-%d"
-    ],
-    "dot_env_content": ""
-  },
   "log": {
     "print_at_setup": false,
+    "log_to_console": true,
+    "log_to_file": true,
+    "log_to_json": true,
     "log_dir": "/home/silvan/PolyBox/Code/sstcore/latest/logs",
-    "log_filename": "sstcore.log",
+    "log_file_stem": "sstcore",
+    "file_suffix": ".log",
+    "json_suffix": ".jsonl",
     "log_level": "INFO",
     "retention": "1 week",
     "rotation": "5 MB"
   },
-  "last_updated": "2026-06-21T15:29:00.541054Z",
-  "updates": [
-    "2026-06-21T15:29:00.541054Z"
-  ],
+  "last_updated": "2026-07-25T21:15:51.677601Z",
+  "updates": ["2026-06-21T15:29:00.541054Z", "2026-07-25T21:15:51.677601Z"],
   "update_maxlen": 79
 }
