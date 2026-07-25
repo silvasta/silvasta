@@ -7,8 +7,7 @@ Setup loguru for console, .log and .json
 
 __all__: list[str] = [
     "LogParam",
-    "LogSetupResult",
     "setup_logging",
 ]
-from .param import LogParam, LogSetupResult
+from .param import LogParam
 from .setup import setup_logging
