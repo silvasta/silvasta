@@ -20,17 +20,14 @@ from typing import cast
 from dotenv import load_dotenv
 from loguru import logger
 
-from sstcore.utils.log import LogSetupResult
-
 from ..utils import day_count
+from ..utils.log import LogParam, setup_logging
 from ..utils.path import HomeSetup
 from .bootstrap import BootDefaults, BootResult, ConfigBootstrap
 from .defaults import SstDefaults
 from .names import SstNames
 from .paths import SstPaths
 from .settings import SstSettings
-
-type SstConfig = ConfigManager[SstSettings, SstNames, SstDefaults, SstPaths]
 
 
 class ConfigManager[
@@ -41,11 +38,12 @@ class ConfigManager[
 ]:
     """Bundle Container and Factories and provide access as Singleton"""
 
-    log_result: LogSetupResult | None = None  # TODO: where to place?
-
     def __init__(
         self,
         settings_cls: type[TSettings],
+        # LATER: Paths and Settings both build on the same Paths and Names
+        # - still their own class is unique independant of their common root
+        # if somewhen ever too much time, work out the percect solution
         paths_cls: type[TPaths],
         setting_file: Path | None = None,
         project_name: str = "",
@@ -70,7 +68,6 @@ class ConfigManager[
         self.settings: TSettings = settings_cls.load(self.setting_file)
         self.paths: TPaths = paths_cls(self.names, self.defaults, home_setup)
 
-        self._fill_printer()  # important to get title in Panel
         self._env_loaded = False
 
     def save_settings(self):
@@ -78,22 +75,17 @@ class ConfigManager[
         self.settings.save(self.setting_file)
         logger.info(f"Settings saved to: {self.setting_file}")
 
-    def __str__(self) -> str:
-        return type(self).__name__
+    def launch_log_setup(
+        self, verbose: bool = False, quiet: bool = False
+    ) -> LogParam:
+        """Use Param with overrides for log setup and store applied param"""
 
-    # NEXT: proper __fmt__
+        runtime_param: LogParam = self.settings.log.with_overrides(
+            verbose=verbose, quiet=quiet
+        )
+        self.log_result: LogParam = setup_logging(runtime_param)
 
-    def __repr__(self) -> str:
-        settings: str = type(self.settings).__name__
-        paths: str = type(self.settings).__name__
-        defaults: str = type(self.defaults).__name__
-        names: str = type(self.names).__name__
-        return f"{self}[{settings}, {paths}, {defaults},{names}]"
-
-    def _fill_printer(self):
-        # Printer.project_name = self.project_name
-        # Printer.project_version = self.project_version
-        pass  # REMOVE: when established in System
+        return self.log_result
 
     @property
     def names(self) -> TNames:
@@ -104,6 +96,10 @@ class ConfigManager[
     def defaults(self) -> TDefaults:
         """Provide Defaults instance access with enforced dot access"""
         return cast(TDefaults, self.settings.defaults)
+
+    @property
+    def project_meta(self) -> tuple[str, str]:
+        return self.project_name, self.project_version
 
     @property
     def dom(self) -> int:
@@ -132,3 +128,15 @@ class ConfigManager[
             return var
 
         raise ValueError(f"Missing {key=} in os.env despite loaded .env")
+
+    def __str__(self) -> str:
+        return type(self).__name__
+
+    # NEXT: proper __fmt__
+
+    def __repr__(self) -> str:
+        settings: str = type(self.settings).__name__
+        paths: str = type(self.paths).__name__
+        defaults: str = type(self.defaults).__name__
+        names: str = type(self.names).__name__
+        return f"{self}[{settings}, {paths}, {defaults},{names}]"

@@ -3,13 +3,13 @@ sstcore.core - Assemble the System!
 
 Load and combine all singletons in one System.
 
-- Use System.bootstrap() for Non-Global Instance
+- Use System.bootstrap(*custom_loaders*) for Non-Global Instance
 
 - Inject custom behaviour with System.bootstrap(kwargs)
 
 Zero effort access for scripts and small projects:
-- Initialize Global singleton: fetch_system(_allow_uninitialized=False)
-- Access everywhere without wiring with fetch_system()
+- Initialize Global singleton: System.bootstrap(use_globals=True)
+- Access everywhere without wiring with sst_system()
 
 Warning:
 - Don't Mix both approaches except you know exactly what you are doing!
@@ -19,9 +19,6 @@ Ideas:
 - fetch_system with custom singleton and loader (similar to config)
 
 """
-
-from sstcore.config.manager import SstConfig
-from sstcore.utils.path import HomeSetup
 
 __all__: list = [
     "System",
@@ -44,8 +41,8 @@ from ..config.setup import ConfigLoader, set_global_config, sst_config_loader
 from ..contract.event import CoreEvent, EventName
 from ..utils import Printer
 from ..utils import printer as global_printer
-from ..utils.log import LogSetupResult
-from ..utils.log.setup import setup_logging, setup_minimal_logging
+from ..utils.log.setup import setup_minimal_logging
+from ..utils.path import HomeSetup
 from .bus import EventBus
 from .emitter import Emitter
 from .setup import BusLoader, set_global_bus, sst_bus_loader
@@ -54,19 +51,17 @@ from .setup import BusLoader, set_global_bus, sst_bus_loader
 class System:
     """Combine the Essentials to work together as System"""
 
-    def __init__[Config: SstConfig](
+    def __init__(
         self,
-        config: Config,
+        config: ConfigManager,
         printer: Printer,
         bus: EventBus,
     ):
-        self.config: Config = config
+        self.config: ConfigManager = config
         self.printer: Printer = printer
         self.bus: EventBus = bus
 
-        self.printer.project_name = config.project_name
-        # TODO: function of printer? printer.set_...
-        self.printer.project_version = config.project_version
+        printer.set_project_meta(*config.project_meta)
 
     @property
     def emitter(self) -> Emitter:  # TEST: use Emitter in Project
@@ -81,10 +76,10 @@ class System:
         self.bus.emit(event_name, sender, **payload)
 
     @classmethod
-    def bootstrap[Config: SstConfig](
+    def bootstrap(
         cls,
         *,
-        config_loader: ConfigLoader[Config] | None = None,
+        config_loader: ConfigLoader[ConfigManager] | None = None,
         bus_loader: BusLoader | None = None,
         printer: Printer | None = None,
         setting_file: Path | None = None,
@@ -96,20 +91,12 @@ class System:
     ) -> Self:
         """Assemble Config, wire Bus, ensure Printer and Compose to System"""
 
-        setup_minimal_logging("DEBUG" if verbose else "WARNING")
-        # shadow bootstrap noise but show minimal output if bootstrap fails
+        setup_minimal_logging(level="DEBUG" if verbose else "WARNING")
 
-        config_loader: ConfigLoader[Config] = (
-            config_loader or sst_config_loader()
-        )
-        config: Config = config_loader(setting_file, home)
+        config_loader: ConfigLoader = config_loader or sst_config_loader()
+        config: ConfigManager = config_loader(setting_file, home)
 
-        log_result: LogSetupResult = setup_logging(
-            log_level_override="DEBUG" if verbose else None,
-            quiet=quiet,
-            param=config.settings.log,
-        )  # LATER: attach with config.func(*) and update LogSetupParam
-        config.log_result = log_result
+        config.launch_log_setup(verbose=verbose, quiet=quiet)
 
         bus_loader: BusLoader = bus_loader or sst_bus_loader()
         bus: EventBus = bus_loader()
@@ -133,8 +120,8 @@ class System:
 type SystemLoader = Callable[..., System]
 
 
-def sst_system_loader[Config: SstConfig](  # intended for user
-    config_loader: ConfigLoader[Config] | None = None,
+def sst_system_loader(  # intended for user
+    config_loader: ConfigLoader | None = None,
     bus_loader: BusLoader | None = None,
     printer: Printer | None = None,
     use_all_globals: bool = False,

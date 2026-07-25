@@ -1,101 +1,70 @@
-"""
-Setup Loguru for console and files (*.log and *.json)
+"""Prepare selected logger, avoid multiple setups, provide minimal logger"""
 
-Usage:
-  - Check params from ConfigManager.setup_info.log
-    (synced to json setting file by SstSettings)
-"""
+__all__: list[str] = [
+    "setup_logging",
+    "setup_minimal_logging",
+    "fetch_log_result",
+    "reset_logging",
+]
 
 import sys
-from pathlib import Path
 
 from loguru import logger
 
-from ..path import PathGuard
 from .format import load_format_pattern, ndjson_formatter
-from .param import LogParam, LogSetupResult
+from .param import LogParam
 
-# Cache Result to prevent multiple calls
-_setup_result: LogSetupResult | None = None
+_setup_param: LogParam | None = None
 
 
-def setup_logging(
-    log_level_override: str | None = None,
-    quiet: bool = False,
-    log_file: Path | None = None,
-    log_to_file: bool = True,
-    param: LogParam | None = None,
-) -> LogSetupResult:
-    """
-    Setup Loguru for Console or File output and return applied param.
+def setup_logging(param: LogParam | None = None) -> LogParam:
+    """Setup Loguru for Console and Files (*.log and *.jsonl)"""
 
-    - log_file overrides log_to_file
-    - LogParam provides path components and other defaults if needed
-    - LogSetupResult provides the finally applied paths and settings
+    global _setup_param
 
-    If all options are unused or fail, LogParam defaults are applied.
-    """
+    if _setup_param is not None:
+        return _setup_param
 
-    global _setup_result
-
-    if _setup_result is not None:
-        return _setup_result
-
-    log_param: LogParam = param or LogParam()
-
-    if log_level_override is not None:
-        log_param.log_level = log_level_override
+    param: LogParam = param or LogParam()
 
     logger.remove()
 
-    if not quiet:  # Terminal output
+    if param.log_to_console:
         logger.add(
             sink=sys.stderr,
-            level=log_param.log_level,
+            level=param.log_level,
             format=load_format_pattern(),
             colorize=True,
         )
 
-    if log_to_file or log_file:
-        log_file_path: Path = _ensure_log_file(log_param, log_file)
+    if param.log_to_file:
         logger.add(
-            sink=log_file_path,
+            sink=param.log_file,
             level="DEBUG",  # Always keep debug detail for files
-            rotation=log_param.rotation,
-            retention=log_param.retention,
+            rotation=param.rotation,
+            retention=param.retention,
             compression="zip",
             backtrace=True,  # Note: this can reveal sensitive data!
             diagnose=True,  # Shows variable values in logs!
             enqueue=True,  # Thread-safe
         )
 
-        # TODO: make toggles inside param and include .json in result
-
+    if param.log_to_json:
         logger.add(
-            sink=log_file_path.with_suffix(".jsonl"),
+            sink=param.struct_log_file,
             format=ndjson_formatter,
             level="DEBUG",
-            rotation=log_param.rotation,
-            retention=log_param.retention,
+            rotation=param.rotation,
+            retention=param.retention,
             enqueue=True,  # Keeps JSON writing thread-safe
         )
-    else:
-        log_file_path = None
 
-    if not quiet and not log_to_file:
+    if not any([param.log_to_console, param.log_to_file, param.log_to_json]):
         print("Warning: Logging is completely disabled.")
 
-    _setup_result = LogSetupResult.from_param(
-        log_file=log_file_path,  # WARN: ensure log_file_path exists
-        selected_param=log_param,
-    )
-    return _setup_result
+    _setup_param = param
 
-
-@PathGuard.file(default_content="", raise_error=False)
-def _ensure_log_file(log_param: LogParam, log_file: Path | None) -> Path:
-    """Ensure at least empty log file exists"""
-    return log_file or log_param.log_file
+    return _setup_param
 
 
 def setup_minimal_logging(level: str = "WARNING"):
@@ -106,3 +75,15 @@ def setup_minimal_logging(level: str = "WARNING"):
         level=level,
         format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
     )
+
+
+def fetch_log_result() -> LogParam | None:
+    """Fetch result of setup_logging"""
+    global _setup_param
+    return _setup_param
+
+
+def reset_logging() -> None:
+    """Allow setup_logging to run again"""
+    global _setup_param
+    _setup_param = None
