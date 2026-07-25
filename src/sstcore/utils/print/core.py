@@ -119,7 +119,6 @@ class PrinterCore(PrinterModus):
             case Modus.DEBUG:
                 print("Renderable: ", target, "kwargs: ", kwargs)
                 return
-            # TODO: case PRINT: -> console?
             case Modus.NULL:
                 return
             case Modus.EMIT:

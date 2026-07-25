@@ -24,7 +24,7 @@ from typing import Any, Self
 type RuleHandler[InputT, OutputT] = Callable[[InputT], OutputT]
 
 
-class _Base:
+class _View:
     pattern: str
 
     def __str__(self):
@@ -37,7 +37,7 @@ class _Base:
         return hash(self.pattern)
 
 
-class RegexMatch(_Base):
+class RegexMatch(_View):
     """Compile Regex Pattern and apply it to Equality checks"""
 
     def __init__(self, pattern: str):

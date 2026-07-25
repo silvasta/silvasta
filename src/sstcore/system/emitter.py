@@ -6,16 +6,19 @@ Typed, ergonomic facade on top of the EventBus.
 - Keeps printer focused on rendering only
 """
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..contract.cli import PanelDTO, TableDTO
-from ..contract.event import EmitFunc, EventName
-from ..contract.log import LogDTO
+from ..contract.cli import CliRenderable, PanelDTO, TableDTO
+from ..contract.event import CliEvent, EmitFunc, EventName
+from ..contract.log import LogDTO, LogSerializable
 from .bus import EventBus
 
 
+# AI: this is a very stable base, I would even like it to use to derive fro LogEmitter
+# - issue with frozen data classes, keyword errors, might be problematic
+# - emit assigned by Emitter as self in Emitter.make is genious
+# - overall the EmitFunc protocol looks promising for LogEmitter (and later CliEmitter)
 @dataclass(frozen=True)
 class EmitFunctor:
     """Pre-bound, specialized emitter for frequent use cases"""
@@ -25,12 +28,57 @@ class EmitFunctor:
     sender: str
     defaults: dict[str, Any] = field(default_factory=dict)
 
-    def __call__(self, **overrides: Any):
-        payload: dict[str, Any] = {**self.defaults, **overrides}
-        self.emit(self.event_name, self.sender, **payload)
+    def __call__(self, **overrides: Any) -> None:
+        self.emit(
+            self.event_name, self.sender, **{**self.defaults, **overrides}
+        )
 
-    def __str__(self):
-        return f"EmitBusFunc({self.sender} → {self.event_name})"
+    def __repr__(self) -> str:
+        return f"EmitFunctor({self.sender!r} → {self.event_name})"
+
+
+# AI_TASK: create something like LogEmitter but synchronized with the rest
+# - no emitter:Emitter but another product of a new Emitter.make factory
+# - just use emit:EmitFunc and see it as a more powerful version of EmitFunctor
+# used with some overhead for special occurrences, but less bulky than BoundEMitter
+@dataclass(frozen=True)
+class LogEmitter:
+    """Bound sender + default event for chatter."""
+
+    emitter: Emitter
+    sender: str
+    event: EventName
+
+    # IDEA: how to combine them?
+
+    def __call__(
+        self, message: str, *, level: str = "DEBUG", **extra: Any
+    ) -> None:
+        self.emitter.log(
+            self.event, self.sender, message, level=level, **extra
+        )
+
+    def info(self, message: str, **extra: Any) -> None:
+        self(message, level="INFO", **extra)
+
+    def warning(self, message: str, **extra: Any) -> None:
+        self(message, level="WARNING", **extra)
+
+    def error(self, message: str, **extra: Any) -> None:
+        self(message, level="ERROR", **extra)
+
+    def success(self, message: str, **extra: Any) -> None:
+        self(message, level="SUCCESS", **extra)
+
+
+x: EmitFunc = LogEmitter.__call__  # AI: type checker happy
+
+# NOTE: usage LogEmitter (will be removed soon)
+# # FileUploader.__init__
+# em = system.emitter
+# self._log = LogEmitter(em, self.sender, DataEvent.TRACE)  # or REMOTE_SYNC
+# self._emit_ok = em.make(DataEvent.UPLOAD_COMPLETED, self.sender)
+# self._emit_fail = em.make(DataEvent.UPLOAD_FAILED, self.sender)
 
 
 @dataclass(frozen=True)
@@ -42,26 +90,35 @@ class Emitter:  # TESTING: new and untested!
     def __call__(
         self, event_name: EventName, sender: str, **payload: Any
     ) -> None:
-        """Low-level escape hatch"""
         self.bus.emit(event_name, sender, **payload)
+
+    def make(
+        self, event_name: EventName, sender: str, **defaults: Any
+    ) -> EmitFunctor:
+        return EmitFunctor(self, event_name, sender, defaults)
+
+    def make_log(
+        self, event_name: EventName, sender: str, **defaults: Any
+    ) -> EmitFunctor:
+        return EmitFunctor(self, event_name, sender, defaults)
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### Log shortcuts (testing...)
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-    # TODO: Factory that deploys this log block,
-    # but with filled sender, maybe event_name
     def log(
         self,
         event: EventName,
-        message: str,
         sender: str,
-        level: str = "DEBUG",
-        **extra,
-    ):
-        dto = LogDTO(message=message, level=level, extra=extra or {})
-        self(event, sender, target=dto)
+        message: str,
+        *,
+        level: str = "INFO",
+        **extra: Any,
+    ) -> None:
+        log_dto = LogDTO(message=message, level=level, extra=extra)
+        self(event, sender, log=log_dto)
 
+    # AI: maybe the named logs will be removed, replaced by an internal LogEmitter?
     def info(self, event: EventName, message: str, sender: str, **extra):
         self.log(event, message, sender, "INFO", **extra)
 
@@ -69,52 +126,44 @@ class Emitter:  # TESTING: new and untested!
         self.log(event, message, sender, "WARNING", **extra)
 
     def error(self, event: EventName, message: str, sender: str, **extra):
-        self.log(message, "ERROR", **extra)
+        self.log(event, message, sender, "ERROR", **extra)  # fixed
 
     def success(self, event: EventName, message: str, sender: str, **extra):
-        self.log(message, "SUCCESS", **extra)
+        self.log(event, message, sender, "SUCCESS", **extra)
 
-    # error, debug, success...
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    ### VIEW and CLI
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-    def panel(self, text: str | list[str], **kwargs):
-        dto = PanelDTO.from_call(text=text, **kwargs)
-        self.bus.emit("ui.panel", self.default_sender, target=dto)
+    def view(
+        self,
+        event: EventName,
+        sender: str,
+        target: Any,
+        *,
+        level: str = "INFO",
+    ) -> None:
+        payload: dict[str, Any] = {"target": target}
 
-    def table(self, **kwargs):  # or specific from_ helpers
-        dto = TableDTO.from_call(**kwargs)
-        self.bus.emit("ui.table", self.default_sender, target=dto)
+        if isinstance(target, CliRenderable):
+            payload["cli"] = target.__cli__()
 
-    # md, line, rule, etc. — only the ones you use often
+        if isinstance(target, LogSerializable):
+            payload["log"] = target.__log__()
 
-    def make(
-        self, event_name: EventName, sender: str, **defaults: Any
-    ) -> EmitFunctor:
-        """Factory for local specialized emitters"""
-        return EmitFunctor(
-            emit=self.bus.emit,
-            event_name=event_name,
-            sender=sender,
-            defaults=defaults,
-        )
+        # TODO: elif?
+        elif hasattr(target, "message"):
+            payload["log"] = LogDTO(message=str(target), level=level)
 
-    # Example high-level helpers
-    def make_log(self, level: str = "INFO", **defaults) -> EmitFunctor:
-        return self.make("sys.log", level=level, **defaults)
+        self(event, sender, **payload)
 
-    def make_panel(self, **defaults) -> EmitFunctor:
-        return self.make("ui.panel", **defaults)
+    def panel(self, sender: str, text: str | list[str], **kwargs: Any) -> None:
+        # TODO: strong default CliDTO setup
+        cli: PanelDTO = PanelDTO.from_call(text=text, **kwargs)
+        self(CliEvent.RENDER, sender, cli=cli)
 
+        # TASK: CliEmitter
 
-class _DataOperator:
-    """Example for Usage, do not use from here!"""
-
-    def __init__(self, make_emitter: Callable[..., EmitFunctor]):
-        self.emit_ui: EmitFunctor = make_emitter(
-            "cli.render.panel", sender="DataOp"
-        )
-
-    def process(self, result_dict: dict[str, Any]):
-        dto = PanelDTO.from_call(
-            text="Operation Successful", metrics=result_dict, frame="green"
-        )
-        self.emit_ui(target=dto)
+    def table(self, sender: str, **kwargs: Any) -> None:
+        # TODO: strong default CliDTO setup
+        self(CliEvent.RENDER, sender, cli=TableDTO.from_call(**kwargs))
