@@ -19,7 +19,6 @@ __all__: list = [
     "SstNames",
     "sst_config",
 ]
-
 from .defaults import SstDefaults
 from .manager import ConfigManager
 from .names import SstNames

@@ -1,61 +1,52 @@
-# TODO: explain
-
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, Field
 
-from ..path.search import any_root
-
-# NEXT: adapt to current pipeline
+from ..path import PathGuard, any_root
 
 
 class LogParam(BaseModel):
     """Handle Input Param for log and provide defaults"""
 
-    # setup behaviour
+    # Setup behaviour
     print_at_setup: bool = False
 
-    # dir and file
-    log_dir: Path = Field(default_factory=any_root)
-    log_filename: str = "debug.log"
+    # Toggles (The 3 outputs you need to control)
+    log_to_console: bool = True
+    log_to_file: bool = True
+    log_to_json: bool = True
 
-    # runtime behaviour and file management
+    # Directories and names
+    log_dir: Path = Field(default_factory=any_root)
+    log_file_stem: str = "debug"
+    file_suffix: str = ".log"
+    json_suffix: str = ".jsonl"
+
+    # Runtime behaviour and file management
     log_level: str = "INFO"
     retention: str = "1 week"
     rotation: str = "5 MB"
 
     @property
+    @PathGuard.file(default_content="", raise_error=False)
     def log_file(self) -> Path:
-        return self.log_dir / self.log_filename
+        """Get ensured Path for regular logs (at least empty file)"""
+        return self.log_dir / f"{self.log_file_stem}{self.file_suffix}"
 
-    def attach_logname(self, name: str) -> Self:
-        if stem := name.rstrip(".log").strip():
-            self.log_filename = f"{stem}.log"
-        return self
+    @property
+    @PathGuard.file(default_content="", raise_error=False)
+    def struct_log_file(self) -> Path:
+        """Get ensured Path for structured logs (at least empty file)"""
+        return self.log_dir / f"{self.log_file_stem}{self.json_suffix}"
 
-
-class LogSetupResult(BaseModel):
-    """Collect applied Param for log and provide results"""
-
-    print_at_setup: bool
-
-    # Final Path that was taken (usually the composed from LogParam)
-    log_file: Path | None
-
-    # From LogParam
-    log_level: str
-    retention: str
-    rotation: str
-
-    @classmethod
-    def from_param(
-        cls, log_file: Path | None, selected_param: LogParam
+    def with_overrides(
+        self, verbose: bool = False, quiet: bool = False
     ) -> Self:
-        return cls(
-            print_at_setup=selected_param.print_at_setup,
-            log_file=log_file,
-            log_level=selected_param.log_level,
-            retention=selected_param.retention,
-            rotation=selected_param.rotation,
-        )
+        """Create new detached DTO for Runtime overrides"""
+        updates: dict[str, Any] = {}
+        if verbose:
+            updates["log_level"] = "DEBUG"
+        if quiet:
+            updates["log_to_console"] = False
+        return self.model_copy(update=updates)

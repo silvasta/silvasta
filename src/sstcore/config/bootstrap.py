@@ -13,8 +13,7 @@ from typing import Self
 
 from loguru import logger
 
-from sstcore.utils.log import LogParam
-
+from ..utils.log import LogParam
 from ..utils.path import HomeSetup, pyproject_name
 from .settings import SstSettings
 
@@ -65,9 +64,11 @@ class ConfigBootstrap[TSettings: SstSettings]:
                 logger.debug(f"Found valid Settings: {final_setting_file=}")
                 break
         else:
-            log_setup = LogParam(log_dir=defaults.home_setup.log_dir)
+            log_setup = LogParam(
+                log_dir=defaults.home_setup.log_dir, log_file_stem=project_name
+            )
             final_setting_file: Path = cls.scaffold_default_config(
-                settings_cls, defaults, log_setup.attach_logname(project_name)
+                settings_cls, defaults, log_setup
             )
             logger.warning(
                 f"No Settings found — created scaffold: {final_setting_file=}"

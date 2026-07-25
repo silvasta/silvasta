@@ -16,9 +16,8 @@ from loguru import logger
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
-from sstcore.utils.time import nice_duration
-
 from ..utils.log import LogParam
+from ..utils.time import nice_duration
 from .defaults import SstDefaults
 from .names import SstNames
 

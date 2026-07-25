@@ -23,14 +23,14 @@ from pathlib import Path
 from loguru import logger
 
 from ..utils.path import HomeSetup
-from .manager import ConfigManager, SstConfig
+from .manager import ConfigManager
 from .paths import SstPaths
 from .settings import SstSettings
 
-type ConfigLoader[Config: ConfigManager] = Callable[..., Config]
+type ConfigLoader[config: ConfigManager] = Callable[..., config]
 
 
-def sst_config_loader[Config: SstConfig](
+def sst_config_loader(
     settings_cls=SstSettings,
     paths_cls=SstPaths,
     project_name: str = "sstcore",
@@ -38,7 +38,7 @@ def sst_config_loader[Config: SstConfig](
     project_root: Path | None = None,
     #
     use_global: bool = False,
-) -> ConfigLoader[Config]:
+) -> ConfigLoader:
     """Prepare Loader function ready to setup ConfigManager"""
 
     def loader(  # CLI input
@@ -62,7 +62,7 @@ def sst_config_loader[Config: SstConfig](
 _config: ConfigManager | None = None
 
 
-def sst_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
+def sst_config() -> ConfigManager:
     """Fetch Global ConfigManager Singleton"""
 
     global _config
@@ -73,9 +73,11 @@ def sst_config(*, _allow_uninitialized: bool = False) -> ConfigManager:
     return _config
 
 
-def create_config_manager[TSettings: SstSettings, TPaths: SstPaths](
-    settings_cls: type[TSettings] | None,
-    paths_cls: type[TPaths] | None,
+def create_config_manager(
+    settings_cls: type[SstSettings] | None,
+    # LATER: change the setup with SstNames and SstDefaults
+    # - Paths and Settings both depend on them somehow
+    paths_cls: type[SstPaths] | None,
     setting_file: Path | None = None,
     project_name: str = "",
     project_root: Path | None = None,

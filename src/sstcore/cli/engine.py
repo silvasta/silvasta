@@ -65,6 +65,7 @@ class SafeTyper(typer.Typer):
             setting_file=setting_file,
             home=home,
         )
+
         ctx.obj = ctx.obj or {}
         ctx.obj.update(
             {
@@ -75,13 +76,9 @@ class SafeTyper(typer.Typer):
             }
         )
 
-        if not quiet:
+        if not quiet:  # TODO: send system! (emit!)
             scroll.safe_typer.intro(project_name=ctx.info_name)
-            scroll.safe_typer.setup(
-                self.system.config,  # TODO: send system! (emit!)
-                loader,
-                self.system.config.log_result,
-            )
+            scroll.safe_typer.setup(self.system.config, loader)
 
     def _attach_internal_callback(self):
         """Dispatch callback for Main or Subapp"""

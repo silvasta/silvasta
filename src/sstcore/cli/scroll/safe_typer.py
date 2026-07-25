@@ -7,6 +7,8 @@ Assemble the Prints for SafeTyper
   - in future: connected and reacting to app state
 """
 
+from sstcore.utils.log.setup import fetch_log_result
+
 __all__: list[str] = [
     "intro",
     "setup",
@@ -26,7 +28,6 @@ from ...config.setup import ConfigLoader
 from ...utils import printer
 from ...utils.color import ColorBox, colorize
 from ...utils.color.palette import ColorName
-from ...utils.log import LogSetupResult
 from ...utils.print import boxes
 from .option import PrintOption, SelectMode
 
@@ -168,19 +169,22 @@ config_loader = ConfigLoaderScroll(select_mode=toggle["setup_"])
 log_or_config_path = ConfigAndLogPanel(select_mode=toggle["sub___"])
 
 
-def setup(
-    config: ConfigManager, loader: Callable, log_result: LogSetupResult | None
-):
+def setup(config: ConfigManager, loader: Callable):
     """Provide main callback text"""
+
+    # TODO: quiet?
 
     config_loader(config, loader)
     log_or_config_path(config.setting_file, mode="config")
 
-    if log_result and log_result.print_at_setup:
-        printer(log_result)
+    if log_result := fetch_log_result():
+        if log_result.print_at_setup:
+            printer(log_result)
+        if log_result.log_to_file:
+            log_or_config_path(log_result.log_file, mode="log")
+        if log_result.log_to_json:
+            log_or_config_path(log_result.struct_log_file, mode="log")
 
-    if log_result and log_result.log_file:
-        log_or_config_path(log_result.log_file, mode="log")
     else:
         printer.dip("LogFile", "No setup active for tracking Events", "yellow")
 
