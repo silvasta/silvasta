@@ -33,8 +33,8 @@ def _format_brackets(key: str) -> str:  # INFO: don't loose this
     return f"{{{key}}}"
 
 
-class NameBase:
-    """Hold Meta and Decoration"""
+class BaseName:
+    """Hold Meta and Views"""
 
     pattern: str
     keys: tuple[str, ...]
@@ -57,7 +57,9 @@ class NameBase:
         return f"[{self._color}]{self._name}[/][{self.keys}'{self.pattern}']"
 
 
-class NamePattern(NameBase):
+class NamePattern(BaseName):
+    """Compile the Pattern, format and parse Keys and Names"""
+
     def __init__(
         self,
         pattern: str,
@@ -112,7 +114,7 @@ class NamePattern(NameBase):
 class FormatNormalizer(NamePattern):
     """Check keys and pre-format datetimes"""
 
-    def normalize(
+    def normalize_keys(
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
     ) -> dict[str, str]:
         """Convert datetimes and ensure all keys are present"""
@@ -133,14 +135,14 @@ class FormatNormalizer(NamePattern):
 
     def format(self, keys: dict | list | tuple) -> str:
         """Render normalized keywords"""
-        keys: dict[str, str] = self.normalize(keys)
+        keys: dict[str, str] = self.normalize_keys(keys)
         return super().format(keys)
 
 
 class ExtractNormalizer(NamePattern):
     """Extract from String or Path"""
 
-    def normalize(self, target: Path | str) -> str:
+    def normalize_name(self, target: Path | str) -> str:
         """Normalize type and strip PathGuard increments"""
 
         name: str = (  # resolve Path to string
@@ -156,11 +158,11 @@ class ExtractNormalizer(NamePattern):
 
     def extract(self, name: Path | str) -> dict[str, str]:
         """Parse keywords from cleaned string"""
-        clean_string: str = self.normalize(name)
+        clean_string: str = self.normalize_name(name)
         return super().extract(clean_string)
 
 
-# TODO: wire NameBase
+# TODO: wire BaseName
 # class DispatchName:
 #     """ __call__ and distribute """
 #     @singledispatchmethod
