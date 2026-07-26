@@ -13,6 +13,16 @@ from .compose import ViewBuilder
 from .registry import Cli, Log, Repr, Rich, Str
 
 
+def pydantic_view() -> ViewBuilder:
+    return ViewBuilder(
+        cli=Cli.OFF,
+        str=Str.SHORT,
+        rich=Rich.OFF,
+        repr=Repr.OFF,
+        log=Log.PYDANTIC,
+    )
+
+
 def printer_view_builder() -> ViewBuilder:
     return ViewBuilder(
         cli=Cli.BAR,

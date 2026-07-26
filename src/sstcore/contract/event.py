@@ -41,10 +41,15 @@ class EmitFunc(Protocol):
 
 
 class EventName(StrEnum):
+    # NEXT: decide gi
     """
     Provide clean extension point with autocomplete and typing
 
       Pattern: "{surface}.{entity}.{action}"
+
+      Pattern: {surface}.{entity}.{action}
+
+      Pattern: surface.entity.action
 
     """
 

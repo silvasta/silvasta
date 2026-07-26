@@ -17,7 +17,7 @@ class DebugLogMixin:
         return LogDTO(message=str(self), level="INFO", metrics=data)
 
 
-class PydanticDataMixin:  # TODO: some (protocol) check with Pydantic
+class PydanticDataMixin:
     def __log__(self) -> LogDTO:
         if not isinstance(self, BaseModel):
             return LogDTO(f"{self}: Bad Mixin!", level="ERROR")

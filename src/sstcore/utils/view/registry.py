@@ -13,7 +13,6 @@ Store the Mixins in proper Container
 from enum import Enum, auto
 
 from ...contract.cli import CliRenderable
-from ...contract.external import RichRenderable
 from ...contract.log import LogSerializable
 from ...contract.native import ReprRenderable, Stringable
 from . import mixin
@@ -73,7 +72,7 @@ class Rich(Enum):
     OFF = auto()
 
     @property
-    def mixin(self) -> type[RichRenderable]:
+    def mixin(self) -> type:  # FIX: type hint []
         match self:
             case self.SHORT:
                 return mixin.rich.SimpleRichNameMixin

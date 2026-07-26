@@ -5,13 +5,17 @@ Provide typed Data Transfer Objects for the EventBus
 
 """
 
-from rich.align import AlignMethod
+from rich.console import ConsoleRenderable
 
 __all__: list[str] = [
-    "CliDTO",
     "CliRenderable",
+    "Renderable",
+    #
+    "CliDTO",
+    #
     "PanelDTO",
     "LineDTO",
+    "GroupDTO",
     "TableDTO",
     "MarkdownDTO",
     "RuleDTO",
@@ -19,9 +23,13 @@ __all__: list[str] = [
 
 import warnings
 from dataclasses import dataclass, field, fields
-from typing import Any, ClassVar, Protocol, Self, runtime_checkable
+from typing import Any, ClassVar, Literal, Protocol, Self, runtime_checkable
 
+from rich.abc import RichRenderable
+from rich.align import AlignMethod
 from rich.box import ROUNDED, Box
+
+type Renderable = ConsoleRenderable | RichRenderable | CliRenderable | str
 
 
 @runtime_checkable
@@ -29,7 +37,7 @@ class CliRenderable(Protocol):
     def __cli__(self) -> CliDTO: ...
 
 
-class _DtoBase:
+class _DtoBase:  # TASK: compare with .log._DtoBase, unified base?
     def __cli__(self) -> Self:
         return self
 
@@ -43,8 +51,8 @@ class CliDTO(_DtoBase):
     indent: int = 0
     meta: dict[str, Any] = field(default_factory=dict)
 
-    _strict: ClassVar[bool] = False
-    _content_field: ClassVar[str] = "text"
+    _strict: ClassVar[bool] = False  # REMOVE:
+    _content_field: ClassVar[str] = "text"  # TODO: content:Renderable=""?
 
     def __post_init__(self):
         self._validate()
@@ -94,8 +102,20 @@ class CliDTO(_DtoBase):
 
 
 @dataclass(kw_only=True)
+class GroupDTO(CliDTO):
+    # TASK: remove CliDTO?
+    # or ensure the args here can be set like global for all sub dtos
+    """Ordered stack of renderables (vertical by default)."""
+
+    items: list[CliDTO] = field(default_factory=list)
+    title: str | None = None
+    layout: Literal["vertical", "horizontal"] = "vertical"
+    _content_field = "items"
+
+
+@dataclass(kw_only=True)
 class PanelDTO(CliDTO):
-    text: str | list[str]  # TODO: check when normalized
+    text: Renderable | list[Renderable]  # TODO: check when to normalize
     color: str = "bold white"
     frame: str = "cyan"  # TODO: share normalize! done in print.mixin.layout
     title: str | None = None
@@ -172,14 +192,12 @@ class TableDTO(CliDTO):
                 yield row
 
     @classmethod
-    def from_row_dicts(cls, rows: dict[str, list[Any]]) -> Self:
-        """Transform dict of {row_name: values} to internal structure."""
+    def from_row_dicts(cls, rows: dict[str, Any | list[Any]]) -> Self:
+        """Transform dict of {row_name: value(s)} to internal structure."""
         return cls(
             matrix=list(rows.values()),
             row_names=list(rows.keys()),
         )
-
-    # WARN: missing  regular args,kwargs!
 
     @classmethod
     def from_col_dicts(cls, cols: dict[str, list[Any]]) -> Self:
