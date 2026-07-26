@@ -19,7 +19,7 @@ class LogSerializable(Protocol):
     def __log__(self) -> LogDTO: ...
 
 
-class _DtoBase:
+class _DtoBase:  # IDEA: __cli__? check with printer.render
     def __log__(self) -> Self:
         return self
 
@@ -34,7 +34,6 @@ class LogDTO(_DtoBase):
     metrics: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
 
-    # AI_QUESTION: why we dont just use this? for the logger.bind
     def to_dict(self) -> dict[str, Any]:
         """Provide clean dictionary for log injection"""
         return {

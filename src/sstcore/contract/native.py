@@ -6,6 +6,8 @@ __all__: list[str] = [
 ]
 from typing import Protocol, runtime_checkable
 
+# TASK: compare with LogSerializable, CliRenderable, unite!
+
 
 @runtime_checkable
 class Stringable(Protocol):

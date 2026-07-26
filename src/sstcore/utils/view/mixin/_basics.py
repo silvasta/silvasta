@@ -5,8 +5,9 @@ Provide shared utils for Mixins.
 
 """
 
+from rich.abc import RichRenderable
+
 from ....contract.cli import CliDTO
-from ....contract.external import RichRenderable
 from ....contract.log import LogDTO
 
 
