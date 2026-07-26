@@ -44,7 +44,7 @@ from ..utils import printer as global_printer
 from ..utils.log.setup import setup_minimal_logging
 from ..utils.path import HomeSetup
 from .bus import EventBus
-from .emitter import Emitter
+from .emit import Emitter
 from .setup import BusLoader, set_global_bus, sst_bus_loader
 
 
@@ -60,16 +60,9 @@ class System:
         self.config: ConfigManager = config
         self.printer: Printer = printer
         self.bus: EventBus = bus
+        self.emitter = Emitter(bus=self.bus)
 
         printer.set_project_meta(*config.project_meta)
-
-    @property
-    def emitter(self) -> Emitter:  # TEST: use Emitter in Project
-        if not hasattr(self, "_emitter"):
-            self._emitter = Emitter(
-                bus=self.bus, default_sender=self.config.project_name
-            )
-        return self._emitter
 
     def emit(self, event_name: EventName, sender: str, **payload: Any) -> None:
         """Provide direct bus access"""

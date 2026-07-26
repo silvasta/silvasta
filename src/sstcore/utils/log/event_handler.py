@@ -12,46 +12,35 @@ from loguru import logger
 from ...contract.event import Event
 from ...contract.log import LogDTO, LogSerializable
 
-# AI_TASK: find at least 1 proper handler setup, maybe somme options
-# - the "log" in payload and early return is important for the new strategy
-# - still the dispatch and bind of the inital handler should be considered
 
+def handle_log_event(event: Event) -> None:
+    """Process payload['log'] only; no-op for every other event."""
 
-def handle_log_event(event: Event):
-    """Bridge __log__ events from EventBus to Loguru"""
+    log_payload: Any | None = event.payload.get("log")
 
-    target: Any = event.payload.get("target") or event.payload.get("obj")
+    if log_payload is None:
+        return
 
-    bind_context: dict[str, Any] = {
-        "sender": event.sender,
-        "event_name": event.name,
-    }
-    if isinstance(target, LogSerializable):
-        dto: LogDTO = target.__log__()
-        logger.bind(raw_obj=target, **bind_context).log(
-            dto.level.upper(), dto.message
+    if not isinstance(log_payload, LogSerializable):
+        logger.bind(
+            event_name=event.name,
+            sender=event.sender,
+        ).warning(
+            "bus log= expected LogSerializable, got {type}",
+            type=type(log_payload).__name__,
         )
-    else:
-        logger.bind(**bind_context).log(
-            event.payload.get("level", "INFO").upper(),
-            str(target or event.payload),
-        )
+        return
 
+    dto: LogDTO = log_payload.__log__()
 
-# NEXT: handle log
-# NEXT: handle log
-# NEXT: handle log
-
-
-def _handle_log_event(event: Event) -> None:
-    log = event.payload.get("log")
-    if log is None:
-        return  # # IMPORTANT:
-    logger.opt(depth=...).log(
-        log.level,
-        "{sender} | {name} | {message}",
+    logger.bind(
+        log_payload_obj=log_payload,
+        event_name=event.name,
         sender=event.sender,
-        name=event.name,
-        message=log.message,
-    )
-    # optional: bind log.extra
+        **dto.metrics,
+        **dto.extra,
+        # AI_QUESTION: ok I see the message and level are in the last block,
+        # but the others, metrics,extras in the first.
+        # - Briefly summarize the purpose of both,
+        #   which critera decide what comes where?
+    ).log(dto.level.upper(), dto.message)

@@ -36,7 +36,7 @@ class Event:
 
 class EmitFunc(Protocol):
     def __call__(
-        self, event_name: EventName, sender: str, **payload: Any
+        self, event: EventName, sender: str, **payload: Any
     ) -> None: ...
 
 
@@ -44,7 +44,7 @@ class EventName(StrEnum):
     """
     Provide clean extension point with autocomplete and typing
 
-    - Pattern: '{surface}.{entity}.{action}'
+      Pattern: "{surface}.{entity}.{action}"
 
     """
 
@@ -58,4 +58,4 @@ class CliEvent(EventName):
 class CoreEvent(EventName):
     BUS_READY = "core.bus.ready"
     BUS_DIAG = "core.bus.warn"  # one channel; level in LogDTO
-    LIFECYCLE = "core.systen.lifecycle"
+    LIFECYCLE = "core.system.lifecycle"  # fixed typo
