@@ -18,6 +18,7 @@ from enum import Enum, auto
 from typing import Any, Literal, Protocol
 
 import rich
+from rich.abc import RichRenderable
 from rich.align import AlignMethod
 from rich.box import Box
 from rich.theme import Theme
@@ -30,7 +31,6 @@ from ...contract.cli import (
     RuleDTO,
     TableDTO,
 )
-from ...contract.external import RichRenderable
 from ...contract.log import LogDTO
 from ..color import ColorBox, Palette
 

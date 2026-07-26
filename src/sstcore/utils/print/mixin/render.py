@@ -1,5 +1,5 @@
 """
-Transform DTO to RichRenderable
+Transform DTO to Renderable
 
 - CliDTO: Specialized for CLI
 - LogDTO: Intended for Monitor
@@ -16,22 +16,21 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from sstcore.contract.log import LogDTO
-
 from ....contract.cli import (
     CliDTO,
     LineDTO,
     MarkdownDTO,
     PanelDTO,
+    Renderable,
     RuleDTO,
     TableDTO,
 )
-from ....contract.external import RenderableType, RichRenderable
+from ....contract.log import LogDTO
 from ..blueprint import Printer
 
 
 class RenderMixin:
-    def render(self: Printer, dto: CliDTO | LogDTO) -> RichRenderable:
+    def render(self: Printer, dto: CliDTO | LogDTO) -> Renderable:
         """Centralized render dispatcher using pattern matching."""
 
         # IDEA: this as singledispatchmethod? probably never fitted that well
@@ -52,7 +51,7 @@ class RenderMixin:
             case _:
                 raise TypeError(f"No render strategy implemented for {dto}")
 
-    def render_panel(self: Printer, dto: PanelDTO) -> RichRenderable:
+    def render_panel(self: Printer, dto: PanelDTO) -> Renderable:
         content: str = self.normalize(dto.text)
         content: str = self.color(content, dto.color)
         title: str | None = (  # TODO: color apply inside PanelDTO?
@@ -72,14 +71,14 @@ class RenderMixin:
             expand=dto.expand,
         )
 
-    def render_line(self: Printer, dto: LineDTO) -> RenderableType:
+    def render_line(self: Printer, dto: LineDTO) -> Renderable:
         text: str = dto.text if dto.text is not None else "─" * 40
         return self.color(text, dto.style)
 
-    def render_rule(self: Printer, dto: RuleDTO) -> RichRenderable:
+    def render_rule(self: Printer, dto: RuleDTO) -> Renderable:
         return Rule(style=dto.style, characters=dto.char)
 
-    def render_table(self: Printer, dto: TableDTO) -> RichRenderable:
+    def render_table(self: Printer, dto: TableDTO) -> Renderable:
         table = Table(style=dto.style)
 
         # LATER: color layout for header and side title,
@@ -94,14 +93,14 @@ class RenderMixin:
 
         return table
 
-    def render_markdown(self: Printer, dto: MarkdownDTO) -> RenderableType:
+    def render_markdown(self: Printer, dto: MarkdownDTO) -> Renderable:
         content: str = self.normalize(dto.text)
         if dto.header > 0:
             prefix = "#" * dto.header + " "
             return self.color(f"{prefix}{content}", dto.style)
         return self.color(content, dto.style)
 
-    def render_log(self: Printer, log: LogDTO) -> RichRenderable:
+    def render_log(self: Printer, log: LogDTO) -> Renderable:
         """Test different Log renderings until final version is found"""
         _log_tests = [  # TESTING:
             _render_log_3,
@@ -111,7 +110,7 @@ class RenderMixin:
         return _log_tests[0](log)
 
 
-def _render_log_1(log: LogDTO) -> RichRenderable:
+def _render_log_1(log: LogDTO) -> Renderable:
     """For the NDJSON log monitor (and optionally for console)."""
     color = {"ERROR": "red", "WARN": "yellow", "INFO": "cyan"}.get(
         log.level.upper(), "blue"
@@ -122,7 +121,7 @@ def _render_log_1(log: LogDTO) -> RichRenderable:
     return Text.from_markup(text)
 
 
-def _render_log_2(log: LogDTO) -> RichRenderable:
+def _render_log_2(log: LogDTO) -> Renderable:
     """Render dynamic logs  in a clean format"""
     level_colors = {
         "DEBUG": "dim cyan",
@@ -164,7 +163,7 @@ def _render_log_2(log: LogDTO) -> RichRenderable:
     return tree
 
 
-def _render_log_3(log: LogDTO) -> RichRenderable:
+def _render_log_3(log: LogDTO) -> Renderable:
     """Render a Log DTO beautifully for console monitoring."""
 
     # Color code based on log level

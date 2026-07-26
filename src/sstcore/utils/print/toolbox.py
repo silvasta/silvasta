@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
+from rich.console import RichCast
 from rich.table import Table
 from rich.tree import Tree
 
-from ...contract.external import RichProtocol
 from ..color import colorize
 from ..tree import SimpleTreeNode
 
@@ -48,7 +48,7 @@ def dict_table(
         table.add_column("Type Value", style="magenta")
 
     for key, value in target.items():
-        row: list[RichProtocol] = [
+        row: list[RichCast] = [
             key,
             *([type(key).__name__] if show_key_type else []),
             value,

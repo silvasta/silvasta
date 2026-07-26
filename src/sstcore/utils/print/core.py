@@ -7,13 +7,13 @@ Provide Engine for easy access to Rich Console setup
 
 from contextlib import contextmanager
 
-from rich.console import Console, ConsoleRenderable, RichCast
+from rich.abc import RichRenderable
+from rich.console import Console
 from rich.padding import Padding
 from rich.theme import Theme
 
-from ...contract.cli import CliDTO, CliRenderable
+from ...contract.cli import CliDTO, CliRenderable, Renderable
 from ...contract.event import EmitFunc
-from ...contract.external import RenderableType, RichRenderable
 from ...contract.log import LogDTO, LogSerializable
 from ..color import Palette, colorize
 from ..color.palette import BASE_PALETTE
@@ -85,14 +85,6 @@ class PrinterModus(PrinterBase):
     def wire(self, _emit: EmitFunc) -> None:
         """Switch to EventBus. Optionally inject emitter for EMIT mode."""
         self.modus: Modus = Modus.EMIT
-        # LATER:
-        # TASK: most likely drop the current PrinterModus,
-        #   or attach as Enum to PrinterFactory
-        # - beside maybe once the Modus.DEBUG Modus was not useful at all
-        # - if an emit is added then parallel to execution,
-        #   or probably far left in the MRO pipelinea in layouts or tools
-        # - print.compose with intercepting __call__ might be much better,
-        #   or maybe just export a reduced printer as massive DTO builder
 
     def unmute(self) -> None:
         """Switch to regular Printer setup"""
@@ -130,14 +122,7 @@ class PrinterCore(PrinterModus):
             case Modus.NULL:
                 return
             case Modus.EMIT:
-                if hasattr(self, "emitter") and self.emitter is not None:
-                    # REMOVE: completely wrong way around,
-                    # the lousy ViewEmitter as engine for the printer?
-                    # - the printer provides the ultimate CliEmitter core
-                    # - sends all of the perfectly shaped DTOs to emit
-                    # - Modus.EMIT combines DTO creation and emmitting
-                    # right now not urgent.
-                    self.emitter.view(target, level="INFO")  # ty:ignore
+                return
             case Modus.RICH:
                 pass
 
@@ -156,18 +141,16 @@ class PrinterCore(PrinterModus):
 
         match target:
             case CliDTO() | LogDTO():
-                renderable: RichRenderable = self.render(target)
-                print("dto")
-            case ConsoleRenderable() | RichCast():
+                renderable: Renderable = self.render(target)
+            case RichRenderable():  # TEST: maybe remove this rich.abc...
                 renderable: RichRenderable = target
-            case _:
-                # FIX: pydantic goes trough..
+            case _:  # FIX: pydantic goes trough..
                 renderable: str = self.normalize(target)
 
         indent: int = getattr(target, "indent", kwargs.pop("indent", 0))
 
-        i_hope_it_renders: RenderableType = (
-            Padding(renderable, (0, 0, 0, indent))
+        i_hope_it_renders: Renderable = (
+            Padding(renderable, (0, 0, 0, indent))  # ty:ignore
             if indent and renderable is not None
             else renderable
         )
@@ -175,7 +158,7 @@ class PrinterCore(PrinterModus):
         self.console.print(i_hope_it_renders, **kwargs)
 
 
-class EmitterCore:
+class EmitterCore:  # TODO:
     """Replace the PrinterCore and take the DTOs instead of printing them"""
 
     def __call__(self, target, **_kwargs) -> CliDTO | LogDTO | None:

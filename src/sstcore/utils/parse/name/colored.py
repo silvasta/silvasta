@@ -28,7 +28,7 @@ class ColoredName(NameParser):
 
     def rich(self, target: dict | list | tuple) -> str:
         """Colored output using the original rich markup pattern."""
-        keywords = self.normalize(target)
+        keywords: dict[str, Any] = self.normalize_keys(target)
         if missing := set(self.keys) - set(keywords.keys()):
             raise ValueError(f"{self} missing keys for rich render: {missing}")
         return self.color_pattern.format(**keywords)
