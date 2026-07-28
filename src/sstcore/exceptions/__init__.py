@@ -4,6 +4,7 @@ SstError - Root of all Errors with amazing Cli and Log Defaults
 - others mainly stand-alone
 - (not implemented) RegistrySyncError maybe as Root for derived Registries
 
+                                                          PackageLevel[1]
 """  # TODO:
 
 __all__: list[str] = [
@@ -20,12 +21,12 @@ __all__: list[str] = [
     "PathGuardReason",
 ]
 
-from .base import SstError
-from .data import RegistrySyncError
-from .general import (
+from ._base import SstError
+from ._data import RegistrySyncError
+from ._general import (
     NotImplementedDispatchError,
     NotImplementedMixinError,
     PropertyNotInitializedError,
     TuiSelectorError,
 )
-from .util import PathGuardError, PathGuardReason
+from ._util import PathGuardError, PathGuardReason
