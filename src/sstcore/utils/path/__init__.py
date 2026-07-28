@@ -1,7 +1,8 @@
 # TODO: explain
 
 from .homes import HomeSetup, XdgHomes
-from .pathguard import PathArg, PathGuard, PathInput
+from .pathguard import PathGuard
+from .pathguard._input import PathInput, PathSpec
 from .search import (
     any_root,
     find_project_root,
@@ -13,7 +14,7 @@ from .toml_pyproject import pyproject_name, pyproject_path, pyproject_sns
 
 __all__: list[str] = [
     "HomeSetup",
-    "PathArg",
+    "PathSpec",
     "PathGuard",
     "PathInput",
     "XdgHomes",

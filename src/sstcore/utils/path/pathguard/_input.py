@@ -1,62 +1,98 @@
+__all__: list[str] = [
+    "PathSpec",
+    "PathInput",
+]
+
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Any, Self
 
-type PathInput = Path | str | PathArg
+from ....exceptions import PathGuardError, PathGuardReason
+
+type PathInput = str | Path | PathSpec
 
 
 @dataclass(frozen=True, slots=True)
-# IDEA: PathTarget? yes but for func(target:PathTarget,source:PathTarget) ...?
-class PathArg:  # NEXT: final name (and preferably checks below) error
-    """
-    Encapsulate Validation and Normalization behavior for Target
+class PathSpec:
+    """Normalize and Validate input for PathGuard execution"""
 
-    Defines how the path should be interpreted and validated:
-      - target: the path itself
-      - resolve: whether to resolve symlinks and normalize
-      - check_exists: whether existence is checked (but not required)
-      - must_exists: whether the path *must* exist (strict mode)
-    """
+    target: Path
 
-    target: Path | str
     resolve: bool = False
-    check_exists: bool = False
+    # LATER: create entire grid of combined args?
+    # - maybe with toggle, pick what to load and check before PathGuard
     must_exists: bool = False
 
     @classmethod
-    def from_path_input(
+    def ok(
         cls,
-        path_input: PathInput | None = None,
+        target: PathInput | None = None,
+        *,
         resolve: bool | None = None,
-        check_exists: bool | None = None,
+        must_exists: bool | None = None,
+    ) -> Path:
+        """Confirm that input is valid. (stack both main functions)"""
+        path_spec: Self = cls.normalized(
+            target,
+            resolve=resolve,
+            must_exists=must_exists,
+        )
+        return path_spec.validate()
+
+    @classmethod
+    def normalized(
+        cls,
+        target: PathInput | None = None,
+        *,
+        resolve: bool | None = None,
         must_exists: bool | None = None,
     ) -> Self:
-        args: dict = {}
+        """
+        Create PathSpec() with prepared arguments for validation
 
-        if isinstance(path_input, PathArg):
-            args |= asdict(path_input)
-        elif isinstance(path_input, (str, Path)):
-            args["target"] = path_input
-        elif path_input is None:
-            args["target"] = Path.cwd()
-        else:  # LATER: custom error?
-            raise ValueError(f"Invalid {path_input=}")
+        - Filter toggled input settings and create Kwargs
+        - Normalize to Path and create PathSpec with Kwargs
+        - Override attributes of incoming PathSpec with Kwargs
+
+        """
+        if TYPE_CHECKING:
+            # I really can't work with ty dimmed PathGuardError...
+            target: Any = target
+
+        kwargs: dict = {}
 
         if resolve is not None:
-            args["resolve"] = resolve
-        if check_exists is not None:
-            args["check_exists"] = check_exists
+            kwargs["resolve"] = resolve
         if must_exists is not None:
-            args["must_exists"] = must_exists
+            kwargs["must_exists"] = must_exists
 
-        return cls(**args)
+        match target:
+            case PathSpec():
+                return cls(**{**asdict(target), **kwargs})
+            case Path():
+                return cls(target, **kwargs)
+            case str():
+                return cls(Path(target), **kwargs)
+            case None:
+                return cls(Path.cwd(), **kwargs)
 
+        # TASK: __log__ DTO creation for direct attach in PathGuardError
 
-class PathGuardState:
-    """Internal thread-safe container for operational flags."""
+        raise PathGuardError(
+            reason=PathGuardReason.INPUT,
+            target=target,
+            prepared_kwargs=kwargs,
+        )
 
-    def __init__(self) -> None:
-        self.debug: bool = True
+    def validate(self) -> Path:
+        """Ensure input Specification and provide Path"""
 
+        path: Path = self.target
 
-_state = PathGuardState()
+        if self.resolve:
+            path: Path = path.resolve()
+
+        if self.must_exists and not path.exists():
+            raise PathGuardError(reason=PathGuardReason.MISSING, target=path)
+
+        return path

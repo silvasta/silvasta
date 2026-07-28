@@ -3,9 +3,12 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....exceptions import NotImplementedDispatchError
-from ._ensure import _ensure_input
-from ._input import PathArg, PathInput
+from ....exceptions import (
+    NotImplementedDispatchError,
+    PathGuardError,
+    PathGuardReason,
+)
+from ._input import PathInput, PathSpec
 
 
 def relative_main(
@@ -13,22 +16,24 @@ def relative_main(
 ) -> Path:
     """Find Relative Path starting at Root (or CWD) downwards to Target"""
 
-    _target = _ensure_input(PathArg.from_path_input(target, resolve=True))
-    _root = _ensure_input(PathArg.from_path_input(root, resolve=True))
+    _target = PathSpec.ok(target, resolve=True)
+    _root = PathSpec.ok(root, resolve=True)
 
-    if strict:
-        try:
-            return _target.relative_to(_root)
-        except ValueError as e:
-            msg = f"{_target=} not found in {_root=}"
-            raise ValueError(msg) from e
-    else:
+    if not strict:
         import os
 
         return Path(os.path.relpath(_target, _root))
 
+    try:
+        return _target.relative_to(_root)
 
-def relative_string(source: Path, target: Path):  # TODO: PathInput
+    except ValueError as error:
+        raise PathGuardError(
+            PathGuardReason.RELATIVE, target=target, root=root, catched=error
+        ) from error
+
+
+def relative_string(source: Path, target: Path):  # TODO: PathInput?
     """Search relative Path in both direction and provide any rendering"""
     relative: Path | None = relative_duo(source, target)
     relative: Path = relative or relative_main(
@@ -40,41 +45,36 @@ def relative_string(source: Path, target: Path):  # TODO: PathInput
 def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 
-    _path1: Path = _ensure_input(path1)
-    _path2: Path = _ensure_input(path2)
+    _path1: Path = PathSpec.ok(path1)
+    _path2: Path = PathSpec.ok(path2)
 
     try:
-        rel21 = relative_main(_path1, _path2, strict=True)
-    except ValueError:
-        rel21 = None
+        rel21: Path | None = relative_main(_path1, _path2, strict=True)
+    except PathGuardError:
+        rel21: Path | None = None
 
     try:
-        rel12 = relative_main(_path2, _path1, strict=True)
-    except ValueError:
-        rel12 = None
+        rel12: Path | None = relative_main(_path2, _path1, strict=True)
+    except PathGuardError:
+        rel12: Path | None = None
 
     match (rel21, rel12):
         case (None, None):
-            logger.info("No relative path found in both directions...")
             return None
-
         case (Path() as _p, None) | (None, Path() as _p):
-            logger.debug(f"found relative path: {_p}")
             return _p
-
-        case _:
-            logger.info("It happened, how is that possible?")
-            logger.error(f"Found: {rel21} and {rel12}?")
-            return None
+    logger.error(f"It happened! How is that possible??\n{rel21=}\n{rel12=}?")
+    return None
 
 
 @functools.singledispatch
 def split_read_print_path(target, local_root: Path | None = None):
     """
-    Apply local_root or CWD at Target to create Pair of Paths
+    Apply local_root or CWD at Target and create Path Pairs
 
     - 1 Absolute Path: computer readable safe for Operations
     - 1 Relative Path: human readable nice for Display
+
     """
     raise NotImplementedDispatchError(target, local_root)
 
@@ -92,11 +92,16 @@ def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
         print_path: Path = (
             target if local_root is None else relative_main(target, local_root)
         )
+
     else:  # Relative target
         if local_root is None:
-            msg = f"Relative Path not possible: {local_root=} and {target=}"
-            # LATER: custom Exception? PathGuardRelativeError... improve
-            raise ValueError(msg)
+            raise PathGuardError(
+                PathGuardReason.RELATIVE,
+                target=target,
+                root=local_root,
+                info="Missing local_root for relative Target",
+            )
         read_path: Path = local_root / target
         print_path: Path = target
+
     return read_path, print_path
