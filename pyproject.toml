@@ -86,12 +86,13 @@ select = [
 ]
 
 ignore = [
-  "E501",
+  "N999", # Disable invalid module name checks
+  "E501", # Line length
   # --- The "Don't Force Me to Write Comments" Rules ---
   # Code  # coun # importance # description
   "D104", #   6  #  5  # Missing docstring in public package
-  "D101", #  63  #  5  # Missing docstring in public class
   "D100", #  33  #  4  # Missing docstring in public module
+  "D101", #  63  #  5  # Missing docstring in public class
   "D107", #  21  #  3  # Missing docstring in __init__
   "D103", #  43  #  3  # Missing docstring in public function
   "D102", # 125  #  2  # Missing docstring in public method
