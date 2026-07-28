@@ -2,30 +2,36 @@
 Provide Exceptions for sstcore.utils
 
 - PathGuard: Cover all internal Errors and explain with enumerated Reasons
+
+                                                           ModuleLevel[1]
 """
+
+__all__: list[str] = [
+    "PathGuardError",
+    "PathGuardReason",
+    #
+    # LATER: Candidates:
+    # - Printer
+    # - NameParser
+    # - View
+]
 
 from enum import StrEnum
 from typing import Any
 
 from ..contract.cli import Renderable
 from ..utils.color import ColorBox
-from .base import SstError
-
-# LATER: Candidates:
-# - Printer
-# - NameParser
-# - View
+from ._base import SstError
 
 c: ColorBox = ColorBox.bold()
 
 
 class PathGuardError(SstError):
     """
-    Raise on:
+    Raise on invalid, existing, not existing and other bad File System States
 
-      - invalid inputs
+      - invalid inputs and permission issues
       - existence violations (missing or exists, depending what not is deired)
-      - permission issues ???
       - synchronization conflicts
 
     """
@@ -35,13 +41,11 @@ class PathGuardError(SstError):
         reason: str | PathGuardReason,
         target: Any = None,
         source: Any = None,
-        catched: Exception | None = None,
         **kwargs: Any,
     ):
-        self.reason: str | PathGuardError = reason
+        self.reason: str | PathGuardReason = reason
         self.target: Any = target
         self.source: Any = source
-        self.catched: Exception | None = catched
         super().__init__(reason, **kwargs)
 
     @property
@@ -49,20 +53,15 @@ class PathGuardError(SstError):
         return self.reason
 
     def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
-        """Format the PathGuard failure for the CLI."""
-        if self.catched:
-            root_exception_type: str = self._name(self.catched)
-            _catched_exception_box = [  # IDEA: Sub-Panel?
-                *(f"{c.r(root_exception_type)}  {self.catched}"),
-                *(f"{c.g(self.catched)}"),
-            ]
-        else:
-            _catched_exception_box = []
+        """Format PathGuard fail for CLI"""
         return [
             lines[0],
             *(f"{c.c('target')}   {self.target}" if self.target else []),
+            # NOTE: it will definitely end up in a stringified approach...
+            # - all common attributes will be launched by methods
+            # - the specific error just picks what he wants: "target", "source"
+            # - maybe direct access to tracked class attributes with protocol
             *(f"{c.c('source')}   {self.source}" if self.source else []),
-            *_catched_exception_box,
             lines[-1],
         ]
 
@@ -70,16 +69,15 @@ class PathGuardError(SstError):
 class PathGuardReason(StrEnum):
     """Govern centralized Message distribution for PathGuard failures"""
 
-    NO_INSTANCE = """PathGuard is Not intended as Instance!"""
-    BAD_INPUT = "PathSpec failed to parse PathInput!"
+    NO_INIT = """PathGuard is Not intended as Instance!"""
+    INPUT = "PathSpec failed to parse PathInput!"
 
     MISSING = "Target Missing on Disk!"
     EXISTS = "Target already Exists on Disk!"
 
     HARDLINK = "Failed to create Hardlink!"
-    IGNORE = "SyncMode.IGNORE crashes on file exists..."  # REMOVE: later
-    SYNC_CONFLICT = "XXX"  # use this insteady of IGNORE
+    SYNC = "Transfer refused by SyncMode"
 
-    RELATIVE = "XXJ"
+    RELATIVE = "No Relative connection inside FileTree"
 
     DECORATOR = "Target Invalid for Hybrid-Decorator"

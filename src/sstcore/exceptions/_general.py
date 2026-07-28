@@ -1,17 +1,23 @@
+"""
+Collect Exceptions from different Topics (mainly builtin stuff)
+
+                                                           ModuleLevel[1]
+"""
+
+__all__: list[str] = [
+    "PropertyNotInitializedError",
+    "NotImplementedDispatchError",
+    "NotImplementedMixinError",
+    "TuiSelectorError",
+]
+
 from typing import Any
 
 from ..contract.cli import Renderable
 from ..utils.color import ColorBox  # WARN: ColorBox???
-from .base import SstError
+from ._base import SstError
 
 c = ColorBox()
-
-__all__: list[str] = [
-    "TuiSelectorError",
-    "PropertyNotInitializedError",
-    "NotImplementedDispatchError",
-    "NotImplementedMixinError",
-]
 
 
 class TuiSelectorError(SstError):  # LATER: move to .ui|tui|interface?
@@ -39,11 +45,9 @@ class PropertyNotInitializedError(SstError):
         attribute: str = c.r(self.attribute)
         line = f"{c.c('missing')}   {attribute} (required by {property})"
 
-        _v1 = lines[:1] + [line]
-        # NEXT: select
-        _v2 = [lines[0], line]
+        lines.insert(1, line)
 
-        return _v2
+        return lines
 
 
 class NotImplementedDispatchError(SstError, NotImplementedError):
