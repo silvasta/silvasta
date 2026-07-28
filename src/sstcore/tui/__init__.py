@@ -1,8 +1,11 @@
+"""
+TUI - provide graphical selector interface and log display
+
+-
+"""  # TODO: level
+
 __all__: list[str] = [
-    "ListSelectorApp",
-    "TreeSelectorApp",
-    "selector",
+    "LogMonitorApp",  # TODO: check if needed here
 ]
-from . import selector
-from .list_selector import ListSelectorApp
-from .tree_selector import TreeSelectorApp
+
+from .log_monitor import LogMonitorApp

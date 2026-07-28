@@ -38,7 +38,7 @@ from loguru import logger
 
 from ..config import ConfigManager
 from ..config.setup import ConfigLoader, set_global_config, sst_config_loader
-from ..contract.event import CoreEvent, EventName
+from ..port.event import CoreEvent, EventName
 from ..utils import Printer
 from ..utils import printer as global_printer
 from ..utils.log.setup import setup_minimal_logging

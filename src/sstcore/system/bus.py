@@ -18,7 +18,7 @@ from functools import lru_cache
 
 from loguru import logger
 
-from ..contract.event import Event, EventName, EventPattern
+from ..port.event import Event, EventName, EventPattern
 
 
 @dataclass(frozen=True)

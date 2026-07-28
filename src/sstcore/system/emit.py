@@ -26,9 +26,9 @@ __all__: list[str] = [
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..contract.cli import CliRenderable
-from ..contract.event import CliEvent, EmitFunc, EventName
-from ..contract.log import LogDTO, LogSerializable
+from ..port.cli import CliRenderable
+from ..port.event import CliEvent, EmitFunc, EventName
+from ..port.log import LogDTO, LogSerializable
 from .bus import EventBus
 
 

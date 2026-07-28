@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from loguru import logger
 
-from ..contract.event import Event
+from ..port.event import Event
 from ..utils.log.event_handler import handle_log_event
 from ..utils.print.event_handler import handle_cli_event
 from .bus import EventBus, EventHandler

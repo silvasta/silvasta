@@ -1,3 +1,14 @@
+"""
+Create Interface for quick Selection from SimpleTreeNode
+
+- Use PathTreeNodes to select from FileTree
+
+"""  # TODO:
+
+__all__: list[str] = [
+    "MultiSelectTree",
+]
+
 from enum import StrEnum
 
 from loguru import logger
@@ -7,8 +18,8 @@ from textual.message import Message
 from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
 
-from ..utils.print import printer
-from ..utils.tree import SimpleTreeNode
+from ...utils.print import printer
+from ...utils.tree import SimpleTreeNode
 
 # TASK: check folder(edges != leaf) and how they are counted
 

@@ -13,6 +13,8 @@ class StaticToolkitMeta(type):
 
     """
 
+    # NOTE:- Check PathGuardMeta for improvements
+
     def __str__(cls) -> str:
         return f"{cls.__name__} Toolkit"
 

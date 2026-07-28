@@ -14,9 +14,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import NoReturn, Self, overload
 
-from ....contract.cli import PanelDTO
-from ....contract.log import LogDTO
 from ....exceptions import PathGuardReason
+from ....port.cli import PanelDTO
+from ....port.log import LogDTO
 
 # ---------------------------------------------------------------------------
 # Input layer (public)

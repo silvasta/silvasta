@@ -1,8 +1,7 @@
 """
-Provide Base Level string Colorizing
+Provide Base Level Text Styling
 
-- Improve visual input for Modules without imports (from utils...)
-
+- Colorize input for Modules without acces to sstcore.utils
                                                            ModuleLevel[0]
 """
 # INFO: Intended as Package Root

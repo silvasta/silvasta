@@ -1,8 +1,7 @@
 """
-Provide Base Level string Formatting
+Provide Base Level Text Formatting
 
-- Normalize and Valide input for Modules without imports (from utils...)
-
+- Normalize input for Modules without acces to sstcore.utils
                                                            ModuleLevel[0]
 """
 

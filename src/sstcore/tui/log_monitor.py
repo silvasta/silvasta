@@ -1,3 +1,14 @@
+"""
+Log Monitor 2 - Show jsonl, load and render
+
+-
+"""  # TODO:
+
+__all__: list[str] = [
+    "PREDEFINED_CATCHES",
+    "LogMonitorApp",
+]
+
 import json
 import time
 from collections.abc import Callable
@@ -16,9 +27,10 @@ from textual.widgets import (
     Static,
 )
 
-from ..contract.log import LogDTO
+from ..port.log import LogDTO
 
 PREDEFINED_CATCHES: dict[str, Callable[[LogDTO], bool]] = {
+    # TASK: fill this
     "🌐 All Logs": lambda _dto: True,  # <--- Add this line
     "🔥 All Errors": lambda dto: dto.level in ("ERROR", "CRITICAL"),
     "💾 DB Timeouts": lambda dto: (
