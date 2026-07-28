@@ -58,8 +58,11 @@ def _ensure_file_logic(
             return path
         info = f"Default File created: {path=}"
     else:
-        if not raise_error:
-            info = "Suppress Error only allowed when writing default_content!"
+        info: str = (
+            "Suppress Error works only when writing default_content!"
+            if not raise_error
+            else "execute regular raise"
+        )
 
     raise PathGuardError(PathGuardReason.MISSING, target=path, info=info)
 
@@ -117,8 +120,7 @@ def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
 
     if not path.exists():
         msg = "path already unique, "
-        if path.parent.exists():
-            msg += "path has no parent, "
+        if not path.parent.exists():
             if ensure_parent:  # REFACTOR: as soon as this updated PathSpec
                 _ensure_dir_logic(path.parent)
                 logger.info(msg + "parent ensured!")

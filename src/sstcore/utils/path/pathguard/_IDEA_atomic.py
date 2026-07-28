@@ -52,9 +52,11 @@ def lock(target: PathInput, timeout: float = 5.0):
             fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             os.close(fd)
             break
-        except FileExistsError:
+        except FileExistsError as e:
             if time.time() - start_time > timeout:
-                raise PathGuardError(f"Timeout waiting to lock {target_path}")
+                raise PathGuardError(
+                    f"Timeout waiting to lock {target_path}"
+                ) from e
             time.sleep(0.05)
 
     try:
@@ -170,7 +172,7 @@ def _copy(
             from ....exceptions import PathGuardError, PathGuardReason
 
             raise PathGuardError(
-                reason=PathGuardReason.SYNC_CONFLICT,
+                reason=PathGuardReason.SYNC,
                 target=_target,
                 sync_mode="IGNORE",
             )
@@ -237,7 +239,7 @@ def _copy(
         except FileExistsError as error:
             if sync_mode == SyncMode.IGNORE:
                 raise PathGuardError(
-                    reason=PathGuardReason.SYNC_CONFLICT,
+                    reason=PathGuardReason.SYNC,
                     target=candidate,
                     sync_mode="IGNORE",
                 ) from error
@@ -291,7 +293,7 @@ def _rotate(
             except FileExistsError as e:
                 if sync_mode == SyncMode.IGNORE:
                     raise PathGuardError(
-                        reason=PathGuardReason.SYNC_CONFLICT,
+                        reason=PathGuardReason.SYNC,
                         target=candidate,
                         sync_mode="IGNORE",
                     ) from e

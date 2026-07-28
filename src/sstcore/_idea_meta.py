@@ -8,7 +8,9 @@ c: ColorBox = ColorBox.bold()
 class StaticToolkitMeta(type):
     """
     Reusable Metaclass for Static Toolkits.
-    Provides automatic DTOs and formatting via class-level attributes.
+
+    - Check PathGuardMeta for improvements
+
     """
 
     def __str__(cls) -> str:

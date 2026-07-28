@@ -49,28 +49,28 @@ def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
     _path2: Path = PathSpec.ok(path2)
 
     try:
-        rel21 = relative_main(_path1, _path2, strict=True)
-    except ValueError:
-        rel21 = None
+        rel21: Path | None = relative_main(_path1, _path2, strict=True)
+    except PathGuardError:
+        rel21: Path | None = None
 
     try:
-        rel12 = relative_main(_path2, _path1, strict=True)
-    except ValueError:
-        rel12 = None
+        rel12: Path | None = relative_main(_path2, _path1, strict=True)
+    except PathGuardError:
+        rel12: Path | None = None
 
     match (rel21, rel12):
         case (None, None):
             return None
         case (Path() as _p, None) | (None, Path() as _p):
-            logger.debug(f"found relative path: {_p}")
             return _p
-    logger.error("It happened! How is that possible??\n{rel21=}\n{rel12=}?")
+    logger.error(f"It happened! How is that possible??\n{rel21=}\n{rel12=}?")
+    return None
 
 
 @functools.singledispatch
 def split_read_print_path(target, local_root: Path | None = None):
     """
-    Apply local_root or CWD at Target to create Path Pairs
+    Apply local_root or CWD at Target and create Path Pairs
 
     - 1 Absolute Path: computer readable safe for Operations
     - 1 Relative Path: human readable nice for Display

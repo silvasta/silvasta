@@ -4,11 +4,13 @@ from enum import StrEnum
 
 __all__: list[str] = [
     "PathGuard",
+    "PathSpec",
+    "PathInput",
 ]
 
 from ....exceptions import PathGuardError, PathGuardReason
 from . import _ensure, _helper, _input, _operate
-from ._input import PathSpec
+from ._input import PathInput, PathSpec
 from ._meta import PathGuardMeta
 
 
@@ -23,7 +25,7 @@ class PathGuard(metaclass=PathGuardMeta):
 
     def __init__(self):
         """PathGuard is Not an Instance!"""
-        raise PathGuardError(reason=PathGuardReason.NO_INSTANCE)
+        raise PathGuardError(reason=PathGuardReason.NO_INIT)
 
     Spec: type[PathSpec] = _input.PathSpec
     SyncMode: type[StrEnum] = _operate.SyncMode

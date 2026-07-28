@@ -5,6 +5,8 @@ from typing import Any
 
 from loguru import logger
 
+from sstcore.format.string import cls_name
+
 from ....exceptions import PathGuardError, PathGuardReason
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._helper import relative_string
@@ -33,8 +35,7 @@ class SyncMode(StrEnum):
                 return _get_unique_candidate(path=target, ensure_parent=True)
 
             case SyncMode.IGNORE:
-                # TASK: better solution for check, without loosing readability
-                raise PathGuardError(PathGuardReason.IGNORE, target=target)
+                raise PathGuardError(PathGuardReason.SYNC, target=target)
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -159,8 +160,8 @@ def _clear_file_or_folder(
         clear_strategy(_target)
         return True
 
-    except OSError as error:
-        logger.warning(f"OSError for {clear}: {error} {target}")
+    except (PathGuardError, OSError) as error:
+        logger.warning(f"{cls_name(error)} for {clear}: {error} {target}")
 
     return False
 
@@ -191,7 +192,10 @@ def trash(target: PathInput) -> bool:
 
 
 def prune(
-    base_target: PathInput, remaining: int = 5, trash=False
+    base_target: PathInput,
+    remaining: int = 5,
+    *,
+    use_trash: bool = False,
 ) -> list[Path]:
     """Prune Sequence back to specified number of Remaining Targets"""
 
@@ -200,6 +204,6 @@ def prune(
 
     paths_to_delete: list[Path] = sequence[remaining:]
 
-    _prune: Callable[[Path], bool] = trash if trash else remove
+    _prune: Callable[[Path], bool] = trash if use_trash else remove
 
     return [path for path in paths_to_delete if _prune(path)]

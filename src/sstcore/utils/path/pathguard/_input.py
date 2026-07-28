@@ -16,7 +16,7 @@ type PathInput = str | Path | PathSpec
 class PathSpec:
     """Normalize and Validate input for PathGuard execution"""
 
-    path: Path
+    target: Path
 
     resolve: bool = False
     # LATER: create entire grid of combined args?
@@ -70,16 +70,16 @@ class PathSpec:
             case PathSpec():
                 return cls(**{**asdict(target), **kwargs})
             case Path():
-                return cls(path=target, **kwargs)
+                return cls(target, **kwargs)
             case str():
-                return cls(path=Path(target), **kwargs)
+                return cls(Path(target), **kwargs)
             case None:
-                return cls(path=Path.cwd(), **kwargs)
+                return cls(Path.cwd(), **kwargs)
 
         # TASK: __log__ DTO creation for direct attach in PathGuardError
 
         raise PathGuardError(
-            reason=PathGuardReason.BAD_INPUT,
+            reason=PathGuardReason.INPUT,
             target=target,
             prepared_kwargs=kwargs,
         )
@@ -87,12 +87,12 @@ class PathSpec:
     def validate(self) -> Path:
         """Ensure input Specification and provide Path"""
 
-        path: Path = self.path
+        path: Path = self.target
 
         if self.resolve:
             path: Path = path.resolve()
 
-        if self.must_exists and not self.path.exists():
+        if self.must_exists and not path.exists():
             raise PathGuardError(reason=PathGuardReason.MISSING, target=path)
 
         return path
