@@ -1,26 +1,28 @@
+"""Define the Public Interface of PathGuard"""
+
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
     "PathInput",
 ]
+
 from collections.abc import Callable
-from enum import StrEnum
 from pathlib import Path
 from typing import Any, overload
 
+from ....exceptions import PathGuardReason
 from ._input import PathInput, PathSpec
+from ._operate import SyncMode
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
 
-    class SyncMode(StrEnum):
-        INCREMENT = ...
-        OVERRIDE = ...
-        IGNORE = ...
+    Spec: type[PathSpec]
+    SyncMode: type[SyncMode]
+    Reason: type[PathGuardReason]
 
-        def check_conflict(self, target: Path) -> Path: ...
-
-    Spec = PathSpec
+    @classmethod
+    def toolkit(cls, sort: bool = True) -> list[str]: ...
 
     # --- Category 1: Structural Guards & Decorators ---
     @overload

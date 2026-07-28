@@ -5,7 +5,7 @@ __all__: list[str] = [
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Any, Self
 
 from ....exceptions import PathGuardError, PathGuardReason
 
@@ -19,12 +19,11 @@ class PathSpec:
     path: Path
 
     resolve: bool = False
+    # LATER: create entire grid of combined args?
+    # - maybe with toggle, pick what to load and check before PathGuard
     must_exists: bool = False
-    # LATER: create entire grid? maybe with toggle, what to load/check before PathGuard
-    # - parent_exists -> only create directory tree up to 1 level higher
 
     @classmethod
-    # AI_QUESTION: this as something like callback on PathGuard functions for directly parsing input args?
     def ok(
         cls,
         target: PathInput | None = None,
@@ -56,6 +55,10 @@ class PathSpec:
         - Override attributes of incoming PathSpec with Kwargs
 
         """
+        if TYPE_CHECKING:
+            # I really can't work with ty dimmed PathGuardError...
+            target: Any = target
+
         kwargs: dict = {}
 
         if resolve is not None:
@@ -65,28 +68,21 @@ class PathSpec:
 
         match target:
             case PathSpec():
-                path: Path = target.path  # NOTE: ensure with this
-                kwargs: dict = {**asdict(target), **kwargs}
-                kwargs.pop("target")
-                # return cls(**{**asdict(target), **kwargs}) # option
+                return cls(**{**asdict(target), **kwargs})
             case Path():
-                path = target
+                return cls(path=target, **kwargs)
             case str():
-                path = Path(target)
-            case None:  # AI: valid?
-                path: Path = Path.cwd()  # NEXT: needed?
-            case _:
-                # FIX: ty(v0.0.63) shadows everything grey here
-                # - exception badly visible...
-                # ├╴  Code is unreachable
-                # │    This may depend on your current environment and settings ty  [55, 17]
-                raise PathGuardError(
-                    reason=PathGuardReason.BAD_INPUT,
-                    target=target,
-                    prepared_kwargs=kwargs,
-                )
+                return cls(path=Path(target), **kwargs)
+            case None:
+                return cls(path=Path.cwd(), **kwargs)
 
-        return cls(path, **kwargs)
+        # TASK: __log__ DTO creation for direct attach in PathGuardError
+
+        raise PathGuardError(
+            reason=PathGuardReason.BAD_INPUT,
+            target=target,
+            prepared_kwargs=kwargs,
+        )
 
     def validate(self) -> Path:
         """Ensure input Specification and provide Path"""
@@ -100,6 +96,3 @@ class PathSpec:
             raise PathGuardError(reason=PathGuardReason.MISSING, target=path)
 
         return path
-
-    # LATER:
-    # TASK: __log__ DTO creation for direct attach in PathGuardError

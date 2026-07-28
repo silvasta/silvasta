@@ -9,9 +9,10 @@ __all__: list[str] = [
 from ....exceptions import PathGuardError, PathGuardReason
 from . import _ensure, _helper, _input, _operate
 from ._input import PathSpec
+from ._meta import PathGuardMeta
 
 
-class PathGuard:
+class PathGuard(metaclass=PathGuardMeta):
     """
     Enable Safety and Comfort for Path access and File System operations
 
