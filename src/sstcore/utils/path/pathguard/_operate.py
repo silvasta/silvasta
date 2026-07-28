@@ -5,14 +5,10 @@ from typing import Any
 
 from loguru import logger
 
-from ._ensure import (
-    _ensure_dir_logic,
-    _ensure_input,
-    _get_unique_candidate,
-    find_sequence,
-)
+from ....exceptions import PathGuardError, PathGuardReason
+from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._helper import relative_string
-from ._input import PathArg, PathInput, _state
+from ._input import PathInput, PathSpec
 
 
 class SyncMode(StrEnum):
@@ -35,8 +31,10 @@ class SyncMode(StrEnum):
                 return target
             case SyncMode.INCREMENT:
                 return _get_unique_candidate(path=target, ensure_parent=True)
+
             case SyncMode.IGNORE:
-                raise FileExistsError("Catch error for SyncMode.IGNORE")
+                # TASK: better solution for check, without loosing readability
+                raise PathGuardError(PathGuardReason.IGNORE, target=target)
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -47,25 +45,23 @@ class SyncMode(StrEnum):
 def rotate(
     source: PathInput,
     target: PathInput,
-    sync_mode: str | SyncMode = "increment",
+    sync_mode: str | SyncMode = SyncMode.INCREMENT,
     reset: bool = False,
 ) -> Path:
     """Move Source to Target and if reset: Create empty File or Dir"""
 
     # LATER: similar pipeline as in _clear_file_or_folder
 
-    _source: Path = _ensure_input(
-        PathArg.from_path_input(source, must_exists=True)
-    )
-    _target: Path = _ensure_input(target)
-    sync_mode = SyncMode(sync_mode)
+    _source: Path = PathSpec.ok(target=source, must_exists=True)
+    _target: Path = PathSpec.ok(target=target)
+    sync_mode = SyncMode(sync_mode)  # LATER: catch failed sync_mode:str?
 
-    # Store type for reset logic later
-    is_directory: bool = _source.is_dir()
+    is_directory: bool = _source.is_dir()  # store for reset logic
 
-    _source.move(inspected_target := sync_mode.check_conflict(_target))
+    inspected_target: Path = sync_mode.check_conflict(_target)
+    _source.move(inspected_target)
     relative: str = relative_string(_source, inspected_target)
-    logger.info(f"Rotated: {relative}")
+    logger.info(f"Rotated: {relative}")  # MOVE: inside new strategy (later)
 
     if reset:
         if is_directory:
@@ -81,23 +77,17 @@ def rotate(
 def copy(
     source: PathInput,
     target: PathInput,
-    sync_mode: str | SyncMode = "increment",
+    sync_mode: str | SyncMode = SyncMode.INCREMENT,
 ) -> Path:
     """Copy Source to Target"""
 
     # LATER: similar pipeline as in _clear_file_or_folder
 
-    _source: Path = _ensure_input(
-        PathArg.from_path_input(source, must_exists=True)
-    )
-    _target: Path = _ensure_input(target)
+    _source: Path = PathSpec.ok(target=source, must_exists=True)
+    _target: Path = PathSpec.ok(target=target)
     sync_mode = SyncMode(sync_mode)
 
     _source.copy(inspected_target := sync_mode.check_conflict(_target))
-    relative: str = relative_string(_source, inspected_target)
-
-    if _state.debug:
-        logger.debug(f"Copied: {relative}")
 
     return inspected_target
 
@@ -105,31 +95,27 @@ def copy(
 def hardlink(
     source: PathInput,
     target: PathInput,
-    sync_mode: str | SyncMode = "override",
+    sync_mode: str | SyncMode = SyncMode.OVERRIDE,
 ) -> Path:
     """Create Hardlink at Target Pointing to Source"""
 
     # LATER: similar pipeline as in _clear_file_or_folder
 
-    _source: Path = _ensure_input(
-        PathArg.from_path_input(source, must_exists=True)
-    )
-    _target: Path = _ensure_input(target)
+    _source: Path = PathSpec.ok(target=source, must_exists=True)
+    _target: Path = PathSpec.ok(target=target)
     sync_mode = SyncMode(sync_mode)
 
     inspected_target: Path = sync_mode.check_conflict(_target)
 
     try:
         inspected_target.hardlink_to(_source)
-    except OSError as e:
-        logger.error("Hardlink failed! Source and Target on same drive?")
-        logger.error(f"{source=}, {target=}")
-        raise e
-
-    relative: str = relative_string(_source, inspected_target)
-
-    if _state.debug:
-        logger.debug(f"Hardlinked: {relative}")
+    except OSError as error:
+        raise PathGuardError(
+            PathGuardReason.HARDLINK,
+            source=source,
+            target=target,
+            catched=error,
+        ) from error
 
     return inspected_target
 
@@ -137,25 +123,18 @@ def hardlink(
 def symlink(
     source: PathInput,
     target: PathInput,
-    sync_mode: str | SyncMode = "increment",
+    sync_mode: str | SyncMode = SyncMode.INCREMENT,
 ) -> Path:
     """Create Absolute Symlink at Target Pointing to Source"""
 
     # LATER: similar pipeline as in _clear_file_or_folder
 
-    _source: Path = _ensure_input(
-        PathArg.from_path_input(source, must_exists=True, resolve=True)
-    )
-    _target: Path = _ensure_input(target)
+    _source: Path = PathSpec.ok(target=source, must_exists=True, resolve=True)
+    _target: Path = PathSpec.ok(target=target)
     sync_mode = SyncMode(sync_mode)
 
     inspected_target: Path = sync_mode.check_conflict(_target)
     inspected_target.symlink_to(_source)
-
-    relative: str = relative_string(_source, inspected_target)
-
-    if _state.debug:
-        logger.debug(f"Symlinked: {relative}")
 
     return inspected_target
 
@@ -166,7 +145,8 @@ def symlink(
 
 
 def _clear_file_or_folder(
-    target: PathInput, clear_strategy: Callable[[Path], Any]
+    target: PathInput,
+    clear_strategy: Callable[[Path], Any],  # LATER: NamedFunctor
 ) -> bool:
     """Execute Delete Operation in Safe Environment"""
 
@@ -175,17 +155,13 @@ def _clear_file_or_folder(
     clear: str = _clear.strip("_").capitalize()
 
     try:
-        _target: Path = _ensure_input(
-            PathArg.from_path_input(target, must_exists=True)
-        )
+        _target: Path = PathSpec.ok(target, must_exists=True)
         clear_strategy(_target)
-        logger.success(f"{clear}: {target}")
         return True
 
-    except FileNotFoundError:
-        logger.error(f"Nothing to {clear}: missing {target=}")
-    except OSError as e:
-        logger.error(f"OSError for {clear}: {target=}\n{e}")
+    except OSError as error:
+        logger.warning(f"OSError for {clear}: {error} {target}")
+
     return False
 
 

@@ -1,6 +1,6 @@
 __all__: list[str] = [
     "PathGuard",
-    "PathArg",
+    "PathSpec",
     "PathInput",
 ]
 from collections.abc import Callable
@@ -8,7 +8,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, overload
 
-from ._input import PathArg, PathInput
+from ._input import PathInput, PathSpec
 
 class PathGuard:
     """Centralized path enforcement toolkit"""
@@ -20,10 +20,7 @@ class PathGuard:
 
         def check_conflict(self, target: Path) -> Path: ...
 
-    PathArg = PathArg
-
-    @staticmethod
-    def debug(enable: bool) -> None: ...
+    Spec = PathSpec
 
     # --- Category 1: Structural Guards & Decorators ---
     @overload

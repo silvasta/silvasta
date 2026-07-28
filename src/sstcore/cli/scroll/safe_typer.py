@@ -7,8 +7,6 @@ Assemble the Prints for SafeTyper
   - in future: connected and reacting to app state
 """
 
-from sstcore.utils.log.setup import fetch_log_result
-
 __all__: list[str] = [
     "intro",
     "setup",
@@ -22,6 +20,9 @@ from pathlib import Path
 from typing import Any, Literal
 
 from rich.box import Box
+
+from sstcore.utils import PathGuard
+from sstcore.utils.log.setup import fetch_log_result
 
 from ...config import ConfigManager
 from ...config.setup import ConfigLoader
@@ -138,6 +139,9 @@ type PathSignature = Callable[[Path, Literal["log", "config"]], None]
 
 
 class ConfigAndLogPanel(PrintOption[PathSignature]):
+    # TASK: generalized PathPanel
+    # - absolute/relative
+    # - title
     """Create Log and Config path in same style"""
 
     def _load_default_function(self):
@@ -155,7 +159,10 @@ class ConfigAndLogPanel(PrintOption[PathSignature]):
             "config": f"{c.blue('Config')} ",
         }
 
-        printer.title(path, title=table[mode], frame=frame, box=box)
+        relative: Path = PathGuard.relative(path)
+        printer.title(relative, title=table[mode], frame=frame, box=box)
+        # TODO: check absolute path as option
+        # printer.title(path, title=table[mode], frame=frame, box=box)
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
@@ -178,10 +185,13 @@ def setup(config: ConfigManager, loader: Callable):
     log_or_config_path(config.setting_file, mode="config")
 
     if log_result := fetch_log_result():
+        #
         if log_result.print_at_setup:
             printer(log_result)
+
         if log_result.log_to_file:
             log_or_config_path(log_result.log_file, mode="log")
+
         if log_result.log_to_json:
             log_or_config_path(log_result.struct_log_file, mode="log")
 
