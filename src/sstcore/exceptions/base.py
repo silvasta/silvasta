@@ -7,68 +7,77 @@ Define the Shape of Exceptions
 
 __all__: list[str] = [
     "SstError",
-    "RegistrySyncError",
-    "NotImplementedDispatchError",
-    "NotImplementedMixinError",
-    "TuiSelectorError",
-    "PropertyNotInitializedError",
 ]
 
 from typing import Any
 
-from ..contract.cli import PanelDTO
+from ..contract.cli import PanelDTO, Renderable
 from ..contract.log import LogDTO
 from ..utils.color import ColorBox  # WARN: ColorBox???
 
-c = ColorBox()
-
-# IDEA: PathGuard Error??
-# NEXT: exceptions - must be complete until bump
-# TASK: here is precise work without any failure needed
-# - ensure root is 100% perfect
-# - check all others at least twice
+c: ColorBox = ColorBox.bold()
 
 
 class SstError(Exception):
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Store Kwargs as builtins.Exception only handles Args"""
+        """Store Kwargs as builtins.Exception forced handles Args"""
         self.kwargs: dict = kwargs
         super().__init__(*args)
 
-    def _modify_if_needed(self, rows: list[str]) -> None:
-        """Use this for modification in Subclasses"""
-
-    @property
-    def _default(self) -> str:
-        return "nothing attached"
-
     def __cli__(self) -> PanelDTO:
-        """Provide Data Transfer Object for CLI Rendering"""
+        """Provide Data Transfer Object for Command Line Interface"""
 
-        rows: list[str] = [
-            f"{c.r(self.name)}",
-            f"{c.c('args')}    {self.args or self._default}",
-            f"{c.c('kwargs')}  {self.kwargs or self._default}",
+        lines: list[Renderable] = [
+            # TASK: better table creation, similar to dict-like approach:
+            # - title: text starting at predefined length
+            # - use f-string with length cut, maybe by longest title or default
+            # - difficulty: sorting! derived errors want to modify order
+            f"{c.r(self.name)} {self.summary()}",  # ignore empty space
+            f"{c.c('args')}    {self.args or 'nothing attached'}",
+            f"{c.c('kwargs')}  {self.kwargs or 'nothing attached'}",
         ]
-
-        self._modify_if_needed(rows)
-
         return PanelDTO(
-            text="\n".join(rows),
+            text=self._modify_scroll(lines),
             title=self.__rich__(),
             frame="red",
             title_align="right",
         )
 
+    def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
+        """Customize Lines displayed inside CLI Panel"""
+        return lines
+
+    @property
+    def _short(self) -> str:
+        # IDEA: tempting to use message for this, or just str(self)
+        # - definitely improves some of the workflows
+        # - still uncomfortable for some cases...
+        # maybe just the default like that? other classes anyway override
+        """Provide Optional Content for Header Line in CLI Panel"""
+        return ""
+
+    def summary(self, *_args, max_len=60, **_kwargs) -> str:
+        """Cut header line to ensure max length"""
+        # TASK: create entire header? use f-string < max_len
+        # something like: header = f"{f'{self.name} {self._short}': < 60}"
+        header_len: int = len(self.name) - 1 - len(self._short)
+        if (to_long := max_len - header_len) < 0:
+            return f"{self._short[: (to_long - 3)]}..."
+        return self._short
+
     @property
     def name(self) -> str:
-        """Provide Name like __str__ because Exceptions use it for message"""
-        return type(self).__name__
+        """Provide ClassName ( __str__ already used for message builtins.Exception"""
+        return self._name(target=self)
+
+    @staticmethod
+    def _name(target: Any | None = None) -> str:  # WARN: safe?
+        return type(target).__name__
 
     def __rich__(self) -> str:
-        """Provide colorized Name"""
+        """Provide colorized Name"""  # LATER: improve color hack
         return f"{self.name[:-5]}{c.red('Error')}"
 
     def __repr__(self):
@@ -84,72 +93,8 @@ class SstError(Exception):
     def __log__(self) -> LogDTO:
         """Provide Structured Data for Log"""
         return LogDTO(
-            message=str(self) or self.name,
+            message=f"{self}" or self.name,
             level="ERROR",
             metrics={"args": self.args, "kwargs": self.kwargs},
             extra={"error_type": self.name},
         )
-
-
-class RegistrySyncError(SstError):  # LATER: setup for FileTrackerRegistry
-    """Raise when FileRegistry State mismatches physical local disk"""
-
-
-class NotImplementedDispatchError(SstError, NotImplementedError):
-    """Raise on missing TargetType for singledispatch(method)"""
-
-    def __init__(self, first: Any, *args: Any, **kwargs):
-        self.first = first
-        msg = f"Missing dispatch target for {type(first).__name__}"
-        super().__init__(msg, *(first, *args), **kwargs)
-
-    def _modify_if_needed(self, rows: list[str]):
-        """Inject dispatch target type and value into Error Panel"""
-
-        missing: str = c.red("Missing match for Target")
-        target_type: str = c.yellow(type(self.first).__name__)
-        dispatcher: str = c.green(f"{self.first}")
-
-        line = f"{missing} type: {target_type}, value = {dispatcher}"
-
-        rows.insert(1, line)
-
-
-class NotImplementedMixinError(SstError, NotImplementedError):
-    """Raise when Mixin queue somehow messed up"""
-
-    def __init__(self, base, mixin, func):
-        self.base = base
-        self.mixin = mixin
-        self.func = func
-        super().__init__(f"Problem for {mixin=} of {base=} in {func=}")
-
-
-class TuiSelectorError(SstError):
-    """Raise when App cannot continue after Selection by User"""
-
-    def __init__(self, message=None):
-        if message is None:
-            message = "It was an easy Selection... how can you Fail this?"
-        super().__init__(message)
-
-
-class PropertyNotInitializedError(SstError):
-    """Raise when property is accessed before its attribute is initialized"""
-
-    def __init__(self, property_name: str, attribute_name: str):
-        self.property: str = property_name
-        self.attribute: str = attribute_name
-
-        msg = f"Missing '{attribute_name}' for property '{property_name}'"
-        super().__init__(msg)
-
-    def _modify_if_needed(self, rows: list[str]):
-        """Inject property and attribute details into Error Panel"""
-
-        property: str = c.y(self.property)
-        attribute: str = c.r(self.attribute)
-        line = f"{c.c('missing')}   {attribute} (required by {property})"
-
-        rows.insert(1, line)
-        del rows[2:]

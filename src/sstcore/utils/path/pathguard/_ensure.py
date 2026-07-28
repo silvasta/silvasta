@@ -6,58 +6,25 @@ from typing import cast
 
 from loguru import logger
 
-from ._input import PathArg, PathInput, _state
-
-
-def _ensure_input(path_input: PathInput) -> Path:
-    """Extract PathInput and provide validated Paths"""
-
-    # LATER: somehow combine with PathArg?
-
-    if isinstance(path_input, PathArg):
-        path = Path(path_input.target)
-        resolve: bool = path_input.resolve
-        check_exists: bool = path_input.check_exists
-        must_exists: bool = path_input.must_exists
-    else:
-        path = Path(path_input)
-        resolve = check_exists = must_exists = False
-
-    if resolve:
-        path: Path = path.resolve()
-
-    if check_exists or must_exists:
-        text: str = "exists!" if path.exists() else "not found on disk!"
-        msg = f"Input {text} for: {path=}"
-
-        if check_exists:
-            logger.info(msg)
-        if must_exists:
-            if not path.exists():
-                raise FileNotFoundError(msg)
-
-            if _state.debug:
-                logger.debug(msg)
-
-    return path
+from ....exceptions import PathGuardError, PathGuardReason
+from ._input import PathInput, PathSpec
 
 
 def _ensure_dir_logic(path: PathInput) -> Path:
-    """PathGuard.dir implementation logic"""
-    path: Path = _ensure_input(path)
+    """Implement PathGuard.dir logic"""
+    path: Path = PathSpec.ok(path)
     path.mkdir(parents=True, exist_ok=True)
-    if _state.debug:
-        logger.debug(f"directory ensured: {path}")
+
     return path
 
 
-def dir_main[**P](
+def dir[**P](
     target: Callable[P, Path] | PathInput,
 ) -> Callable[P, Path] | Path:
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     # Case 1: Used as a Function Call (PathGuard.dir(path))
-    if isinstance(target, (Path, str, PathArg)):
+    if isinstance(target, (Path, str, PathSpec)):
         return _ensure_dir_logic(target)
 
     # Case 2: Used as a Decorator (@PathGuard.dir)
@@ -71,42 +38,36 @@ def dir_main[**P](
 
         return wrapper
 
-    raise TypeError(f"Invalid target type for PathGuard.dir: {type(target)}")
+    raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 
 def _ensure_file_logic(
     path: PathInput, raise_error: bool, default_content: str | None
 ) -> Path:
-    """PathGuard.file implementation logic"""
+    """Implement PathGuard.file logic"""
 
-    path: Path = _ensure_input(path)
+    path: Path = PathSpec.ok(path)
 
     if path.exists():
         return path
 
-    logger.warning(f"No file found at: {path}")
-
-    if default_content is not None:  # write first
+    if default_content is not None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(default_content)
-        logger.info(f"Created default file: {path=}")
-
-        if raise_error:
-            msg = f"Critical file created, modify at: {path=}"
-        else:
+        if not raise_error:
             return path
+        info = f"Default File created: {path=}"
     else:
-        if raise_error:
-            msg = f"Critical file missing: {path=}"
-        else:
-            warn = "Suppress Error only allowed when writing default_content!"
-            logger.warning(warn)
-            msg = f"Wrong input, file not confirmed: {path=}"
+        info: str = (
+            "Suppress Error works only when writing default_content!"
+            if not raise_error
+            else "execute regular raise"
+        )
 
-    raise FileNotFoundError(msg)
+    raise PathGuardError(PathGuardReason.MISSING, target=path, info=info)
 
 
-def file_main[**P](
+def file[**P](
     target: Callable[P, Path] | PathInput | None = None,
     raise_error=True,
     default_content: str | None = None,
@@ -121,7 +82,7 @@ def file_main[**P](
     """Ensure path is file or write default content and | or Raise"""
 
     # CASE 1: Function Call -> PathGuard.file(path)
-    if isinstance(target, (Path, str, PathArg)):
+    if isinstance(target, (Path, str, PathSpec)):
         return _ensure_file_logic(target, raise_error, default_content)
 
     # CASE 2: Bare Decorator -> @PathGuard.file
@@ -148,20 +109,19 @@ def file_main[**P](
 
         return decorator
 
+    # FIX: ty grey...
+    raise PathGuardError(PathGuardReason.DECORATOR, target=target)
+
 
 def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
     """PathGuard.unique implementation logic: Increment until Path is unique"""
 
-    path: Path = _ensure_input(path)
+    path: Path = PathSpec.ok(path)
 
     if not path.exists():
         msg = "path already unique, "
-        if path.parent.exists():
-            if _state.debug:
-                logger.debug(msg + "path has parent")
-        else:
-            msg += "path has no parent, "
-            if ensure_parent:
+        if not path.parent.exists():
+            if ensure_parent:  # REFACTOR: as soon as this updated PathSpec
                 _ensure_dir_logic(path.parent)
                 logger.info(msg + "parent ensured!")
             else:
@@ -169,7 +129,7 @@ def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
 
         return path
 
-    # Same logic as in find_sequence, consider when adapt!
+    # NOTE: Same logic as in find_sequence, consider when adapt!
     suffixes: str = "".join(path.suffixes)
     original_stem: str = (  # prevent f.e. my_archive.tar_1.gz
         path.name[: -len(suffixes)] if suffixes else path.name
@@ -210,7 +170,7 @@ def unique_main[**P](
     """
 
     # Case 1: Direct call (PathGuard.unique(path))
-    if isinstance(target, (Path, str, PathArg)):
+    if isinstance(target, (Path, str, PathSpec)):
         return _get_unique_candidate(target, ensure_parent)
 
     # Case 2: Bare Decorator (@PathGuard.unique)
@@ -237,6 +197,9 @@ def unique_main[**P](
 
         return decorator
 
+    # FIX: ty:grey...
+    raise PathGuardError(PathGuardReason.DECORATOR, target=target)
+
 
 def find_sequence(base_target: PathInput) -> list[Path]:
     """
@@ -245,7 +208,7 @@ def find_sequence(base_target: PathInput) -> list[Path]:
     Return list sorted by modification time (newest first)
     """
 
-    base: Path = _ensure_input(base_target)
+    base: Path = PathSpec.ok(base_target)
 
     if not (parent := base.parent).exists():
         return []
