@@ -5,12 +5,13 @@ Provide Event definition, names and types
 - EmitFunc: Skeleton for exporting bus.emit functions
 - EventNames: Select one to create Events, dispatch in bus to registered handler
 
+                                                       DependencyLevel[0]
 """
 
 __all__: list[str] = [
     "Event",
-    "EmitFunc",
     "EventPattern",
+    "EmitFunc",
     "WildCard",
     "EventName",
     "CliEvent",
@@ -41,7 +42,6 @@ class EmitFunc(Protocol):
 
 
 class EventName(StrEnum):
-    # NEXT: decide gi
     """
     Provide clean extension point with autocomplete and typing
 

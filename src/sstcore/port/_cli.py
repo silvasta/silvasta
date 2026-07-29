@@ -2,15 +2,12 @@
 Provide typed Data Transfer Objects for the EventBus
 
 - CliDTO: Intended for __cli__ and processed by printer
-
+                                                       DependencyLevel[0]
 """
 
 from rich.console import ConsoleRenderable
 
 __all__: list[str] = [
-    "CliRenderable",
-    "Renderable",
-    #
     "CliDTO",
     #
     "PanelDTO",
@@ -19,13 +16,16 @@ __all__: list[str] = [
     "TableDTO",
     "MarkdownDTO",
     "RuleDTO",
+    #
+    "CliRenderable",
+    "RichRenderable",
+    "Renderable",
 ]
 
 import warnings
 from dataclasses import dataclass, field, fields
 from typing import Any, ClassVar, Literal, Protocol, Self, runtime_checkable
 
-from rich.abc import RichRenderable
 from rich.align import AlignMethod
 from rich.box import ROUNDED, Box
 
@@ -35,6 +35,11 @@ type Renderable = ConsoleRenderable | RichRenderable | CliRenderable | str
 @runtime_checkable
 class CliRenderable(Protocol):
     def __cli__(self) -> CliDTO: ...
+
+
+@runtime_checkable
+class RichRenderable(Protocol):
+    def __rich__(self) -> Renderable: ...
 
 
 class _DtoBase:  # TASK: compare with .log._DtoBase, unified base?

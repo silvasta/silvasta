@@ -3,6 +3,7 @@ Provide typed Data Transfer Objects for the EventBus
 
 - LogDTO  Intended for __log__ and processed by logger
 
+                                                       DependencyLevel[0]
 """
 
 __all__: list[str] = [
