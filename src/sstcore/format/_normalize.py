@@ -4,6 +4,7 @@ Provide Base Level Text Formatting
 - Normalize input for Modules without acces to sstcore.utils
                                                            ModuleLevel[0]
 """
+# INFO: Intended as Package Root
 
 __all__: list[str] = [
     "cls_name",
