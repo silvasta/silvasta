@@ -1,7 +1,7 @@
 """
-Provide ErrorHandler with Registry
+Provide ErrorHandler with Registry (and defaults)
 
-                                                          PackageLevel[1]
+                                                       DependencyLevel[2]
 """
 
 __all__: list[str] = [

@@ -2,7 +2,7 @@
 Create Exceptions for the Domain Layer Data
 
 - ...in progress
-                                                           ModuleLevel[1]
+                                                       DependencyLevel[1]
 """
 
 from ._base import SstError

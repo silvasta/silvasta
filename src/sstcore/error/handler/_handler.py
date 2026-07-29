@@ -1,7 +1,7 @@
 """
 Build the Functor for the Exception handling
 
-                                                           ModuleLevel[0]
+                                                       DependencyLevel[0]
 """
 
 from ...format._normalize import cls_name

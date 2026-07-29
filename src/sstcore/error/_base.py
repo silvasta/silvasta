@@ -2,8 +2,7 @@
 Define the Shape of Exceptions
 
 - SstError: The Root
-
-                                                           ModuleLevel[0]
+                                                       DependencyLevel[0]
 """
 
 __all__: list[str] = [
@@ -12,9 +11,9 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ..contract.cli import PanelDTO, Renderable
-from ..contract.log import LogDTO
-from ..format.string import cls_name
+from ..format import cls_name
+from ..port.cli import PanelDTO, Renderable
+from ..port.log import LogDTO
 from ..utils.color import ColorBox  # WARN: ColorBox???
 
 c: ColorBox = ColorBox.bold()

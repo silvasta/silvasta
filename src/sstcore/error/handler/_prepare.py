@@ -3,7 +3,7 @@ Assemble default ErrorHandlers for SstErrors (and maybe builtins)
 
 - PathGuardError
 - ...
-                                                           ModuleLevel[1]
+                                                       DependencyLevel[1]
 """
 
 __all__: list[str] = [

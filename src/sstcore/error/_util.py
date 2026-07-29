@@ -3,7 +3,7 @@ Provide Exceptions for sstcore.utils
 
 - PathGuard: Cover all internal Errors and explain with enumerated Reasons
 
-                                                           ModuleLevel[1]
+                                                       DependencyLevel[1]
 """
 
 __all__: list[str] = [
@@ -19,7 +19,7 @@ __all__: list[str] = [
 from enum import StrEnum
 from typing import Any
 
-from ..contract.cli import Renderable
+from ..port.cli import Renderable
 from ..utils.color import ColorBox
 from ._base import SstError
 

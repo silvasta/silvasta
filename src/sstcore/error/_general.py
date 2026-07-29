@@ -1,7 +1,7 @@
 """
 Collect Exceptions from different Topics (mainly builtin stuff)
 
-                                                           ModuleLevel[1]
+                                                       DependencyLevel[1]
 """
 
 __all__: list[str] = [
@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ..contract.cli import Renderable
+from ..port import Renderable
 from ..utils.color import ColorBox  # WARN: ColorBox???
 from ._base import SstError
 
