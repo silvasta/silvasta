@@ -10,38 +10,58 @@ Store the Mixins in proper Container
 
 """
 
+__all__: list[str] = [
+    "Cli",
+    "Str",
+    "Rich",
+    "Repr",
+    "Log",
+]
+
 from enum import Enum, auto
 
-from ...contract.cli import CliRenderable
-from ...contract.log import LogSerializable
-from ...contract.native import ReprRenderable, Stringable
-from . import mixin
+from ...port import (
+    CliRenderable,
+    LogSerializable,
+    ReprRenderable,
+    RichRenderable,
+    Stringable,
+)
+from . import _mixin as mixin
 
 
 class Cli(Enum):
-    PANEL = auto()
-    BAR = auto()
     LINE = auto()
+    PANEL = auto()
     TABLE = auto()
+    HEADER = auto()
+    PATHS = auto()
+    DEBUG = auto()
     MARKDOWN = auto()
     OFF = auto()
 
     @property
     def mixin(self) -> type[CliRenderable]:
         match self:
-            case self.PANEL:
-                return mixin.cli.CliFullPanelMixin
-
-            case self.BAR:
-                return mixin.cli.CliSlimPanelMixin
-
             case self.LINE:
-                return mixin.cli.CliLineMixin
+                return mixin.cli.LineMixin
 
-            case self.TABLE:  # TODO: attach or delete
-                raise NotImplementedError("Cli.TABLE Mixin")
+            case self.TABLE:
+                return mixin.cli.TableMixin
 
-            case self.MARKDOWN:  # TODO: attach or delete
+            case self.PANEL:
+                return mixin.cli.PanelMixin
+
+            case self.HEADER:
+                return mixin.cli.SlimPanelMixin
+
+            case self.DEBUG:
+                return mixin.cli.FullPanelMixin
+
+            case self.PATHS:
+                return mixin.cli.PathPanelMixin
+
+            case self.MARKDOWN:  # NEXT: attach or delete
                 raise NotImplementedError("Cli.MARKDOWN Mixin")
 
             case self.OFF:
@@ -49,8 +69,9 @@ class Cli(Enum):
 
 
 class Str(Enum):
-    NAME = auto()
     SHORT = auto()
+    NAME = auto()
+    MODULE = auto()
     OFF = auto()
 
     @property
@@ -62,40 +83,51 @@ class Str(Enum):
             case self.NAME:
                 return mixin.string.NameMixin
 
+            case self.MODULE:
+                return mixin.string.ModuleNameMixin
+
             case self.OFF:
                 return mixin.MixinSentinel
 
 
 class Rich(Enum):
-    MODULE = auto()
     SHORT = auto()
+    NAME = auto()
+    MODULE = auto()
     OFF = auto()
 
     @property
-    def mixin(self) -> type:  # FIX: type hint []
+    def mixin(self) -> type[RichRenderable]:
         match self:
             case self.SHORT:
                 return mixin.rich.SimpleRichNameMixin
 
+            case self.NAME:
+                return mixin.rich.RichNameMixin
+
             case self.MODULE:
-                return mixin.rich.ModuleNameMixin
+                return mixin.rich.RichModuleNameMixin
 
             case self.OFF:
                 return mixin.MixinSentinel
 
 
 class Repr(Enum):
-    DEFAULT = auto()
-    FULL = auto()
+    BOX = auto()
+    DATA = auto()
+    DEBUG = auto()
     OFF = auto()
 
     @property
     def mixin(self) -> type[ReprRenderable]:
         match self:
-            case self.DEFAULT:
-                return mixin.repr.DataMixin
+            case self.BOX:
+                return mixin.repr.ReprMixin
+        match self:
+            case self.DATA:
+                return mixin.repr.ReprDataMixin
 
-            case self.FULL:
+            case self.DEBUG:
                 return mixin.repr.FullReprMixin
 
             case self.OFF:
@@ -103,22 +135,18 @@ class Repr(Enum):
 
 
 class Log(Enum):
-    DEFAULT = auto()
-    FULL = auto()
-    PYDANTIC = auto()
+    DATA = auto()
+    DEBUG = auto()
     OFF = auto()
 
     @property
     def mixin(self) -> type[LogSerializable]:
         match self:
-            case self.DEFAULT:
-                return mixin.log.LogMixin
+            case self.DATA:
+                return mixin.log.LogDataMixin
 
-            case self.FULL:
-                return mixin.log.DebugLogMixin
-
-            case self.PYDANTIC:
-                return mixin.log.PydanticDataMixin
+            case self.DEBUG:
+                return mixin.log.FullLogMixin
 
             case self.OFF:
                 return mixin.MixinSentinel
