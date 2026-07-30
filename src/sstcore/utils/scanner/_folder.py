@@ -1,16 +1,13 @@
 """
-# Scanner - Detect the Target!
+Scan the Folder and provide the (filtered) Files
 
-## FolderScanner
-
-- Needs a Target Root and optional a FilterSet to Walk a directory
-- Provides Paths, builds a PathTree or creates a SummaryFile.
-
-## [FileScanner]
-
-- Future project: detect the content of files
-
+                                                       DependencyLevel[0]
 """
+
+__all__: list[str] = [
+    "FolderScanner",
+]
+
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -18,9 +15,7 @@ from pathlib import Path
 
 from ..filter import PathFilter, ProjectFilter
 from ..path import PathGuard
-from ..print import printer
 from ..tree import PathTreeNode, build_path_tree
-from .summary_file import assemble_summary_file
 
 
 @dataclass
@@ -37,8 +32,8 @@ class FolderScanner:
     scan_root: Path
     filter: PathFilter = field(default_factory=ProjectFilter)
 
-    provide_relative_paths = False
-    follow_symlinks = False
+    provide_relative_paths: bool = False
+    follow_symlinks: bool = False
 
     def get_files(self) -> list[Path]:
         """Collect and Sort the walked Paths"""
@@ -73,20 +68,3 @@ class FolderScanner:
         return build_path_tree(
             paths=sorted(self.walk()), root_name=self.scan_root.name
         )
-
-    def summary(self, output_file: Path | None = None, write=True) -> str:
-        """Load all Paths and assemble Content to 1 Summary File"""
-
-        output_file: Path = output_file or Path.cwd() / "summary.md"
-        printer.lines(
-            header="Files for Summary",
-            title="FolderScanner",
-            lines=(files := self.get_files()),
-            style="green",
-        )
-        data: str = assemble_summary_file(files, output_file, self.scan_root)
-
-        if write:
-            PathGuard.unique(output_file).write_text(data)
-
-        return data
