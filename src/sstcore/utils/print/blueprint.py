@@ -18,20 +18,20 @@ from enum import Enum, auto
 from typing import Any, Literal, Protocol
 
 import rich
-from rich.abc import RichRenderable
 from rich.align import AlignMethod
 from rich.box import Box
 from rich.theme import Theme
 
-from ...contract.cli import (
+from ...port import (
     CliDTO,
     LineDTO,
+    LogDTO,
     MarkdownDTO,
     PanelDTO,
+    RichRenderable,
     RuleDTO,
     TableDTO,
 )
-from ...contract.log import LogDTO
 from ..color import ColorBox, Palette
 
 
@@ -57,7 +57,7 @@ class Printer(Protocol):
 
     @property
     def project_info(self) -> str: ...
-    def set_project_meta(self, name: str, version: str) -> None: ...
+    def set_project_info(self, name: str, version: str) -> None: ...
 
     # base
     palette: Palette

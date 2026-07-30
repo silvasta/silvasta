@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Any
 
 from ...contract.cli import CliDTO, CliRenderable
-from ...contract.log import LogDTO
+from ...port import LogDTO
 from .blueprint import Modus, Printer
 
 

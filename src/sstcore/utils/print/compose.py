@@ -17,13 +17,10 @@ from typing import Any
 from rich.console import Console
 
 from ..color import colorize
-from ..view import ViewBuilder
-from ..view.presets import printer_view_builder
+from ..view import ViewBuilder, view
 from . import mixin
 from .blueprint import Printer
 from .core import PrinterCore
-
-PrinterViewBuilder: ViewBuilder = printer_view_builder()
 
 
 @dataclass(frozen=True)
@@ -46,7 +43,7 @@ class PrinterFactory:
     tool: type | None = None
     emit: type | None = None
     # view
-    view_spec: ViewBuilder | None = PrinterViewBuilder
+    view_spec: ViewBuilder | None = view.printer
 
     def all_mixins(self) -> tuple[type | None, ...]:
         """Provide all attached member raw and unfiltered"""

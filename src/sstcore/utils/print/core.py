@@ -12,9 +12,9 @@ from rich.console import Console
 from rich.padding import Padding
 from rich.theme import Theme
 
-from ...contract.cli import CliDTO, CliRenderable, Renderable
-from ...contract.event import EmitFunc
-from ...contract.log import LogDTO, LogSerializable
+from ...port.cli import CliDTO, CliRenderable, Renderable
+from ...port.event import EmitFunc
+from ...port.log import LogDTO, LogSerializable
 from ..color import Palette, colorize
 from ..color.palette import BASE_PALETTE
 from .blueprint import Modus, Printer
@@ -26,7 +26,7 @@ class PrinterMeta:
     project_name: str = "App"
     project_version: str = "0.0.0"
 
-    def set_project_meta(self, name: str = "", version: str = "") -> None:
+    def set_project_info(self, name: str = "", version: str = "") -> None:
         """Attach Project specific information for Printer layouts"""
         if name:
             self.project_name: str = name

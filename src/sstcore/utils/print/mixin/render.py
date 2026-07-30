@@ -16,16 +16,16 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from ....contract.cli import (
+from ....port import (
     CliDTO,
     LineDTO,
+    LogDTO,
     MarkdownDTO,
     PanelDTO,
     Renderable,
     RuleDTO,
     TableDTO,
 )
-from ....contract.log import LogDTO
 from ..blueprint import Printer
 
 
