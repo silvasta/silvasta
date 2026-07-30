@@ -11,10 +11,11 @@ __all__: list[str] = [
     "EventBus",
     "EventHandler",
     "BusRegistrationFunc",
-    "register_default_event_handler",
+    "create_event_bus",
 ]
 
 
 from ._bus import EventBus, EventHandler
 from ._emit import EmitFunctor, Emitter
-from ._register import BusRegistrationFunc, register_default_event_handler
+from ._register import BusRegistrationFunc
+from ._setup import create_event_bus

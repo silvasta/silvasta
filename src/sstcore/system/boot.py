@@ -1,93 +1,56 @@
 """
-Prepare Global instances for System or any other live process
+Create loader for System and collect loader of all Components
 
+- System
 - ConfigManager
 - EventBus
-                                                       DependencyLevel[X]
+                                                       DependencyLevel[3]
 """
 
 __all__: list[str] = [
-    "sst_config_loader",
+    "SystemLoader",
     "ConfigLoader",
     "BusLoader",
+    "sst_system_loader",
+    "sst_config_loader",
     "sst_bus_loader",
-    "create_event_bus",
 ]
+
 
 from collections.abc import Callable
 from pathlib import Path
 
-from ..config import ConfigManager, SstPaths, SstSettings
-from ..port.event import CoreEvent
+from ..utils import Printer
 from ..utils.path import HomeSetup
-from .event import (
-    BusRegistrationFunc,
-    EventBus,
-    register_default_event_handler,
-)
+from ._boot import BusLoader, ConfigLoader, sst_bus_loader, sst_config_loader
+from ._core import System
 
-type ConfigLoader[config: ConfigManager] = Callable[..., config]
-type BusLoader = Callable[..., EventBus]
+type SystemLoader = Callable[..., System]
 
 
-def sst_config_loader(
-    settings_cls=SstSettings,
-    paths_cls=SstPaths,
-    project_name: str = "sstcore",
-    home_setup: HomeSetup = HomeSetup.PROJECT,
-    project_root: Path | None = None,
-) -> ConfigLoader:
-    """Prepare Loader function ready to setup ConfigManager"""
+def sst_system_loader(  # intended for project configs
+    config_loader: ConfigLoader | None = None,
+    bus_loader: BusLoader | None = None,
+    printer: Printer | None = None,
+) -> SystemLoader:
+    """Prepare Loader function ready to setup System"""
 
-    def loader(  # CLI input
+    def loader(  # intended for cli args or any other runtime override
+        verbose: bool = False,
+        quiet: bool = False,
         setting_file: Path | None = None,
-        home: HomeSetup = home_setup,
-    ) -> ConfigManager:
-        return ConfigManager(
-            settings_cls=settings_cls,
-            paths_cls=paths_cls,
+        home: HomeSetup = HomeSetup.PROJECT,
+    ) -> System:
+        system: System = System.bootstrap(
+            config_loader=config_loader,
+            bus_loader=bus_loader,
+            printer=printer,
+            verbose=verbose,
+            quiet=quiet,
             setting_file=setting_file,
-            project_name=project_name,
-            project_root=project_root,
-            home_setup=home,
+            home=home,
         )
 
-    return loader
-
-
-def sst_bus_loader(
-    bus_registration: BusRegistrationFunc | None = None,
-    use_default_registration=True,
-) -> BusLoader:
-    """Prepare Loader function ready to setup EventBus"""
-
-    def loader() -> EventBus:
-        return create_event_bus(
-            bus_registration=bus_registration,
-            use_default_registration=use_default_registration,
-        )
+        return system
 
     return loader
-
-
-def create_event_bus(
-    bus_registration: BusRegistrationFunc | None = None,
-    use_default_registration=True,
-) -> EventBus:
-    """Load EventBus explicit as one-time initialization"""
-
-    bus = EventBus()
-
-    if use_default_registration:
-        register_default_event_handler(bus)
-
-    if bus_registration:
-        bus_registration(bus)
-
-    bus.emit(
-        event_name=CoreEvent.BUS_DIAG,
-        sender="BusSetup",
-        log="EventBus setup complete",
-    )
-
-    return bus

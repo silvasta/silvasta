@@ -7,6 +7,10 @@ Prepare EventHandler and default Registry for EventBus
 __all__: list[str] = [
     "BusRegistrationFunc",
     "register_default_event_handler",
+    "LOG_HANDLER",
+    "CLI_HANDLER",
+    "TELEMETRY_HANDLER",
+    "telemetry",
 ]
 
 from collections.abc import Callable

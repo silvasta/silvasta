@@ -1,14 +1,18 @@
 """
 Install the System
 
+Check:
+- sstcore.system.boot for all Loaders
+- sstcore.system.event for Bus and Emitter
+
+For Scripts and small Projects:
+- sstcore.system.globals for wireless setup
                                                        DependencyLevel[X]
 """
 
 __all__: list[str] = [
     "System",
-    "SystemLoader",
-    "sst_system_loader",
 ]
 
 
-from ._core import System, SystemLoader, sst_system_loader
+from ._core import System
