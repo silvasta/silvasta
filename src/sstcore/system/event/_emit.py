@@ -1,47 +1,45 @@
 """
-Typed, ergonomic facade on top of the EventBus.
+Provide ergonomic facade on top of the EventBus
 
-- Mirrors common printer + logger patterns
-- Provides local functor factories
-- Keeps printer focused on rendering only
-
+- Mirror common printer + logger patterns
+- Provide local functor factories
+                                                       DependencyLevel[1]
 """
 
-from ..utils.print.core import EmitterCore
-from ..utils.print.mixin import (
+__all__: list[str] = [
+    "Emitter",
+    "LogEmitter",
+    "ViewEmitter",
+    "EmitFunctor",
+]
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from ...port.cli import CliRenderable
+from ...port.event import CliEvent, EmitFunc, EventName
+from ...port.log import LogDTO, LogSerializable
+from ...utils.print.core import EmitterCore
+from ...utils.print.mixin import (
     BoxMixin,
     HeaderMixin,
     LineMixin,
     PanelMixin,
     TableMixin,
 )
-
-__all__: list[str] = [
-    "EmitFunctor",
-    "LogEmitter",
-    "ViewEmitter",
-    "Emitter",
-]
-
-from dataclasses import dataclass, field
-from typing import Any
-
-from ..port.cli import CliRenderable
-from ..port.event import CliEvent, EmitFunc, EventName
-from ..port.log import LogDTO, LogSerializable
-from .bus import EventBus
+from ...utils.view import Repr, Str, view
+from ._bus import EventBus
 
 
-class _ViewMixin:
-    def __str__(self) -> str:
-        return type(self).__name__
-
-    def __repr__(self) -> str:
-        return f"{self}[{self.sender}  {self.event!r}]"  # ty:ignore
+@view(str=Str.SHORT, repr=Repr.BOX)
+class _EmitterView:
+    @property
+    def _repr_box_text(self):
+        return f"{self.sender}  {self.event!r}"  # ty:ignore
 
 
 @dataclass(frozen=True)
-class EmitFunctor(_ViewMixin):
+class EmitFunctor(_EmitterView):
     """Bind Emit Context for 1 Purpose and Task"""
 
     emit: EmitFunc
@@ -54,7 +52,7 @@ class EmitFunctor(_ViewMixin):
 
 
 @dataclass(frozen=True)
-class LogEmitter(_ViewMixin):
+class LogEmitter(_EmitterView):
     """Bind Emit Context for 1 Log Session"""
 
     emit: EmitFunc
@@ -87,7 +85,7 @@ class LogEmitter(_ViewMixin):
 
 
 @dataclass(frozen=True)
-class ViewEmitter(_ViewMixin):
+class ViewEmitter(_EmitterView):
     """Bind Emit Context for 1 CLI and Log Session"""
 
     emit: EmitFunc
@@ -122,25 +120,10 @@ class ViewEmitter(_ViewMixin):
         return payload or {"log": LogDTO(message=str(target), level=level)}
 
 
-class CliEmitter(
+class _CliEmitter(  # TESTING: ideas for printer "inversion"
     HeaderMixin, BoxMixin, LineMixin, TableMixin, PanelMixin, EmitterCore
 ):
     """Wait for final composition in a few days or weeks"""
-
-
-# ERROR: would have been a surprise if that worked without issues...
-# - maybe a modication of the print.blueprint can fix the issues
-#    ~/PolyBox/Code/sstcore/latest/src/sstcore/system/  1
-#   └╴󰌠  emit.py  1
-#     └╴  Argument to bound method `PanelMixin.panel` is incorrect: Expected `Printer`, found `CliEmitter`
-#          info: type `CliEmitter` is not assignable to protocol `Printer`
-#          info: └── protocol member `__call__` is incompatible
-#          info:     └── incompatible return types: `CliDTO | LogDTO | None` is not assignable to `None`
-#          info:         └── element `CliDTO` of union `CliDTO | LogDTO | None` is not assignable to `None` ty (invalid-argument-type) [133, 1]
-# cli_emit = CliEmitter()
-# cli_emit.panel(target="test")
-# AI: Important! The CliEmitter is just a quick test, no time to focus deeply on it now.
-# - maybe a quick statement too the EmitterCore approach would be fine (see utils.print.core)
 
 
 @dataclass(frozen=True)

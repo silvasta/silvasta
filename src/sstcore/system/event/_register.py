@@ -1,22 +1,31 @@
-"""Prepare EventHandler and default registry for EventBus"""
+"""
+Prepare EventHandler and default Registry for EventBus
+
+                                                       DependencyLevel[1]
+"""
+
+__all__: list[str] = [
+    "BusRegistrationFunc",
+    "register_default_event_handler",
+]
 
 from collections.abc import Callable
 
 from loguru import logger
 
-from ..port.event import Event
-from ..utils.log.event_handler import handle_log_event
-from ..utils.print.event_handler import handle_cli_event
-from .bus import EventBus, EventHandler
+from ...port.event import Event
+from ...utils.log.event_handler import handle_log_event
+from ...utils.print.event_handler import handle_cli_event
+from ._bus import EventBus, EventHandler
 
 type BusRegistrationFunc = Callable[[EventBus], None]
 
 
 def register_default_event_handler(bus: EventBus) -> None:
-    """Attach EventHandler to EventBus registry by Event- Name or Pattern"""
+    """Attach EventHandler to EventBus by EventName or EventPattern"""
 
-    bus.subscribe("*", CLI_HANDLER)  # if payload has cli=
-    bus.subscribe("*", LOG_HANDLER)  # if payload has log=
+    bus.subscribe("*", CLI_HANDLER)  # if payload has cli=...
+    bus.subscribe("*", LOG_HANDLER)  # if payload has log=...
 
     bus.subscribe_all(TELEMETRY_HANDLER)
 

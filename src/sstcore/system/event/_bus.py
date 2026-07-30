@@ -3,7 +3,7 @@ Provide Infrastructure for Events
 
 - EventBus: Route Events by name to registred EventHandler
 - EventHandler: Process Event with optional Error handling
-
+                                                       DependencyLevel[0]
 """
 
 __all__: list[str] = [
@@ -18,7 +18,7 @@ from functools import lru_cache
 
 from loguru import logger
 
-from ..port.event import Event, EventName, EventPattern
+from ...port.event import Event, EventName, EventPattern
 
 
 @dataclass(frozen=True)

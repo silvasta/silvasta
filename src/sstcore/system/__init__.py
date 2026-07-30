@@ -1,23 +1,14 @@
 """
-Wire the Event Infrastructure.
+Install the System
 
-- Provide EventBus with loader, handler and if needed, global access
-
-"""  # TODO: adapt, move to Bus
+                                                       DependencyLevel[X]
+"""
 
 __all__: list[str] = [
     "System",
-    "EventBus",
-    "EventHandler",
-    "BusRegistrationFunc",
-    "sst_bus",
-    "EmitFunctor",
-    "Emitter",
+    "SystemLoader",
+    "sst_system_loader",
 ]
 
 
-from .bus import EventBus, EventHandler
-from .core import System
-from .emit import EmitFunctor, Emitter
-from .register import BusRegistrationFunc
-from .setup import sst_bus
+from ._core import System, SystemLoader, sst_system_loader
