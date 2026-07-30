@@ -1,4 +1,13 @@
-# TODO: explain
+"""
+Provide Schema with defaults
+
+- SstModel: Slighly modified BaseModel with frequently used functions
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "SstModel",
+]
 
 import json
 from datetime import UTC, datetime
@@ -8,9 +17,13 @@ from typing import Self
 from loguru import logger
 from pydantic import BaseModel, Field
 
+# TASK: rework
+# - check with latest projects
+# - attach view
+
 
 class SstModel(BaseModel):
-    """Extended Defaults to pydantic.BaseModel"""
+    """Extend Defaults of Pydantic BaseModel"""
 
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -28,8 +41,9 @@ class SstModel(BaseModel):
 
     def save_to_file(self, path: Path):
         """Save current state to json after final update"""
-        self.touch()  # MOVE: model validator?
+        self.touch()
         path.write_text(self.json_content(), encoding="utf-8")
 
     def json_content(self) -> str:
+        """Dump with defaults"""
         return self.model_dump_json(exclude_defaults=False, indent=2)

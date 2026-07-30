@@ -1,5 +1,17 @@
-# TODO: explain
+"""
+Provide Infrastructure for File System Operation
 
+- EventBus: Route Events by name to registred EventHandler
+- EventHandler: Process Event with optional Error handling
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "SstFile",
+    "SstFileFilter",
+    "FileRegistry",
+    "SstFileRegistry",
+]
 import filecmp
 import hashlib
 from collections.abc import Callable
@@ -12,16 +24,10 @@ from typing import Any, Self
 from loguru import logger
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..exceptions import NotImplementedDispatchError, RegistrySyncError
-from ..utils import (
-    FilterSet,
-    FolderScanner,
-    PathFilter,
-    PathGuard,
-    PathTreeNode,
-    ProjectFilter,
-)
-from ..utils.tree import build_path_tree
+from ..error import NotImplementedDispatchError, RegistrySyncError
+from ..utils import FolderScanner, PathGuard
+from ..utils.filter import FilterSet, PathFilter, ProjectFilter
+from ..utils.tree import PathTreeNode, build_path_tree
 
 
 class SstFile(BaseModel):
@@ -51,7 +57,7 @@ class SstFile(BaseModel):
 
     @property
     def added_at(self) -> str:
-        # NEXT: timestamp_format inside __cli__????
+        # TODO: move timestamp_format outside __cli__
         return self.first_tracked.astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
     def confirm_local_status(self, local_dir: Path) -> bool:
@@ -106,14 +112,13 @@ class SstFileFilter[SetType: str, ObjectType: SstFile](FilterSet):
 
 
 class FileRegistry[FilesT: SstFile](BaseModel):
-    # NEXT: think about split!
-    # MOVE: to new .registry
-    # -> still to big, how to split?
-    # LATER: compare as well with ArborealRegistry from sachmis
     """Provide Container for Files and Tools for FileSystem Operations"""
 
+    # LATER: to new .registry -> still to big, how to split?
+    #  - compare as well with ArborealRegistry from sachmis
+
     local_root: Path
-    files: list[FilesT] = Field(default_factory=list)  # IDEA: any iterable?
+    files: list[FilesT] = Field(default_factory=list)
     scanner: FolderScanner | None = None
 
     _sync_mode: PathGuard.SyncMode = (
@@ -576,7 +581,3 @@ class SstFileRegistry(FileRegistry[SstFile]):
 
     def _create_local_file(self, path: Path) -> SstFile:
         return SstFile(local_path=path)
-
-
-class FileSystemManager:  # REMOVE: ???
-    """Manager for operations on Local Files"""
