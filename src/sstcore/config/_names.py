@@ -5,14 +5,19 @@ Provide Container for Names and tools for name composition
 - Provide small subset for SstPaths and other sstcore elements
 - TBD: Hold pattern strings and tools for (bidirectional) Naming
 
+                                                       DependencyLevel[0]
 """
+
+__all__: list[str] = [
+    "SstNames",
+]
 
 from functools import cached_property
 
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
-from ..contract.native import Stringable
+from ..port.native import Stringable
 from ..utils import day_count
 from ..utils.parse import ParsedName
 

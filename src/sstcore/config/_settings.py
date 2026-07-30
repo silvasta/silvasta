@@ -3,8 +3,12 @@ Provide Interface for serializable Components
 
 - Synchronize Defaults, Names and LogParam from and to disk
 - Ensure reliable and observable setting file handling
-
+                                                       DependencyLevel[1]
 """
+
+__all__: list[str] = [
+    "SstSettings",
+]
 
 import json
 from collections import deque
@@ -18,8 +22,8 @@ from pydantic_settings import BaseSettings
 
 from ..utils.log import LogParam
 from ..utils.time import nice_duration
-from .defaults import SstDefaults
-from .names import SstNames
+from ._defaults import SstDefaults
+from ._names import SstNames
 
 
 class SstSettings(BaseSettings):
@@ -42,7 +46,7 @@ class SstSettings(BaseSettings):
         """Refresh datetime and save current status to json"""
         before: datetime = self.last_updated
         self.touch()
-        duration: str = nice_duration(before, after=self.last_updated)
+        duration: str = nice_duration(start=before, end=self.last_updated)
         logger.info(f"Settings updated after {duration}")
         path.write_text(self.json_content(), encoding="utf-8")
 

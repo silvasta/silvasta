@@ -3,8 +3,12 @@ Provide Container for Defaults and Params
 
 - Serialize with Settings and distribute with ConfigManager
 - Provide (minimal) subset of default defaults and for SstPaths
-
+                                                       DependencyLevel[0]
 """
+
+__all__: list[str] = [
+    "SstDefaults",
+]
 
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings

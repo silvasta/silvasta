@@ -3,8 +3,12 @@ Compose and Ensure Paths independent of system or location
 
 - Assemble from Defaults, Names, HomeSetup and any desired input
 - Use PathGuard to ensure existence, uniqueness or writability
-
+                                                       DependencyLevel[1]
 """
+
+__all__: list[str] = [
+    "SstPaths",
+]
 
 from pathlib import Path
 from typing import cast
@@ -14,8 +18,8 @@ import typer
 from ..utils import PathGuard, printer
 from ..utils.color import ColorBox
 from ..utils.path import HomeSetup
-from .defaults import SstDefaults
-from .names import SstNames
+from ._defaults import SstDefaults
+from ._names import SstNames
 
 
 class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
