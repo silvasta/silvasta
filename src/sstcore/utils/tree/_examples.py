@@ -1,8 +1,17 @@
-# TODO: explain
+"""
+Generate Example Trees with SimpleTreeNodes
+
+                                                       DependencyLevel[1]
+"""
+
+__all__: list[str] = [
+    "simple_tree",
+    "big_tree",
+]
 
 import random
 
-from .nodes import SimpleTreeNode
+from ._nodes import SimpleTreeNode
 
 
 def simple_tree():

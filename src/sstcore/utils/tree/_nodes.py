@@ -1,4 +1,17 @@
-# TODO: explain
+"""
+Generate Simple Tree with Nodes that have Branches
+
+- SimpleTreeNode: Provide basic layout
+- PathTreeNode: Represent FileTree built with decomposed Paths
+- build_path_tree: Recursively stack folder and files
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "SimpleTreeNode",
+    "PathTreeNode",
+    "build_path_tree",
+]
 
 from collections import defaultdict, deque
 from collections.abc import Sequence
@@ -9,33 +22,39 @@ from typing import Self
 
 @dataclass(frozen=True)
 class SimpleTreeNode:
-    # TODO: explain
+    """Build Node with 0..N subnodes each with own subnodes"""
+
     name: str
     id: str | None = None
     branches: Sequence[Self] = field(default_factory=list)
 
     @property
     def display_label(self) -> str:
+        """Show public representation e.g. in Selector or Visualization"""
         return self.name
 
     @property
     def identifier(self):
+        """Provide value that allows identification (No test for uniqness here!)"""
         return self.id
 
 
 @dataclass(frozen=True)
 class PathTreeNode(SimpleTreeNode):
-    # TODO: explain
+    """Represent FileTree with Nodes=Folders and Leafs=Files"""
+
     path: Path = field(default_factory=Path)
 
     @property
     def identifier(self):
+        """Try with file system path for uniqness"""
         return self.path
 
     @classmethod
     def create(
         cls, path: Path, branches: Sequence[Self] | None = None
     ) -> Self:
+        """Split path and build subnodes with that"""
         if branches is None:
             branches: Sequence[Self] = []
 
