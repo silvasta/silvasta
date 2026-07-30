@@ -1,11 +1,11 @@
 """
 TUI - provide graphical selector interface and log display
 
--
-"""  # TODO: level
+                                                       DependencyLevel[4]
+"""
 
 __all__: list[str] = [
-    "LogMonitorApp",  # TODO: check if needed here
+    "LogMonitorApp",
 ]
 
-from .log_monitor import LogMonitorApp
+from .monitor import LogMonitorApp

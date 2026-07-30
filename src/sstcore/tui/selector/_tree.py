@@ -3,7 +3,7 @@ Create Interface for quick Selection from SimpleTreeNode
 
 - Use PathTreeNodes to select from FileTree
 
-"""  # TODO:
+"""
 
 __all__: list[str] = [
     "MultiSelectTree",
@@ -21,7 +21,7 @@ from textual.widgets.tree import TreeNode
 from ...utils.print import printer
 from ...utils.tree import SimpleTreeNode
 
-# TASK: check folder(edges != leaf) and how they are counted
+# TODO: check folder(edges != leaf) and how they are counted
 
 
 class MultiSelectTree(Tree[str]):

@@ -1,11 +1,11 @@
 """
-TASK: Collect TuiSelector applications with reusable Pattern
+Launch TuiSelector for predefined setups
 
-- interface scripts for Textual:
-  just throw in any iterable, select, process output, handover
-  - check collections from sachmis, flux, robol or others
-
+-
 """
+
+# TASK: Collect TuiSelector applications with reusable Pattern
+# - check collections from sachmis, flux, robol or others
 
 __all__: list[str] = [
     "multi_linear",
@@ -14,7 +14,7 @@ __all__: list[str] = [
 
 from loguru import logger
 
-from ...exceptions import TuiSelectorError
+from ...error import TuiSelectorError
 from ._list import ListSelectorApp
 
 

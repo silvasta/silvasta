@@ -2,7 +2,7 @@
 Create Interface for quick Selection from List, Dict or Tuple
 
 -
-"""  # TODO:
+"""
 
 __all__: list[str] = [
     "ListSelectorApp",

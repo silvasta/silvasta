@@ -1,8 +1,8 @@
 """
-TUI - provide graphical selector interface and log display
+Provide graphical terminal selector interface
 
 -
-"""  # TODO: level
+"""
 
 __all__: list = [
     "ListSelectorApp",
@@ -10,6 +10,6 @@ __all__: list = [
     "selector",
 ]
 
-from . import _make as selector
+from . import _selector as selector
 from ._list import ListSelectorApp
 from ._tree import TreeSelectorApp
