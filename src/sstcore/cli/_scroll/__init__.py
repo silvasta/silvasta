@@ -7,9 +7,11 @@ Visualize results in CLI line by line like a scroll.
 
 """
 
+# LATER: PrintOption: split and refactor before expose
+
 __all__: list[str] = [
     "safe_typer",
 ]
 
 
-from . import safe_typer  #  don't name it engine!
+from . import _safe_typer as safe_typer

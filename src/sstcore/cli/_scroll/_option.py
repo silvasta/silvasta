@@ -8,6 +8,10 @@ Provide Dynamic Option Collection for high-interval visual inspection
 - Ensure Toggle to move easy and fast back to regular execution mode
 """
 
+# TASK: split Option and Print parts
+# - general function mixer
+# - specific for creating print views
+
 __all__: list[str] = [
     "PrintFunc",
     "SelectMode",

@@ -30,14 +30,16 @@ from ...utils import printer
 from ...utils.color import ColorBox, colorize
 from ...utils.color.palette import ColorName
 from ...utils.print import boxes
-from .option import PrintOption, SelectMode
+from ._option import PrintOption, SelectMode
+
+# TASK: system and bus!
 
 c: ColorBox = ColorBox.bold()
 
-# TODO: find better solution!
-# - not in engine, to polluting
-# - not at bottom, to hidden
 toggle: dict[str, SelectMode] = {
+    # TODO: find better solution!
+    # - not in engine, to polluting
+    # - not at bottom, to hidden
     "intro_": SelectMode.FIXED,
     "setup_": SelectMode.FIXED,
     "sub___": SelectMode.FIXED,

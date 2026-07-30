@@ -12,15 +12,12 @@ tools: Combine following utils inside example app
 
 """
 
-from . import args as sargs
-from .engine import SafeTyper
-from .handler import ErrorHandler, ErrorRegistry
-from .tools import app as tools
+from . import _args as sargs
+from ._engine import SafeTyper
+from ._tools import app as tools
 
 __all__: list = [
-    "SafeTyper",
-    "ErrorHandler",
-    "ErrorRegistry",
     "sargs",
+    "SafeTyper",
     "tools",
 ]

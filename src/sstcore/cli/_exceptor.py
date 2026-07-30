@@ -1,9 +1,13 @@
 """
-Exceptor - Massivly load and launch exceptions
+Exceptor - Massivly launch exceptions for Demo and Developement
+
+UNDER CONSTRUCTION!
 
 - app: Provide Environment and Tracking for Execution inside Typer Setup
 
 """
+
+# TASK: split regular|typer, create easy setup for fast tests, check __log|cli__
 
 import sys
 from collections.abc import Callable
@@ -11,18 +15,15 @@ from dataclasses import dataclass, field
 from typing import Any, Self
 
 from sstcore import printer
-from sstcore.cli.engine import SafeTyper  # WARN: this worked before, but...
-from sstcore.utils.color import ColorBox
+
+from ..utils.color import ColorBox
+from ._engine import SafeTyper
 
 c: ColorBox = ColorBox.bold()
 
 
 type ErrorHandler = Callable[[Any], None]
 type ErrorList = list[type[BaseException] | ExceptorTask]
-
-# TODO: check with latest __fmt__
-
-# MOVE: maybe to CLI, together with other utils, tools
 
 
 @dataclass

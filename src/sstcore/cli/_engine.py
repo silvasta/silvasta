@@ -1,7 +1,8 @@
 """
 Extend typer.Typer
 
-(Read details in SafeTyper)
+- Provide Typer setup with Config, Log, EventBus and Error handling
+
 """
 
 import sys
@@ -10,23 +11,26 @@ from pathlib import Path
 import typer
 from loguru import logger
 
+from ..error.handler import ErrorRegistry
 from ..system.core import System, SystemLoader, sst_system_loader
 from ..utils.path import HomeSetup
-from ..utils.view import presets, view
-from . import args, scroll
-from .handler import ErrorRegistry
+from ..utils.view import view
+from . import _args as args
+from . import _scroll as scroll
 
 
-@view(spec=presets.safe_typer_view_builder())
+@view.safe_typer
 class SafeTyper(typer.Typer):
     """
-    Lead Custom Typer Setup with Config, Log and Error handling
+    Lead CLI execution and distribute bootstrapped System
 
-    - Provide Framework with basic callback attach and start prints
+    - Provide Framework with callback dispatch and scroll prints
+    - Prepare System with EventBus for main app
+    - Load Config from json or provide Defaults
     - Ensure Loguru is ready and loaded with custom settings
-    - Protect CLI display from Errors with registered Exception handlers
+    - Register ErrorHandler and protect CLI display from spam
 
-    """  # TODO: text to system
+    """
 
     system: System
     errors: ErrorRegistry
@@ -51,7 +55,7 @@ class SafeTyper(typer.Typer):
         self,
         ctx: typer.Context,
         verbose: bool,
-        quiet: bool,
+        quiet: bool,  # TODO: split: scroll prints, subapps, general, ...
         setting_file: Path | None,
         home: HomeSetup = HomeSetup.PROJECT,
     ):
