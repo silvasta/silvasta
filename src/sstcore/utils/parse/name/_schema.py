@@ -1,8 +1,14 @@
+"""
+Transform to BaseModel and Merge with Registries and Files
+
+                                                       DependencyLevel[1]
+"""
+
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
-from .base import NameParser
+from ._base import NameParser
 
 __all__: list[str] = [
     "SchemaName",

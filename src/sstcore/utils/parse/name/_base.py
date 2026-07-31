@@ -8,6 +8,7 @@ Format and Parse Names in both directions
 
 Diamond (NameParser -> both normalizers -> NamePattern) works cleanly via MRO.
 
+                                                       DependencyLevel[0]
 """
 
 __all__: list[str] = [
@@ -25,7 +26,7 @@ from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
 
-from ....exceptions import NotImplementedDispatchError
+from ....error import NotImplementedDispatchError
 
 
 def _format_brackets(key: str) -> str:  # INFO: don't loose this

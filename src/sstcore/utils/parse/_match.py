@@ -4,14 +4,24 @@ Compile regex pattern and Match
 - RegexMatch: Hash by pattern and hit on equal (target=regex_match)
 - LogPattern: Provide selection of precompiled log pattern
 
+Example: (from 10 lines to 2 with LogMatcher, much less noise)
+    try:
+        for line, style in LogMatcher.tail(log_file, sleep=sleep):
+            printer(line, style=style)
+
+    except KeyboardInterrupt:
+        printer.warn("Log file tailing stopped")
+        sys.exit(0)
+                                                       DependencyLevel[0]
 """
 
 __all__: list[str] = [
     "RegexMatch",
     "MatchRule",
-    "RegexMatchBox",
-    "LogMatcher",
     "RuleHandler",
+    "RegexMatchBox",
+    # preset
+    "LogMatcher",
 ]
 
 import re

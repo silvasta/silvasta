@@ -1,10 +1,16 @@
+"""
+Format 1 Name with 2 Pattern (1 with color)
+
+                                                       DependencyLevel[1]
+"""
+
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from rich.control import strip_control_codes
 
-from .base import NameParser
+from ._base import NameParser
 
 __all__: list[str] = [
     "ColoredName",

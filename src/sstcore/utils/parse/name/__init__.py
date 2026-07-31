@@ -1,26 +1,30 @@
 """
 Format and Parse Names in both directions
 
-- NameParser: unified bidirectional __call__ (the stable root)
+                                                       DependencyLevel[0]
+"""
 
-"""  # TODO: explain implementations
+# STRATEGY: Move Package to sstcore.format!
+# - This is dependency of sstcore.utils.view,
+#   and potential from sstcore.error
 
 __all__: list[str] = [
     # base
-    "NamePattern",  # TODO: needed 80% sure
+    "NamePattern",
     "NameParser",
     # implementations
     "ColoredName",
     "ParsedName",
     "SchemaName",
-    "Name",  # TODO: needed 40% sure, just use utils.parse.name.name for this?
+    # experimental
+    "Name",
 ]
 
-from .base import (
+from ._base import (
     NameParser,
     NamePattern,
 )
-from .colored import ColoredName
-from .name import Name
-from .parsed import ParsedName
-from .schema import SchemaName
+from ._colored import ColoredName
+from ._name import Name
+from ._parsed import ParsedName
+from ._schema import SchemaName

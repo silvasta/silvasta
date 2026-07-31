@@ -1,13 +1,23 @@
+"""
+Parse Names and Extract Keys - supported with validated BaseModel access
+
+                                                       DependencyLevel[1]
+"""
+
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
 
-from .base import NameParser
+from ._base import NameParser
 
 __all__: list[str] = [
     "ParsedName",
 ]
+
+# TASK: better arg and DTO stragegy
+# - so far like NameParser with a better Name,
+#   at least since SchemaName exists
 
 
 class ParsedName[ModelT: BaseModel](NameParser):
