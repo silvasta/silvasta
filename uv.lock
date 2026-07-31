@@ -401,8 +401,8 @@ wheels = [
 ]
 
 [[package]]
-name = "sstcore"
-version = "0.3.0b5"
+name = "sstcore-py"
+version = "0.4.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "fire" },
@@ -439,7 +439,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "rich", specifier = ">=14.3.3" },
     { name = "send2trash", specifier = ">=2.1.0" },
-    { name = "sstcore", extras = ["cli"], marker = "extra == 'all'" },
+    { name = "sstcore-py", extras = ["cli"], marker = "extra == 'all'" },
     { name = "textual", marker = "extra == 'cli'" },
     { name = "typer", marker = "extra == 'cli'" },
 ]
