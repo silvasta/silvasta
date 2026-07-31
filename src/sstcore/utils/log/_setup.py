@@ -1,20 +1,32 @@
-"""Prepare selected logger, avoid multiple setups, provide minimal logger"""
+"""
+Launch Log setup configured with LogParam
+
+Three different setups: (any combination is possible)
+  - print to console
+  - write to logfile.log
+  - write to logfile.jsonl
+
+- Cache and return the applied setup param and block another setup
+- Provied function to fetch or reset the cached result (*unlock*)
+
+- Minimal Logging: intended to kill bootstrap noise without complete shutdown
+
+                                                       DependencyLevel[1]
+"""
 
 __all__: list[str] = [
     "setup_logging",
-    "setup_minimal_logging",
+    "reset_log_result",
     "fetch_log_result",
-    "reset_logging",
+    "setup_minimal_logging",
 ]
 
 import sys
 
 from loguru import logger
 
-from .format import load_format_pattern, ndjson_formatter
-from .param import LogParam
-
-_setup_param: LogParam | None = None
+from ._format import load_format_pattern, ndjson_formatter
+from ._param import LogParam
 
 
 def setup_logging(param: LogParam | None = None) -> LogParam:
@@ -67,14 +79,13 @@ def setup_logging(param: LogParam | None = None) -> LogParam:
     return _setup_param
 
 
-def setup_minimal_logging(level: str = "WARNING"):
-    """Kill noise immediately for clean bootstrap but show critical issues"""
-    logger.remove()
-    logger.add(
-        lambda msg: print(msg, end=""),
-        level=level,
-        format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
-    )
+_setup_param: LogParam | None = None
+
+
+def reset_log_result() -> None:
+    """Allow setup_logging to run again"""
+    global _setup_param
+    _setup_param = None
 
 
 def fetch_log_result() -> LogParam | None:
@@ -83,7 +94,11 @@ def fetch_log_result() -> LogParam | None:
     return _setup_param
 
 
-def reset_logging() -> None:
-    """Allow setup_logging to run again"""
-    global _setup_param
-    _setup_param = None
+def setup_minimal_logging(level: str = "WARNING"):
+    """Kill noise immediately for clean bootstrap but show critical issues"""
+    logger.remove()
+    logger.add(
+        lambda msg: print(msg, end=""),
+        level=level,
+        format="{time:HH:mm:ss} | <level>{level:8}</level> | {message}",
+    )

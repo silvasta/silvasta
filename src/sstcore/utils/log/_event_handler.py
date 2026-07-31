@@ -1,16 +1,18 @@
 """
-Process __log__ Event
+Handle __log__: Event Bridge to Loguru
 
-- bind event and context to logger, dump to json
-
+                                                       DependencyLevel[0]
 """
+
+__all__: list[str] = [
+    "handle_log_event",
+]
 
 from typing import Any
 
 from loguru import logger
 
-from ...contract.event import Event
-from ...contract.log import LogDTO, LogSerializable
+from ...port import Event, LogDTO, LogSerializable
 
 
 def handle_log_event(event: Event) -> None:
@@ -26,7 +28,7 @@ def handle_log_event(event: Event) -> None:
             event_name=event.name,
             sender=event.sender,
         ).warning(
-            "bus log= expected LogSerializable, got {type}",
+            "bus expected LogSerializable with log=... got {type}",
             type=type(log_payload).__name__,
         )
         return
@@ -39,8 +41,4 @@ def handle_log_event(event: Event) -> None:
         sender=event.sender,
         **dto.metrics,
         **dto.extra,
-        # AI_QUESTION: ok I see the message and level are in the last block,
-        # but the others, metrics,extras in the first.
-        # - Briefly summarize the purpose of both,
-        #   which critera decide what comes where?
     ).log(dto.level.upper(), dto.message)

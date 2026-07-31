@@ -1,14 +1,20 @@
 """
-Prepare Formatter for emitted Events
+Prepare Formatter for Emitted Events
 
-- Concat colored string with parameter
-- Serialize LogDTO to 1 line JSON
+- Format colored string with parameter
+- Serialize LogDTO to JSON-Line
+                                                       DependencyLevel[0]
 """
+
+__all__: list[str] = [
+    "load_format_pattern",
+    "ndjson_formatter",
+]
 
 import json
 from typing import Any
 
-from ...contract.log import LogDTO, LogSerializable
+from ...port import LogDTO, LogSerializable
 
 
 def load_format_pattern() -> str:

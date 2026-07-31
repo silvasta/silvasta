@@ -1,3 +1,15 @@
+"""
+Provide DTO for Bootstrap Pipeline
+
+- Ensure proper communication with config, settings and log
+  - stored in config.Settings -> settings.json
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "LogParam",
+]
+
 from pathlib import Path
 from typing import Any, Self
 
