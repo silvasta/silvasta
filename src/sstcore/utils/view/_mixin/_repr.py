@@ -10,8 +10,9 @@ __all__: list[str] = [
     "FullReprMixin",
 ]
 
-from ....format import cls_name
-from ._basics import data, dict_to_str
+from ....format.convert import dict_to_str
+from ....format.reflect import cls_name
+from ._basics import data
 
 
 class ReprMixin:

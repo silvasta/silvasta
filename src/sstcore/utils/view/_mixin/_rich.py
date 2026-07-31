@@ -14,8 +14,8 @@ __all__: list[str] = [
 from typing import Any
 
 from ....format import cls_name
-from ...color import ColorBox, colorize
-from ._basics import name
+from ....format._normalize import name
+from ....format.color import ColorBox, colorize
 
 c: ColorBox = ColorBox.bold()
 

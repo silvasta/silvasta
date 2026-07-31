@@ -20,7 +20,7 @@ __all__: list[str] = [
 
 from enum import Enum, auto
 
-from ...port import (
+from ...port.view import (
     CliRenderable,
     LogSerializable,
     ReprRenderable,
@@ -61,8 +61,8 @@ class Cli(Enum):
             case self.PATHS:
                 return mixin.cli.PathPanelMixin
 
-            case self.MARKDOWN:  # NEXT: attach or delete
-                raise NotImplementedError("Cli.MARKDOWN Mixin")
+            case self.MARKDOWN:
+                return mixin.cli.MarkdownMixin
 
             case self.OFF:
                 return mixin.MixinSentinel

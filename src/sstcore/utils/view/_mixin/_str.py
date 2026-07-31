@@ -11,8 +11,7 @@ __all__: list[str] = [
     "ModuleNameMixin",
 ]
 
-from ....format import cls_name
-from ._basics import name
+from ....format.reflect import cls_name, name
 
 
 class SimpleNameMixin:

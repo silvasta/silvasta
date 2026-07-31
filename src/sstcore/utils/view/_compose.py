@@ -10,8 +10,9 @@ __all__: list[str] = [
 
 from dataclasses import dataclass, replace
 from functools import cached_property
-from typing import Any, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Self, cast, overload
 
+from ...port.builder import Builder, Injector, TypedBuilder
 from ._mixin import MixinSentinel
 from ._registry import Cli, Log, Repr, Rich, Str
 
@@ -19,6 +20,13 @@ from ._registry import Cli, Log, Repr, Rich, Str
 @dataclass(frozen=True)
 class ViewBuilder:
     """Configure ViewMixin sets and build composed classes"""
+
+    # TASK: check: allow unregistered Mixins
+    # - replace 1-5 of the categories by a free mixin
+    # - use isinstance(...) to confirm it is valid
+    # sometimes just 1 is missing and for that some bypass should be considered
+    # - build and inject by regular class Foo(_View) anyway possible
+    # - balance extra comfort and extra risk + complexity
 
     cli: Cli = Cli.OFF
     str: Str = Str.OFF
@@ -56,6 +64,7 @@ class ViewBuilder:
         return type(f"{name}ViewBase", self.mixins, extras or {})
 
     def compose[Class: type](self, cls: Class) -> Class:
+        # IMPORTANT: check naming, maybe this to inject?
         """Inject selected Mixins to new Subclass of target cls"""
 
         if not self.mixins:
@@ -94,3 +103,14 @@ class ViewBuilder:
             return self.build()
 
         return self.compose(cls)
+
+
+if TYPE_CHECKING:
+    _instance_check: Builder = ViewBuilder()
+    _class_check: type[Builder] = ViewBuilder
+    #
+    _instance_check: TypedBuilder = ViewBuilder()
+    _class_check: type[TypedBuilder] = ViewBuilder
+    #
+    _instance_check: Injector = ViewBuilder()
+    _class_check: type[Injector] = ViewBuilder
