@@ -18,7 +18,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from ..path import PathGuard
+from ..path.guard import PathGuard
 from ..print import printer
 from ..view import Cli, Str, view
 from ._file import FileScanner, ScanMode
@@ -80,8 +80,7 @@ class SummaryFile:
             *(
                 scanned_text
                 for content, show_path in self.scanner.file_scan()
-                for scanned_text in self.machine.wrap(content, show_path)
-                if scanned_text
+                if (scanned_text := self.machine.wrap(content, show_path))
             ),
             self.machine.final(),
         ]

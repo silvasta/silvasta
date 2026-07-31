@@ -14,14 +14,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..filter import PathFilter, ProjectFilter
-from ..path import PathGuard
+from ..path.guard import PathGuard
 from ..tree import PathTreeNode, build_path_tree
 
 
 @dataclass
 class FolderScanner:
     """
-    Scan the selected directory by walking the paths downwards.
+    Scan the selected directory by walking the paths downwards
 
     Use any PathFilter-FilterSet to select folder- and filenames, for
     more precise filtering consider the PatternFilter with regex match.
