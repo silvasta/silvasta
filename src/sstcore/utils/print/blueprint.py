@@ -22,16 +22,16 @@ from rich.align import AlignMethod
 from rich.box import Box
 from rich.theme import Theme
 
-from ...port import (
+from ...port.event.dto import (
     CliDTO,
     LineDTO,
     LogDTO,
     MarkdownDTO,
     PanelDTO,
-    RichRenderable,
     RuleDTO,
     TableDTO,
 )
+from ...port.view import RichRenderable
 from ..color import ColorBox, Palette
 
 

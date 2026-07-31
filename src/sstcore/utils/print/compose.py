@@ -12,11 +12,12 @@ __all__: list[str] = [
 ]
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 
-from ..color import colorize
+from ...format.color import colorize
+from ...port.builder import Builder, Factory, TypedBuilder
 from ..view import ViewBuilder, view
 from . import mixin
 from .blueprint import Printer
@@ -26,6 +27,8 @@ from .core import PrinterCore
 @dataclass(frozen=True)
 class PrinterFactory:
     """Configure PrinterMixins and build composed classes"""
+
+    # AI: here probably better with slots
 
     core: type = PrinterCore
     # Essentials
@@ -76,6 +79,7 @@ class PrinterFactory:
         Console().print(mixins)
 
     def assemble(self, name="") -> type[Printer]:
+        # TODO: assemble -> build? or use assemble if with view?
         """Compose selected Mixins to Printer Class"""
         printer: type = type(self._create_name(name), self.mixins(), {})
         return self.view_spec.compose(printer) if self.view_spec else printer
@@ -89,3 +93,14 @@ class PrinterFactory:
 
 
 printer: Printer = PrinterFactory().construct("Sst")
+
+if TYPE_CHECKING:
+    # AI: testing base and desired builder abilities
+    _instance_check: Builder = PrinterFactory()
+    _class_check: type[Builder] = PrinterFactory
+    #
+    _instance_check: TypedBuilder = PrinterFactory()
+    _class_check: type[TypedBuilder] = PrinterFactory
+    #
+    _instance_check: Factory = PrinterFactory()
+    _class_check: type[Factory] = PrinterFactory

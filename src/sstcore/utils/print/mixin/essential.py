@@ -21,8 +21,8 @@ from typing import Any
 
 from rich.console import ConsoleRenderable, RichCast
 
-from ....contract.cli import LineDTO
-from ...color import ColorBox, colorize
+from ....format.color import ColorBox, colorize
+from ....port import LineDTO
 from ..blueprint import Printer
 
 
@@ -52,6 +52,7 @@ class NormalizeMixin:
 class ColorMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # AI: here how the ColorBox arrives
         self.color_box = ColorBox()
 
     @property
@@ -73,7 +74,14 @@ class ColorMixin:
     ### Colors, how to apply them on any function?
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
+    # AI: this part is from the previous color mixin, as it in total where 4 and not 10
+    # - meaning somewhen this stuff should be moved out of essentials
+
     def white(self: Printer, target: Any) -> None:
+        # AI_FOCUS: here is exactly not how I want to assign colors
+        # - the ColorBox needs a function (probably a property) that provides dot accesses colors,
+        #   even if they are strings, maybe with some dataclass and magic methods or a StrEnum,
+        #   maybe even some str inheritance hack
         self(LineDTO.from_call(target=target, style="white"))
 
     def blue(self: Printer, target: Any) -> None:

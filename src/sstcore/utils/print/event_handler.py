@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from ...contract.event import Event
+from ...port.event import Event
 from .compose import printer
 
 

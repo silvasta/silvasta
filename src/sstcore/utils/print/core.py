@@ -45,6 +45,8 @@ class PrinterBase(PrinterMeta):
     """Provide Base with Rich Console and Theme setup"""
 
     def __init__(self: Printer, palette: Palette | None = None):
+        # AI: here the Palette and the ColorBox somehow mix up...
+        # - with the current split it is hard to create a flexible setup
         self.palette: Palette = palette or BASE_PALETTE
         self.load_theme()
 

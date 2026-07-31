@@ -6,7 +6,7 @@ from rich.console import RichCast
 from rich.table import Table
 from rich.tree import Tree
 
-from ..color import colorize
+from ...format.color import colorize
 from ..tree import SimpleTreeNode
 
 # LATER: collapse with ToolMixin?
