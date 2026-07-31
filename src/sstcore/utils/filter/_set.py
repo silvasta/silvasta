@@ -1,27 +1,61 @@
+"""
+Prepare Cascade of Filters
+
+- FilterSet as Base for different purposes
+
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "FilterSet",
+    "FilterArgs",
+]
+
 from dataclasses import dataclass, field
 from functools import singledispatchmethod
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
-from ...exceptions import NotImplementedDispatchError
-from ..log.inspect import debug_log_or_print
+from ...error import NotImplementedDispatchError
 
 
 @dataclass
-class FilterSet[SetType: str | Path | int, ObjectType: Any]:
-    """Take input and answer if it matches the loaded criteria!"""
-
+class FilterArgs[SetType: str | Path | int]:
     exclude: set[SetType] = field(default_factory=set)
     require_all: set[SetType] = field(default_factory=set)
     require_any: set[SetType] = field(default_factory=set)
 
     allow_hidden_files: bool = False
-
-    # Get all files in List that not match the conditions
     return_opposite: bool = False
 
-    _debug: bool = False
-    _log: bool = False
+    @classmethod
+    def from_args(cls, args: FilterArgs) -> Self:
+        return cls(
+            exclude=set(args.exclude),
+            require_all=set(args.require_all),
+            require_any=set(args.require_any),
+            allow_hidden_files=args.allow_hidden_files,
+            return_opposite=args.return_opposite,
+        )
+
+    def merge(self, args: Self) -> Self:
+        """Update internal sets with sets of incoming FilterArgs"""
+        self.exclude.update(args.exclude)
+        self.require_all.update(args.require_all)
+        self.require_any.update(args.require_any)
+        return self
+
+    def subtract(self, args: Self) -> Self:
+        """Update internal sets by removing incoming FilterArgs"""
+        self.exclude.difference_update(args.exclude)
+        self.require_all.difference_update(args.require_all)
+        self.require_any.difference_update(args.require_any)
+        return self
+
+
+@dataclass
+class FilterSet[SetType: str | Path | int, ObjectType: Any](FilterArgs):
+    """Take input and answer if it matches the loaded criteria!"""
 
     @singledispatchmethod
     def __call__(self, target):
@@ -45,9 +79,6 @@ class FilterSet[SetType: str | Path | int, ObjectType: Any]:
         """Override for custom validation"""
         return self.fulfills_condition_trio(target_set)
 
-    @debug_log_or_print(  # REMOVE: as soon as degug strategy implemented
-        anyway=False
-    )
     def _create_target_set(self, target: ObjectType) -> set[SetType]:
         """Override this for specific object handling!"""
         return {target}
@@ -79,7 +110,6 @@ class FilterSet[SetType: str | Path | int, ObjectType: Any]:
 
         return True
 
-    @debug_log_or_print(anyway=False)
     def fulfills_condition_trio(self, target_set: set[SetType]) -> bool:
         """Check if all 3 conditions are fulfilled"""
 

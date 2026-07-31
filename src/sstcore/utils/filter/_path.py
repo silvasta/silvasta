@@ -1,55 +1,41 @@
+"""
+Prepare Cascade of Filters
+
+- FilterSet as Base for different purposes
+                                                       DependencyLevel[2]
+"""
+
+__all__: list[str] = [
+    "PathFilter",
+    "ProjectFilter",
+]
+
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..log.inspect import debug_log_or_print
-from .set import FilterSet
+from ._box import FilterBox
+from ._set import FilterSet
 
 
 @dataclass
 class PathFilter(FilterSet[str, Path]):
-    """Modified Target Set that decomposes Paths."""
+    """Decomposes Paths and filter piece by piece in target set"""
 
     def _create_target_set(self, target: Path) -> set[str]:
         return set(target.parts) | {target.stem} | {target.suffix}
 
 
-PROJECT_IGNORE_DIRS: set[str] = {
-    ".git",
-    "__pycache__",
-    ".venv",
-    "venv",
-    "env",
-    "target",
-}
-
-# NEXT: defaults, maybe Box?
-
-PROJECT_ALLOWED_EXTS: set[str] = {
-    ".py",
-    ".pyi",
-    ".rs",
-    ".md",
-    ".json",
-    ".yaml",
-    ".toml",
-    ".tex",
-    ".cls",
-    ".lua",
-}
-
-
 @dataclass
 class ProjectFilter(PathFilter):
-    """Setup with Defaults for Files of Projects"""
+    """Reject unwanted Folders and include desired Files"""
 
     exclude: set[str] = field(
-        default_factory=lambda: set(PROJECT_IGNORE_DIRS),
+        default_factory=lambda: set(FilterBox.PROJECT.args.exclude),
     )
     require_any: set[str] = field(
-        default_factory=lambda: set(PROJECT_ALLOWED_EXTS)
+        default_factory=lambda: set(FilterBox.PROJECT.args.require_any)
     )
 
-    @debug_log_or_print(anyway=False)
     def _fulfills_conditions(self, target: Path, target_set: set) -> bool:
 
         if not self.allow_hidden_files and target.name.startswith("."):
