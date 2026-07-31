@@ -8,7 +8,7 @@ Format and Parse Names in both directions
 
 Diamond (NameParser -> both normalizers -> NamePattern) works cleanly via MRO.
 
-                                                       DependencyLevel[0]
+                                                       DependencyLevel[1]
 """
 
 __all__: list[str] = [
@@ -26,39 +26,11 @@ from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
 
-from ....error import NotImplementedDispatchError
+from ...error import NotImplementedDispatchError
+from ._base import BaseName as _BaseName
 
 
-def _format_brackets(key: str) -> str:  # INFO: don't loose this
-    """Needed for proper {key}"""
-    return f"{{{key}}}"
-
-
-class BaseName:
-    """Hold Meta and Views"""
-
-    pattern: str
-    keys: tuple[str, ...]
-
-    @property
-    def _name(self):
-        return type(self).__name__
-
-    @property
-    def _color(self):
-        return "cyan"
-
-    def __str__(self):
-        return f"{self._name}[:{len(self.keys)}]"
-
-    def __repr__(self):
-        return f"{self._name}[{self.keys}'{self.pattern}']"
-
-    def __rich__(self):
-        return f"[{self._color}]{self._name}[/][{self.keys}'{self.pattern}']"
-
-
-class NamePattern(BaseName):
+class NamePattern(_BaseName):
     """Compile the Pattern, format and parse Keys and Names"""
 
     def __init__(

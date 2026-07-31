@@ -1,7 +1,7 @@
 """
-Format 1 Name with 2 Pattern (1 with color)
+Format 1 Name with 2 Pattern (1 with color) both same Text output
 
-                                                       DependencyLevel[1]
+                                                       DependencyLevel[2]
 """
 
 from contextlib import contextmanager
@@ -10,11 +10,19 @@ from typing import Any
 
 from rich.control import strip_control_codes
 
-from ._base import NameParser
+from ._core import NameParser
 
 __all__: list[str] = [
     "ColoredName",
 ]
+
+# IDEA: use __fmt__ for representations?
+# - raw -> __str__
+# - rich -> __rich__
+# fail because NameParser is template not fixed schema
+# - still one could create instance with attached args,
+# - combine with str as type? ultimate usage but (too?) unsafe
+# maybe something inbetween ColoredName and Name
 
 
 class ColoredName(NameParser):
@@ -38,14 +46,6 @@ class ColoredName(NameParser):
         if missing := set(self.keys) - set(keywords.keys()):
             raise ValueError(f"{self} missing keys for rich render: {missing}")
         return self.color_pattern.format(**keywords)
-
-    # IDEA: use __fmt__ for representations?
-    # - raw -> __str__
-    # - rich -> __rich__
-    # fail because NameParser is template not fixed schema
-    # - still one could create instance with attached args,
-    # - combine with str as type? ultimate usage but (too?) unsafe
-    # maybe something inbetween ColoredName and Name
 
     def raw(self, target: dict | list | tuple) -> str:
         """Explicit raw alias (same as default __call__)."""

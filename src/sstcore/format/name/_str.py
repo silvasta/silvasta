@@ -1,13 +1,14 @@
 """
-Format 1 Name with 2 Pattern (1 with color)
+Transform to str and be tha pattern and parse the pattern
 
-                                                       DependencyLevel[1]
+  (Experimental Setup)
+                                                       DependencyLevel[2]
 """
 
 from pathlib import Path
 from typing import Any, Self
 
-from ._base import NameParser
+from ._core import NameParser
 
 __all__: list[str] = [
     "Name",
