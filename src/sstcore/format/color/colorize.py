@@ -63,7 +63,6 @@ def path(target: Path) -> str:
     return _color_file_by_type(target)
 
 
-# TODO: private?
 FILE_COLORS: dict[str, Callable[[str], str]] = {
     # Code
     ".py": c.white,

@@ -1,12 +1,17 @@
+"""
+Apply Font Style
+
+                                                       DependencyLevel[0]
+"""
+
 from enum import StrEnum, auto
 
 
 class TextStyle(StrEnum):
-    # TODO: explain
     NORMAL = auto()
     BOLD = auto()
-    DIM = auto()  # LATER: check if or how it is visible in alacritty
-    REVERSE = auto()  # вместо INVERT
+    DIM = auto()
+    REVERSE = auto()  # renders not nicely...
 
     # LATER: check:
     # "frame": "frame",

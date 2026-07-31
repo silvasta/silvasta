@@ -1,20 +1,28 @@
+"""
+Apply Font Style
+
+                                                       DependencyLevel[0]
+"""
+
 from dataclasses import dataclass, fields
 
 from rich.theme import Theme
 
-# NEXT: this as paint.py??
-
 type ColorName = str
 
-# TASK: as well stringly access to named colors
-# required in PrintOption.grid ("blue" is still better than handover c.blue)
-# - check render_table for desired usage
+# AI_TASK: better access to all colors
+# - there needs to be 1 controllable color source
+# - around 10 colors and 6 named colors (e.g. the 6 below, title...)
+# - A pallette must be like a replaceable part of the ColorBox
+#   - switching themes or changing colors in the background,
+#   while the effect in the front is only the changed color and not behaviour
 
 
 @dataclass(frozen=True)
 class ThemeRole:
     """Binds a base theme color to its inverted counterpart."""
 
+    # AI: partially useful, this or something similar would be nice
     base: str
     inverted: str
 
@@ -32,8 +40,9 @@ class Palette:
     magenta: ColorName = "magenta"
     black: ColorName = "black"
     white: ColorName = "white"
+    # orange, e.g.: dark_orange3
+    # maybe gold3,steel_blue3
 
-    # семантические роли
     title = ThemeRole(base="cyan", inverted="bold white on cyan")
     danger = ThemeRole(base="red", inverted="bold black on red")
     success = ThemeRole(base="green", inverted="bold white on green")
@@ -47,7 +56,6 @@ class Palette:
         for field in fields(self):
             style: str | ThemeRole = getattr(self, field.name)
             if isinstance(style, ThemeRole):
-                # Export both formats for Rich markup support
                 theme[field.name] = style.base
                 theme[field.name.capitalize()] = style.inverted
             else:  # ensure string
@@ -58,5 +66,15 @@ class Palette:
         """Dynamically export all colors and roles for rich.Theme"""
         return Theme(self.to_dict())
 
+
+# AI: with that i display colors,
+# - the ColorBox or Palette should not provide the prints,
+# - but a list with formatted and colored strings
+# def show_all_rich_colors():
+#     logger.remove()
+#     example: str = "This is how colored Text looks"
+#     for color in rich_colors.keys():
+#         target = f"{color} - {c(example, color)}"
+#         printer.panel(target, frame=color)
 
 BASE_PALETTE = Palette()

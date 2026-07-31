@@ -1,8 +1,6 @@
-# TODO: explain
-
 from collections.abc import Callable
 
-from ...contract.native import Stringable
+from ...port import Stringable
 from .palette import BASE_PALETTE, ColorName, Palette
 from .style import TextStyle
 
