@@ -1,21 +1,33 @@
+"""
+Boot HomeSetup depending on Configuration and provide according Paths
+
+- Global:
+    Located at XDG_HOMES, e.g.:  ~/.config/NAME  or  ~/.local/share/NAME
+
+- Project:
+    Located at project root usually identified by pyproject.toml
+
+- Local:
+    Located at given path or usually CWD
+
+Path composition according to schema below.
+- In projects usually: root/data/*homes
+                                                       DependencyLevel[1]
+"""
+
 from enum import StrEnum, auto
 from pathlib import Path
 
 from loguru import logger
 
-from ..search import find_project_root, get_project_root
-from .xdg import XdgHomes
+from .._search import find_project_root, get_project_root
+from ._xdg import XdgHomes
 
 # TASK: HomeSetup - make it interchangeable at any time
+# use detection from CWD, with some defaults
 # IDEA: Use Enum or similar as guard of uniqueness and dispatch,
 # - somehow paired with dataclass but able to boot all 3 together?
 # -> so far too unstable and error prone...
-
-# NEXT: use detection from CWD, with some defaults
-# - split into crititcal and other files
-# - critical: settings, some data
-# - other: summary_file, caches, some data
-# Maybe as well some global, but avoid trap for multiple installs on 1 system
 
 
 class HomeSetup(StrEnum):
@@ -31,32 +43,20 @@ class HomeSetup(StrEnum):
     ):
         """Launch setup with something like init"""
 
-        # print("xxxx")
-        # print(f"x HOME: {self}")
-        # print("xxxx")
-
         self._project_name: str | None = project_name
         self._project_root: Path | None = project_root or find_project_root()
 
         self._local_root: Path | None = local_root
 
-        # print("xxxx")
-        # print(f"x1 project_root: {self._project_root}")
-        # print("xxxx")
-
         match self:
             case HomeSetup.GLOBAL:
-                if self._project_name is None:  # AI: which Exception?
+                if self._project_name is None:
                     raise AttributeError("Need project_name for XdgHomes!")
 
             case HomeSetup.PROJECT:
                 if self._project_root is None:
                     logger.info("HomeSetup.PROJECT Boots with toml_search!")
-                    # FIX: crash yes but catch when switch to local is desired
                 self._project_root: Path = project_root or get_project_root()
-                # print("xxxx")
-                # print(f"x2 project_root: {self._project_root}")
-                # print("xxxx")
 
             case HomeSetup.LOCAL:
                 if local_root is None:
@@ -83,39 +83,27 @@ class HomeSetup(StrEnum):
         if not self._project_root:
             raise AttributeError("wrong boot")
 
-        # print("xxxx")
-        # print(f"x3project_root: {self._project_root}")
-        # print("xxxx")
-
         return self._project_root
 
     @property
     def root(self) -> Path:
         # NEXT:
         # TODO: auto switch to local
-        # print(f"x4project_root: {self._project_root}")
-        # print(self._local_root)
-        # print("xxxx")
         match self:
             case self.PROJECT:
                 return self.project_root
             case self.LOCAL:
                 return self.local_root
         raise ValueError
-        # Last resort...
-        # return self._project_root or self._local_root or Path.cwd()
 
     @property
     def local_root(self) -> Path:
         if not self._local_root:
-            raise AttributeError("wrong boot")  # AI: which Exception?
+            raise AttributeError("wrong boot")
         return self._local_root
 
     def home_path(self, target: str, to_homes="data") -> Path:
         """Generate path for target={config|state|share}"""
-
-        # PARAM: to_homes, maybe as dataclass attribute?
-        # - together with all other names?
 
         match self:
             case HomeSetup.GLOBAL:

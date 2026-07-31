@@ -1,4 +1,13 @@
-# TODO: explain
+"""
+Provide defaults and basic access for XDG Homes in system environment
+
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "XdgHomes",
+    "XdgDefaults",
+]
 
 import os
 from dataclasses import dataclass
@@ -8,7 +17,8 @@ from pathlib import Path
 
 @dataclass
 class XdgDefaults:
-    # TODO: explain
+    """Define fallback location in case env_var call failed"""
+
     data: str = ".local/share"
     state: str = ".local/state"
     config: str = ".config"
@@ -17,7 +27,8 @@ class XdgDefaults:
 
 
 class XdgHomes(StrEnum):
-    # TODO: explain
+    """Manage access to XDG env vars and compose specific Home Paths"""
+
     DATA = auto()
     STATE = auto()
     CONFIG = auto()
@@ -26,9 +37,8 @@ class XdgHomes(StrEnum):
 
     @property
     def env_var(self) -> str:
-        """BIN has no official XDG_BIN_HOME variable, but lets try"""
-        if self == XdgHomes.BIN:
-            return "XDG_BIN_HOME"
+        """Format string with member env variable name"""
+        # NOTE: BIN has no official XDG_BIN_HOME variable, but lets try
         return f"XDG_{self.name}_HOME"
 
     def path_from_os(self, defaults: XdgDefaults | None = None) -> Path:

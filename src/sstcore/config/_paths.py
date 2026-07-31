@@ -17,7 +17,7 @@ import typer
 
 from ..utils import PathGuard, printer
 from ..utils.color import ColorBox
-from ..utils.path import HomeSetup
+from ..utils.path.homes import HomeSetup
 from ._defaults import SstDefaults
 from ._names import SstNames
 
@@ -85,6 +85,10 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
         except FileNotFoundError:
             # MOVE: to pathguard error handling, or cli,
             #         - but with __rich__ cli print
+            # NOTE: PathGuard throws now:
+            # raise PathGuardError(PathGuardReason.MISSING, target=path, info=info)
+            # NEXT: clean this up here, nothing to handle locally,
+            # just bubble to SafeTyper?
             c: ColorBox = ColorBox.bold()
             text = (
                 f"{c.red('Missing .env File!')}"

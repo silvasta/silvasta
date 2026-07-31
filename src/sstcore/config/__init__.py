@@ -9,7 +9,6 @@ Provide Configuration Pipeline with global access and json support
 
                                                        DependencyLevel[X]
 """
-# NEXT: level XXX
 
 __all__: list = [
     "ConfigManager",
