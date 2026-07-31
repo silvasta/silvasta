@@ -14,9 +14,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import NoReturn, Self, overload
 
-from ....exceptions import PathGuardReason
-from ....port.cli import PanelDTO
-from ....port.log import LogDTO
+from ....error import PathGuardReason
+from ....port.event.dto import LogDTO, PanelDTO
 
 # ---------------------------------------------------------------------------
 # Input layer (public)
@@ -209,13 +208,13 @@ class PathGuard:
     def relative_string(source: Path, target: Path) -> str: ...
     @overload
     @staticmethod
-    def split_read_print_path(
+    def split(
         target: Path,
         local_root: Path | None = None,
     ) -> tuple[Path, Path]: ...
     @overload
     @staticmethod
-    def split_read_print_path(
+    def split(
         target: list[Path],
         local_root: Path | None = None,
     ) -> list[tuple[Path, Path]]: ...

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....exceptions import PathGuardError, PathGuardReason
+from ....error import PathGuardError, PathGuardReason
 from ._input import PathInput, PathSpec
 from ._operate import SyncMode
 
@@ -169,8 +169,6 @@ def _copy(
             return _atomic_copy_increment(_source, _target)
 
         case SyncMode.IGNORE:
-            from ....exceptions import PathGuardError, PathGuardReason
-
             raise PathGuardError(
                 reason=PathGuardReason.SYNC,
                 target=_target,

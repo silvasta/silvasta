@@ -5,14 +5,14 @@ from typing import Any
 
 from loguru import logger
 
-from sstcore.format.string import cls_name
-
-from ....exceptions import PathGuardError, PathGuardReason
+from ....error import PathGuardError, PathGuardReason
+from ....format.reflect import cls_name
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
-from ._helper import relative_string
 from ._input import PathInput, PathSpec
+from ._relative import relative_string
 
 
+# NEXT: move to port
 class SyncMode(StrEnum):
     """Govern the Conflict Resolution Strategy for File Transfers"""
 

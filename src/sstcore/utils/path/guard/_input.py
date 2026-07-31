@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 
-from ....exceptions import PathGuardError, PathGuardReason
+from ....error import PathGuardError, PathGuardReason
 
 type PathInput = str | Path | PathSpec
 

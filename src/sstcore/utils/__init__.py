@@ -33,7 +33,7 @@ __all__: list = [
 
 from .color import ColorBox
 from .filter import FilterSet, PathFilter, ProjectFilter
-from .path import PathGuard
+from .path.guard import PathGuard
 from .print import Printer, PrinterFactory, printer
 from .scanner import FolderScanner
 from .time import day_count

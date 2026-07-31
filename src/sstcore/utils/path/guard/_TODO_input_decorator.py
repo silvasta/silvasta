@@ -1,10 +1,16 @@
+"""
+TODO: Validate PathGuard args before even funcion entry
+
+-
+"""
+
 import inspect
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
 from typing import Annotated, get_args, get_origin
 
-from sstcore.exceptions import PathGuardError
+from sstcore.error import PathGuardError
 
 from ._input import PathInput, PathSpec
 from ._operate import SyncMode
@@ -20,8 +26,8 @@ class PathRules:
 
 
 # Create clean aliases for your function signatures
-SourcePath = Annotated[PathInput, PathRules(must_exists=True, resolve=True)]
-TargetPath = Annotated[PathInput, PathRules()]
+_SourcePath = Annotated[PathInput, PathRules(must_exists=True, resolve=True)]
+_TargetPath = Annotated[PathInput, PathRules()]
 
 
 def validate_paths(func):
@@ -65,10 +71,10 @@ class _PathGuard:
     @staticmethod
     @validate_paths
     def rotate(
-        source: SourcePath,  # Automatically requires must_exists=True
-        target: TargetPath,  # Automatically validated and cast to Path
+        _source: _SourcePath,  # Automatically requires must_exists=True
+        _target: _TargetPath,  # Automatically validated and cast to Path
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
-        reset: bool = False,
+        _reset: bool = False,
     ) -> Path:
         """Move Source to Target and if reset: Create empty File or Dir"""
 

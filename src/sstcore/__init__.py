@@ -32,7 +32,7 @@ from .cli import SafeTyper
 from .config import ConfigManager
 from .system import System
 from .system.event import Emitter
-from .utils.path import PathGuard
+from .utils.path.guard import PathGuard
 from .utils.print import printer
 
 try:  # show pyproject.toml package name

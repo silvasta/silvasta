@@ -6,9 +6,8 @@ __all__: list[str] = [
 
 from collections.abc import Iterator
 
-from ....contract.cli import PanelDTO
-from ....contract.log import LogDTO
-from ...color import ColorBox
+from ....format.color import ColorBox
+from ....port.event.dto import LogDTO, PanelDTO
 
 c: ColorBox = ColorBox.bold()
 

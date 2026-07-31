@@ -3,7 +3,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....exceptions import (
+from ....error import (
     NotImplementedDispatchError,
     PathGuardError,
     PathGuardReason,
@@ -68,7 +68,7 @@ def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
 
 
 @functools.singledispatch
-def split_read_print_path(target, local_root: Path | None = None):
+def split(target, local_root: Path | None = None):
     """
     Apply local_root or CWD at Target and create Path Pairs
 
@@ -79,12 +79,13 @@ def split_read_print_path(target, local_root: Path | None = None):
     raise NotImplementedDispatchError(target, local_root)
 
 
-@split_read_print_path.register
+@split.register
 def _(target: list, local_root: Path | None = None) -> list[tuple[Path, Path]]:
-    return [split_read_print_path(path, local_root) for path in target]
+    # TASK: filter for existing return paths
+    return [split(path, local_root) for path in target]
 
 
-@split_read_print_path.register
+@split.register
 def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
 
     if target.is_absolute():

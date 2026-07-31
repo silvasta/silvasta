@@ -6,7 +6,7 @@ from typing import cast
 
 from loguru import logger
 
-from ....exceptions import PathGuardError, PathGuardReason
+from ....error import PathGuardError, PathGuardReason
 from ._input import PathInput, PathSpec
 
 
@@ -109,7 +109,6 @@ def file[**P](
 
         return decorator
 
-    # FIX: ty grey...
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 
@@ -197,7 +196,6 @@ def unique_main[**P](
 
         return decorator
 
-    # FIX: ty:grey...
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 

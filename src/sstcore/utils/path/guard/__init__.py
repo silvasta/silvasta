@@ -1,15 +1,13 @@
 """Unite all Path Tools under PathGuard"""
 
-from enum import StrEnum
-
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
     "PathInput",
 ]
 
-from ....exceptions import PathGuardError, PathGuardReason
-from . import _ensure, _helper, _input, _operate
+from ....error import PathGuardError, PathGuardReason
+from . import _ensure, _input, _operate, _relative
 from ._input import PathInput, PathSpec
 from ._meta import PathGuardMeta
 
@@ -28,7 +26,7 @@ class PathGuard(metaclass=PathGuardMeta):
         raise PathGuardError(reason=PathGuardReason.NO_INIT)
 
     Spec: type[PathSpec] = _input.PathSpec
-    SyncMode: type[StrEnum] = _operate.SyncMode
+    SyncMode: type[SyncMode] = _operate.SyncMode
     Reason: type[PathGuardReason] = PathGuardReason
 
     """Category 1: Protect Path access operations to avoid File System fails"""
@@ -47,7 +45,7 @@ class PathGuard(metaclass=PathGuardMeta):
     symlink = staticmethod(_operate.symlink)
 
     """Category 3: Use infrastructure for Relative Path and minor helpers.."""
-    relative = staticmethod(_helper.relative_main)
-    relative_duo = staticmethod(_helper.relative_duo)
-    relative_string = staticmethod(_helper.relative_string)
-    split_read_print_path = staticmethod(_helper.split_read_print_path)
+    relative = staticmethod(_relative.relative_main)
+    relative_duo = staticmethod(_relative.relative_duo)
+    relative_string = staticmethod(_relative.relative_string)
+    split = staticmethod(_relative.split)
