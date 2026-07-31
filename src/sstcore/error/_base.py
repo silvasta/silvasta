@@ -11,10 +11,9 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ..format import cls_name
-from ..port.cli import PanelDTO, Renderable
-from ..port.log import LogDTO
-from ..utils.color import ColorBox  # WARN: ColorBox???
+from ..format.color import ColorBox
+from ..format.reflect import cls_name
+from ..port.event.dto import LogDTO, PanelDTO, Renderable
 
 c: ColorBox = ColorBox.bold()
 
@@ -39,11 +38,12 @@ class SstError(Exception):
     def __cli__(self) -> PanelDTO:
         """Provide Data Transfer Object for Command Line Interface"""
 
+        # LATER: better table creation, similar to dict-like approach:
+        # - title: text starting at predefined length
+        # - use f-string with length cut, maybe by longest title or default
+        # - difficulty: sorting! derived errors want to modify order
+
         lines: list[Renderable] = [
-            # LATER: better table creation, similar to dict-like approach:
-            # - title: text starting at predefined length
-            # - use f-string with length cut, maybe by longest title or default
-            # - difficulty: sorting! derived errors want to modify order
             f"{c.r(self.name)} {self.summary()}",  # ignore empty space
             f"{c.c('args')}    {self.args or 'nothing attached'}",
             f"{c.c('kwargs')}  {self.kwargs or 'nothing attached'}",
@@ -72,6 +72,7 @@ class SstError(Exception):
         """Cut header line to ensure max length"""
         header_len: int = len(self.name) - 1 - len(self._short)
         if (to_long := max_len - header_len) < 0:
+            # TODO: check ..format.text
             # LATER:: create entire header? use f-string < max_len
             # something like: header = f"{f'{self.name} {self._short}': < 60}"
             return f"{self._short[: (to_long - 3)]}..."
@@ -84,6 +85,7 @@ class SstError(Exception):
 
     def __rich__(self) -> str:
         """Provide colorized Name"""
+        # TODO: check ..format.text|name
         # LATER: improve color hack, maybe by CamelCase?
         return f"{self.name[:-5]}{c.red('Error')}"
 

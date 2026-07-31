@@ -4,63 +4,50 @@ Build the Container for the Exception handling
                                                        DependencyLevel[1]
 """
 
+from typing import TYPE_CHECKING
+
 __all__: list[str] = [
     "ErrorRegistry",
 ]
 
 from collections.abc import Callable
-from functools import singledispatchmethod
 
-from .._general import NotImplementedDispatchError
+from ...port.registry import DictingRegistry, FunctionalRegistry
+from ...utils.registry import DictRegistry
 from ._handler import ErrorHandler
 
+type HandlerFunc = Callable[[BaseException], None]
+type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
-class ErrorRegistry:
+
+class ErrorRegistry(DictRegistry[ErrorHandler, type[BaseException]]):
     """
     Collect and Provide the ErrorHandler
 
-    - Attach 1 or multiple by function call or use Decorator
-    - Store and provide access by Exception type as Key
+    - Attach by function or Decorator
+    - Access by Exception type as Key
 
     """
 
-    # IMPORTANT: temporary registry for ErrorHandlerLoaders?
-    # - collect them in advance but not already build
-    # - build them when the Bus arrives
-
     def __init__(self):
-        self._registry: dict[type[BaseException], ErrorHandler] = {}
+        self.items: dict[type[BaseException], ErrorHandler] = {}
 
-    @property
-    def all(self) -> list[type[BaseException]]:
-        """Provide list with all Exception types of all attached Handler"""
-        return list(self._registry.keys())
+    def _item_identifier(self, item: ErrorHandler):
+        return item.exception_type, ErrorHandler
 
-    @property
-    def n_handler(self) -> int:
-        return len(self._registry)
+    def register(self, exit_code: int = 1, name: str = "") -> HandlerDecorator:
+        """Attach handler functions by decorator"""
 
-    @singledispatchmethod
-    def attach(self, handler: ErrorHandler | list[ErrorHandler]) -> None:
-        """Add 1 or multiple handler to registry"""
-        raise NotImplementedDispatchError(handler)
-
-    @attach.register
-    def _(self, handler: ErrorHandler) -> None:
-        self._registry[handler.exception_type] = handler
-
-    @attach.register
-    def _(self, handler: list) -> None:
-        for h in handler:
-            self.attach(h)
-
-    def get(self, exception_type: type[BaseException]) -> ErrorHandler | None:
-        """Find handler for the exact exception"""
-        return self._registry.get(exception_type)
-
-    def handle(self, exit_code: int = 1, name: str | None = None):
-        def decorator(func: Callable):
+        def decorator(func: HandlerFunc):
             self.attach(ErrorHandler.from_func(func, exit_code, name))
             return func
 
         return decorator
+
+
+if TYPE_CHECKING:
+    _instance_check: FunctionalRegistry = ErrorRegistry()
+    _class_check: type[FunctionalRegistry] = ErrorRegistry
+    #
+    _instance_check: DictingRegistry = ErrorRegistry()
+    _class_check: type[DictingRegistry] = ErrorRegistry

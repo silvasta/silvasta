@@ -19,8 +19,8 @@ __all__: list[str] = [
 from enum import StrEnum
 from typing import Any
 
-from ..port.cli import Renderable
-from ..utils.color import ColorBox
+from ..format.color import ColorBox
+from ..port.event.dto import Renderable
 from ._base import SstError
 
 c: ColorBox = ColorBox.bold()

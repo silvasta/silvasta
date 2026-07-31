@@ -5,9 +5,9 @@ Provide ErrorHandler with Registry (and defaults)
 """
 
 __all__: list[str] = [
-    # TODO: Defaults
     "ErrorHandler",
     "ErrorRegistry",
+    # TODO: Defaults/Presets
 ]
 from ._handler import ErrorHandler
 from ._registry import ErrorRegistry

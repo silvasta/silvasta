@@ -9,5 +9,6 @@ from ._base import SstError
 
 
 # LATER: setup error for FileRegistry
+# IDEA: replace by PathGuardError?
 class RegistrySyncError(SstError):
     """Raise when FileRegistry State mismatches physical local disk"""
