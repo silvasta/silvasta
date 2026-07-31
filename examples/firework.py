@@ -1,20 +1,20 @@
 from pathlib import Path
 
 import fire
-
-from sstcore import printer
 from sstcore.cli.engine import SafeTyper
-from sstcore.exceptions import (
-    NotImplementedDispatchError,
-    RegistrySyncError,
-    SstError,
-    TuiSelectorError,
-)
 from sstcore.utils.exceptor import (
     ErrorList,
     Exceptor,
     ExceptorTask,
     ExceptorTaskHandler,
+)
+
+from sstcore import printer
+from sstcore.error import (
+    NotImplementedDispatchError,
+    RegistrySyncError,
+    SstError,
+    TuiSelectorError,
 )
 
 

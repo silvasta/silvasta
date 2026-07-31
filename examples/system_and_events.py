@@ -2,12 +2,12 @@ from dataclasses import dataclass
 
 import fire
 from pydantic import BaseModel
-
-from sstcore.config import ConfigManager
 from sstcore.contract.event import EventName
 
+from sstcore.config import ConfigManager
+
 # from sstcore.contract.cli import CliRenderable  # , PanelDTO, TableDTO
-from sstcore.contract.log import LogDTO  # , LogSerializable
+from sstcore.port import LogDTO  # , LogSerializable
 from sstcore.system import EventBus, System
 from sstcore.utils import Printer
 
