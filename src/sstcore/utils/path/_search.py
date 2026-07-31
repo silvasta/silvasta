@@ -1,4 +1,18 @@
-# TODO: explain
+"""
+Find objective in file system.
+
+- get_* ensures Path or Raises
+- find_* returns None on Fail
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "recursive_root",
+    "recursive_parent",
+    "any_root",
+    "find_project_root",
+    "get_project_root",
+]
 
 from pathlib import Path
 
@@ -28,6 +42,7 @@ def recursive_parent(path: Path, parent_dir_name: str) -> Path | None:
 
 
 def any_root() -> Path:
+    """Just provide CWD if project_root not available"""
     return find_project_root() or Path.cwd()
 
 

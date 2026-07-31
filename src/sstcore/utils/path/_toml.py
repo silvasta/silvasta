@@ -1,23 +1,34 @@
-# TODO: explain
+"""
+Find project root with pyproject.toml and extract data
+
+- Transfrom to SimpleNamespace with dot access
+- Jump to any section or value but try to avoid AttributeErrors
+
+                                                       DependencyLevel[1]
+"""
+
+__all__: list[str] = [
+    "pyproject_path",
+    "load_toml",
+    "pyproject_toml",
+    "pyproject_sns",
+    "dict_to_sns",
+    "pyproject_name",
+    "pyproject_version",
+    "pyproject_log_section",
+]
 
 import tomllib
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
 
-from .search import get_project_root
+from ._search import get_project_root
 
 
 def pyproject_path() -> Path:
     """Path to own pyproject.toml file"""
     return get_project_root(indicator="pyproject.toml") / "pyproject.toml"
-
-
-@lru_cache(maxsize=1)
-def pyproject_toml(pyproject_toml_path: Path | None = None) -> dict:
-    """Read and cache pyproject.toml from path or try recursive path search"""
-    path_to_load: Path = pyproject_toml_path or pyproject_path()
-    return load_toml(path_to_load)
 
 
 @lru_cache(maxsize=1)
@@ -27,6 +38,13 @@ def load_toml(toml_path: Path) -> dict:
         raise FileNotFoundError(f"Invalid {toml_path=}")
     with open(toml_path, "rb") as file:
         return tomllib.load(file)
+
+
+@lru_cache(maxsize=1)
+def pyproject_toml(pyproject_toml_path: Path | None = None) -> dict:
+    """Read and cache pyproject.toml from path or try recursive path search"""
+    path_to_load: Path = pyproject_toml_path or pyproject_path()
+    return load_toml(path_to_load)
 
 
 def pyproject_sns(pyproject_toml_path: Path | None = None) -> SimpleNamespace:
