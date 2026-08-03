@@ -31,7 +31,7 @@ class Registry[ItemT](Protocol):
     def all(self) -> Iterable[ItemT]:
         """Yield all items"""
 
-    def attach(self, item: ItemT, *args, clear: bool = False, **kwargs) -> int:
+    def attach(self, *args, **kwargs) -> int:
         """Extend member by new item, clear Num existing items with same identifier"""
 
     def get(self, key: Any) -> ItemT | None | list[ItemT]:
@@ -52,14 +52,9 @@ class DictingRegistry[ItemT, KeyT](Registry, Protocol):
 
     items: dict[KeyT, ItemT]
 
-    def attach(self, key: KeyT, item: ItemT, *, clear: bool = False) -> int:
-        """Extend member by new item"""
-
 
 class FunctionalRegistry[ItemT: Callable](Protocol):
     """Extend the Registry with Functional Items"""
-
-    items: Callable
 
     def register(self: Registry) -> Callable[[Callable], Callable]:
         """Attach new member by Decorator"""

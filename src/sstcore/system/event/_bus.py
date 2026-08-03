@@ -3,48 +3,22 @@ Provide Infrastructure for Events
 
 - EventBus: Route Events by name to registred EventHandler
 - EventHandler: Process Event with optional Error handling
-                                                       DependencyLevel[0]
+                                                       DependencyLevel[1]
 """
+
+from typing import TYPE_CHECKING, Self
 
 __all__: list[str] = [
     "EventBus",
-    "EventHandler",
 ]
 
 import fnmatch
-from collections.abc import Callable
-from dataclasses import dataclass
 from functools import lru_cache
 
-from loguru import logger
-
-from ...port.event import Event, EventName, EventPattern
-
-
-@dataclass(frozen=True)
-class EventHandler:
-    """Process Events emmited from the bus in observable Environment"""
-
-    name: str
-    func: Callable[[Event], None]
-    fail_loud: bool = False
-
-    def __str__(self) -> str:
-        return f"EventHandler[{self.name}]"
-
-    # LATER: think about generic
-    # - synchronize with ErrorHandler
-
-    def __call__(self, event: Event) -> None:
-        """Execute handler function and manage fail if flag is set"""
-        try:
-            self.func(event)
-        except Exception as error:
-            if self.fail_loud:  # LATER: custom error?
-                raise RuntimeError(f"Critical Fail: {self}") from error
-
-            logger.error(f"{self} failed for '{event.name}': {error}")
-            logger.debug(f"Traceback for {self}:", exc_info=True)
+from ...port.event import BusRegistration, Event, EventHandler, EventName
+from ...port.event import EventBus as EventBus_
+from ...port.event.name import CoreEvent, EventPattern
+from ._handler import register_default_event_handler
 
 
 class EventBus:
@@ -102,14 +76,41 @@ class EventBus:
 
         return tuple(dict.fromkeys(matched_handlers))
 
+    @classmethod
+    def bootstrap(
+        cls,
+        bus_registration: BusRegistration | None = None,
+        use_default_registration=True,
+    ) -> Self:
+        """Load EventBus explicit as one-time initialization"""
+        bus: Self = cls()
+
+        if use_default_registration:
+            register_default_event_handler(bus)
+
+        if bus_registration:
+            bus_registration(bus)
+
+        bus.emit(
+            event_name=CoreEvent.BUS_DIAG,
+            sender="BusSetup",
+            log="EventBus setup complete",
+        )
+        return bus
+
 
 @lru_cache(maxsize=256)
 def _get_patterns(
     event_name: EventName, active_patterns: tuple[EventPattern, ...]
-) -> tuple[EventPattern, ...]:
+) -> tuple[EventPattern, ...]:  # tuple for lru_cache (immutable)
     """Match pattern and cache results decoupled from the Bus"""
     return tuple(
         pattern
         for pattern in active_patterns
         if fnmatch.fnmatch(event_name, pattern)
     )
+
+
+if TYPE_CHECKING:
+    _instance_check: EventBus_ = EventBus()
+    _class_check: type[EventBus_] = EventBus
