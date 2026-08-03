@@ -7,7 +7,7 @@ Check:
 
 For Scripts and small Projects:
 - sstcore.system.globals for wireless setup
-                                                       DependencyLevel[X]
+                                                       DependencyLevel[5]
 """
 
 __all__: list[str] = [
