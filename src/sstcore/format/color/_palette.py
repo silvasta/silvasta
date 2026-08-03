@@ -8,21 +8,15 @@ from dataclasses import dataclass, fields
 
 from rich.theme import Theme
 
-type ColorName = str
-
-# AI_TASK: better access to all colors
-# - there needs to be 1 controllable color source
-# - around 10 colors and 6 named colors (e.g. the 6 below, title...)
-# - A pallette must be like a replaceable part of the ColorBox
-#   - switching themes or changing colors in the background,
-#   while the effect in the front is only the changed color and not behaviour
-
 
 @dataclass(frozen=True)
 class ThemeRole:
     """Binds a base theme color to its inverted counterpart."""
 
-    # AI: partially useful, this or something similar would be nice
+    # NEXT: this but 5 layer more, so far 8x2, target: 8x8
+    # NEXT: this but 5 layer more
+    # NEXT: this but 5 layer more
+
     base: str
     inverted: str
 
@@ -32,14 +26,16 @@ class ThemeRole:
 
 @dataclass(frozen=True)
 class Palette:
-    cyan: ColorName = "cyan"
-    red: ColorName = "red"
-    green: ColorName = "green"
-    yellow: ColorName = "yellow"
-    blue: ColorName = "blue"
-    magenta: ColorName = "magenta"
-    black: ColorName = "black"
-    white: ColorName = "white"
+    cyan: str = "cyan"
+    green: str = "green"
+    red: str = "red"
+    yellow: str = "yellow"
+
+    magenta: str = "magenta"
+    blue: str = "blue"
+
+    black: str = "black"
+    white: str = "white"
     # orange, e.g.: dark_orange3
     # maybe gold3,steel_blue3
 
@@ -66,15 +62,5 @@ class Palette:
         """Dynamically export all colors and roles for rich.Theme"""
         return Theme(self.to_dict())
 
-
-# AI: with that i display colors,
-# - the ColorBox or Palette should not provide the prints,
-# - but a list with formatted and colored strings
-# def show_all_rich_colors():
-#     logger.remove()
-#     example: str = "This is how colored Text looks"
-#     for color in rich_colors.keys():
-#         target = f"{color} - {c(example, color)}"
-#         printer.panel(target, frame=color)
 
 BASE_PALETTE = Palette()

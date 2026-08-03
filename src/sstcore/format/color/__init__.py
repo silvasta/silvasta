@@ -15,9 +15,7 @@ Key components:
 __all__: list[str] = [
     "colorize",
     "ColorBox",
-    "Palette",
 ]
 
-from . import colorize
+from . import _colorize as colorize
 from .box import ColorBox
-from .palette import Palette

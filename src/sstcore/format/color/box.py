@@ -1,33 +1,14 @@
 from collections.abc import Callable
 
 from ...port import Stringable
-from .palette import BASE_PALETTE, ColorName, Palette
-from .style import TextStyle
+from ._palette import BASE_PALETTE, Palette
+from ._style import TextStyle
 
 type Style = TextStyle | str
 
 
 class ColorBox:
     """Provide Simple and Fast Color Supply"""
-
-    def __call__(
-        self, text: Stringable, color: ColorName | None = None
-    ) -> str:
-        """Wrap Text inside Color and Style markup if well defined"""
-
-        if not (markup := self._markup(color)):  # for: (style=normal,color="")
-            return str(text)  # because: Stringable -> str
-
-        return f"[{markup}]{text}[/]"
-
-    @property
-    def palette(self) -> Palette:
-        return self._palette
-
-    def _markup(self, color: ColorName | None) -> str:
-        """Assemble style and color, strip to compact string or even empty"""
-
-        return f"{self._style.to_rich()} {color or ''}".strip()
 
     def __init__(
         self,
@@ -39,6 +20,23 @@ class ColorBox:
         self._palette: Palette = palette
         self._style: TextStyle = TextStyle(style)  # safe for TextStyle
         self._shortcuts_enabled: bool = shortcuts
+
+    def __call__(self, text: Stringable, color: str | None = None) -> str:
+        """Wrap Text inside Color and Style markup if well defined"""
+
+        if not (markup := self._markup(color)):  # for: (style=normal,color="")
+            return str(text)  # because: Stringable -> str
+
+        return f"[{markup}]{text}[/]"
+
+    @property
+    def palette(self) -> Palette:
+        return self._palette
+
+    def _markup(self, color: str | None) -> str:
+        """Assemble style and color, strip to compact string or even empty"""
+
+        return f"{self._style.to_rich()} {color or ''}".strip()
 
     def switch(
         self,
