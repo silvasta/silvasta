@@ -1,19 +1,20 @@
-from ..port.cli import PanelDTO
-from ..port.log import LogDTO
-from ..utils.color import ColorBox
+from ._cli import PanelDTO
+from ._color import ColorBox
+from ._log import LogDTO
 
 c: ColorBox = ColorBox.bold()
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
 
 
 class StaticToolkitMeta(type):
-    """
-    Reusable Metaclass for Static Toolkits.
+    """Reusable Metaclass for Static Toolkits?"""
 
-    - Check PathGuardMeta for improvements
-
-    """
-
-    # NOTE:- Check PathGuardMeta for improvements
+    # NOTE: Check PathGuardMeta for improvements
 
     def __str__(cls) -> str:
         return f"{cls.__name__} Toolkit"
