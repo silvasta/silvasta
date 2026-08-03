@@ -10,6 +10,7 @@ tools: Combine following utils inside example app
 - folder_scanner: Attach FolderScanner and Treeselector to provide SummaryFile
 - log_monitor: Read tail of log file and write updates in console
 
+                                                       DependencyLevel[6]
 """
 
 from . import _args as sargs

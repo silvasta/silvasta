@@ -11,9 +11,10 @@ from pathlib import Path
 import typer
 from loguru import logger
 
+from ..config import HomeSetup
 from ..error.handler import ErrorRegistry
-from ..system.core import System, SystemLoader, sst_system_loader
-from ..utils.path import HomeSetup
+from ..port.system import CliSystem
+from ..system.boot import System, SystemLoader, sst_system_loader
 from ..utils.view import view
 from . import _args as args
 from . import _scroll as scroll
@@ -47,29 +48,45 @@ class SafeTyper(typer.Typer):
         super().__init__(**kwargs)
 
         self._system_loader: SystemLoader | None = system_loader
-        self.errors: ErrorRegistry = error_registry or ErrorRegistry()
+        self._error_registry: ErrorRegistry | None = error_registry
 
         self._attach_internal_callback()
+
+    def _attach_internal_callback(self):
+        """Dispatch callback for Main or Subapp"""
+
+        @self.callback()
+        def dispatcher(  # NEXT: check args
+            ctx: typer.Context,
+            verbose: args.Verbose = False,
+            quiet: args.Quiet = False,
+            settings: args.SettingFile = None,
+            home: HomeSetup = HomeSetup.PROJECT,
+        ):
+            """Route and provide CLI args for Main app"""
+            if ctx.parent is None:
+                self._run_main_callback(ctx, verbose, quiet, settings, home)
+            else:
+                self._run_sub_callback(ctx)
 
     def _run_main_callback(
         self,
         ctx: typer.Context,
         verbose: bool,
-        quiet: bool,  # TODO: split: scroll prints, subapps, general, ...
-        setting_file: Path | None,
+        quiet: bool,
+        settings: Path | None,
         home: HomeSetup = HomeSetup.PROJECT,
     ):
         """Setup Config and Logging and show Status"""
 
+        self.errors: ErrorRegistry = self._error_registry or ErrorRegistry()
+
+        # NEXT: system_loader
         loader: SystemLoader = self._system_loader or sst_system_loader()
-
-        self.system: System = loader(
-            verbose=verbose,
-            quiet=quiet,
-            setting_file=setting_file,
-            home=home,
+        self.system: CliSystem = loader(
+            verbose=verbose, quiet=quiet, settings=settings, home=home
         )
-
+        # IDEA: small helper for this update?
         ctx.obj = ctx.obj or {}
         ctx.obj.update(
             {
@@ -80,31 +97,16 @@ class SafeTyper(typer.Typer):
                 "emitter": self.system.emitter,
             }
         )
-
         if not quiet:  # TODO: send system! (emit!)
-            scroll.safe_typer.intro(project_name=ctx.info_name)
+            # NEXT: split quiet: scroll prints, subapps, general, ...
+            scroll.safe_typer.intro(
+                project_name=ctx.info_name
+            )  # FIX: info_name
             scroll.safe_typer.setup(self.system.config, loader)
-
-    def _attach_internal_callback(self):
-        """Dispatch callback for Main or Subapp"""
-
-        @self.callback()
-        def dispatcher(
-            ctx: typer.Context,
-            verbose: args.Verbose = False,
-            quiet: args.Quiet = False,
-            setting_file: args.SettingFile = None,
-            home: HomeSetup = HomeSetup.PROJECT,
-        ):
-            if ctx.parent is None:
-                self._run_main_callback(
-                    ctx, verbose, quiet, setting_file, home
-                )
-            else:
-                self._run_sub_callback(ctx)
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice subapp title"""
+        # LATER: what about Error Handler in subapps?
         scroll.safe_typer.sub_callback(ctx.info_name or "subapp")
 
     def print_setup_status(self, show_all_exceptions=False):
