@@ -8,9 +8,9 @@ Read from end of logfile and Display new entries
 import sys
 from pathlib import Path
 
-from ...config import sst_config
+from ...format.color import colorize
+from ...system.globals import config
 from ...utils import PathGuard, printer
-from ...utils.color import colorize
 from ...utils.parse import LogMatcher
 
 
@@ -18,7 +18,7 @@ def log_monitor(log_path: Path | None = None, sleep=0.1):
     """Show tail log display"""
 
     log_file: Path = PathGuard.file(
-        target=log_path or sst_config().settings.log.log_file,
+        target=log_path or config().settings.log.log_file,
         default_content="",
         raise_error=False,
     )

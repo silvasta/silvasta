@@ -20,13 +20,9 @@ from pathlib import Path
 import typer
 
 from ...tui.selector import TreeSelectorApp
-from ...utils import (
-    FolderScanner,
-    PathFilter,
-    Printer,
-    ProjectFilter,
-)
+from ...utils import FolderScanner, Printer
 from ...utils import printer as backup_printer
+from ...utils.filter import PathFilter, ProjectFilter
 from ...utils.scanner import SummaryFile
 
 # TASK: global setup

@@ -4,15 +4,13 @@ Collect and assemble mini-tools for example app
 - transform util functions to Typer executables with Arg handling
 """
 
-from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
-import typer
 from typer import Context, Option
 
-from ...config import ConfigManager, SstPaths
-from ...port import LogDTO
+from ...port.config import Config, Paths
+from ...port.event import LogDTO
 from ...system import System
 from ...tui import LogMonitorApp
 from ...tui.selector import TreeSelectorApp
@@ -30,7 +28,7 @@ def main() -> None:
     app()
 
 
-app = SafeTyper(name="tools", help="Basic equipment for development")
+app = SafeTyper(name="tools", help="Basic Equipment for Development")
 
 
 @app.command("monitor")
@@ -41,7 +39,7 @@ def launch_log_monitor_2(
 ):
     """Log Console Monitor: Analyze log file entries!"""
 
-    config: ConfigManager = ctx.obj["config"]
+    config: Config = ctx.obj["config"]
 
     def render_adapter(dto: LogDTO):
         return printer.render(dto)  # LATER: improve adapter
@@ -57,21 +55,6 @@ def launch_log_monitor_2(
 def launch_log_monitor_1(file: args.LogFile = None):  # TODO: improveCLI hint
     """Log Console Scroll: Watch new log file entries!"""
     log_monitor(log_path=file)
-
-
-def enum_option(enum_class: type[Enum], default: Enum, help_text: str = ""):
-    """
-    Build Typer Option with auto-generated enum mapping
-
-    - show: {num: Name} for all member, recognize by Name and select by number
-    """
-    # AI_TASK: this here is like broken, already default:Enum might be wrong
-    mapping: str = ", ".join(
-        [f"{member.value}: {member}" for member in enum_class]
-    )
-    full_help = f"{help_text} ({mapping})".strip()
-
-    return typer.Option(default, help=full_help)
 
 
 _filter_meta = args.enum_opt(FilterBox, "Select preset", "--filter")
@@ -91,7 +74,7 @@ def launch_folder_scanner(
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
     system: System = ctx.obj["system"]
-    paths: SstPaths = system.config.paths
+    paths: Paths = system.config.paths
     folder_scanner(
         scan_root=(root := scan_root or any_root()),
         output_file=output_file or paths.summary_file(suffix=file_type),
@@ -107,7 +90,7 @@ def launch_folder_scanner(
 @app.command("config")
 def config_details_and_write(ctx: Context, write_config: args.Write = False):
     """Print config to Console, optional write new json settings"""
-    config: ConfigManager = ctx.obj["config"]
+    config: Config = ctx.obj["config"]
     printer(config)
     printer(config.settings)
     printer(config.setting_file)
