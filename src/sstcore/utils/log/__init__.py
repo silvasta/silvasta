@@ -17,6 +17,7 @@ __all__: list[str] = [
     "handle_log_event",
 ]
 
+from ._event_handler import handle_log_event
 from ._param import LogParam
 from ._setup import (
     fetch_log_result,

@@ -8,11 +8,12 @@ __all__: list[str] = [
     "handle_log_event",
 ]
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
-from ...port import Event, LogDTO, LogSerializable
+from ...port.event import Event, EventHandler, LogDTO
+from ...port.view import LogSerializable
 
 
 def handle_log_event(event: Event) -> None:
@@ -42,3 +43,7 @@ def handle_log_event(event: Event) -> None:
         **dto.metrics,
         **dto.extra,
     ).log(dto.level.upper(), dto.message)
+
+
+if TYPE_CHECKING:
+    _func_check: EventHandler = handle_log_event

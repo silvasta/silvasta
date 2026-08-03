@@ -14,7 +14,8 @@ __all__: list[str] = [
 import json
 from typing import Any
 
-from ...port import LogDTO, LogSerializable
+from ...port.event import LogDTO
+from ...port.view import LogSerializable
 
 
 def load_format_pattern() -> str:
@@ -63,7 +64,7 @@ def ndjson_formatter(record) -> str:
         elif isinstance(v, (list, dict)):
             payload[k] = v  # LATER: start here if lines went to long
 
-    record["extra"]["raw_ndjson"] = json.dumps(payload, ensure_ascii=False)
     # inject the serialized string into the record's extra namespace
+    record["extra"]["raw_ndjson"] = json.dumps(payload, ensure_ascii=False)
 
     return "{extra[raw_ndjson]}\n"

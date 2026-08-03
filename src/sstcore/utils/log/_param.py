@@ -11,11 +11,13 @@ __all__: list[str] = [
 ]
 
 from pathlib import Path
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import BaseModel, Field
 
-from ..path import PathGuard, any_root
+from ...port.config import Log
+from ..path import any_root
+from ..path.guard import PathGuard
 
 
 class LogParam(BaseModel):
@@ -30,7 +32,7 @@ class LogParam(BaseModel):
     log_to_json: bool = True
 
     # Directories and names
-    log_dir: Path = Field(default_factory=any_root)
+    log_dir: Path = Field(default_factory=any_root)  # NEXT:
     log_file_stem: str = "debug"
     file_suffix: str = ".log"
     json_suffix: str = ".jsonl"
@@ -62,3 +64,8 @@ class LogParam(BaseModel):
         if quiet:
             updates["log_to_console"] = False
         return self.model_copy(update=updates)
+
+
+if TYPE_CHECKING:
+    _instance_check: Log = LogParam()
+    _class_check: type[Log] = LogParam

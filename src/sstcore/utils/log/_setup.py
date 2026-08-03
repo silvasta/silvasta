@@ -25,11 +25,12 @@ import sys
 
 from loguru import logger
 
+from ...port.config import Log  # FIX: remove or build!
 from ._format import load_format_pattern, ndjson_formatter
 from ._param import LogParam
 
 
-def setup_logging(param: LogParam | None = None) -> LogParam:
+def setup_logging(param: Log | None = None) -> LogParam:
     """Setup Loguru for Console and Files (*.log and *.jsonl)"""
 
     global _setup_param
@@ -37,7 +38,7 @@ def setup_logging(param: LogParam | None = None) -> LogParam:
     if _setup_param is not None:
         return _setup_param
 
-    param: LogParam = param or LogParam()
+    param: Log = param or LogParam()
 
     logger.remove()
 

@@ -6,8 +6,7 @@ Provide Configuration Pipeline with global access and json support
   - Paths: assemble and ensure filesystem locations
   - Defaults: provide default values and parameter
   - Names: provide static and dynamic parsed names
-
-                                                       DependencyLevel[X]
+                                                       DependencyLevel[4]
 """
 
 __all__: list = [
@@ -16,9 +15,12 @@ __all__: list = [
     "SstPaths",
     "SstDefaults",
     "SstNames",
+    "SstHomes",
+    "HomeSetup",
 ]
 
 from ._defaults import SstDefaults
+from ._homes import HomeSetup, SstHomes
 from ._manager import ConfigManager
 from ._names import SstNames
 from ._paths import SstPaths

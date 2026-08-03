@@ -14,12 +14,13 @@ import json
 from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from loguru import logger
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
+from ..port.config import Settings
 from ..utils.log import LogParam
 from ..utils.time import nice_duration
 from ._defaults import SstDefaults
@@ -27,8 +28,9 @@ from ._names import SstNames
 
 
 class SstSettings(BaseSettings):
-    """Container for Defaults and Names and Frame for setting file"""
+    """Contain Defaults, Names and Log, represent setting file"""
 
+    file: Path  # TEST: hold the last loaded file path (useless for boot)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
     names: SstNames = Field(default_factory=SstNames)
     log: LogParam = Field(default_factory=LogParam)
@@ -38,25 +40,23 @@ class SstSettings(BaseSettings):
     update_maxlen: int = 79
 
     @classmethod
-    def load(cls, path: Path) -> Self:
-        """Load current status from json"""
-        return cls.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    def load(cls, file: Path) -> Self:
+        """Load current status from json"""  # LATER: compare file with Setting.file
+        return cls.model_validate(json.loads(file.read_text(encoding="utf-8")))
 
-    def save(self, path: Path):
+    def save(self, file: Path) -> None:
         """Refresh datetime and save current status to json"""
+        self.file: Path = file
         before: datetime = self.last_updated
         self.touch()
         duration: str = nice_duration(start=before, end=self.last_updated)
         logger.info(f"Settings updated after {duration}")
-        path.write_text(self.json_content(), encoding="utf-8")
+        file.write_text(self.json_content(), encoding="utf-8")
 
     @classmethod
     def default_json_content(cls) -> str:
-        """Get unmodified json content of all class members"""
-        return cls().model_dump_json(
-            exclude_defaults=False,
-            indent=2,
-        )
+        """Get unmodified json content with all class members"""
+        return cls().json_content(exclude_defaults=False)
 
     def json_content(self, exclude_defaults=False) -> str:
         """Dump content of all class members with custom indent"""
@@ -65,7 +65,7 @@ class SstSettings(BaseSettings):
             indent=2,
         )
 
-    def touch(self):
+    def touch(self) -> None:
         """Update datetime and check maxlen of saved updates"""
         n_saved_update_times: int = self.update_maxlen
         if n_saved_update_times != (before := self.updates.maxlen):
@@ -85,3 +85,8 @@ class SstSettings(BaseSettings):
                 maxlen=desired_maxlen,
             )
         return self
+
+
+if TYPE_CHECKING:
+    _instance_check: Settings = SstSettings()
+    _class_check: type[Settings] = SstSettings

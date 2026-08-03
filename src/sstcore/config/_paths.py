@@ -11,29 +11,27 @@ __all__: list[str] = [
 ]
 
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING
 
-import typer
-
-from ..utils import PathGuard, printer
-from ..utils.color import ColorBox
-from ..utils.path.homes import HomeSetup
+from ..port.config import Defaults, Homes, Names, Paths
+from ..utils import PathGuard
 from ._defaults import SstDefaults
+from ._homes import HomeSetup, SstHomes
 from ._names import SstNames
 
 
-class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
-    """Generates paths with the provided Names and Defaults"""
+class SstPaths:
+    """Generate paths with the provided Names and Defaults"""
 
     def __init__(
         self,
-        names: TNames | None = None,
-        defaults: TDefaults | None = None,
-        homes: HomeSetup = HomeSetup.PROJECT,
+        defaults: Defaults | None = None,
+        names: Names | None = None,
+        homes: Homes | None = None,
     ):
-        self._defaults: TDefaults = defaults or cast(TDefaults, SstDefaults())
-        self._names: TNames = names or cast(TNames, SstNames())
-        self._homes: HomeSetup = homes
+        self._defaults: Defaults = defaults or SstDefaults()
+        self._names: Names = names or SstNames()
+        self._homes: Homes = homes or SstHomes.from_setup(HomeSetup.GLOBAL)
 
     @property
     @PathGuard.dir
@@ -42,18 +40,18 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @property
     @PathGuard.dir
-    def configs_dir(self) -> Path:
-        return self._homes.configs_dir
+    def config_dir(self) -> Path:
+        return self._homes.config
 
     @property
     @PathGuard.dir
     def log_dir(self) -> Path:
-        return self._homes.log_dir
+        return self._homes.log
 
     @property
     @PathGuard.dir
     def data_dir(self) -> Path:
-        return self.project_root / self._names.data_dir
+        return self._homes.data
 
     @property
     @PathGuard.dir
@@ -62,52 +60,31 @@ class SstPaths[TNames: SstNames, TDefaults: SstDefaults]:
 
     @property
     @PathGuard.dir
-    def data_home(self) -> Path:
-        return self._homes.data_home
-
-    @property
-    @PathGuard.dir
-    def state_home(self) -> Path:
-        return self._homes.state_home
-
-    @property
-    @PathGuard.dir
-    def config_home(self) -> Path:
-        return self._homes.config_home
+    def state_dir(self) -> Path:
+        return self._homes.state
 
     def dot_env(self) -> Path:
         """Ensure .env File, create template for missing and raise"""
-        try:
-            return PathGuard.file(
-                target=self.dot_env_unconfirmed,
-                default_content=self._defaults.dot_env_content,
-            )
-        except FileNotFoundError:
-            # MOVE: to pathguard error handling, or cli,
-            #         - but with __rich__ cli print
-            # NOTE: PathGuard throws now:
-            # raise PathGuardError(PathGuardReason.MISSING, target=path, info=info)
-            # NEXT: clean this up here, nothing to handle locally,
-            # just bubble to SafeTyper?
-            c: ColorBox = ColorBox.bold()
-            text = (
-                f"{c.red('Missing .env File!')}"
-                f" {c.white(self.dot_env_unconfirmed)}"
-            )
-            printer.danger(text)
-            raise typer.Exit(code=1) from None
+        return PathGuard.file(
+            target=self.dot_env_unconfirmed,
+            default_content=self._defaults.dot_env_content,
+        )
 
     @property
     def dot_env_unconfirmed(self) -> Path:
         """Provide bare dot_env Path without any checks"""
-        return self.config_home / ".env"
+        return self.config_dir / ".env"
 
-    def scanner_cache_file(self, scan_root: Path) -> Path:
-        return scan_root / ".sst_scanner_cache.json"
+    def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
+        """Provide location for Scanner state data"""
+        return (scan_root or self.state_dir) / self._names.scanner_cache_file
 
     @PathGuard.unique(ensure_parent=True)
-    # NEXT:
-    # TODO: auto switch to local
-    def summary_file(self, suffix: str = ".md") -> Path:
+    def summary_file(self, suffix: str = "md") -> Path:
         filename: str = self._names.summary_file(suffix=suffix)
         return self.data_dir / filename
+
+
+if TYPE_CHECKING:
+    _instance_check: Paths = SstPaths()
+    _class_check: type[Paths] = SstPaths
