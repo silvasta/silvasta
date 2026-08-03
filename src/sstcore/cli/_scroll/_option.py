@@ -27,8 +27,8 @@ from functools import update_wrapper
 from itertools import product
 from typing import Any, Protocol, cast
 
+from ...format.color import ColorBox, colorize
 from ...utils import printer
-from ...utils.color import ColorBox, colorize
 
 c: ColorBox = ColorBox.bold()
 

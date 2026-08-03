@@ -21,14 +21,11 @@ from typing import Any, Literal
 
 from rich.box import Box
 
-from sstcore.utils import PathGuard
-from sstcore.utils.log.setup import fetch_log_result
-
 from ...config import ConfigManager
-from ...config.setup import ConfigLoader
-from ...utils import printer
-from ...utils.color import ColorBox, colorize
-from ...utils.color.palette import ColorName
+from ...format.color import ColorBox, colorize
+from ...system.boot import ConfigLoader
+from ...utils import PathGuard, printer
+from ...utils.log import fetch_log_result
 from ...utils.print import boxes
 from ._option import PrintOption, SelectMode
 
@@ -58,7 +55,7 @@ class MainIntroScroll(PrintOption[Callable[[str], None]]):
         )
 
     def _template(
-        self, project_name: str, outer: ColorName, inner: ColorName, box: Box
+        self, project_name: str, outer: str, inner: str, box: Box
     ) -> None:
         project: str = c(project_name, color=inner)
 
@@ -232,7 +229,7 @@ class SetupStatus(PrintOption[StatusSignature]):
         exceptions: list[BaseException],
         show_all: bool,
         box1: Box,  # LATER: handle default box other than with None...
-        color1: ColorName,
+        color1: str,
         exc_formatter: ExceptionFormatter,
     ):
         _safe_typer = c(safe_typer, color1)
