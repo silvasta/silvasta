@@ -13,28 +13,26 @@ Built on top of these major external dependencies:
 - rich
 - loguru
 
+                                                       DependencyLevel[3]
 """
 
 __all__: list = [
+    "FolderScanner",
+    "PathGuard",
     "Printer",
     "PrinterFactory",
     "printer",
-    "ColorBox",
-    "FilterSet",
-    "PathFilter",
-    "ProjectFilter",
-    "FolderScanner",
+    "SchemaName",
     "SimpleTreeNode",
-    "PathTreeNode",
     "day_count",
-    "PathGuard",
+    "view",
 ]
 
 
-from .color import ColorBox
-from .filter import FilterSet, PathFilter, ProjectFilter
+from .parse import SchemaName
 from .path.guard import PathGuard
 from .print import Printer, PrinterFactory, printer
 from .scanner import FolderScanner
 from .time import day_count
-from .tree import PathTreeNode, SimpleTreeNode
+from .tree import SimpleTreeNode
+from .view import view
