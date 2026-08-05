@@ -17,7 +17,9 @@ from collections import defaultdict, deque
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
+
+from ...port.tree import PathTree
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,10 @@ class PathTreeNode(SimpleTreeNode):
             branches: Sequence[Self] = []
 
         return cls(name=path.name, path=path, branches=branches)
+
+
+if TYPE_CHECKING:
+    _path_tree: PathTree = PathTreeNode.create(Path())
 
 
 def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
