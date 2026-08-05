@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 # TASK: rework
 # - check with latest projects
-# - attach view
+# - attach (optional) views
 
 
 class SstModel(BaseModel):
