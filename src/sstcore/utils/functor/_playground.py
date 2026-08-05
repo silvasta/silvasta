@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from sstcore.port.functor import ErrorPolicy, Functorial
-from sstcore.port.pathguard import SyncMode, TransferStrategic
-
 from ...port.event import Event
+from ...port.functor import ErrorPolicy, Functorial
+from ...port.pathguard import SyncMode, TransferStrategic
 from ._base import Functor
 
 
@@ -19,6 +18,7 @@ def dummy_bad(source: str, mode=SyncMode.IGNORE):
     pass
 
 
+# REMOVE: after established in PathGuard
 class TransferStrategy(Functor[[Path, Path, SyncMode], Path]):
     error_policy: ErrorPolicy = ErrorPolicy.LOG_AND_CONTINUE
     exit_code: int = 1
