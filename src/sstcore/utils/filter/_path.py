@@ -30,13 +30,13 @@ class ProjectFilter(PathFilter):
     """Reject unwanted Folders and include desired Files"""
 
     exclude: set[str] = field(
-        default_factory=lambda: set(FilterBox.PROJECT.args.exclude),
+        default_factory=lambda: set(FilterBox.PROJECT.args.exclude)
     )
     require_any: set[str] = field(
         default_factory=lambda: set(FilterBox.PROJECT.args.require_any)
     )
 
-    def _fulfills_conditions(self, target: Path, target_set: set) -> bool:
+    def _fulfills_conditions(self, target: Path, target_set: set[str]) -> bool:
 
         if not self.allow_hidden_files and target.name.startswith("."):
             return False
