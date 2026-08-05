@@ -1,5 +1,24 @@
+"""
+File System Operations
+
+- Transfer
+- Delete
+"""
+
+__all__: list[str] = [
+    # transfer operations
+    "rotate",
+    "copy",
+    "hardlink",
+    "symlink",
+    # delete operations
+    "remove",
+    "trash",
+    "prune",
+]
+
 from collections.abc import Callable
-from enum import StrEnum, auto
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -7,137 +26,141 @@ from loguru import logger
 
 from ....error import PathGuardError, PathGuardReason
 from ....format.reflect import cls_name
+from ....port.pathguard import SyncMode
+from ...functor import Functor
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec
-from ._relative import relative_string
-
-
-# NEXT: move to port
-class SyncMode(StrEnum):
-    """Govern the Conflict Resolution Strategy for File Transfers"""
-
-    INCREMENT = auto()
-    OVERRIDE = auto()
-    IGNORE = auto()
-
-    def check_conflict(self, target: Path) -> Path:
-        """Provide SyncMode Path that is valid to write or Raise"""
-
-        if not target.exists():
-            _ensure_dir_logic(target.parent)
-            return target
-
-        match self:
-            case SyncMode.OVERRIDE:
-                logger.warning(f"Overriding existing File at {target=}")
-                return target
-            case SyncMode.INCREMENT:
-                return _get_unique_candidate(path=target, ensure_parent=True)
-
-            case SyncMode.IGNORE:
-                raise PathGuardError(PathGuardReason.SYNC, target=target)
-
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Transfer Operations
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def rotate(
-    source: PathInput,
-    target: PathInput,
-    sync_mode: str | SyncMode = SyncMode.INCREMENT,
-    reset: bool = False,
-) -> Path:
-    """Move Source to Target and if reset: Create empty File or Dir"""
+@dataclass
+class TransferStrategy(Functor[[Path, Path, SyncMode], Path]):
+    """Provide Skeleton for specific Function binding"""
 
-    # LATER: similar pipeline as in _clear_file_or_folder
-
-    _source: Path = PathSpec.ok(target=source, must_exists=True)
-    _target: Path = PathSpec.ok(target=target)
-    sync_mode = SyncMode(sync_mode)  # LATER: catch failed sync_mode:str?
-
-    is_directory: bool = _source.is_dir()  # store for reset logic
-
-    inspected_target: Path = sync_mode.check_conflict(_target)
-    _source.move(inspected_target)
-    relative: str = relative_string(_source, inspected_target)
-    logger.info(f"Rotated: {relative}")  # MOVE: inside new strategy (later)
-
-    if reset:
-        if is_directory:
-            _source.mkdir()
-            logger.debug(f"Recreated empty directory: {source}")
-        else:
-            _source.touch()
-            logger.debug(f"Reset empty file: {source}")
-
-    return inspected_target
+    # logger.info(f"{self}: {relative_string(source, target)}")
 
 
-def copy(
-    source: PathInput,
-    target: PathInput,
-    sync_mode: str | SyncMode = SyncMode.INCREMENT,
-) -> Path:
-    """Copy Source to Target"""
-
-    # LATER: similar pipeline as in _clear_file_or_folder
-
-    _source: Path = PathSpec.ok(target=source, must_exists=True)
-    _target: Path = PathSpec.ok(target=target)
-    sync_mode = SyncMode(sync_mode)
-
-    _source.copy(inspected_target := sync_mode.check_conflict(_target))
-
-    return inspected_target
+def check_sync_mode(target: Path, mode: SyncMode) -> Path:
+    """Provide SyncMode Path that is valid to write or Raise"""
+    if not target.exists():
+        return _ensure_dir_logic(target.parent)
+    match mode:
+        case SyncMode.OVERRIDE:
+            return target
+        case SyncMode.INCREMENT:
+            return _get_unique_candidate(path=target, ensure_parent=True)
+        case SyncMode.IGNORE:
+            raise PathGuardError(PathGuardReason.SYNC, target=target)
 
 
-def hardlink(
-    source: PathInput,
-    target: PathInput,
-    sync_mode: str | SyncMode = SyncMode.OVERRIDE,
-) -> Path:
-    """Create Hardlink at Target Pointing to Source"""
-
-    # LATER: similar pipeline as in _clear_file_or_folder
-
-    _source: Path = PathSpec.ok(target=source, must_exists=True)
-    _target: Path = PathSpec.ok(target=target)
-    sync_mode = SyncMode(sync_mode)
-
-    inspected_target: Path = sync_mode.check_conflict(_target)
-
-    try:
-        inspected_target.hardlink_to(_source)
-    except OSError as error:
+def _handle_hardlink(error: Exception, source: Path, target: Path):
+    if isinstance(error, OSError):
         raise PathGuardError(
             PathGuardReason.HARDLINK,
             source=source,
             target=target,
             catched=error,
         ) from error
+    else:
+        raise error
 
-    return inspected_target
+
+def prepare(func: Callable[[Path, Path], Any]):
+    def run(source: Path, target: Path, mode: SyncMode):
+        transferable: Path = check_sync_mode(target, mode)
+        transfered: Path = func(source, transferable)
+        return transfered
+
+    return run
+
+
+Rotate: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
+    func=prepare(lambda source, target: source.move(target)),
+    name="PathGuard - Rotate",
+)
+
+Copy: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
+    func=prepare(lambda source, target: source.copy(target)),
+    name="PathGuard - Copy",
+)
+
+Symlink: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
+    func=prepare(lambda source, target: target.symlink_to(source)),
+    name="PathGuard - Simlink",
+)
+
+Hardlink: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
+    func=prepare(lambda source, target: target.hardlink_to(source)),
+    name="PathGuard - Hardlink",
+    handle=_handle_hardlink,
+)
+
+
+def hardlink(
+    source: PathInput,
+    target: PathInput,
+    mode: SyncMode = SyncMode.INCREMENT,
+) -> Path:
+    """Create Hardlink at Target Pointing to Source"""
+
+    return Hardlink.safe(
+        source=PathSpec.ok(target=source, must_exists=True),
+        target=PathSpec.ok(target=target),
+        mode=mode,
+    )
 
 
 def symlink(
     source: PathInput,
     target: PathInput,
-    sync_mode: str | SyncMode = SyncMode.INCREMENT,
+    mode: SyncMode = SyncMode.INCREMENT,
 ) -> Path:
     """Create Absolute Symlink at Target Pointing to Source"""
 
-    # LATER: similar pipeline as in _clear_file_or_folder
+    return Symlink.safe(
+        source=PathSpec.ok(target=source, must_exists=True, resolve=True),
+        target=PathSpec.ok(target=target),
+        mode=mode,
+    )
 
-    _source: Path = PathSpec.ok(target=source, must_exists=True, resolve=True)
-    _target: Path = PathSpec.ok(target=target)
-    sync_mode = SyncMode(sync_mode)
 
-    inspected_target: Path = sync_mode.check_conflict(_target)
-    inspected_target.symlink_to(_source)
+def copy(
+    source: PathInput,
+    target: PathInput,
+    mode: SyncMode = SyncMode.INCREMENT,
+) -> Path:
+    """Copy Source to Target"""
 
-    return inspected_target
+    return Rotate.safe(
+        source=PathSpec.ok(target=source, must_exists=True),
+        target=PathSpec.ok(target=target),
+        mode=mode,
+    )
+
+
+def rotate(
+    source: PathInput,
+    target: PathInput,
+    mode: SyncMode = SyncMode.INCREMENT,
+    reset: bool = False,
+) -> Path:
+    """Move Source to Target and if reset: Create empty File or Dir"""
+
+    source_ok: Path = PathSpec.ok(target=source, must_exists=True)
+    is_directory: bool = source_ok.is_dir()  # store for reset logic
+
+    transfered: Path = Rotate.safe(
+        source=(source_ok), target=PathSpec.ok(target=target), mode=mode
+    )
+    if reset:
+        if is_directory:
+            source_ok.mkdir()
+        else:
+            source_ok.touch()
+    return transfered
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -147,7 +170,7 @@ def symlink(
 
 def _clear_file_or_folder(
     target: PathInput,
-    clear_strategy: Callable[[Path], Any],  # LATER: NamedFunctor
+    clear_strategy: Callable[[Path], Any],
 ) -> bool:
     """Execute Delete Operation in Safe Environment"""
 
@@ -156,8 +179,9 @@ def _clear_file_or_folder(
     clear: str = _clear.strip("_").capitalize()
 
     try:
-        _target: Path = PathSpec.ok(target, must_exists=True)
-        clear_strategy(_target)
+        target_ok: Path = PathSpec.ok(target, must_exists=True)
+        # IDEA: as soon as Functor handles more than 1 error...
+        clear_strategy(target_ok)
         return True
 
     except (PathGuardError, OSError) as error:

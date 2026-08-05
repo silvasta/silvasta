@@ -61,6 +61,7 @@ type PathInput = str | Path | PathSpec
 # Nested enum (accessible as PathGuard.SyncMode; not a top-level export)
 # ---------------------------------------------------------------------------
 
+# AI: this is now as well in the sstcore.port.pathguard, expose here as well?
 class SyncMode(StrEnum):
     """Conflict resolution strategy for transfer operations."""
 

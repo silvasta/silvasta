@@ -25,7 +25,7 @@ class SyncMode(StrEnum):  # TODO: unite with path.guard._operate
     IGNORE = auto()
 
 
-class TransferStrategic(Protocol):
+class Transfering(Protocol):
     def __call__(self, source: Path, target: Path, mode: SyncMode) -> Path: ...
 
 

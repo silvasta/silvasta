@@ -12,7 +12,7 @@ from ._operate import SyncMode
 
 
 @contextmanager
-def _sync_lock(target: Path):  # TODO: with PathGuard.lock(ed|ing):
+def _sync_lock(target: Path):  # TODO: with PathGuard.lock(ed|ing|s):
     """
     Cross-process atomic lock
 

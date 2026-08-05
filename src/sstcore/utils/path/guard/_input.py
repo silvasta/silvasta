@@ -16,6 +16,7 @@ type PathInput = str | Path | PathSpec
 class PathSpec:
     """Normalize and Validate input for PathGuard execution"""
 
+    # LATER: ensure_parent
     target: Path
 
     resolve: bool = False
