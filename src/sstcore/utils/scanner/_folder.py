@@ -4,6 +4,8 @@ Scan the Folder and provide the (filtered) Files
                                                        DependencyLevel[0]
 """
 
+from sstcore.port.filter import PathFiltering
+
 __all__: list[str] = [
     "FolderScanner",
 ]
@@ -13,7 +15,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..filter import PathFilter, ProjectFilter
+from ..filter import ProjectFilter
 from ..path.guard import PathGuard
 from ..tree import PathTreeNode, build_path_tree
 
@@ -30,7 +32,7 @@ class FolderScanner:
     """
 
     scan_root: Path
-    filter: PathFilter = field(default_factory=ProjectFilter)
+    filter: PathFiltering = field(default_factory=ProjectFilter)
 
     provide_relative_paths: bool = False
     follow_symlinks: bool = False
