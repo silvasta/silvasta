@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Protocol, Self
 
 from ..port.filter import Filter, PathFiltering
-from ..port.pathguard import PathGuard
+from ..port.pathguard import PathGuard, SyncMode
 from ..port.registry import ListingRegistry
 from ..port.tree import PathTree
 
@@ -92,6 +92,7 @@ class FileQuery(Protocol):
 
 
 class FileFilter(Filter[str, File], Protocol):
+    # REMOVE:???
     """Filter SstFiles by keywords"""
 
     def _create_target_set(self, target: File) -> set[str]: ...
@@ -143,14 +144,29 @@ class FileScanning(Protocol):
     ) -> PathTree: ...
 
 
-type _Source = Path | list[Path]
-_Sync = PathGuard.SyncMode
+type _PathS = Path | list[Path]
 
 
 class FileSyncing(Protocol):
     """Sync operations (mirror/absorb) using PathGuard (FileSyncMixin)."""
 
-    sync_mode: PathGuard.SyncMode
+    mode: PathGuard.SyncMode
+
+    def mirror_from_path(
+        self, source: _PathS, mode: SyncMode = SyncMode.IGNORE
+    ) -> list[File]: ...
+
+    def absorb_from_path(
+        self, source: _PathS, mode: SyncMode = SyncMode.IGNORE
+    ) -> list[File]: ...
+
+    def mirror_from_registry(
+        self, external: Self, mode: SyncMode = SyncMode.IGNORE
+    ) -> list[File]: ...
+
+    def absorb_from_registry(
+        self, external: Self, mode: SyncMode = SyncMode.INCREMENT
+    ) -> list[File]: ...
 
     def clone_empty_registry(
         self,
@@ -159,22 +175,6 @@ class FileSyncing(Protocol):
         add_to_exclude: set[str] | None = None,
         exclude_unset: bool = False,
     ) -> Self: ...
-
-    def mirror_from_path(
-        self, source: _Source, sync_mode: _Sync = _Sync.IGNORE
-    ) -> list[File]: ...
-
-    def absorb_from_path(
-        self, source: _Source, sync_mode: _Sync = _Sync.IGNORE
-    ) -> list[File]: ...
-
-    def mirror_from_registry(
-        self, external: Self, sync_mode: _Sync = _Sync.IGNORE
-    ) -> list[File]: ...
-
-    def absorb_from_registry(
-        self, external: Self, sync_mode: _Sync = _Sync.INCREMENT
-    ) -> list[File]: ...
 
 
 class FileScanRegistry(

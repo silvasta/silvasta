@@ -9,7 +9,6 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from contextlib import contextmanager
 from functools import singledispatchmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
@@ -21,7 +20,6 @@ from ...error import NotImplementedDispatchError
 from ...port.files import File, FileSyncing
 from ...port.pathguard import SyncMode
 from ...utils import PathGuard
-from ...utils.functor._factory import TransferStrategy
 from ._file import SstFile
 
 type _PathS = Path | list[Path]
@@ -46,48 +44,6 @@ class FileSyncMixin[File: SstFile]:
     # ----------------------------------------------------------
 
     sync_mode: PathGuard.SyncMode = SyncMode.IGNORE
-
-    @contextmanager
-    def _with_sync_mode(self, mode: SyncMode):
-        """Temporarily set sync_mode (eliminates repetition in public methods)."""
-        previous: SyncMode = self.sync_mode
-        self.sync_mode: SyncMode = SyncMode(mode)
-        try:
-            yield
-        finally:
-            self.sync_mode: SyncMode = previous
-
-    def clone_empty_registry(
-        self,
-        local_root: Path,
-        exclude: set[str] | None = None,
-        add_to_exclude: set[str] | None = None,
-        exclude_unset=False,
-    ) -> Self:
-        """Get registry with same configuration, new local_root and No files"""
-
-        if exclude is None:
-            exclude: set[str] = {"files", "local_root"}
-
-        if add_to_exclude:
-            exclude: set[str] = exclude | add_to_exclude
-
-        if not isinstance(self, BaseModel):
-            raise NotImplementedError(f"BaseModel required for {self}")
-
-        cloned_data: dict[str, Any] = self.model_dump(
-            exclude=exclude, exclude_unset=exclude_unset, mode="python"
-        )
-
-        # Intercept the serialized scanner and update its target root
-        if (scanner_data := cloned_data.get("scanner")) is not None:
-            if isinstance(scanner_data, dict):
-                scanner_data["scan_root"] = local_root
-            else:
-                # Fallback just in case model_dump left it as an object
-                scanner_data.scan_root = local_root
-
-        return type(self)(local_root=local_root, **cloned_data)
 
     def mirror_from_path(
         self, source: _PathS, sync_mode: SyncMode = SyncMode.IGNORE
@@ -126,6 +82,10 @@ class FileSyncMixin[File: SstFile]:
         return self._sync_registry(
             external, transfer_strategy=PathGuard.rotate
         )
+
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    ### Workers
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
     @singledispatchmethod
     def _sync_external_files(
@@ -229,6 +189,42 @@ class FileSyncMixin[File: SstFile]:
             self.clear(files_to_clear=target)
 
         return self.attach_from_path(target)
+
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    ### Clone
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+    def clone_empty_registry(
+        self,
+        local_root: Path,
+        exclude: set[str] | None = None,
+        add_to_exclude: set[str] | None = None,
+        exclude_unset=False,
+    ) -> Self:
+        """Get registry with same configuration, new local_root and No files"""
+
+        if exclude is None:
+            exclude: set[str] = {"files", "local_root"}
+
+        if add_to_exclude:
+            exclude: set[str] = exclude | add_to_exclude
+
+        if not isinstance(self, BaseModel):
+            raise NotImplementedError(f"BaseModel required for {self}")
+
+        cloned_data: dict[str, Any] = self.model_dump(
+            exclude=exclude, exclude_unset=exclude_unset, mode="python"
+        )
+
+        # Intercept the serialized scanner and update its target root
+        if (scanner_data := cloned_data.get("scanner")) is not None:
+            if isinstance(scanner_data, dict):
+                scanner_data["scan_root"] = local_root
+            else:
+                # Fallback just in case model_dump left it as an object
+                scanner_data.scan_root = local_root
+
+        return type(self)(local_root=local_root, **cloned_data)
 
 
 if TYPE_CHECKING:
