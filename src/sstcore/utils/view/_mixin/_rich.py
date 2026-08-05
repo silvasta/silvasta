@@ -13,9 +13,8 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ....format import cls_name
-from ....format._normalize import name
 from ....format.color import ColorBox, colorize
+from ....format.reflect import cls_name, name
 
 c: ColorBox = ColorBox.bold()
 

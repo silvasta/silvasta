@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
-from ...port.builder import Builder, Injector, TypedBuilder
+from ...port.builder._builder import Builder, Injector, TypedBuilder
 from ._mixin import MixinSentinel
 from ._registry import Cli, Log, Repr, Rich, Str
 

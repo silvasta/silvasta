@@ -11,7 +11,7 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ....port import LogDTO
+from ....port.event import LogDTO
 from ._basics import data
 
 
