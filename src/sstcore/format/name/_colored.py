@@ -16,14 +16,6 @@ __all__: list[str] = [
     "ColoredName",
 ]
 
-# IDEA: use __fmt__ for representations?
-# - raw -> __str__
-# - rich -> __rich__
-# fail because NameParser is template not fixed schema
-# - still one could create instance with attached args,
-# - combine with str as type? ultimate usage but (too?) unsafe
-# maybe something inbetween ColoredName and Name
-
 
 class ColoredName(NameParser):
     """Provide a Colored and a Regular Name with the same Pattern"""

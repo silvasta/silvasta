@@ -1,5 +1,5 @@
 """
-Transform to str and be tha pattern and parse the pattern
+Transform to str, be the pattern and parse the pattern
 
   (Experimental Setup)
                                                        DependencyLevel[2]
@@ -37,8 +37,7 @@ class Name(NameParser, str):
             value = value.name
 
         parser = NameParser(pattern=getattr(cls, "pattern", value), **kwargs)
-        # Validate on construction
-        parser.extract(value)
+        parser.extract(value)  # Validate on construction
 
         obj: Self = str.__new__(cls, value)
         obj._parser = parser  # ty:ignore

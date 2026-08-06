@@ -10,33 +10,11 @@ from typing import Any
 
 import fire
 
-from sstcore import ConfigManager, System
-from sstcore.system.event import EventBus
-from sstcore.utils import Printer, day_count
-from sstcore.utils.parse import ParsedName, SchemaName
-from sstcore.utils.parse.name import NamePattern
-
-sst: System = System.bootstrap()
-config: ConfigManager = sst.config
-bus: EventBus = sst.bus
-printer: Printer = sst.printer
+from sstcore.format.name import NamePattern, ParsedName
+from sstcore.utils import day_count, printer
+from sstcore.utils.parse import SchemaName
 
 pattern1: str = "{day}_summary.{suffix}"
-
-
-def latest_schema_name():
-    pattern = "t_{id}_{topic}"
-    schema = SchemaName(pattern=pattern)
-
-    printer(str(schema))
-    printer(schema)
-    printer(f"{schema!r}")
-
-    name = "t_33_validation"
-    printer(schema(name))
-
-    keys = (11, "test")
-    printer(schema(keys))
 
 
 def main():
@@ -53,19 +31,52 @@ def view(obj: Any):
 class ParseTasks:
     """OUTDATED..."""
 
-    def base(self):
+    def schema(self):
+        schema_name()
+
+    def core(self):
         parsed_name()
 
+    # old...
+    def parse(self):
+        old_parsed_name()
+
+    # old...
     def regex(self):
         pattern_namer()
 
+    # old...
     def error(self):
         show_error()
 
 
 def parsed_name():
+    printer.title("Start of new parsed_name")
+
+    pattern: str = "{day}_summary.{suffix}"
+    parser = ParsedName(pattern=pattern)
+    printer(parser)
+    # TODO: example with DTO return
+
+
+def schema_name():
+    pattern = "t_{id}_{topic}"
+    schema = SchemaName(pattern=pattern)
+
+    printer(str(schema))
+    printer(schema)
+    printer(f"{schema!r}")
+
+    name = "t_33_validation"
+    printer(schema(name))
+
+    keys = (11, "test")
+    printer(schema(keys))
+
+
+def old_parsed_name():
     """OUTDATED???"""
-    printer.title("Start of parsed_name")
+    printer.title("Start of old_parsed_name")
 
     pattern: str = "{day}_summary.{suffix}"
     summary_file: ParsedName = ParsedName(pattern=pattern)

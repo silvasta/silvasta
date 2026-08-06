@@ -135,8 +135,8 @@ class ExtractNormalizer(NamePattern):
         return super().extract(clean_string)
 
 
-# TODO: wire BaseName
-# class DispatchName:
+# IDEA:
+# class PatternCaller(FormatNormalizer,ExtractNormalizer):
 #     """ __call__ and distribute """
 #     @singledispatchmethod
 #     def __call__(self, target: Any):
@@ -151,7 +151,7 @@ class ExtractNormalizer(NamePattern):
 #         return self.format(target)
 
 
-class NameParser(FormatNormalizer, ExtractNormalizer):  # TODO: DispatchName
+class NameParser(FormatNormalizer, ExtractNormalizer):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
 
@@ -162,7 +162,8 @@ class NameParser(FormatNormalizer, ExtractNormalizer):  # TODO: DispatchName
 
     # IDEA: 1 more level: separate __call__! (or Protocol)
     # - why? make FormatNormalizer and ExtractNormalizer replaceable
-    #   MRO like: NameParser(NameCall, AnyFormatN, AnyExtractN, NamePattern)
+    #   NameParser MRO like: (PatternCaller, AnyFormatN, AnyExtractN, NamePattern)
+    #   - with: NameParser(PatternCaller)
     # - issue: Able to change Format/Extract but attach dispatch?
 
     @singledispatchmethod
