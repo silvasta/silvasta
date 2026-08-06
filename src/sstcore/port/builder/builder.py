@@ -27,7 +27,6 @@ class Builder[TargetClass](Protocol):
 class TypedBuilder[TargetType](Protocol):
     """Use (Mixin,Protocol) for cls:typing"""
 
-    # AI: idea is to provide proper typing for assembled classes
     @property
     def types(self) -> tuple[type, ...]:
         """Provide all Protocols of selected Mixins"""
