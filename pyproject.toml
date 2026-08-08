@@ -64,29 +64,10 @@ pythonpath = ["src"]
 
 [tool.ty.src]
 include = ["src", "examples"]
-exclude = [
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  # REMOVE:
-  "src/sstcore/utils/_functor",    #
-  "src/sstcore/system/emitter.py", # FIX:
-]
+exclude = []
 
 [tool.ruff]
 line-length = 79
-# REMOVE:
-# REMOVE:
-# REMOVE:
-# REMOVE:
-# REMOVE:
 exclude = ["tests"]
 
 [tool.ruff.lint.pydocstyle]
