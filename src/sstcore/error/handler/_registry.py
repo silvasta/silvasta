@@ -35,17 +35,18 @@ class ErrorRegistry(DictRegistry[ErrorHandler, type[BaseException]]):
     def _item_identifier(self, item: ErrorHandler):
         return item.exception_type, ErrorHandler
 
-    def register(self, exit_code: int = 1, name: str = "") -> HandlerDecorator:
+    def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:
         """Attach handler functions by decorator"""
 
         def decorator(func: HandlerFunc):
-            self.attach(ErrorHandler.from_func(func, exit_code, name))
+            self.add(ErrorHandler.from_func(func, exit_code, name))
             return func
 
         return decorator
 
 
 if TYPE_CHECKING:
+    # LATER: implement and use FunctionalRegistry
     _instance_check: FunctionalRegistry = ErrorRegistry()
     _class_check: type[FunctionalRegistry] = ErrorRegistry
     #
