@@ -18,7 +18,7 @@ from typing import Any, Literal
 from rich.box import Box
 from rich.markdown import Markdown
 
-from ....contract.cli import LineDTO, PanelDTO, RuleDTO
+from ....port.event.dto import LineDTO, PanelDTO, RuleDTO
 from .. import boxes
 from ..blueprint import Printer
 
