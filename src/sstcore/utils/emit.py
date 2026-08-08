@@ -42,7 +42,7 @@ class EventEmitter:  # REMOVE: ??
 
 
 if TYPE_CHECKING:
-    _class_check: type[EventEmit] = EventEmit
+    _class_check: type[EventEmit] = EventEmitter
 
 
 class _RequiresCall(Protocol):
