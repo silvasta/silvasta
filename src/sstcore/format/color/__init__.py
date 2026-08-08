@@ -1,21 +1,14 @@
 """
-Collect Color and Style container and tools.
+Provide Colors and Tools for Coloring
 
-Provide low-level helpers to generate Rich-compatible markup strings,
-including color palettes, text styles, and ready-to-use colorizers.
+- colorize: ready-to-use functional stack
 
-Key components:
-    - Palette: predefined color mappings for semantic roles (info, warning, etc.)
-    - TextStyle: enumerated text attributes (bold, dim, reverse)
-    - ColorBox: thin facade to apply styles and colors to text
-    - colorize: convenience functions for common formatting tasks
+  -> check color.box for Color implementation
 
 """
 
 __all__: list[str] = [
     "colorize",
-    "ColorBox",
 ]
 
 from . import _colorize as colorize
-from .box import ColorBox
