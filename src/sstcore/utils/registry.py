@@ -45,7 +45,7 @@ class ListRegistry[ItemT]:
         """Select and set the most important attribute of the Item"""
         raise NotImplementedError(item)
 
-    def attach(self, item: ItemT, clear: bool = False) -> int:
+    def add(self, item: ItemT, clear: bool = False) -> int:
         num: int = self.clear(self._item_identifier(item)) if clear else 0
         self.items.append(item)
         return num
@@ -68,24 +68,23 @@ class ListRegistry[ItemT]:
         return before - len(self)
 
 
-if TYPE_CHECKING:
-    # INFO:
-    from .filter import FilterSet as FilterSet
-
-
-class FilterRegistry[ItemT, FilterT: Filter]:
+class FilterRegistry[ItemT]:
     """Extend the ListRegistry with filtered items"""
 
-    filter: FilterT | None  # AI: use FilterSet here?
+    filter: Filter | None
     all: Iterable[ItemT]
 
-    def filtered(self, filter: FilterT | None = None) -> list[ItemT]:
-        """Filter items using provided filter or instance filter."""
-        if (active_filter := filter or self.filter) is None:
-            return list(self.all)
+    def _prepare_filter(self, filter: Filter | None) -> Filter | None:
+        """Cache filter if provided and provide resulting cached Filter"""
+        if filter:
+            self.filter: Filter = filter
+        return self.filter
 
-        # AI: FilterSet.__call__ returns list of targets for Iterable input
-        return active_filter(self.all)  # FIX: overload
+    def filtered(self, filter: Filter | None = None) -> list[ItemT]:
+        """Filter items using provided filter or instance filter."""
+        if active_filter := self._prepare_filter(filter):
+            return active_filter(self.all)  # ty:ignore # FIX: overload
+        return list(self.all)
 
 
 if TYPE_CHECKING:
@@ -103,7 +102,7 @@ class DictRegistry[ItemT, KeyT]:
         return len(self.items)
 
     def __contains__(self, target: KeyT) -> bool:
-        return target in self.items.keys()
+        return target in self.items
 
     @property
     def all(self) -> Iterable[ItemT]:
@@ -112,11 +111,11 @@ class DictRegistry[ItemT, KeyT]:
     def _item_identifier(self, item: ItemT) -> tuple[KeyT, ItemT]:
         raise NotImplementedError(item)
 
-    def attach(self, target: Any, *, clear: bool = False, **kwargs) -> int:
-        key, item = self._item_identifier(target, **kwargs)
+    def add(self, target: Any, *, clear: bool = False, **kwargs) -> int:
+        _key, _item = self._item_identifier(target, **kwargs)
         if (exists := key in self.items) and not clear:
-            raise KeyError("Item already in Registry!", item, key)
-        self.items[key] = item
+            raise KeyError("Item already in Registry!", _item, _key)
+        self.items[_key] = _item
         return int(exists)
 
     def get(self, key: KeyT) -> ItemT | None:
