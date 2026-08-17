@@ -5,49 +5,31 @@ Provide typed Data Transfer Objects for the EventBus
 
 """
 
+# LATER: move function implementations out of the port
+
 __all__: list[str] = [
     "CliDTO",
 ]
 
+
 import warnings
 from dataclasses import dataclass, field, fields
-from typing import Any, ClassVar, Protocol, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
+if TYPE_CHECKING:
+    from ...view import Renderable
 from ._base import EventDTO
 
-# LATER: move function implementation out of the port
 
-# NEXT: content: Renderable
+@dataclass
+class CliDTO[ContentT: Renderable | list[Renderable]](EventDTO):
+    content: ContentT
 
-
-class _CliRenderable(Protocol):
-    # NOTE: imitate definition in port.view
-    def __cli__(self) -> CliDTO: ...
-
-
-class _RichRenderable(Protocol):
-    # NOTE: imitate definition in port.view
-    def __rich__(self) -> _RichRenderable: ...
-
-
-class _RichConsolable(Protocol):
-    def __rich_console__(self): ...
-
-
-# IMPORTANT: check with printer and view
-type Renderable = _RichRenderable | _RichConsolable | _CliRenderable | str
-
-
-@dataclass(kw_only=True)
-class CliDTO(EventDTO):
     style: str = "cyan"
     indent: int = 0
     meta: dict[str, Any] = field(default_factory=dict)
 
-    _strict: ClassVar[bool] = (
-        False  # REMOVE: why ClassVar? maybe inside EventDTO?
-    )
-    _content_field: ClassVar[str] = "text"  # TODO: content:Renderable=""?
+    _strict: ClassVar[bool] = False
 
     def __cli__(self) -> Self:
         return self
@@ -58,8 +40,10 @@ class CliDTO(EventDTO):
 
         cleaned: dict[str, Any] = cls._clean_kwargs(kwargs)
         if target is not None:
-            cleaned[cls._content_field] = target
+            cleaned["content"] = target
 
+        # TASK: clean this up!!
+        # - remove redundancy and double check with _clean_kwargs
         try:
             instance: Self = cls(**cleaned)
             if instance.meta.get("unknown_args"):

@@ -1,5 +1,5 @@
 """
-Define the Structure of the Event and its Pipeline
+Define the Structure of the Event Data and Pipeline
 
 -
 """
@@ -20,6 +20,10 @@ from typing import TYPE_CHECKING, Any, Protocol
 from .name import EventName, EventPattern
 
 type BusRegistration = Callable[[EventBus], None]
+
+# TASK: EventDTO
+# - make this working with the DTO?
+# - especially the Bus
 
 
 @dataclass(frozen=True)

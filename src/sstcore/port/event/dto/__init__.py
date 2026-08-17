@@ -9,10 +9,8 @@ Provide Data Transfer Objects for the EventBus
 
 __all__: list[str] = [
     "EventDTO",
-    #
     "LogDTO",
     "CliDTO",
-    "Renderable",
     # cli derivatives
     "PanelDTO",
     "LineDTO",
@@ -22,7 +20,7 @@ __all__: list[str] = [
     "RuleDTO",
 ]
 from ._base import EventDTO
-from ._cli import CliDTO, Renderable
+from ._cli import CliDTO
 from ._cli_group import GroupDTO, LineDTO, PanelDTO, RuleDTO
 from ._cli_table import MarkdownDTO, TableDTO
 from ._log import LogDTO

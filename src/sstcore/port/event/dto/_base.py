@@ -12,7 +12,7 @@ class EventDTO:
     def __str__(self) -> str:
         return type(self).__name__
 
-    # FIX: dataclass? check kw_only
+    # TODO: check if this dataclass thing here is needed
     def __post_init__(self):
         self._validate()
 

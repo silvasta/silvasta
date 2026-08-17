@@ -5,12 +5,12 @@ Provide typed Data Transfer Objects for the EventBus
 
 """
 
-from dataclasses import dataclass, field
-from typing import Any
-
 __all__: list[str] = [
     "LogDTO",
 ]
+
+from dataclasses import dataclass, field
+from typing import Any
 
 from ._base import EventDTO
 

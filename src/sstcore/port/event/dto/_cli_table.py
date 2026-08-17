@@ -4,6 +4,8 @@ Provide typed Data Transfer Objects for the EventBus
 - CliDTO: Intended for __cli__ and processed by printer
 """
 
+# LATER: move function implementation out of the port
+
 __all__: list[str] = [
     "TableDTO",
     "MarkdownDTO",
@@ -15,12 +17,10 @@ from typing import Any, Self
 
 from ._cli import CliDTO
 
-# LATER: move function implementation out of the port
-
 
 @dataclass(kw_only=True)
 class MarkdownDTO(CliDTO):
-    text: str
+    # REMOVE: text: str
     header: int = 0
     style = "white"
 
@@ -35,6 +35,7 @@ class MarkdownDTO(CliDTO):
 class TableDTO(CliDTO):
     """Store Table data as lists of rows containing lists of values"""
 
+    # AI_QUESTION: how to define the content here? as the matrix?
     matrix: list[list[Any]]  # The Content [1:][1:]
 
     col_names: list[str] = field(default_factory=list)  # [0][1:] (header)
