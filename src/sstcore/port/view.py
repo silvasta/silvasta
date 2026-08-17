@@ -1,15 +1,18 @@
 """
-Define the Shape of Views and their Construction
+Define the Shape of Views and what they Represent.
 
 -
 """
 
 __all__: list[str] = [
-    "CliRenderable",
-    "Stringable",
-    "RichRenderable",
-    "ReprRenderable",
-    "LogSerializable",
+    "CliRenderable",  # __cli__
+    "LogSerializable",  # __log__
+    "Reprable",  # __repr__
+    "Stringable",  # __str__
+    "RichRenderable",  # __rich__
+    #
+    "FullView",
+    "Renderable",
 ]
 
 
@@ -24,8 +27,13 @@ class CliRenderable(Protocol):
 
 
 @runtime_checkable
-class RichRenderable(Protocol):
-    def __rich__(self) -> RichRenderable: ...
+class LogSerializable(Protocol):
+    def __log__(self) -> LogDTO: ...
+
+
+@runtime_checkable
+class Reprable(Protocol):
+    def __repr__(self) -> str: ...
 
 
 @runtime_checkable
@@ -34,21 +42,25 @@ class Stringable(Protocol):
 
 
 @runtime_checkable
-class ReprRenderable(Protocol):
-    def __repr__(self) -> str: ...
+class RichRenderable(Protocol):
+    def __rich__(self) -> RichRenderable: ...
 
 
 @runtime_checkable
-class LogSerializable(Protocol):
-    def __log__(self) -> LogDTO: ...
-
-
-class _FullView(
+class FullView(
     CliRenderable,
-    RichRenderable,
-    Stringable,
-    ReprRenderable,
     LogSerializable,
+    Reprable,
+    Stringable,
+    RichRenderable,
     Protocol,
 ):
-    """Experimental"""
+    """Type the view when all bricks are set"""
+
+
+type Renderable = RichRenderable | _RichConsolable | CliRenderable | str
+
+
+class _RichConsolable(Protocol):
+    def __rich_console__(self):
+        """Just extend the Renderable type"""

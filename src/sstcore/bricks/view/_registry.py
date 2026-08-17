@@ -23,7 +23,7 @@ from enum import Enum, auto
 from ...port.view import (
     CliRenderable,
     LogSerializable,
-    ReprRenderable,
+    Reprable,
     RichRenderable,
     Stringable,
 )
@@ -119,7 +119,7 @@ class Repr(Enum):
     OFF = auto()
 
     @property
-    def mixin(self) -> type[ReprRenderable]:
+    def mixin(self) -> type[Reprable]:
         match self:
             case self.BOX:
                 return mixin.repr.ReprMixin
