@@ -19,11 +19,12 @@ __all__: list[str] = [
 from enum import StrEnum
 from typing import Any
 
-from ..format.color import ColorBox
-from ..port.event.dto import Renderable
+from ..bricks.color.box import Colors
+from ..port.color import ColorBox
+from ..port.view import Renderable
 from ._base import SstError
 
-c: ColorBox = ColorBox.bold()
+c: ColorBox = Colors()
 
 
 class PathGuardError(SstError):

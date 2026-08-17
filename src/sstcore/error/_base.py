@@ -11,11 +11,12 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ..format.color import ColorBox
-from ..format.reflect import cls_name
-from ..port.event.dto import LogDTO, PanelDTO, Renderable
+from ..bricks.color.box import Colors
+from ..bricks.format import cls_name
+from ..port.event.dto import LogDTO, PanelDTO
+from ..port.view import Renderable
 
-c: ColorBox = ColorBox.bold()
+c: Colors = Colors()
 
 
 class SstError(Exception):
@@ -33,7 +34,7 @@ class SstError(Exception):
     @property
     def _short(self) -> str:
         """Set Optional Content for Header Line in CLI Panel"""
-        return ""
+        return ""  # WARN: hole for empty? maybe use None
 
     def __cli__(self) -> PanelDTO:
         """Provide Data Transfer Object for Command Line Interface"""
@@ -69,6 +70,7 @@ class SstError(Exception):
         return scroll_for_error_that_caused_this_error
 
     def summary(self, *_args, max_len=60, **_kwargs) -> str:
+        # NOTE: why kw/args?
         """Cut header line to ensure max length"""
         header_len: int = len(self.name) - 1 - len(self._short)
         if (to_long := max_len - header_len) < 0:
