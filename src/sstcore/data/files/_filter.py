@@ -17,6 +17,7 @@ from ...utils.registry import FilterRegistry
 
 
 class SstFileFilter[FileT: File](FileFilter[str, FileT]):
+    # FIX: FileFilter is Protocol!!!
     """Filter SstFiles by their keywords set"""
 
     def _create_target_set(self, target: FileT) -> set[str]:
