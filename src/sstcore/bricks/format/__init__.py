@@ -7,11 +7,12 @@ Preprocess the Input of preferably Leaf Packages (like exceptions)
 """  # TODO:
 
 __all__: list[str] = [
-    "reflect",
     "cls_name",
+    "reflect",
     #
     "convert",
 ]
 
 from . import _convert as convert
 from . import _reflect as reflect
+from ._reflect import cls_name
