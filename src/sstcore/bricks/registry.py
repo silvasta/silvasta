@@ -14,7 +14,7 @@ __all__: list[str] = [
     "DictRegistry",
 ]
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 from ..port.filter import Filter
@@ -68,7 +68,7 @@ class ListRegistry[ItemT]:
         return before - len(self)
 
 
-class FilterRegistry[ItemT]:
+class FilterRegistry[ItemT]:  # FIX: why ListRegistry??
     """Extend the ListRegistry with filtered items"""
 
     filter: Filter | None
@@ -113,10 +113,10 @@ class DictRegistry[ItemT, KeyT]:
 
     def add(self, target: Any, *, clear: bool = False, **kwargs) -> int:
         _key, _item = self._item_identifier(target, **kwargs)
-        if (exists := key in self.items) and not clear:
+        if _key in self.items and not clear:
             raise KeyError("Item already in Registry!", _item, _key)
         self.items[_key] = _item
-        return int(exists)
+        return 1  # amount of new items
 
     def get(self, key: KeyT) -> ItemT | None:
         return self.items.get(key)
@@ -130,3 +130,74 @@ class DictRegistry[ItemT, KeyT]:
 if TYPE_CHECKING:
     _registry: Registry = DictRegistry()
     _registry: DictingRegistry = DictRegistry()
+
+
+class TupleIndexRegistry[ItemT, IndexT]:
+    # FIX:
+    # FIX:
+    # FIX:
+    # FIX:
+    # FIX:
+    # FIX: or remove
+    def __init__(self, index: type[IndexT], items: tuple[ItemT, ...]) -> None:
+        if len(items) != len(index):
+            raise ValueError(f"need {len(index)} items, got {len(items)}")
+        self.index = index
+        self.items = items
+        self._by_name = {m.name.lower(): m for m in index}
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __contains__(self, target: Any) -> bool:
+        try:
+            self.resolve(target)
+            return True
+        except KeyError, ValueError:
+            return False
+
+    @property
+    def all(self) -> Iterable[ItemT]:
+        return self.items
+
+    def resolve(self, key: EnumT | int | str) -> EnumT:
+        if isinstance(key, self.index):
+            return key
+        if isinstance(key, int):
+            return self.index(key)
+        return self._by_name[str(key).lower()]
+
+    def get(self, key: EnumT | int | str) -> ItemT:
+        return self.items[self.resolve(key).value]
+
+
+class TupleRegistry[ItemT]:
+    """An immutable, high-speed contiguous array-backed registry."""
+
+    __slots__ = ("_items", "_identifiers")
+
+    def __init__(self, items: Iterable[ItemT], key_fn: Callable[[ItemT], Any]):
+        self._items: tuple[ItemT, ...] = tuple(items)
+        self._identifiers: tuple[Any, ...] = tuple(
+            key_fn(item) for item in self._items
+        )
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __contains__(self, key: Any) -> bool:
+        return key in self._identifiers
+
+    def __iter__(self) -> Iterator[ItemT]:
+        return iter(self._items)
+
+    @property
+    def all(self) -> tuple[ItemT, ...]:
+        return self._items
+
+    def get(self, key: Any) -> ItemT | None:
+        try:
+            idx = self._identifiers.index(key)
+            return self._items[idx]
+        except ValueError:
+            return None

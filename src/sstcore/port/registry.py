@@ -13,6 +13,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable, Iterable
+from enum import Enum
 from typing import Any, Protocol
 
 from .filter import Filter
@@ -63,7 +64,7 @@ class FunctionalRegistry[ItemT: Callable](Protocol):
 class FilteringRegistry[ItemT](Protocol):
     """Extend the Registry with filtered items"""
 
-    # NOTE: bacivally the same as port.filter.Filtering
+    # NOTE: bacically the same as port.filter.Filtering
     # - check when use and take maybe the other
 
     filter: Filter[Any, ItemT] | None
@@ -72,3 +73,31 @@ class FilteringRegistry[ItemT](Protocol):
         self, filter: Filter[Any, ItemT] | None = None
     ) -> list[ItemT]:
         """Provide items that pass the given (or internal) filter."""
+
+
+# TASK: final check:
+# - is this bulllshit or maybe useful for something??èè!!
+class IndexingRegistry[ItemT, IndexT: Index | tuple[Index, ...]](
+    Registry, Protocol
+):
+    """Establish the Registry with Enum and Tuple"""
+
+    items: tuple[ItemT, ...]
+    index: IndexT
+
+
+# TASK: final check:
+# - is this bulllshit or maybe useful for something??èè!!
+class Index(Enum):
+    """Define the Base Palette with 12 indexed Colors"""
+
+    def __str__(self) -> str:
+        return f"{self.name.capitalize()}"
+
+    def __repr__(self) -> str:
+        return f"{cls_name(self)}[{self.value}]::{self}"
+
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values) -> int:
+        """Return the index of the Color inside the Palette"""
+        return count

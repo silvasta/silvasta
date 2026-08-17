@@ -10,6 +10,7 @@ class ErrorPolicy(StrEnum):
 
 
 class Functorial[**P, R](Protocol):
+    # NEXT: decompose again, rebuild better or delete!!!
     @property
     def name(self) -> str: ...
     @property
