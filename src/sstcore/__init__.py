@@ -49,14 +49,6 @@ __all__: list[str] = [
     "ConfigManager",
     "SafeTyper",
     "PathGuard",
-    # IDEAS: for top level __init__
-    # - ColorBox? first finish the advanced apadter
-    # - FileRegistry? but then File is needed as well...
-    # - the port? as entire exported package?
-    #   from sstcore import port
-    #   ... port.config.Paths ...
-    #   ... port.event.Event ...
-    #   - unsure...
 ]
 
 from importlib.metadata import PackageNotFoundError, version
