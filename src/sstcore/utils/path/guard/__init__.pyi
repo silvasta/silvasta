@@ -1,7 +1,5 @@
 """Define the Public Interface of PathGuard"""
 
-from __future__ import annotations
-
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
