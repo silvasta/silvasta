@@ -3,7 +3,7 @@ Preprocess the Input of preferably Leaf Packages (like exceptions)
 
 - Decouple from Utils to prevent Dependency Issues at all costs
 
---- sstcore --- ---------------------- --- DependencyLevel[X]
+--- sstcore --- ---------------------------- --- DependencyLevel[X]
 """  # TODO:
 
 __all__: list[str] = [

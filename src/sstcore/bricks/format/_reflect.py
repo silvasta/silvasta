@@ -24,33 +24,55 @@ def cls_name(target: Any) -> str:
     return getattr(target, "__name__", type(target).__name__)
 
 
-def name(self: Any, attrs: list[str] | None = None) -> str:
-    """Check attribute list, provide match or default"""
-    for guess in (attrs or []) + [
-        "_inside_brackets",  # TODO:
-        "_name",
-        "name",
-    ]:
-        if name := getattr(self, guess, ""):
-            return name
-    return " 󰂒 "  # TODO:
-
-
-def text(self: Any, attrs: list[str] | None = None) -> str | None:
-    """Check if text in attribute list, provide match or None"""
-    for guess in (attrs or []) + ["_text", "text"]:
-        if name := getattr(self, guess, ""):
-            return name
-    return None
-
-
-def data(self: Any, exclude: set[str] | None = None) -> dict[str, Any]:
+def data(target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
     """Extract public attributes filtered by exclude"""
     return {
         k: v
-        for k, v in vars(self).items()
+        for k, v in vars(target).items()
         if not k.startswith("_") and k not in (exclude or set())
     }
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Find Attr
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+def dig_attr(target: Any, check_attrs: list[str], default=None) -> str | None:
+    for guess in check_attrs:
+        if detected := getattr(target, guess, ""):
+            return detected
+    else:
+        return default
+
+
+def name(target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
+    """Check attribute list, provide match or default"""
+    default_checks: list[str] = ["_inside_brackets", "_name", "name"]
+    check_attrs: list[str] = (attrs or []) + default_checks
+    if detected := dig_attr(target, check_attrs):
+        return detected
+    return default
+
+
+def text(target: Any, attrs: list[str] | None = None) -> str | None:
+    """Check if text in attribute list, provide match or None"""
+    check_attrs: list[str] = (attrs or []) + ["_text", "text"]
+    return dig_attr(target, check_attrs)
+
+
+def func(target: Any, attrs: list[str] | None = None, default="Func") -> str:
+    """Check attribute list, provide match or default"""
+    default_checks: list[str] = ["__qualname__", "__name__"]
+    check_attrs: list[str] = (attrs or []) + default_checks
+    if detected := dig_attr(target, check_attrs):
+        return detected
+    return default
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Invoke
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 def invoke(target: Any, method_name: str, *, strict: bool = False) -> Any:

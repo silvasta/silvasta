@@ -4,7 +4,9 @@ Build the Functor for the Exception handling
                                                        DependencyLevel[0]
 """
 
-from ...format.reflect import cls_name
+from sstcore.port.functor import ErrorPolicy
+
+from ...bricks.format import cls_name
 
 __all__: list[str] = [
     "ErrorHandler",
@@ -13,20 +15,23 @@ __all__: list[str] = [
 import inspect
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import NoReturn, Self
 
-from loguru import logger
+from ...bricks.func import SafeFunctor
 
 
-@dataclass(frozen=True)
-class ErrorHandler[Error: BaseException]:
+class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
     """Handle CLI Exception and Terminate"""
 
-    name: str
-    func: Callable[[Error], None]
-    exception_type: type[Error]
-    exit_code: int = 1
+    def __init__(self, exception_type: type[Error], **kwargs):
+        self.exception_type: type[Error] = exception_type
+        kwargs.setdefault("exit_code", 1)
+        kwargs.setdefault("error_policy", ErrorPolicy.LOG_AND_EXIT)
+        super().__init__(**kwargs)
+
+    @property
+    def _inside_brackets(self) -> str:
+        return cls_name(target=self.exception_type)
 
     @classmethod
     def from_func(
@@ -39,26 +44,13 @@ class ErrorHandler[Error: BaseException]:
         inferred_type: type[Error] = first_param.annotation
 
         return cls(
+            func=func,
             name=name or getattr(func, "__name__", "handler"),
             exception_type=inferred_type,
-            func=func,
             exit_code=exit_code,
         )
 
     def execute_safe(self, error: Error) -> NoReturn:
         """Executes the handler, then terminates the CLI safely."""
-        try:
-            self.func(error)
-            sys.exit(self.exit_code)  # Centralized exit!
-
-        except SystemExit:
-            raise  # Respect if the raw function explicitly calls sys.exit()
-
-        except Exception as handler_fail:
-            # IMPORTANT: inject emit:EmitFunc
-            logger.critical(f"{self} failed during formatting: {handler_fail}")
-            logger.error(f"Initial Error was: {error}")
-            sys.exit(2)
-
-    def __str__(self) -> str:
-        return f"ErrorHandler[{cls_name(self.exception_type)}]"
+        self.safe(error)
+        sys.exit(self.exit_code)

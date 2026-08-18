@@ -42,30 +42,21 @@ def example_pipeline():
         def early_method(self) -> None: ...
 
     if TYPE_CHECKING:
-        # STATICALLY: The type checker sees the standard class hierarchy.
-        class _EarlyStateMixin(EarlyMixin, BaseClass):
-            pass
+        # Show the type checker the desired class hierarchy
+        class _EarlyStateMixin(EarlyMixin, BaseClass): ...
     else:
-        # RUNTIME: We create an object that tricks the class builder.
-        class _GhostBaseEradicator:
-            def __mro_entries__(self, bases: tuple) -> tuple:
-                # By returning an empty tuple, we completely strip
-                # this placeholder from the resulting class's __bases__.
-                return ()
-
-        # Assign an instance of our eradicator to the ghost name
-        _EarlyStateMixin = _GhostBaseEradicator()
+        # Place instead an MRO-empty ghost object there
+        _EarlyStateMixin = _GhostBaseEradicator()  # noqa:N806
 
     class IntermediateMixin(_EarlyStateMixin):
         def late_method(self) -> None:
-            # IDE and type checker still see everything!
+            """IDE and type checker still see everything!"""
             self.base_method()
             self.early_method()
 
     if TYPE_CHECKING:
-
-        class _MediumStateMixin(EarlyMixin, BaseClass):
-            pass
+        # Show the type checker the next step
+        class _MediumStateMixin(EarlyMixin, BaseClass): ...
     else:  # Assign it directly! Do not use the `class` keyword.
         _MediumStateMixin = Ghost
 

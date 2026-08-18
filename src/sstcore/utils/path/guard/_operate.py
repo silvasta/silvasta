@@ -18,42 +18,83 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from loguru import logger
 
+from ....bricks.format import cls_name
+from ....bricks.func import SafeFunctor
 from ....error import PathGuardError, PathGuardReason
-from ....format.reflect import cls_name
+from ....port.functor import ErrorPolicy
 from ....port.pathguard import SyncMode
-from ...functor import Functor
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec
+
+
+def check_sync_mode(target: Path, mode: SyncMode) -> Path:
+    """Provide SyncMode Path that is valid to write or Raise"""
+
+    if not target.exists():
+        return _ensure_dir_logic(target.parent)
+
+    match mode:
+        case SyncMode.OVERRIDE:
+            return target
+
+        case SyncMode.INCREMENT:
+            return _get_unique_candidate(path=target, ensure_parent=True)
+
+        case SyncMode.IGNORE:
+            raise PathGuardError(PathGuardReason.SYNC, target=target)
+
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Transfer Operations
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-@dataclass
-class TransferStrategy(Functor[[Path, Path, SyncMode], Path]):
-    """Provide Skeleton for specific Function binding"""
+class TransferStrategy(SafeFunctor[[Path, Path], Path]):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("error_policy", ErrorPolicy.RE_RAISE)
+        super().__init__(**kwargs)
 
-    # logger.info(f"{self}: {relative_string(source, target)}")
+    check_sync_mode = staticmethod(check_sync_mode)
+
+    def synced(self, source: Path, target: Path, mode: SyncMode) -> Path:
+        """Apply SyncMode and Transfer Source to confirmed Target"""
+        return self(source, check_sync_mode(target, mode))
 
 
-def check_sync_mode(target: Path, mode: SyncMode) -> Path:
-    """Provide SyncMode Path that is valid to write or Raise"""
-    if not target.exists():
-        return _ensure_dir_logic(target.parent)
-    match mode:
-        case SyncMode.OVERRIDE:
-            return target
-        case SyncMode.INCREMENT:
-            return _get_unique_candidate(path=target, ensure_parent=True)
-        case SyncMode.IGNORE:
-            raise PathGuardError(PathGuardReason.SYNC, target=target)
+def _rotate(source: Path, target: Path) -> Path:
+    return source.rename(target)
+
+
+Rotate: TransferStrategy = TransferStrategy(
+    name="PathGuard - Rotate", func=_rotate
+)
+
+x = Rotate.name
+y = Rotate()
+
+
+def _copy(source: Path, target: Path) -> Path:
+    return source.copy(target)
+
+
+Copy = TransferStrategy(name="PathGuard - Copy", func=_copy)
+
+
+def _symlink(source: Path, target: Path) -> Path:
+    target.symlink_to(source)
+    return target
+
+
+Symlink = TransferStrategy(name="PathGuard - Simlink", func=_symlink)
+
+
+def _hardlink(source: Path, target: Path) -> Path:
+    target.hardlink_to(source)
+    return target
 
 
 def _handle_hardlink(error: Exception, source: Path, target: Path):
@@ -68,77 +109,11 @@ def _handle_hardlink(error: Exception, source: Path, target: Path):
         raise error
 
 
-def prepare(func: Callable[[Path, Path], Any]):
-    def run(source: Path, target: Path, mode: SyncMode):
-        transferable: Path = check_sync_mode(target, mode)
-        transfered: Path = func(source, transferable)
-        return transfered
-
-    return run
-
-
-Rotate: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
-    func=prepare(lambda source, target: source.move(target)),
-    name="PathGuard - Rotate",
-)
-
-Copy: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
-    func=prepare(lambda source, target: source.copy(target)),
-    name="PathGuard - Copy",
-)
-
-Symlink: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
-    func=prepare(lambda source, target: target.symlink_to(source)),
-    name="PathGuard - Simlink",
-)
-
-Hardlink: TransferStrategy[[Path, Path], Path] = TransferStrategy.from_func(
-    func=prepare(lambda source, target: target.hardlink_to(source)),
+Hardlink = TransferStrategy(
     name="PathGuard - Hardlink",
-    handle=_handle_hardlink,
+    func=_hardlink,
+    catch=_handle_hardlink,
 )
-
-
-def hardlink(
-    source: PathInput,
-    target: PathInput,
-    mode: SyncMode = SyncMode.INCREMENT,
-) -> Path:
-    """Create Hardlink at Target Pointing to Source"""
-
-    return Hardlink.safe(
-        source=PathSpec.ok(target=source, must_exists=True),
-        target=PathSpec.ok(target=target),
-        mode=mode,
-    )
-
-
-def symlink(
-    source: PathInput,
-    target: PathInput,
-    mode: SyncMode = SyncMode.INCREMENT,
-) -> Path:
-    """Create Absolute Symlink at Target Pointing to Source"""
-
-    return Symlink.safe(
-        source=PathSpec.ok(target=source, must_exists=True, resolve=True),
-        target=PathSpec.ok(target=target),
-        mode=mode,
-    )
-
-
-def copy(
-    source: PathInput,
-    target: PathInput,
-    mode: SyncMode = SyncMode.INCREMENT,
-) -> Path:
-    """Copy Source to Target"""
-
-    return Rotate.safe(
-        source=PathSpec.ok(target=source, must_exists=True),
-        target=PathSpec.ok(target=target),
-        mode=mode,
-    )
 
 
 def rotate(
@@ -152,7 +127,7 @@ def rotate(
     source_ok: Path = PathSpec.ok(target=source, must_exists=True)
     is_directory: bool = source_ok.is_dir()  # store for reset logic
 
-    transfered: Path = Rotate.safe(
+    transfered: Path = Rotate.synced(
         source=(source_ok), target=PathSpec.ok(target=target), mode=mode
     )
     if reset:
@@ -163,71 +138,109 @@ def rotate(
     return transfered
 
 
+def copy(
+    source: PathInput, target: PathInput, mode: SyncMode = SyncMode.INCREMENT
+) -> Path:
+    """Copy Source to Target"""
+
+    return Rotate.synced(
+        source=PathSpec.ok(target=source, must_exists=True),
+        target=PathSpec.ok(target=target),
+        mode=mode,
+    )
+
+
+def symlink(
+    source: PathInput, target: PathInput, mode: SyncMode = SyncMode.INCREMENT
+) -> Path:
+    """Create Absolute Symlink at Target Pointing to Source"""
+
+    return Symlink.synced(
+        source=PathSpec.ok(target=source, must_exists=True, resolve=True),
+        target=PathSpec.ok(target=target),
+        mode=mode,
+    )
+
+
+def hardlink(
+    source: PathInput, target: PathInput, mode: SyncMode = SyncMode.INCREMENT
+) -> Path:
+    """Create Hardlink at Target Pointing to Source"""
+
+    return Hardlink.synced(
+        source=PathSpec.ok(target=source, must_exists=True),
+        target=PathSpec.ok(target=target),
+        mode=mode,
+    )
+
+
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Delete Operations
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def _clear_file_or_folder(
-    target: PathInput,
-    clear_strategy: Callable[[Path], Any],
-) -> bool:
+class DeleteStrategy(SafeFunctor[[Path], bool]):
     """Execute Delete Operation in Safe Environment"""
 
-    # Extract Name of clear_strategy for log
-    _clear: str = getattr(clear_strategy, "__name__", "_clear")
-    clear: str = _clear.strip("_").capitalize()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    try:
-        target_ok: Path = PathSpec.ok(target, must_exists=True)
-        # IDEA: as soon as Functor handles more than 1 error...
-        clear_strategy(target_ok)
-        return True
+    def clear(self, target: PathInput) -> bool:  # LATER: pass parsed PathInput
+        try:
+            target_ok: Path = PathSpec.ok(target, must_exists=True)
+        except PathGuardError as error:
+            self.emit(f"Failed to parse input: {error}", error=error)
+        return self.safe(target_ok) is not None  # TEST:
 
-    except (PathGuardError, OSError) as error:
-        logger.warning(f"{cls_name(error)} for {clear}: {error} {target}")
+    def on_error(
+        self, error: PathGuardError | OSError, target: PathInput
+    ) -> bool:
+        logger.warning(f"{self.name}: {cls_name(error)}", error, target)
+        return False
 
-    return False
+
+def _remove(path: Path) -> None:
+    if path.is_dir():
+        import shutil  # LATER: upgrade with pathlib?
+
+        shutil.rmtree(path)
+    else:
+        path.unlink()
 
 
-def remove(target: Path | str) -> bool:
+def _trash(path: Path):
+    from send2trash import send2trash
+
+    send2trash(path)
+
+
+Remove = DeleteStrategy(
+    name="PathGuard - Remove",
+    func=_remove,
+)
+Trash = DeleteStrategy(
+    name="PathGuard - Trash",
+    func=_trash,
+)
+d = Remove.name
+
+
+def remove(target: PathInput) -> bool:
     """Remove file or folder at target location"""
-
-    def _remove(path: Path):
-        if path.is_dir():
-            import shutil  # LATER: upgrade with pathlib?
-
-            shutil.rmtree(path)
-        else:
-            path.unlink()
-
-    return _clear_file_or_folder(target, clear_strategy=_remove)
+    return Remove(target)
 
 
 def trash(target: PathInput) -> bool:
     """Move file or folder at target location to system trash"""
-
-    def _trash(path: Path):
-        from send2trash import send2trash
-
-        send2trash(path)
-
-    return _clear_file_or_folder(target, clear_strategy=_trash)
+    return Trash(target)
 
 
 def prune(
-    base_target: PathInput,
-    remaining: int = 5,
-    *,
-    use_trash: bool = False,
+    base_target: PathInput, remaining: int = 5, *, use_trash: bool = False
 ) -> list[Path]:
     """Prune Sequence back to specified number of Remaining Targets"""
-
-    if remaining >= len(sequence := find_sequence(base_target)):
+    if len(sequence := find_sequence(base_target)) <= remaining:
         return []
-
     paths_to_delete: list[Path] = sequence[remaining:]
-
     _prune: Callable[[Path], bool] = trash if use_trash else remove
-
     return [path for path in paths_to_delete if _prune(path)]

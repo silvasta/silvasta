@@ -17,7 +17,7 @@ class PathSpec(Protocol):
     def validate(self) -> Path: ...
 
 
-class SyncMode(StrEnum):  # TODO: unite with path.guard._operate
+class SyncMode(StrEnum):
     """Govern the Conflict Resolution Strategy for File Transfers"""
 
     INCREMENT = auto()

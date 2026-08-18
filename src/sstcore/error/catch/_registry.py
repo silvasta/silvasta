@@ -12,8 +12,8 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
+from ...bricks.registry import DictRegistry
 from ...port.registry import DictingRegistry, FunctionalRegistry
-from ...utils.registry import DictRegistry
 from ._handler import ErrorHandler
 
 type HandlerFunc = Callable[[BaseException], None]
