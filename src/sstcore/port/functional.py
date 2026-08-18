@@ -8,9 +8,16 @@ So far:
 
 """
 
+# REFACTOR: resolve or combine with Functor??
+
+import sys
 from typing import Protocol, runtime_checkable
 
 from .view import Stringable
+
+
+def python_is_latest() -> bool:  # MOVE: maybe to port.setup?
+    return sys.version_info >= (3, 15)
 
 
 @runtime_checkable

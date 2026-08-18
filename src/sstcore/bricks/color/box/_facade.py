@@ -12,8 +12,6 @@ from typing import TYPE_CHECKING, Self
 
 from loguru import logger
 
-from ....helper import cls_name
-from ....port.collections import Stringable
 from ....port.color import (
     Color,
     ColorBox,
@@ -21,6 +19,8 @@ from ....port.color import (
     ColorManager,
     Painter,
 )
+from ....port.view import Stringable
+from ...format import cls_name
 from .._mappings import SHORTCUTS
 from .._stack import ColorStack
 from ._manager import ColorHub
@@ -28,6 +28,19 @@ from ._manager import ColorHub
 
 class Colors:
     """Assembe and Orchestrate the Color Distribution"""
+
+    b: Painter
+    g: Painter
+    r: Painter
+    y: Painter
+    a: Painter
+    t: Painter
+    o: Painter
+    p: Painter
+    w: Painter
+    s: Painter
+    c: Painter
+    d: Painter  # REMOVE: when pyi fixed
 
     # NEXT: init strategy
 

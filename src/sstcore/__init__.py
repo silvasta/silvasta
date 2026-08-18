@@ -34,13 +34,6 @@ Strict application is desired without any violations.
 
 """
 
-# AI_QUESTION: the current .cli import with SafeTyper could already causes issues,
-# it triggers like other imports that might not be needed or installed, like:
-# [project.optional-dependencies]
-# cli = ["typer", "textual"]
-# all = ["sstcore-py[cli]"]
-# - where typer and textual should be explicitely optional
-
 __all__: list[str] = [
     "__version__",
     "System",
@@ -49,19 +42,45 @@ __all__: list[str] = [
     "ConfigManager",
     "SafeTyper",
     "PathGuard",
+    # IDEA: "port", ???
 ]
+
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .cli import SafeTyper
-from .config import ConfigManager
-from .system import System
-from .system.event import Emitter
-from .utils.path.guard import PathGuard
-from .utils.print import printer
+from .port.functional import python_is_latest
 
-try:
-    # Show pyproject.toml package name
+if python_is_latest():
+    lazy from .cli import SafeTyper
+    lazy from .config import ConfigManager
+    lazy from .system import System
+    lazy from .system.event import Emitter
+    lazy from .utils.path.guard import PathGuard
+    lazy from .utils.print import printer
+
+else:
+
+    def __getattr__(name: str):
+        if name in (
+            lazy_map := {
+                "SafeTyper": ".cli",
+                "ConfigManager": ".config",
+                "System": ".system",
+                "Emitter": ".system.event",
+                "PathGuard": ".utils.path.guard",
+                "printer": ".utils.print",
+            }
+        ):
+            from importlib import import_module
+
+            return getattr(import_module(lazy_map[name], __name__), name)
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    def __dir__() -> list[str]:
+        return __all__
+
+
+try:  # Show pyproject.toml package name
     __version__: str = version(distribution_name="sstcore")
 except PackageNotFoundError:
     __version__ = "unknown"

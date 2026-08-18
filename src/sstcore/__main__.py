@@ -10,45 +10,71 @@ Useful
 
 """
 
-import importlib.util
-import sys
+from importlib.util import find_spec
 
-from rich.markup import escape
+from .port.functional import python_is_latest
 
-from . import printer
+#  AI: the python_is_latest is that simple:
+#  def python_is_latest() -> bool:
+#     return sys.version_info >= (3, 15)
+
+if python_is_latest():
+    lazy from rich.markup import escape  # ruff: noqa: UP036
+
+    lazy from . import printer
+    lazy from .bricks.color.box import Colors
+    lazy from .cli import tools
+
+else:
+
+    def __getattr__(name: str):
+        if name in lazy_map:
+            from importlib import import_module
+
+            return getattr(import_module(lazy_map[name], __name__), name)
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def main() -> None:
-    check_cli_installed()
-    from .cli import tools
+    if cli_installed():
+        tools()
+    else:
+        install_instructions()
 
-    tools()
+
+def cli_installed() -> bool:
+    # MOVE: maybe to python_is_latest? list[str] input for all checks
+
+    def _installed(package: str):
+        # MOVE: maybe to python_is_latest? str input for 1 check
+        return find_spec(name=package) is not None
+
+    return all(_installed(package) for package in ["typer", "textual"])
 
 
-def check_cli_installed():
-    """Find required packages or give instructions and quit"""
+def install_instructions():
+    sst_cli: str = escape("'sstcore[cli]'")
+    c = Colors()
+    error: str = c.r("Problem with Installation")
+    uv: str = c.b(f"uv add {sst_cli}")
+    pip: str = c.b(f"pip install {sst_cli}")
 
-    cli_is_installed: bool = (
-        importlib.util.find_spec("typer") is not None
-        and importlib.util.find_spec("textual") is not None
-    )
+    # scroll
+    text: list[str] = [
+        f"{error} Missing CLI dependency...",
+        f"fix with {uv} {c.g('or')} {pip}",
+    ]
+    printer.danger(text)
 
-    if not cli_is_installed:
-        # paint
-        error: str = printer.color_box.red("Problem with Installation")
-        sst_cli = escape("'sstcore[cli]'")
-        uv: str = printer.color_box.cyan(f"uv add {sst_cli}")
-        or_: str = printer.color_box.green("or")
-        pip: str = printer.color_box.cyan(f"pip install {sst_cli}")
 
-        # scroll
-        text: list[str] = [
-            f"{error} Missing CLI dependency...",
-            f"fix with {uv} {or_} {pip}",
-        ]
-        printer.danger(text)
-
-        sys.exit(1)
+lazy_map = {
+    "SafeTyper": ".cli",
+    "ConfigManager": ".config",
+    "System": ".system",
+    "Emitter": ".system.event",
+    "PathGuard": ".utils.path.guard",
+    "printer": ".utils.print",
+}
 
 
 if __name__ == "__main__":
