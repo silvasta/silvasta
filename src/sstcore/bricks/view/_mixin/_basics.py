@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from ....format.reflect import data as base_data
+from ....bricks.format import reflect
 from ....port.event.dto import CliDTO, LogDTO
 from ....port.view import RichRenderable
 
@@ -45,4 +45,4 @@ def data(self: Any, exclude: set[str] | None = None) -> dict[str, Any]:
     if isinstance(self, BaseModel):
         return self.model_dump(exclude=exclude)
 
-    return base_data(self, exclude)
+    return reflect.data(self, exclude)

@@ -11,7 +11,7 @@ __all__: list[str] = [
     "ModuleNameMixin",
 ]
 
-from ....format.reflect import cls_name, name
+from ....bricks.format import cls_name, reflect
 
 
 class SimpleNameMixin:
@@ -31,7 +31,7 @@ class NameMixin:
     """
 
     def __str__(self) -> str:
-        return f"{cls_name(self)}[{name(self)}]"
+        return f"{cls_name(self)}[{reflect.name(self)}]"
 
 
 class ModuleNameMixin:
