@@ -48,37 +48,12 @@ __all__: list[str] = [
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .port.functional import python_is_latest
-
-if python_is_latest():
-    lazy from .cli import SafeTyper
-    lazy from .config import ConfigManager
-    lazy from .system import System
-    lazy from .system.event import Emitter
-    lazy from .utils.path.guard import PathGuard
-    lazy from .utils.print import printer
-
-else:
-
-    def __getattr__(name: str):
-        if name in (
-            lazy_map := {
-                "SafeTyper": ".cli",
-                "ConfigManager": ".config",
-                "System": ".system",
-                "Emitter": ".system.event",
-                "PathGuard": ".utils.path.guard",
-                "printer": ".utils.print",
-            }
-        ):
-            from importlib import import_module
-
-            return getattr(import_module(lazy_map[name], __name__), name)
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-    def __dir__() -> list[str]:
-        return __all__
-
+from .cli import SafeTyper
+from .config import ConfigManager
+from .system import System
+from .system.event import Emitter
+from .utils.path.guard import PathGuard
+from .utils.print import printer
 
 try:  # Show pyproject.toml package name
     __version__: str = version(distribution_name="sstcore")

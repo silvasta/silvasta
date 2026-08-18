@@ -12,27 +12,11 @@ Useful
 
 from importlib.util import find_spec
 
-from .port.functional import python_is_latest
+from rich.markup import escape
 
-#  AI: the python_is_latest is that simple:
-#  def python_is_latest() -> bool:
-#     return sys.version_info >= (3, 15)
-
-if python_is_latest():
-    lazy from rich.markup import escape  # ruff: noqa: UP036
-
-    lazy from . import printer
-    lazy from .bricks.color.box import Colors
-    lazy from .cli import tools
-
-else:
-
-    def __getattr__(name: str):
-        if name in lazy_map:
-            from importlib import import_module
-
-            return getattr(import_module(lazy_map[name], __name__), name)
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+from . import printer
+from .bricks.color.box import Colors
+from .cli import tools
 
 
 def main() -> None:
@@ -65,16 +49,6 @@ def install_instructions():
         f"fix with {uv} {c.g('or')} {pip}",
     ]
     printer.danger(text)
-
-
-lazy_map = {
-    "SafeTyper": ".cli",
-    "ConfigManager": ".config",
-    "System": ".system",
-    "Emitter": ".system.event",
-    "PathGuard": ".utils.path.guard",
-    "printer": ".utils.print",
-}
 
 
 if __name__ == "__main__":
