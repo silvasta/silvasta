@@ -11,10 +11,6 @@ WARN:
                                                        DependencyLevel[4]
 """
 
-from typing import Any
-
-from sstcore.port.functional import python_is_latest
-
 __all__: list[str] = [
     # Fetch
     "system",
@@ -38,8 +34,10 @@ __all__: list[str] = [
     "change_all_globals",
 ]
 
-from ...config import ConfigManager
+from typing import Any
+
 from .._core import System
+from ..config import ConfigManager
 from ..event import EventBus
 from ._state import _GlobalState
 

@@ -19,10 +19,10 @@ from functools import cached_property
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
-from ..format.name import ParsedName
-from ..port.config import Names as Names_
-from ..port.view import Stringable
-from ..utils import day_count
+from ...brick.name import ParsedName
+from ...brick.time import day_count
+from ...port.config import Names as Names_
+from ...port.view import Stringable
 
 
 class SstNames(BaseSettings):

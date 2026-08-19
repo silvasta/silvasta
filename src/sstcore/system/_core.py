@@ -5,7 +5,7 @@ Load and combine all Components in one System.
 
 - Inject custom behaviour with System.bootstrap(kwargs)
 - Wire and provide global access
-                                                       DependencyLevel[2]
+                                                       DependencyLevel[2]??
 """
 
 __all__: list = [
@@ -15,15 +15,15 @@ __all__: list = [
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 
-from ..config import ConfigManager, HomeSetup
 from ..port.config import Config
 from ..port.event import EventBus as EventBus
 from ..port.event.name import CoreEvent, EventName
 from ..port.printer import Printer
 from ..port.system import BusLoader, CliSystem, ConfigLoader, SstSystem
 from ..port.system import System as System_
-from ..utils.log import setup_minimal_logging
-from ..utils.print import printer as global_printer
+from ..util.log import setup_minimal_logging
+from ..util.print import printer as global_printer
+from .config import ConfigManager, HomeSetup
 from .event import Emitter
 from .event import EventBus as Bus
 

@@ -20,9 +20,9 @@ from loguru import logger
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
-from ..port.config import Settings
-from ..utils.log import LogParam
-from ..utils.time import nice_duration
+from ...brick.time import nice_duration
+from ...port.config import Settings
+from ...util.log import LogParam
 from ._defaults import SstDefaults
 from ._names import SstNames
 

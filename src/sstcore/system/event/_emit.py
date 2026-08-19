@@ -8,38 +8,16 @@ Provide ergonomic facade on top of the EventBus
 
 __all__: list[str] = [
     "Emitter",
-    "LogEmitter",
-    "ViewEmitter",
-    "EmitFunctor",
 ]
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from ...brick.view import Repr, Str, view
 from ...port.event import EventBus
 from ...port.event._emit import Emitter as Emitter_
 from ...port.event.name import CliEvent, EventName
-from ...utils.print.core import EmitterCore
-from ...utils.print.mixin import (
-    BoxMixin,
-    HeaderMixin,
-    LineMixin,
-    PanelMixin,
-    TableMixin,
-)
-from ...utils.view import Repr, Str, view
-
-
-# TASK: this as utils, inside system.utils.emit?
-class _CliEmitter(  # TESTING: ideas for printer "inversion"
-    HeaderMixin,
-    BoxMixin,
-    LineMixin,
-    TableMixin,
-    PanelMixin,
-    EmitterCore,
-):
-    """Wait for final composition in a few days or weeks"""
+from ...util.emit import LogEmitter, ViewEmitter
 
 
 @dataclass(frozen=True)

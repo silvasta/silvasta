@@ -29,9 +29,9 @@ from typing import TYPE_CHECKING, Self
 
 from loguru import logger
 
-from ..port.config import Homes
-from ..port.config import ProjectInfo as ProjectInfo_
-from ..utils.path import HomeDirs, pyproject_name
+from ...port.config import Homes
+from ...port.config import ProjectInfo as ProjectInfo_
+from ...util.path import HomeDirs, pyproject_name
 
 
 class HomeSetup(StrEnum):

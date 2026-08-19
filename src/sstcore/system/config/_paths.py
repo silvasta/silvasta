@@ -13,8 +13,8 @@ __all__: list[str] = [
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ..port.config import Defaults, Homes, Names, Paths
-from ..utils import PathGuard
+from ...port.config import Defaults, Homes, Names, Paths
+from ...util.path.guard import PathGuard
 from ._defaults import SstDefaults
 from ._homes import HomeSetup, SstHomes
 from ._names import SstNames

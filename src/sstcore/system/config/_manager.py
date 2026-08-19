@@ -25,10 +25,10 @@ from typing import TYPE_CHECKING, Self
 from dotenv import load_dotenv
 from loguru import logger
 
-from ..format.reflect import cls_name
-from ..port.config import Config, Defaults, Homes, Log, Names, Paths, Settings
-from ..utils import day_count
-from ..utils.log import setup_logging
+from ...brick.format import cls_name
+from ...brick.time import day_count
+from ...port.config import Config, Defaults, Homes, Log, Names, Paths, Settings
+from ...util.log import setup_logging
 from ._homes import HomeSetup, ProjectInfo, SstHomes
 from ._paths import SstPaths
 from ._settings import SstSettings

@@ -6,7 +6,6 @@ Provide Configuration Pipeline with global access and json support
   - Paths: assemble and ensure filesystem locations
   - Defaults: provide default values and parameter
   - Names: provide static and dynamic parsed names
-                                                       DependencyLevel[4]
 """
 
 __all__: list = [

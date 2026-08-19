@@ -16,11 +16,11 @@ __all__: list[str] = [
 
 from pathlib import Path
 
-from ..config import ConfigManager, HomeSetup, SstPaths, SstSettings
 from ..port.event import BusRegistration
 from ..port.printer import Printer
 from ..port.system import BusLoader, ConfigLoader, SystemLoader
 from ._core import System
+from .config import ConfigManager, HomeSetup, SstPaths, SstSettings
 from .event import EventBus
 
 

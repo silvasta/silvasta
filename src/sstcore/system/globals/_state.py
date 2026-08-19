@@ -10,9 +10,9 @@ from typing import Any
 
 from loguru import logger
 
-from ...config import ConfigManager
 from .._core import System
 from ..boot import sst_bus_loader, sst_config_loader, sst_system_loader
+from ..config import ConfigManager
 from ..event import EventBus
 
 # LATER: use bus and emit if avaliable?

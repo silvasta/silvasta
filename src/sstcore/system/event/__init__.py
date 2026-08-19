@@ -11,8 +11,9 @@ __all__: list[str] = [
     #
     "Emitter",
     "EmitFunctor",
+    "create_event_bus",
 ]
 
 
 from ._bus import EventBus, EventHandler
-from ._emit import EmitFunctor, Emitter
+from ._emit import Emitter

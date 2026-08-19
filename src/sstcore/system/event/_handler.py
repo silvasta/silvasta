@@ -25,8 +25,8 @@ from loguru import logger
 
 from ...port.event import Event, EventBus
 from ...port.event import EventHandler as EventHandler_
-from ...utils.log import handle_log_event
-from ...utils.print.event_handler import handle_cli_event
+from ...util.log import handle_log_event
+from ...util.print import handle_cli_event
 
 
 @dataclass(frozen=True)

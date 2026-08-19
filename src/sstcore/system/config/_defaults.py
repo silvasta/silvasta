@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
-from ..port.config import Defaults
+from ...port.config import Defaults
 
 
 class SstDefaults(BaseSettings):
