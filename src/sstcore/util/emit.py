@@ -1,8 +1,23 @@
+"""
+Provide ergonomic facade on top of the EventBus
+
+- Mirror common printer + logger patterns
+- Provide local functor factories
+                                                       DependencyLevel[X]
+"""
+
+__all__: list[str] = [
+    "Emitter",
+    "LogEmitter",
+    "ViewEmitter",
+]
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from sstcore.port.printer import Protocol
 
+from ..brick.view import Repr, Str, view
 from ..port.event import LogDTO
 from ..port.event._emit import (
     Emit,
@@ -13,7 +28,6 @@ from ..port.event._emit import (
 )
 from ..port.event._emit import Emitter as Emitter_
 from ..port.event.name import CliEvent, EventName
-from .view import Repr, Str, view
 
 
 @view(str=Str.SHORT, repr=Repr.BOX)

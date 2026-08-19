@@ -24,15 +24,11 @@ __all__: list = [
     "printer",
     "SchemaName",
     "SimpleTreeNode",
-    "day_count",
-    "view",
 ]
 
 
 from .parse import SchemaName
 from .path.guard import PathGuard
 from .print import Printer, PrinterFactory, printer
-from .scanner import FolderScanner
-from .time import day_count
+from .scan import FolderScanner
 from .tree import SimpleTreeNode
-from .view import view
