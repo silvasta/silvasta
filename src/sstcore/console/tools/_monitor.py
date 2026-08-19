@@ -8,10 +8,10 @@ Read from end of logfile and Display new entries
 import sys
 from pathlib import Path
 
-from ...format.color import colorize
+from ...brick.color import colorize
 from ...system.globals import config
-from ...utils import PathGuard, printer
-from ...utils.parse import LogMatcher
+from ...util import PathGuard, printer
+from ...util.parse import LogMatcher
 
 
 def log_monitor(log_path: Path | None = None, sleep=0.1):

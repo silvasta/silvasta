@@ -12,14 +12,14 @@ from typer import Context, Option
 from ...port.config import Config, Paths
 from ...port.event import LogDTO
 from ...system import System
-from ...tui import LogMonitorApp
-from ...tui.selector import TreeSelectorApp
-from ...utils.filter import FilterBox, ProjectFilter
-from ...utils.path import any_root
-from ...utils.print import printer
-from ...utils.scanner import ScanMode, SummaryFileMachine
+from ...util.filter import FilterBox, ProjectFilter
+from ...util.path import any_root
+from ...util.print import printer
+from ...util.scan import ScanMode, SummaryFileMachine
 from .. import _args as args
 from .._engine import SafeTyper
+from ..select import TreeSelectorApp
+from ..tui import LogMonitorApp
 from ._monitor import log_monitor
 from ._scanner import folder_scanner
 

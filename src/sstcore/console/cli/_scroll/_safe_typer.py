@@ -21,17 +21,19 @@ from typing import Any, Literal
 
 from rich.box import Box
 
-from ...config import ConfigManager
-from ...format.color import ColorBox, colorize
-from ...system.boot import ConfigLoader
-from ...utils import PathGuard, printer
-from ...utils.log import fetch_log_result
-from ...utils.print import boxes
-from ._option import PrintOption, SelectMode
+from ....brick.color import colorize
+from ....brick.color.box import Colors
+from ....port.color import ColorBox
+from ....system.boot import ConfigLoader
+from ....system.config import ConfigManager
+from ....util import PathGuard, printer
+from ....util.log import fetch_log_result
+from ....util.print import boxes
+from .._TODO_print_option import PrintOption, SelectMode
 
 # TASK: system and bus!
 
-c: ColorBox = ColorBox.bold()
+c: ColorBox = Colors()
 
 toggle: dict[str, SelectMode] = {
     # TODO: find better solution!
@@ -209,7 +211,7 @@ def sub_callback(name: str):
 type StatusSignature = Callable[
     [object, list[type[BaseException]], bool], None
 ]
-type ExceptionFormatter = Callable[type[BaseException], str]
+type ExceptionFormatter = Callable[[type[BaseException]], str]
 
 
 class SetupStatus(PrintOption[StatusSignature]):

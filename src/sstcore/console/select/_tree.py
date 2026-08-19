@@ -18,8 +18,8 @@ from textual.message import Message
 from textual.widgets import Footer, Header, Tree
 from textual.widgets.tree import TreeNode
 
-from ...utils.print import printer
-from ...utils.tree import SimpleTreeNode
+from ...util.print import printer
+from ...util.tree import SimpleTreeNode
 
 # TODO: check folder(edges != leaf) and how they are counted
 

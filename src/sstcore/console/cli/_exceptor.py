@@ -16,10 +16,11 @@ from typing import Any, Self
 
 from sstcore import printer
 
-from ..utils.color import ColorBox
-from ._engine import SafeTyper
+from ...brick.color.box import Colors
+from ...port.color import ColorBox
+from .._engine import SafeTyper  # WARN: DEPENDENCY ISSUE
 
-c: ColorBox = ColorBox.bold()
+c: ColorBox = Colors()
 
 
 type ErrorHandler = Callable[[Any], None]

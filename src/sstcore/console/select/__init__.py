@@ -1,7 +1,8 @@
 """
-Provide graphical terminal selector interface
+Launch interactive selectors in TUI or directly from CLI
 
--
+- selector provides presets
+
 """
 
 __all__: list = [
