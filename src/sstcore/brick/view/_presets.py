@@ -17,17 +17,15 @@ from ._registry import Cli, Log, Repr, Rich, Str
 type ViewArg = Cli | Str | Rich | Repr | Log
 
 
+class ViewError(CoreError): ...
+
+
 class _View:
     """Distribute ViewBuilder with Presets"""
 
     def __call__(
         self,
         *args: ViewArg,
-        # cli: Cli | None = None,
-        # str: Str | None = None,  # Note: shadows built-in 'str'
-        # rich: Rich | None = None,
-        # repr: Repr | None = None,
-        # log: Log | None = None,
         cli: Cli = Cli.OFF,
         str: Str = Str.OFF,
         rich: Rich = Rich.OFF,
@@ -36,11 +34,11 @@ class _View:
     ) -> ViewBuilder:
 
         kwargs = {
-            "cli": cli if cli is not None else Cli.OFF,
-            "str": str if str is not None else Str.OFF,
-            "rich": rich if rich is not None else Rich.OFF,
-            "repr": repr if repr is not None else Repr.OFF,
-            "log": log if log is not None else Log.OFF,
+            "cli": cli,
+            "str": str,
+            "rich": rich,
+            "repr": repr,
+            "log": log,
         }
 
         # 2. Process positional args dynamically based on their type
@@ -65,7 +63,7 @@ class _View:
 
     pydantic = ViewBuilder(
         cli=Cli.TABLE,
-        str=Str.NAME,
+        string=Str.NAME,
         rich=Rich.MODULE,
         repr=Repr.OFF,
         log=Log.DATA,
@@ -73,7 +71,7 @@ class _View:
 
     printer = ViewBuilder(
         cli=Cli.HEADER,
-        str=Str.MODULE,
+        string=Str.MODULE,
         rich=Rich.SHORT,
         repr=Repr.DEBUG,
         log=Log.DEBUG,
@@ -81,14 +79,14 @@ class _View:
 
     safe_typer = ViewBuilder(
         cli=Cli.PANEL,
-        str=Str.SHORT,
+        string=Str.SHORT,
         rich=Rich.MODULE,
         repr=Repr.DEBUG,
         log=Log.DEBUG,
     )
     functor = ViewBuilder(
         cli=Cli.PANEL,
-        str=Str.NAME,
+        string=Str.NAME,
         rich=Rich.MODULE,
         log=Log.DEBUG,
         repr=Repr.DATA,

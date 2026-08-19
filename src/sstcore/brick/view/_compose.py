@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
-from ...port.builder._builder import Builder, Injector, TypedBuilder
+from ...port.builder import Builder, Injector
 from ._mixin import MixinSentinel
 from ._registry import Cli, Log, Repr, Rich, Str
 
@@ -62,11 +62,15 @@ class ViewBuilder[MixClass: type]:
     ) -> MixClass:
         """Assemble selected Mixins to ViewBase"""
         cls_name: str = self.mix_name(name) if format_name else name or "View"
-        cls: type = type(cls_name, self.mixins, extras or {})
-        return cast(MixClass, cls)
+        new_cls: type = type(cls_name, self.mixins, extras or {})
+        return cast(typ=MixClass, val=new_cls)
 
     def compose(self, *mixins: type) -> Self:
         raise NotImplementedError
+
+    ## -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    ## Injector
+    ## -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
     def inject[Class: type](self, cls: Class) -> Class:
         """Compose selected Mixins and Inject to new Subclass of Target"""
@@ -93,12 +97,10 @@ class ViewBuilder[MixClass: type]:
     def plus(self, *args: type):
         pass
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Execute
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
     @overload
     def __call__[Class: type](self, cls: Class, /) -> Class: ...
+
+    # AI_QUESTION: how to use the Injector(Protocol) to avoid the  overload here?
 
     @overload
     def __call__(self, /) -> type: ...
@@ -118,6 +120,3 @@ if TYPE_CHECKING:
     #
     _instance_check: Injector = ViewBuilder()
     _class_check: type[Injector] = ViewBuilder
-    #
-    _instance_check: TypedBuilder = ViewBuilder()
-    _class_check: type[TypedBuilder] = ViewBuilder
