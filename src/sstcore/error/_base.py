@@ -12,14 +12,15 @@ __all__: list[str] = [
 from typing import Any
 
 from ..bricks.color.box import Colors
-from ..bricks.format import cls_name
+from ..bricks.view._raise import Error
 from ..port.event.dto import LogDTO, PanelDTO
 from ..port.view import Renderable
 
 c: Colors = Colors()
 
 
-class SstError(Exception):
+# IMPORTANT: check intermediate Error steps
+class SstError(Error):
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -27,14 +28,10 @@ class SstError(Exception):
         self.kwargs: dict = kwargs
         super().__init__(*args)
 
-    def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
-        """Customize Lines displayed inside CLI Panel"""
-        return lines
+    # --- Format
+    # IDEA: this in View??
 
-    @property
-    def _short(self) -> str:
-        """Set Optional Content for Header Line in CLI Panel"""
-        return ""  # WARN: hole for empty? maybe use None
+    # --- DTO
 
     def __cli__(self) -> PanelDTO:
         """Provide Data Transfer Object for Command Line Interface"""
@@ -59,8 +56,18 @@ class SstError(Exception):
             title_align="right",
         )
 
+    def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
+        """Customize Lines displayed inside CLI Panel"""
+        return lines
+
+    @property
+    def _short(self) -> str:
+        """Set Optional Content for Header Line in CLI Panel"""
+        return ""  # WARN: hole for empty? maybe use None
+
     @property
     def _causing_error(self) -> list[Renderable]:
+        """Panel Lines"""
         scroll_for_error_that_caused_this_error: list[Renderable] = []
         if reraised_error := (self.__cause__ or self.__context__):
             scroll_for_error_that_caused_this_error += [
@@ -80,10 +87,7 @@ class SstError(Exception):
             return f"{self._short[: (to_long - 3)]}..."
         return self._short
 
-    @property
-    def name(self) -> str:
-        """Provide ClassName ( __str__ already used for message builtins.Exception"""
-        return cls_name(target=self)
+    # --- View
 
     def __rich__(self) -> str:
         """Provide colorized Name"""
