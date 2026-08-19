@@ -13,6 +13,8 @@ WARN:
 
 from typing import Any
 
+from sstcore.port.functional import python_is_latest
+
 __all__: list[str] = [
     # Fetch
     "system",

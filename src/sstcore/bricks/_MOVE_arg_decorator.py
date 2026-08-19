@@ -98,4 +98,4 @@ def _idea2_cast_color_args(func: Callable) -> Callable:
                 ) from error
         return func(*bound.args, **bound.kwargs)
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper
