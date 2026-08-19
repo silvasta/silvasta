@@ -43,14 +43,15 @@ __all__: list[str] = [
 from enum import auto
 from typing import NamedTuple, Protocol, runtime_checkable
 
-from .functional import Colorizing, Stringable
+from .callable import Colorizing, Stringable
 from .registry import Index, IndexingRegistry
-
-type ColorIdentifier = int | str | Color
 
 
 class GridIndex(Index):
     """Provide unique Base for Grid-Axes and Grid-Registries"""
+
+
+type ColorIdentifier = int | str | Color
 
 
 class Color(GridIndex):

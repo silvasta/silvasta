@@ -4,7 +4,7 @@ Create the internal turnstile that controls all colors
 -
 """
 
-from colorprint.format.color._mappings import SHORTCUTS
+from .._mappings import SHORTCUTS
 
 __all__: list[str] = [
     "ColorHub",
@@ -21,7 +21,7 @@ from ....port.color import (
     Painter,
     Palette,
 )
-from ._factory import PaintMill
+from ._paint import PaintMill
 
 StripLoader = Callable[
     [Adapter, Palette | str | None], Mapping[Color, Callable[[object], str]]
