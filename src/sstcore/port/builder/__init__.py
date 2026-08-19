@@ -21,17 +21,12 @@ Strategy:
 """
 
 __all__: list[str] = [
+    "Builder",
+    "Constructor",
+    "Injector",
+    #
     "Ghost",
 ]
 
+from ._core import Builder, Constructor, Injector
 from ._ghost import Ghost
-
-# NEXT: name brainstorming:
-# verbs
-# - assemble
-# - build
-# - compose
-# - inject
-# - construct
-# nouns
-# - factory

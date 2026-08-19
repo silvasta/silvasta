@@ -1,5 +1,5 @@
 """
-Define the Shape and Naming of the Builders
+Define a Blueprint for the Builders
 
 Implementations
 - Printer: outdated status
@@ -8,7 +8,14 @@ Implementations
 
 """
 
-from typing import Any, Protocol, Self, cast, overload
+__all__: list[str] = [
+    "Builder",
+    "Constructor",
+    "Injector",
+]
+
+
+from typing import Any, Protocol, Self, overload
 
 
 class Builder[Mix: type](Protocol):
@@ -54,43 +61,3 @@ class Injector[Mix: type, TargetClass: type](Builder[Mix], Protocol):
 
     def __call__(self, cls: type | None = None, /) -> type:
         """Inject composed mixins to Decorated target or Build class"""
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-###  Testing
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
-class TypedBuilder[TargetType](Protocol):
-    """Use (Mixin,Protocol) for cls:typing"""
-
-    @property
-    def types(self) -> tuple[type, ...]:
-        """Provide all Protocols of selected Mixins"""
-
-    def typing(self, type_name: str) -> TargetType:
-        """Provide Type of Mixed/Merged/Melted fusioned Protocols"""
-
-
-class _TestTypedBuilder:
-    """Use (Mixin,Protocol) for cls:typing"""
-
-    slots: list[tuple[type, type]]  # TEST: [Mixin,Protocol]
-
-    @property
-    def mixins(self) -> tuple[type, ...]:
-        return tuple(slot[0] for slot in self.slots)
-
-    @property
-    def types(self) -> tuple[type, ...]:
-        return tuple(slot[1] for slot in self.slots)
-
-    def typing(self, type_name: str) -> type:
-        """Build the type from Protocols"""
-        return type(type_name, self.types, {})
-
-    def build(self, name: str = "", extras: dict | None = None) -> type:
-        """Sketch of an Idea"""
-        target_typ: type = self.typing(f"{name}Type")
-        target_cls: type = type(name, self.mixins, extras or {})
-        return cast(target_typ, target_cls)
