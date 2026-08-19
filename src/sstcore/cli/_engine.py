@@ -11,11 +11,11 @@ from pathlib import Path
 import typer
 from loguru import logger
 
+from ..bricks.view import view
 from ..config import HomeSetup
-from ..error.handler import ErrorRegistry
+from ..error.catch import ErrorRegistry
 from ..port.system import CliSystem
 from ..system.boot import System, SystemLoader, sst_system_loader
-from ..utils.view import view
 from . import _args as args
 from . import _scroll as scroll
 
