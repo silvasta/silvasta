@@ -3,8 +3,6 @@ The Builder (for classes)
 
 - Collect ideas for compositions and provide implementation support
 
-Infrastructure:
-- Ghost: type check dummy
 
 ---
 
@@ -24,9 +22,6 @@ __all__: list[str] = [
     "Builder",
     "Constructor",
     "Injector",
-    #
-    "Ghost",
 ]
 
 from ._core import Builder, Constructor, Injector
-from ._ghost import Ghost

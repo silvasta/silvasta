@@ -10,7 +10,7 @@ __all__: list[str] = [
     "System",
     "SstSystem",
     "CliSystem",
-    # loader type definitions
+    # Loader
     "SystemLoader",
     "ConfigLoader",
     "BusLoader",
@@ -29,15 +29,23 @@ type BusLoader = Callable[..., EventBus]
 
 
 class System(Protocol):
+    """Level 0 - What any System must fulfill"""
+
     @property
-    def bus(self) -> EventBus: ...
-    def emit(self, event: EventName, sender: str, **payload: Any) -> None: ...
+    def bus(self) -> EventBus:
+        """Cover and Distribute the Wires"""
+
+    def emit(self, event: EventName, sender: str, **payload: Any) -> None:
+        """Execute and Export the Call"""
 
     @classmethod
-    def bootstrap(cls, *args, **kwargs) -> Self: ...
+    def bootstrap(cls, *args, **kwargs) -> Self:
+        """Be ready to launch"""
 
 
 class SstSystem(System, Protocol):
+    """Level 1 - The Essentials of the SstSystem"""
+
     @property
     def config(self) -> Config: ...
     @property
@@ -46,10 +54,13 @@ class SstSystem(System, Protocol):
     def emitter(self): ...  # TODO: types
 
     @classmethod
-    def bootstrap(cls) -> Self: ...
+    def bootstrap(cls) -> Self:
+        """Silence Liskov and launch without input"""
 
 
 class CliSystem(SstSystem, Protocol):
+    """Level 2 - Console Pipeline Requirements"""
+
     @classmethod
     def bootstrap(
         cls,
