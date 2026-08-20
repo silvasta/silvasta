@@ -14,7 +14,42 @@ Extended: (TODO)
 
 from collections.abc import Callable
 from enum import StrEnum
-from typing import Concatenate, Protocol
+from typing import Concatenate, Protocol, runtime_checkable
+
+from .view import Stringable
+
+__all__: list[str] = [
+    "Functorial",
+    "Colorizing",
+]
+
+
+@runtime_checkable
+class Colorizing(Protocol):
+    # TODO: at least one of:
+    # - Sanitizing:Stringable->str (Formatting)
+    # - Sanitizing:Any->Stringable (Sanitizing)
+    # - Sanitizing:Any->str (Stringing)
+    def __call__(self, text: Stringable) -> str:
+        """Forward text-like object after processing and ensuring string"""
+
+
+@runtime_checkable
+class Listening[T](Protocol):
+    def __call__(self, target: T) -> T:
+        """Forward target after routing and inspection"""
+
+
+class Stacking(Protocol):
+    """Stack Attributes on top of each other by Functions"""
+
+    def __getattr__(self, name: str) -> Stacking:
+        """Add one layer of color or modifier and stack again..."""
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Functor
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 class Functorial[**Param, Result](Protocol):
@@ -29,15 +64,8 @@ class Functorial[**Param, Result](Protocol):
         """The Core of the entire Topic, override or inject _func"""
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Essentials
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
 class SafeFunctorial[**Param, Result](Protocol):
     """Provide safe execution environement"""
-
-    # TEST: still congruent?
 
     catch: Callable[Concatenate[Exception, Param], Result | None] | None
 
@@ -54,11 +82,6 @@ class ErrorPolicy(StrEnum):
     LOG_AND_CONTINUE = "log"
     LOG_AND_EXIT = "exit"
     RE_RAISE = "raise"
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Extensions
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 class DecoFunctorial[**P, R](Protocol):
