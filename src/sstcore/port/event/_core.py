@@ -4,8 +4,6 @@ Define the Structure of the Event Data and Pipeline
 -
 """
 
-from ._emit import BusEmit
-
 __all__: list[str] = [
     "Event",
     "EventHandler",
@@ -15,15 +13,15 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import Any, Protocol
 
 from .name import EventName, EventPattern
 
 type BusRegistration = Callable[[EventBus], None]
 
 # TASK: EventDTO
-# - make this working with the DTO?
-# - especially the Bus
+# - make this working with the DTO!?
+# - especially the Bus, somehow related to dto
 
 
 @dataclass(frozen=True)
@@ -45,7 +43,3 @@ class EventBus(Protocol):
     ) -> None: ...
     def subscribe(self, name: EventPattern, handler: EventHandler) -> None: ...
     def subscribe_all(self, handler: EventHandler) -> None: ...
-
-
-if TYPE_CHECKING:
-    _e: BusEmit = EventBus.emit

@@ -5,18 +5,19 @@ EmitFunc: minimal requirements for Bus call
 
 """
 
+# TASK: finalize
+
 __all__: list[str] = [
+    "Emitter",
+    "EventEmit",
     "BusEmit",
     "Emit",
-    "EventEmit",
     #
     "LogEmit",
-    "EventLogEmit",  # TODO:check
+    "EventLogEmit",  # TODO:check (not only that...)
     "LogEmitter",
     #
     "ViewEmitter",
-    #
-    "Emitter",
 ]
 
 from typing import Any, Protocol

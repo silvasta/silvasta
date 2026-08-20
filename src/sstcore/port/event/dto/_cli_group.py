@@ -5,8 +5,6 @@ Provide typed Data Transfer Objects for the EventBus
 
 """
 
-# LATER: move function implementation out of the port
-
 __all__: list[str] = [
     "PanelDTO",
     "LineDTO",
@@ -26,23 +24,16 @@ from ._cli import CliDTO
 
 _AlignMethod = Literal["left", "center", "right"]
 
-# NEXT: content: Renderable
-
 
 @dataclass(kw_only=True)
 class GroupDTO(CliDTO[list[Renderable]]):
     """Stack renderables"""
 
-    # REMOVE: (after transform) items: list[CliDTO] = field(default_factory=list)
-    title: str | None = None
-    # LATER: check if this makes sense
-    # layout: Literal["vertical", "horizontal"] = "vertical"
-    # REMOVE: (after transform) _content_field = "items"
-
 
 @dataclass(kw_only=True)
 class PanelDTO(CliDTO[Renderable | list[Renderable]]):
-    # text: Renderable | list[Renderable]  # TODO: check when to normalize
+    # TASK: rich independant setup,
+    # as well like 1 shared StyleingDTO with any needed color,frame,... arg
     color: str = "bold white"
     frame: str = "cyan"  # TODO: share normalize! done in print.mixin.layout
     title: str | None = None
@@ -55,25 +46,17 @@ class PanelDTO(CliDTO[Renderable | list[Renderable]]):
     metrics: dict[str, Any] = field(default_factory=dict)
 
     # _content_field = "text"
-    _strict = (
-        True  # AI_QUESTION: is this a toggle for all CliDTO? or all PanelDTO?
-    )
+    _strict = True  # REMOVE:
 
 
 @dataclass(kw_only=True)
 class LineDTO(CliDTO):
-    # text: str | None = None  # For Rule = just line ----
     style: str = "cyan"
     character: str = "─"
-    # _content_field = "text"
-    # _strict = True
 
 
 @dataclass(kw_only=True)
 class RuleDTO(CliDTO):
     """Dedicated horizontal rule."""
 
-    # char: str = "─"
     style: str = "cyan"
-    # _content_field = "char"
-    # _strict = False

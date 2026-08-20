@@ -20,7 +20,6 @@ from ._cli import CliDTO
 
 @dataclass(kw_only=True)
 class MarkdownDTO(CliDTO):
-    # REMOVE: text: str
     header: int = 0
     style = "white"
 
@@ -35,22 +34,23 @@ class MarkdownDTO(CliDTO):
 class TableDTO(CliDTO):
     """Store Table data as lists of rows containing lists of values"""
 
-    # AI_QUESTION: how to define the content here? as the matrix?
-    matrix: list[list[Any]]  # The Content [1:][1:]
+    # TODO: move the [1:] etc into the docstring!
+    content: list[list[Any]]  # The Content [1:][1:]
 
     col_names: list[str] = field(default_factory=list)  # [0][1:] (header)
     row_names: list[str] = field(default_factory=list)  # [1:][0]
+    # TODO: move the [1:] etc into the docstring!
     corner: str = ""  # [0][0] element: used if Row and Col names Defined
 
     def _validate(self):
-        if not self.matrix:  # LATER: confirm that empty is valid
+        if not self.content:  # LATER: confirm that empty is valid
             return
         if self.col_names:
-            if (n_col := len(self.col_names)) != (w := len(self.matrix[0])):
-                raise ValueError(f"{n_col} row_names but matrix width ({w})")
+            if (n_col := len(self.col_names)) != (w := len(self.content[0])):
+                raise ValueError(f"{n_col} row_names but content width ({w})")
         if self.row_names:
-            if (n_row := len(self.row_names)) != (h := len(self.matrix)):
-                raise ValueError(f"{n_row} row_names but matrix height ({h})")
+            if (n_row := len(self.row_names)) != (h := len(self.content)):
+                raise ValueError(f"{n_row} row_names but content height ({h})")
 
     @property
     def header(self) -> list[str]:
@@ -66,7 +66,7 @@ class TableDTO(CliDTO):
     @property
     def rows(self):
         """Yield aligned rows and inject side-titles if needed"""
-        for i, row in enumerate(self.matrix):
+        for i, row in enumerate(self.content):
             if self.row_names and i < len(self.row_names):
                 # LATER: colorize, zip(strict=True)
                 yield [self.row_names[i]] + row
@@ -77,7 +77,7 @@ class TableDTO(CliDTO):
     def from_row_dicts(cls, rows: dict[str, Any | list[Any]]) -> Self:
         """Transform dict of {row_name: value(s)} to internal structure."""
         return cls(
-            matrix=list(rows.values()),
+            content=list(rows.values()),
             row_names=list(rows.keys()),
         )
 
@@ -85,14 +85,14 @@ class TableDTO(CliDTO):
     def from_col_dicts(cls, cols: dict[str, list[Any]]) -> Self:
         """Transform dict of {col_name: values} to internal structure."""
         return cls(  # Transpose columns into rows using zip
-            matrix=[list(row) for row in zip(*cols.values(), strict=True)],
+            content=[list(row) for row in zip(*cols.values(), strict=True)],
             col_names=list(cols.keys()),
         )
 
     @classmethod
     def from_col_list(cls, cols: list[list[Any]]) -> Self:
         """Transform list of columns to internal row structure."""
-        return cls(matrix=[list(row) for row in zip(*cols, strict=True)])
+        return cls(content=[list(row) for row in zip(*cols, strict=True)])
 
     @classmethod
     def from_value_dicts(
@@ -100,15 +100,15 @@ class TableDTO(CliDTO):
     ) -> Self:
         """Transform list of dicts [{"Header A": 1, "Header B": 2}]"""
         if not rows:
-            return cls(matrix=[])
+            return cls(content=[])
         if headers is None:
             headers: list[str] = list(
                 # dict.fromkeys acts as ordered set
                 dict.fromkeys(k for row in rows for k in row.keys())
             )
-        filtered_matrix: list[list[Any]] = [
-            # Build, filter and sort the matrix by header
+        filtered_content: list[list[Any]] = [
+            # Build, filter and sort the content by header
             [row.get(header, "") for header in headers]
             for row in rows
         ]
-        return cls(matrix=filtered_matrix, col_names=headers)
+        return cls(content=filtered_content, col_names=headers)
