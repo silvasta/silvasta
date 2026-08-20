@@ -12,7 +12,8 @@ __all__: list[str] = [
 from typing import TYPE_CHECKING
 
 from ...brick.registry import ListRegistry
-from ...port.files import File, FileFilter, FileFiltering
+from ...port.files import File, FileFiltering
+from ...util.filter import FileFilter
 
 type KeyWords = str | list[str] | set[str]
 
@@ -20,29 +21,28 @@ type KeyWords = str | list[str] | set[str]
 class FileFilterMixin(ListRegistry[File]):
     """Provide Keyword filtering"""
 
+    filter: FileFiltering = FileFilter()  # TODO: better...
+
     def set_filter(self, file_filter: FileFilter) -> None:
         """Install new custom FileFilter"""
         self.filter: FileFilter = file_filter
 
-    def reset_filter(self) -> None:
-        """Shutdown Filter"""
-        self.filter = None
-
-    def get_by_filter(
-        self, file_filter: FileFilter | None = None
-    ) -> list[File]:
-        """Get all files filtered by keywords setup in file_filter"""
-        return self.filtered(file_filter)
+    # NEXT:
+    # def get_by_filter(
+    #     self, file_filter: FileFilter | None = None
+    # ) -> list[File]:
+    #     """Get all files filtered by keywords setup in file_filter"""
+    #     return self.filter(file_filter)
 
     def get_by_keyword(self, keywords: KeyWords) -> list[File]:
         """Get all files that have at least 1 of the required keywords"""
-        keyword_filter = SstFileFilter(require_any=set(keywords))
-        return keyword_filter(self.all)
+        keyword_filter = FileFilter(require_any=set(keywords))
+        return keyword_filter(list(self.all))
 
-    def get_files_with_all_keywords(self, keywords: KeyWords) -> list[File]:
+    def get_by_all_keywords(self, keywords: KeyWords) -> list[File]:
         """Get all files that have all of the required keywords"""
-        keyword_filter = SstFileFilter(require_all=set(keywords))
-        return keyword_filter(self.all)
+        keyword_filter = FileFilter(require_all=set(keywords))
+        return keyword_filter(list(self.all))
 
 
 if TYPE_CHECKING:
