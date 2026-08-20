@@ -5,22 +5,23 @@ Define the Shape of Exceptions
                                                        DependencyLevel[0]
 """
 
+from sstcore.port.color import ColorBox
+
 __all__: list[str] = [
     "SstError",
 ]
 
 from typing import Any
 
-from ..bricks.color.box import Colors
-from ..bricks.view._raise import Error
+from ..brick.color.box import Colors
+from ..brick.view._raise import Error
 from ..port.event.dto import LogDTO, PanelDTO
 from ..port.view import Renderable
 
-c: Colors = Colors()
+c: ColorBox = Colors()
 
 
-# IMPORTANT: check intermediate Error steps
-class SstError(Error):
+class SstError(Error):  # IMPORTANT: check intermediate Error steps
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -28,10 +29,18 @@ class SstError(Error):
         self.kwargs: dict = kwargs
         super().__init__(*args)
 
-    # --- Format
     # IDEA: this in View??
+    # TASK: this from View!!
 
     # --- DTO
+    def __log__(self) -> LogDTO:
+        """Provide Structured Data for Log"""
+        return LogDTO(
+            message=f"{self}" or self.name,
+            level="ERROR",
+            metrics={"args": self.args, "kwargs": self.kwargs},
+            extra={"error_type": self.name},
+        )
 
     def __cli__(self) -> PanelDTO:
         """Provide Data Transfer Object for Command Line Interface"""
@@ -50,7 +59,7 @@ class SstError(Error):
         ]
 
         return PanelDTO(
-            text=self._modify_scroll(lines),
+            content=self._modify_scroll(lines),
             title=self.__rich__(),
             frame="red",
             title_align="right",
@@ -87,13 +96,7 @@ class SstError(Error):
             return f"{self._short[: (to_long - 3)]}..."
         return self._short
 
-    # --- View
-
-    def __rich__(self) -> str:
-        """Provide colorized Name"""
-        # TODO: check ..format.text|name
-        # LATER: improve color hack, maybe by CamelCase?
-        return f"{self.name[:-5]}{c.red('Error')}"
+    # --- Views
 
     def __repr__(self):
         """Provide Structured Data flattened to string"""
@@ -105,11 +108,8 @@ class SstError(Error):
         )
         return f"{self.name}({', '.join(attributes)})"
 
-    def __log__(self) -> LogDTO:
-        """Provide Structured Data for Log"""
-        return LogDTO(
-            message=f"{self}" or self.name,
-            level="ERROR",
-            metrics={"args": self.args, "kwargs": self.kwargs},
-            extra={"error_type": self.name},
-        )
+    def __rich__(self) -> str:
+        """Provide colorized Name"""
+        # TODO: check ..format.text|name
+        # LATER: improve color hack, maybe by CamelCase?
+        return f"{self.name[:-5]}{c.red('Error')}"
