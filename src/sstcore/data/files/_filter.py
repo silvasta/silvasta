@@ -4,33 +4,21 @@ Provide Container for Files and Tools for FileSystem Operations
                                                        DependencyLevel[0]
 """
 
-from typing import TYPE_CHECKING
-
 __all__: list[str] = [
-    "SstFileFilter",
     "FileFilterMixin",
 ]
 
 
+from typing import TYPE_CHECKING
+
+from ...brick.registry import ListRegistry
 from ...port.files import File, FileFilter, FileFiltering
-from ...utils.registry import FilterRegistry
-
-
-class SstFileFilter[FileT: File](FileFilter[str, FileT]):
-    # FIX: FileFilter is Protocol!!!
-    """Filter SstFiles by their keywords set"""
-
-    def _create_target_set(self, target: FileT) -> set[str]:
-        return target.keywords
-
 
 type KeyWords = str | list[str] | set[str]
 
 
-class FileFilterMixin(FilterRegistry[File, FileFilter]):
+class FileFilterMixin(ListRegistry[File]):
     """Provide Keyword filtering"""
-
-    files: list[File]
 
     def set_filter(self, file_filter: FileFilter) -> None:
         """Install new custom FileFilter"""

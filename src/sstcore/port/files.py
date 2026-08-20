@@ -8,20 +8,28 @@ __all__: list[str] = [
     "File",
     "Files",
     "FileQuery",
-    "FileFilter",
     "FileFiltering",
+    "FileFilterRegistry",
     "FileScanning",
     "FileScanRegistry",
 ]
 
 from collections.abc import Iterator
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol, Self
 
-from ..port.filter import Filter, PathFiltering
-from ..port.pathguard import PathGuard, SyncMode
-from ..port.registry import ListingRegistry
-from ..port.tree import PathTree
+from .filter import Filter, PathFiltering
+from .registry import ListingRegistry
+from .tree import PathTree
+
+
+class SyncMode(StrEnum):
+    """(PathGuard) File Transfer Conflict Resolution Strategy"""
+
+    INCREMENT = auto()
+    OVERRIDE = auto()
+    IGNORE = auto()
 
 
 class File(Protocol):
@@ -91,20 +99,17 @@ class FileQuery(Protocol):
         """Check Status on Disk and provide unconfirmed Files"""
 
 
-class FileFilter(Filter[str, File], Protocol):
-    # REMOVE:???
+class FileFiltering(Filter[str, File], Protocol):
     """Filter SstFiles by keywords"""
 
-    def _create_target_set(self, target: File) -> set[str]: ...
 
-
-class FileFiltering(Protocol):
+class FileFilterRegistry(Protocol):
     """Keyword-based filtering queries (FilterMixin)."""
 
-    def set_filter(self, file_filter: FileFilter) -> None: ...
+    def set_filter(self, file_filter: FileFiltering) -> None: ...
     def reset_filter(self) -> None: ...
     def get_by_filter(
-        self, file_filter: FileFilter | None = None
+        self, file_filter: FileFiltering | None = None
     ) -> list[File]: ...
     def get_by_keyword(
         self, keywords: str | list[str] | set[str]
@@ -140,7 +145,7 @@ class FileScanning(Protocol):
     def sprout_at(cls, scan_root: Path) -> Self: ...
     def attach_local_files(self, *, clear: bool = False) -> list[File]: ...
     def tree(
-        self, root_name: str = "", file_filter: FileFilter | None = None
+        self, root_name: str = "", file_filter: FileFiltering | None = None
     ) -> PathTree: ...
 
 
@@ -150,7 +155,7 @@ type _PathS = Path | list[Path]
 class FileSyncing(Protocol):
     """Sync operations (mirror/absorb) using PathGuard (FileSyncMixin)."""
 
-    mode: PathGuard.SyncMode
+    mode: SyncMode
 
     def mirror_from_path(
         self, source: _PathS, mode: SyncMode = SyncMode.IGNORE
@@ -180,7 +185,7 @@ class FileSyncing(Protocol):
 class FileScanRegistry(
     Files,
     FileQuery,
-    FileFiltering,
+    FileFilterRegistry,
     FileScanning,
     ListingRegistry[File],
     Protocol,
@@ -190,7 +195,7 @@ class FileScanRegistry(
 class FileRegistry(
     Files,
     FileQuery,
-    FileFiltering,
+    FileFilterRegistry,
     FileScanning,
     FileSyncing,
     ListingRegistry[File],
