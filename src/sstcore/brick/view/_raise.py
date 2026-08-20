@@ -9,8 +9,7 @@ from ...port.error import BaseError
 from ..format import cls_name
 
 
-# IMPORTANT: check intermediate Error steps
-class Error(BaseError):
+class Error(BaseError):  # IMPORTANT: check intermediate Error steps
     @property
     def name(self) -> str:
         """Provide ClassName ( __str__ already used for message builtins.Exception"""
