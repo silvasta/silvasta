@@ -20,5 +20,5 @@ __all__: list[str] = [
     "ProjectFilter",
 ]
 from ._box import FilterBox
-from ._path import PathFilter, ProjectFilter
+from ._path import PathFilter, ProjectFilter  # TODO: FileFilter
 from ._set import FilterArgs, FilterSet

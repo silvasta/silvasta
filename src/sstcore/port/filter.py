@@ -1,97 +1,118 @@
-from collections.abc import Iterable
-from dataclasses import dataclass, field
+"""
+Define the Shape of the Filters
+
+- FilterSpec: Input Space and Data Definition
+- Filter: Core Logic
+
+- PathFiltering: Path specification
+- ProjectFiltering: Programming Project specification
+
+"""
+
+__all__: list[str] = [
+    "Filter",
+    "FilterSpec",
+    "PathFiltering",
+    "ProjectFiltering",
+]
+
+from enum import IntEnum, auto
 from pathlib import Path
-from typing import Any, Protocol, Self, overload
+from typing import Protocol, Self, overload
 
 
-@dataclass
-class FilterArgs[SetType]:
-    exclude: set[SetType] = field(default_factory=set)
-    require_all: set[SetType] = field(default_factory=set)
-    require_any: set[SetType] = field(default_factory=set)
+class FilterBoxForInject(IntEnum):
+    """Selectable Filter Presets"""
 
-    allow_hidden_files: bool = False
-    return_opposite: bool = False
+    PROJECT = auto()
+    PYTHON = auto()
+    RUST = auto()
+    LATEX = auto()
+    CONFIG = auto()
+    DOCS = auto()
+    NONE = auto()
+    ALL = auto()
 
-    @classmethod
-    def from_args(cls, args: FilterArgs) -> Self:
-        return cls(
-            exclude=set(args.exclude),
-            require_all=set(args.require_all),
-            require_any=set(args.require_any),
-            allow_hidden_files=args.allow_hidden_files,
-            return_opposite=args.return_opposite,
+    def __str__(self) -> str:
+        return self.name.capitalize()
+
+    @property
+    def args(self) -> FilterSpec:
+        """Must be provided by a higher layer (util.filter)."""
+        raise NotImplementedError(
+            f"{type(self).__name__}.args is not implemented in the port layer"
         )
 
-    def merge(self, args: Self) -> Self:
-        """Update internal sets with sets of incoming FilterArgs"""
-        self.exclude.update(args.exclude)
-        self.require_all.update(args.require_all)
-        self.require_any.update(args.require_any)
-        return self
 
-    def subtract(self, args: Self) -> Self:
-        """Update internal sets by removing incoming FilterArgs"""
-        self.exclude.difference_update(args.exclude)
-        self.require_all.difference_update(args.require_all)
-        self.require_any.difference_update(args.require_any)
-        return self
+class FilterBoxForMeta(IntEnum):
+    """Selectable Filter Presets"""
+
+    PROJECT = auto()
+    PYTHON = auto()
+    RUST = auto()
+    LATEX = auto()
+    CONFIG = auto()
+    DOCS = auto()
+    NONE = auto()
+    ALL = auto()
 
 
-class Filter[SetType, TargetT](Protocol):
-    """Define the shape of the FilterSet"""
+class FilterSpec[SetType](Protocol):
+    """Define the internal data of the Filter"""
 
     exclude: set[SetType]
     require_all: set[SetType]
     require_any: set[SetType]
-    allow_hidden_files: bool
+
+    allow_hidden_files: bool  # NOTE: ProjectFilter (so far, maybe FileFilter?)
     return_opposite: bool
 
+    @classmethod
+    def from_args(cls, args: FilterSpec[SetType]) -> Self:
+        """
+        Build new (Sub-)Class from Filter-, Spec- or Args
+
+        - Provide Derived from Base Class -> Therefore Not args: Self
+        """
+
+    def merge(self, args: Self) -> Self:
+        """Update internal Sets with incoming Sets"""
+
+    def subtract(self, args: Self) -> Self:
+        """Remove incoming Sets from internal Sets"""
+
+
+class Filter[SetType, TargetType](FilterSpec, Protocol):
+    """Define the matching Rules and how to Call it"""
+
+    def fulfills_exclude(self, target_set: set[SetType]) -> bool:
+        """Condition 1: Must NOT have any excluded keywords"""
+
+    def fulfills_require_all(self, target_set: set[SetType]) -> bool:
+        """Condition 2: Must have ALL required keywords"""
+
+    def fulfills_require_any(self, target_set: set[SetType]) -> bool:
+        """Condition 3: Must have AT LEAST ONE required_any keyword"""
+
+    def fulfills_trio(self, target_set: set[SetType]) -> bool:
+        """Check if all 3 conditions are fulfilled (default)"""
+
+    def _fulfill(self, target: TargetType) -> bool:
+        """Run validation logic -> override for custom behaviour"""
+
     @overload
-    def __call__(self, target: SetType) -> bool: ...
+    def __call__(self, target: TargetType) -> bool: ...
     @overload
-    def __call__(self, target: Iterable[TargetT]) -> list[TargetT]: ...
-    def __call__(self, target: Any) -> bool | list[TargetT]:
-        """Test a single item or filter a list"""
-
-    def _create_target_set(self, target: Any) -> set[SetType]:
-        """Turn an object into the set that will be matched against"""
-
-    def _fulfills_conditions(
-        self, target: Any, target_set: set[SetType]
-    ) -> bool:
-        """Override for custom validation logic."""
-
-    def fulfills_exclude(self, target_set: set[SetType]) -> bool: ...
-    def fulfills_require_all(self, target_set: set[SetType]) -> bool: ...
-    def fulfills_require_any(self, target_set: set[SetType]) -> bool: ...
-    def fulfills_condition_trio(self, target_set: set[SetType]) -> bool: ...
-
-
-class Filterable[ItemT](Protocol):  # REMOVE: ??
-    """Anything that can be asked: does this filter accept you?"""
-
-    def __call__(self, filter: Filter[Any, ItemT]) -> bool: ...
-
-
-class Filtering[ItemT](Protocol):
-    """Mixin-style protocol for containers that can be filtered.
-
-    Intended to be mixed into Registry implementations.
-    """
-
-    @property
-    def filter(self) -> Filter[Any, ItemT] | None: ...
-
-    def filtered(
-        self, filter: Filter[Any, ItemT] | None = None
-    ) -> list[ItemT]:
-        """Return items that pass the given (or internal) filter"""
+    def __call__(self, target: list[TargetType]) -> list[TargetType]: ...
+    def __call__(
+        self, target: TargetType | list[TargetType]
+    ) -> bool | list[TargetType]:
+        """Check single item (bool) or filter multiple items from list"""
 
 
 class PathFiltering(Filter[str, Path], Protocol):
-    """Decomposes Path into parts/stem/suffix for filtering."""
+    """Decomposes Path into parts/stem/suffix for filtering"""
 
 
 class ProjectFiltering(PathFiltering, Protocol):
-    """Project-specific defaults (exclude common dirs, require code files)."""
+    """Filter by Project specific defaults (exclude common dirs, require code files)"""
