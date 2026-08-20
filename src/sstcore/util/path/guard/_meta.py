@@ -6,10 +6,13 @@ __all__: list[str] = [
 
 from collections.abc import Iterator
 
-from ....format.color import ColorBox
+from ....brick.color.box import Colors
+from ....port.color import ColorBox
 from ....port.event.dto import LogDTO, PanelDTO
 
-c: ColorBox = ColorBox.bold()
+colors: ColorBox = Colors()
+
+# NOTE: compare with brick.meta.static (currently _meta._static_view)
 
 
 class PathGuardMeta(type):
@@ -33,11 +36,12 @@ class PathGuardMeta(type):
         return f"{cls.__name__}[{methods}]"
 
     def __rich__(cls) -> str:
-        return f"{c.cyan('Path')}{c.magenta('Guard')}"
+        return f"{colors.a('Path')}{colors.s('Guard')}"
 
     def __cli__(cls) -> PanelDTO:
         return PanelDTO(
-            text="Safety and Comfort for Path and File System operations",
+            content="Safety and Comfort for Path and File System operations",
+            # IDEA: cls.toolkit?
             title=cls.__rich__(),
             frame="cyan",
         )
