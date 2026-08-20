@@ -20,7 +20,7 @@ from collections.abc import Callable
 from typing import Any, Protocol, Self
 
 from .config import Config
-from .event import EventBus, EventName
+from .event import Emitter, EventBus, EventName
 from .printer import Printer
 
 type SystemLoader = Callable[..., CliSystem]
@@ -29,14 +29,14 @@ type BusLoader = Callable[..., EventBus]
 
 
 class System(Protocol):
-    """Level 0 - What any System must fulfill"""
+    """Level 0 - Any System must fulfill:"""
 
     @property
     def bus(self) -> EventBus:
-        """Cover and Distribute the Wires"""
+        """Distribute the wires"""
 
     def emit(self, event: EventName, sender: str, **payload: Any) -> None:
-        """Execute and Export the Call"""
+        """Export and execute the calls"""
 
     @classmethod
     def bootstrap(cls, *args, **kwargs) -> Self:
@@ -44,14 +44,14 @@ class System(Protocol):
 
 
 class SstSystem(System, Protocol):
-    """Level 1 - The Essentials of the SstSystem"""
+    """Level 1 - Essentials"""
 
     @property
     def config(self) -> Config: ...
     @property
     def printer(self) -> Printer: ...
     @property
-    def emitter(self): ...  # TODO: types
+    def emitter(self) -> Emitter: ...
 
     @classmethod
     def bootstrap(cls) -> Self:

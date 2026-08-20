@@ -18,7 +18,19 @@ __all__: list[str] = [
 
 from typing import Protocol, runtime_checkable
 
-from .event import CliDTO, LogDTO
+# TODO: sort the dependencies
+# - preferably not depend on event
+from .event.dto import CliDTO, LogDTO
+
+# IDEA: split, refactor, remove entire view here?
+# - it is very amazing as 1 overview over all implementations
+# - but it is nothing more than a nice portrait or similar
+# - the value for the code goes to 0
+# - the representability and documentation will slightly loose
+# overall the implementations show enoug to anyone
+# who is able to think a little bit how it works
+# and don't need the perfect view of the views below
+# - maybe I place them in brick.view docstring
 
 
 @runtime_checkable

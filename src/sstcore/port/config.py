@@ -1,9 +1,33 @@
+"""
+Define the Config Management and Structure
+
+-
+"""
+
+__all__: list[str] = [
+    "Config",
+    "Log",
+    #
+    "Settings",
+    "Paths",
+    "Defaults",
+    "Names",
+    "Homes",
+    #
+    "ProjectInformation",
+]
+
 from pathlib import Path
 from typing import Any, Protocol, Self
 
 from .view import Stringable
 
-# NEXT: all,doc
+
+class ProjectInformation(Protocol):  # MOVE: printer? or remove?
+    @property
+    def name(self) -> str: ...
+    @property
+    def version(self) -> str: ...
 
 
 class Defaults(Protocol):
@@ -94,13 +118,6 @@ class Paths(Protocol):
     def summary_file(self, suffix: str = "md") -> Path: ...
 
 
-class ProjectInfo(Protocol):  # MOVE: printer? or remove?
-    @property
-    def name(self) -> str: ...
-    @property
-    def version(self) -> str: ...
-
-
 class Config(Protocol):
     @property
     def defaults(self) -> Defaults: ...
@@ -113,7 +130,7 @@ class Config(Protocol):
     @property
     def paths(self) -> Paths: ...
     @property
-    def project_info(self) -> ProjectInfo: ...
+    def project_info(self) -> ProjectInformation: ...
     @property
     def log_result(self) -> Log: ...
 
