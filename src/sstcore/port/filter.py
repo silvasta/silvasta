@@ -25,22 +25,6 @@ from .error import FailedHackError
 # LATER: FilterBox: PathFilter,FileFilter...
 
 
-class FilterArgs(IntEnum):
-    """Selectable Filter Presets"""
-
-    PROJECT = auto()
-    PYTHON = auto()
-    RUST = auto()
-    LATEX = auto()
-    CONFIG = auto()
-    DOCS = auto()
-    NONE = auto()
-    ALL = auto()
-
-    def __call__(self) -> FilterSpec:
-        raise FailedHackError("Import sstcore.util.filter to attach args")
-
-
 class FilterSpec[SetType](Protocol):
     """Define the internal data of the Filter"""
 
@@ -48,16 +32,12 @@ class FilterSpec[SetType](Protocol):
     require_all: set[SetType]
     require_any: set[SetType]
 
-    allow_hidden_files: bool  # NOTE: ProjectFilter (so far, maybe FileFilter?)
+    allow_hidden_files: bool  # NOTE: so far used in ProjectFilter
     return_opposite: bool
 
     @classmethod
     def from_args(cls, args: FilterSpec[SetType]) -> Self:
-        """
-        Build new (Sub-)Class from Filter-, Spec- or Args
-
-        - Provide Derived from Base Class -> Therefore Not args: Self
-        """
+        """Build derived class from data containing base"""
 
     def merge(self, args: Self) -> Self:
         """Update internal Sets with incoming Sets"""
@@ -92,6 +72,22 @@ class Filter[SetType, TargetType](FilterSpec, Protocol):
         self, target: TargetType | list[TargetType]
     ) -> bool | list[TargetType]:
         """Check single item (bool) or filter multiple items from list"""
+
+
+class FilterArgs(IntEnum):
+    """Selectable Filter Presets"""
+
+    PROJECT = auto()
+    PYTHON = auto()
+    RUST = auto()
+    LATEX = auto()
+    CONFIG = auto()
+    DOCS = auto()
+    NONE = auto()
+    ALL = auto()
+
+    def __call__(self) -> FilterSpec:
+        raise FailedHackError("Import sstcore.util.filter to attach args")
 
 
 class PathFiltering(Filter[str, Path], Protocol):

@@ -1,8 +1,8 @@
 """
 Prepare Cascade of Filters
 
-- FilterSet: Implement the Core Logic as Base for further Specifications
-                                                       DependencyLevel[1]
+- FilterSet: Implement Core Logic as Base for Specifications
+                                                 DependencyLevel[1]
 """
 
 __all__: list[str] = [

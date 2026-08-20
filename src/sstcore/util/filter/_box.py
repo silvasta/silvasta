@@ -5,6 +5,8 @@ Prepare default sets for Filters
                                                        DependencyLevel[1]
 """
 
+# LATER: dispatch text-binary file eg: {".pdf"}
+
 __all__: list[str] = [
     "FilterArgs",
 ]
@@ -12,12 +14,7 @@ __all__: list[str] = [
 from ...port.filter import FilterArgs
 from ._base import FilterData
 
-# LATER: dispatch text-binary file eg: {".pdf"}
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### For Folder exclude
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+_Folder_Exclude = "default undesired"
 
 DIR_CODE: set[str] = {"env", ".git"}
 DIR_PYTHON: set[str] = {"__pycache__", ".venv", "venv"}
@@ -25,9 +22,7 @@ DIR_RUST: set[str] = {"target"}
 DIR_LATEX: set[str] = {"build", "dist", "_build", "out"}
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### For File include
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+_File_Include = "default targets"
 
 FILE_PYTHON: set[str] = {".py", ".pyi", ".toml"}
 FILE_RUST: set[str] = {".rs", ".toml"}

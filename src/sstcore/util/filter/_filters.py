@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from ...port.files import File, FileFiltering
 from ...port.filter import PathFiltering, ProjectFiltering
-from ._box import FilterBox  # TODO: here or from port?
+from ._box import FilterArgs
 from ._core import FilterSet
 
 
@@ -40,10 +40,10 @@ class ProjectFilter(PathFilter):
     """Reject unwanted Folders and include desired Files"""
 
     exclude: set[str] = field(
-        default_factory=lambda: set(FilterBox.PROJECT.args.exclude)
+        default_factory=lambda: FilterArgs.PROJECT().exclude
     )
     require_any: set[str] = field(
-        default_factory=lambda: set(FilterBox.PROJECT.args.require_any)
+        default_factory=lambda: FilterArgs.PROJECT().require_any
     )
 
     def _fulfill(self, target: Path) -> bool:

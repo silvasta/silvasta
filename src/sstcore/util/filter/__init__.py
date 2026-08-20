@@ -1,8 +1,8 @@
 """
 Filter - Stacked in different combinations.
 
-- FilterSet: Core logic with all checks
-- FilterData: Base DTO with all sets
+- FilterSet: Core logic with dispatches and checks
+- FilterData: Base DTO with sets and manipulation
 - FilterArgs: Select from Filter input presets
 
 - PathFilter: Decompose Paths for target set

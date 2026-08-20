@@ -1,8 +1,9 @@
 """
 Prepare Cascade of Filters
 
-- FilterData: Argument and Set Container and Modification without filtering
-                                                       DependencyLevel[0]
+- FilterData: Set Container with Arguments and Modification
+  (No Filtering here)
+                                                 DependencyLevel[0]
 """
 
 __all__: list[str] = [
