@@ -29,20 +29,7 @@ from ._manager import ColorHub
 class Colors:
     """Assembe and Orchestrate the Color Distribution"""
 
-    b: Painter
-    g: Painter
-    r: Painter
-    y: Painter
-    a: Painter
-    t: Painter
-    o: Painter
-    p: Painter
-    w: Painter
-    s: Painter
-    c: Painter
-    d: Painter  # REMOVE: when pyi fixed
-
-    # NEXT: init strategy
+    # IMPORTANT: init strategy
 
     def __init__(self, *_args, **_kwargs) -> None:
         self._hub: ColorManager = ColorHub.bootstrap()

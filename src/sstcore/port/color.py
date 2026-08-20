@@ -17,6 +17,13 @@ Ideas:
 - ColorBus: global control of already distributed colors
 """
 
+# TASK: fix last pieces, create the 3-axis And their spans:
+# - Color-Adapter
+# - Adapter-Schema
+# - Schema-Color
+# auto checks for standardized Palette by Color(Index) sizes,
+# interface for Adapter including colors and tricks
+
 __all__: list[str] = [
     "Color",
     "Adapter",
@@ -33,21 +40,16 @@ __all__: list[str] = [
     "ColorManager",
     "ColorBox",
 ]
-# TASK: fix last pieces, create the 3-axis And their spans:
-# - Color-Adapter
-# - Adapter-Schema
-# - Schema-Color
-# auto checks for standardized Palette by Color(Index) sizes,
-# interface for Adapter including colors and tricks
 
-from enum import auto
+
+from enum import Enum, auto
 from typing import NamedTuple, Protocol, runtime_checkable
 
-from .callable import Colorizing, Stringable
-from .registry import Index, IndexingRegistry
+from .functional import Colorizing
+from .view import Stringable
 
 
-class GridIndex(Index):
+class GridIndex(Enum):  # WARN: fix index=0
     """Provide unique Base for Grid-Axes and Grid-Registries"""
 
 
@@ -142,7 +144,7 @@ class ColorCoordinate(NamedTuple):
     p: Palette
 
 
-class ColorRegistry(IndexingRegistry, Protocol):
+class ColorRegistry(Protocol):  # TODO: Registry type
     """Define Schema with all Colors"""
 
     def __init__(self, c: Color, a: Adapter, p: Palette): ...
@@ -166,6 +168,34 @@ class ColorBox(Protocol):
     def paint_to_color(self, target: str | Painter) -> Color | None:
         # REMOVE: ???
         """Map Painter to ColorIndex, not always unique!"""
+
+    # REMOVE: when pyi fixed
+    b: Painter
+    g: Painter
+    r: Painter
+    y: Painter
+    a: Painter
+    t: Painter
+    o: Painter
+    p: Painter
+    w: Painter
+    s: Painter
+    c: Painter
+    d: Painter
+    # REMOVE: when pyi fixed
+    blue: Painter
+    green: Painter
+    red: Painter
+    yellow: Painter
+    azure: Painter
+    teal: Painter
+    orange: Painter
+    purple: Painter
+    white: Painter
+    slate: Painter
+    carbon: Painter
+    black: Painter
+    # REMOVE: when pyi fixed
 
 
 class ColorBus(Protocol):
