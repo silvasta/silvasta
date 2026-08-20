@@ -4,6 +4,18 @@ from typing_extensions import TypeForm
 
 _TEST_LATER = TypeForm
 
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+
 
 class Composition[P](NamedTuple):
     """Result of a dynamic composition."""

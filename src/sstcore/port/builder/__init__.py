@@ -14,7 +14,7 @@ Strategy:
   Later
   - Collect and show best working concepts
   Final
-  - The Generalized Builder
+  - The Generalized Builder (typed)
 
 """
 
