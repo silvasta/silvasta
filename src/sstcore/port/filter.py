@@ -20,8 +20,12 @@ from enum import IntEnum, auto
 from pathlib import Path
 from typing import Protocol, Self, overload
 
+from .error import FailedHackError
 
-class FilterBoxForInject(IntEnum):
+# LATER: FilterBox: PathFilter,FileFilter...
+
+
+class FilterArgs(IntEnum):
     """Selectable Filter Presets"""
 
     PROJECT = auto()
@@ -33,28 +37,8 @@ class FilterBoxForInject(IntEnum):
     NONE = auto()
     ALL = auto()
 
-    def __str__(self) -> str:
-        return self.name.capitalize()
-
-    @property
-    def args(self) -> FilterSpec:
-        """Must be provided by a higher layer (util.filter)."""
-        raise NotImplementedError(
-            f"{type(self).__name__}.args is not implemented in the port layer"
-        )
-
-
-class FilterBoxForMeta(IntEnum):
-    """Selectable Filter Presets"""
-
-    PROJECT = auto()
-    PYTHON = auto()
-    RUST = auto()
-    LATEX = auto()
-    CONFIG = auto()
-    DOCS = auto()
-    NONE = auto()
-    ALL = auto()
+    def __call__(self) -> FilterSpec:
+        raise FailedHackError("Import sstcore.util.filter to attach args")
 
 
 class FilterSpec[SetType](Protocol):

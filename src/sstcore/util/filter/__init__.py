@@ -1,24 +1,25 @@
 """
 Filter - Stacked in different combinations.
 
-FilterArgs: Base DTO with all sets
-FilterSet: Core logic with all checks
-PathFilter: Decompose Paths for target set
-ProjectFilter: For directories with code
+- FilterSet: Core logic with all checks
+- FilterData: Base DTO with all sets
+- FilterArgs: Select from Filter input presets
 
-Others:
-  - SstFileFilter (assembled in data due to dependency)
-
-                                                       DependencyLevel[X]
+- PathFilter: Decompose Paths for target set
+- ProjectFilter: For directories with code
+                                                 DependencyLevel[0]
 """
 
 __all__: list[str] = [
-    "FilterArgs",
     "FilterSet",
-    "FilterBox",
+    "FilterData",
+    "FilterArgs",
+    #
+    "FileFilter",
     "PathFilter",
     "ProjectFilter",
 ]
-from ._box import FilterBox
-from ._path import PathFilter, ProjectFilter  # TODO: FileFilter
-from ._set import FilterArgs, FilterSet
+from ._base import FilterData
+from ._box import FilterArgs
+from ._core import FilterSet
+from ._filters import FileFilter, PathFilter, ProjectFilter

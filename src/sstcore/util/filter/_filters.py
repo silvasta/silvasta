@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 
 from ...port.files import File, FileFiltering
 from ...port.filter import PathFiltering, ProjectFiltering
-from ._box import FilterBox
-from ._set import FilterSet
+from ._box import FilterBox  # TODO: here or from port?
+from ._core import FilterSet
 
 
 class FileFilter(FilterSet[str, File]):

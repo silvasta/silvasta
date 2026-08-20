@@ -1,17 +1,16 @@
 """
-Provide prepared Filter
+Prepare default sets for Filters
 
+- Attach dispatch to port.filter.FilterArgs
                                                        DependencyLevel[1]
 """
 
 __all__: list[str] = [
-    "FilterBox",
+    "FilterArgs",
 ]
 
-from enum import EnumMeta, IntEnum, auto
-
-from ...port.filter import FilterBoxForInject, FilterBoxForMeta
-from ._arg import FilterData
+from ...port.filter import FilterArgs
+from ._base import FilterData
 
 # LATER: dispatch text-binary file eg: {".pdf"}
 
@@ -38,121 +37,55 @@ FILE_CONFIG: set[str] = {".json", ".yaml", ".toml", ".lua"}
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### BOX
+### Shadow Patch
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class FilterBox(IntEnum):
-    """Predefined, selectable filter configurations."""
-
-    PROJECT = auto()
-    PYTHON = auto()
-    RUST = auto()
-    LATEX = auto()
-    CONFIG = auto()
-    DOCS = auto()
-    NONE = auto()
-    ALL = auto()
-
-    def __str__(self):
-        return self.name.capitalize()
-
-    @property
-    def args(self) -> FilterData:
-        """Create a configured filter. Overrides are applied after defaults."""
-        match self:
-            case FilterBox.PROJECT:
-                return FilterData(
-                    exclude=DIR_PYTHON | DIR_CODE | DIR_RUST,
-                    require_any=FILE_PYTHON | FILE_RUST,
-                )
-
-            case FilterBox.PYTHON:
-                return FilterData(
-                    exclude=DIR_PYTHON | DIR_CODE,
-                    require_any=FILE_PYTHON,
-                )
-            case FilterBox.RUST:
-                return FilterData(
-                    exclude=DIR_CODE | DIR_RUST,
-                    require_any=FILE_RUST,
-                )
-            case FilterBox.LATEX:
-                return FilterData(
-                    exclude=DIR_LATEX | DIR_CODE,
-                    require_any=FILE_LATEX,
-                )
-            case FilterBox.CONFIG:
-                return FilterData(
-                    exclude=DIR_CODE | DIR_PYTHON,
-                    require_any=FILE_CONFIG,
-                )
-            case FilterBox.DOCS:
-                return FilterData(
-                    exclude=DIR_CODE,
-                    require_any=FILE_DOCS,
-                )
-            case FilterBox.NONE:
-                return FilterData()
-
-            case FilterBox.ALL:
-                return FilterData(
-                    exclude=DIR_CODE | DIR_PYTHON | DIR_LATEX | DIR_RUST,
-                    require_any=FILE_PYTHON
-                    | FILE_RUST
-                    | FILE_LATEX
-                    | FILE_DOCS
-                    | FILE_CONFIG,
-                )
+def attach_str_to_filter_args(self) -> str:
+    return self.name.capitalize()
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### EXPERIMENTS
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Monkey Patch
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+setattr(FilterArgs, "__str__", attach_str_to_filter_args)  # noqa: B010
 
 
-def filter_args(self: FilterBoxForInject) -> FilterData:
+def attach_call_to_filter_args(self: FilterArgs) -> FilterData:
     """Create a configured filter. Overrides are applied after defaults."""
     match self:
-        case FilterBox.PROJECT:
+        case FilterArgs.PROJECT:
             return FilterData(
                 exclude=DIR_PYTHON | DIR_CODE | DIR_RUST,
                 require_any=FILE_PYTHON | FILE_RUST,
             )
 
-        case FilterBox.PYTHON:
+        case FilterArgs.PYTHON:
             return FilterData(
                 exclude=DIR_PYTHON | DIR_CODE,
                 require_any=FILE_PYTHON,
             )
-        case FilterBox.RUST:
+        case FilterArgs.RUST:
             return FilterData(
                 exclude=DIR_CODE | DIR_RUST,
                 require_any=FILE_RUST,
             )
-        case FilterBox.LATEX:
+        case FilterArgs.LATEX:
             return FilterData(
                 exclude=DIR_LATEX | DIR_CODE,
                 require_any=FILE_LATEX,
             )
-        case FilterBox.CONFIG:
+        case FilterArgs.CONFIG:
             return FilterData(
                 exclude=DIR_CODE | DIR_PYTHON,
                 require_any=FILE_CONFIG,
             )
-        case FilterBox.DOCS:
+        case FilterArgs.DOCS:
             return FilterData(
                 exclude=DIR_CODE,
                 require_any=FILE_DOCS,
             )
-        case FilterBox.NONE:
+        case FilterArgs.NONE:
             return FilterData()
 
-        case FilterBox.ALL:
+        case FilterArgs.ALL:
             return FilterData(
                 exclude=DIR_CODE | DIR_PYTHON | DIR_LATEX | DIR_RUST,
                 require_any=FILE_PYTHON
@@ -163,86 +96,4 @@ def filter_args(self: FilterBoxForInject) -> FilterData:
             )
 
 
-FilterBoxForInject.args = property(filter_args)
-
-FilterBoxInject = FilterBoxForInject
-
-x = FilterBoxInject.CONFIG.args
-x = FilterBox.CONFIG.args
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Meta Hack
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
-class _FilterBoxMeta(EnumMeta):
-    def __new__(mcs, name, bases, ns):
-        if FilterBoxForMeta._member_map_:
-            # Copy member map -> new class gets identical members
-            for member_name, member in FilterBoxForMeta._member_map_.items():
-                ns[member_name] = member.value
-
-        def __str__(self):
-            return self.name.capitalize()
-
-        def args(self) -> FilterData:
-            match self:
-                case mcs.PROJECT:
-                    return FilterData(
-                        exclude=DIR_PYTHON | DIR_CODE | DIR_RUST,
-                        require_any=FILE_PYTHON | FILE_RUST,
-                    )
-
-                case mcs.PYTHON:
-                    return FilterData(
-                        exclude=DIR_PYTHON | DIR_CODE,
-                        require_any=FILE_PYTHON,
-                    )
-                case mcs.RUST:
-                    return FilterData(
-                        exclude=DIR_CODE | DIR_RUST,
-                        require_any=FILE_RUST,
-                    )
-                case mcs.LATEX:
-                    return FilterData(
-                        exclude=DIR_LATEX | DIR_CODE,
-                        require_any=FILE_LATEX,
-                    )
-                case mcs.CONFIG:
-                    return FilterData(
-                        exclude=DIR_CODE | DIR_PYTHON,
-                        require_any=FILE_CONFIG,
-                    )
-                case mcs.DOCS:
-                    return FilterData(
-                        exclude=DIR_CODE,
-                        require_any=FILE_DOCS,
-                    )
-                case mcs.NONE:
-                    return FilterData()
-
-                case mcs.ALL:
-                    return FilterData(
-                        exclude=DIR_CODE | DIR_PYTHON | DIR_LATEX | DIR_RUST,
-                        require_any=FILE_PYTHON
-                        | FILE_RUST
-                        | FILE_LATEX
-                        | FILE_DOCS
-                        | FILE_CONFIG,
-                    )
-                # ... all cases
-                case _:
-                    raise ValueError(...)
-
-        ns["__str__"] = __str__
-        ns["args"] = property(args)
-
-        cls = super().__new__(mcs, name, (IntEnum,), ns)
-        return cls
-
-
-class FilterBoxWithMeta(metaclass=_FilterBoxMeta):
-    """Rich filter box that re-uses the central member definitions."""
-
-
-x = FilterBoxWithMeta.CONFIG.args
+setattr(FilterArgs, "__call__", attach_call_to_filter_args)  # noqa: B010

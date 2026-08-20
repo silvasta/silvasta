@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
 from ...port.filter import Filter
-from ._arg import FilterData
+from ._base import FilterData
 
 
 @dataclass

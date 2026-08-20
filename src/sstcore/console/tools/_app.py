@@ -10,9 +10,10 @@ from typing import Annotated
 from typer import Context, Option
 
 from ...port.config import Config, Paths
-from ...port.event import LogDTO
+from ...port.event.dto import LogDTO
+from ...port.filter import FilterArgs
 from ...system import System
-from ...util.filter import FilterBox, ProjectFilter
+from ...util.filter import ProjectFilter
 from ...util.path import any_root
 from ...util.print import printer
 from ...util.scan import ScanMode, SummaryFileMachine
@@ -29,6 +30,40 @@ def main() -> None:
 
 
 app = SafeTyper(name="tools", help="Basic Equipment for Development")
+
+
+_filter_arg = args.enum_opt(FilterArgs, "Select preset", "--filter")
+_FilterArg = Annotated[FilterArgs, _filter_arg]
+
+
+@app.command("scanner")
+def launch_folder_scanner(
+    ctx: Context,
+    scan_root: args.Root = None,
+    output_file: args.OutputFile = None,
+    file_type: SummaryFileMachine = SummaryFileMachine.MD,  # TODO: help text
+    reset: args.CleanState = False,
+    sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
+    filter_box: _FilterArg = FilterArgs.PROJECT,
+    scan_mode: ScanMode = ScanMode.RAW,
+):
+    """Folder Scanner with TreeSelector: Write combined file!"""
+    system: System = ctx.obj["system"]
+    paths: Paths = system.config.paths
+    folder_scanner(
+        scan_root=(root := scan_root or any_root()),
+        output_file=output_file or paths.summary_file(suffix=file_type),
+        cache_file=paths.scanner_cache_file(root),
+        cache_reset=reset,
+        sort=sort,
+        local_printer=system.printer,
+        filter=ProjectFilter.from_args(
+            filter_box(
+                # LATER: include/exclude
+            )
+        ),
+        scan_mode=scan_mode,
+    )
 
 
 @app.command("monitor")
@@ -55,36 +90,6 @@ def launch_log_monitor_2(
 def launch_log_monitor_1(file: args.LogFile = None):  # TODO: improveCLI hint
     """Log Console Scroll: Watch new log file entries!"""
     log_monitor(log_path=file)
-
-
-_filter_meta = args.enum_opt(FilterBox, "Select preset", "--filter")
-_FilterArg = Annotated[FilterBox, _filter_meta]
-
-
-@app.command("scanner")
-def launch_folder_scanner(
-    ctx: Context,
-    scan_root: args.Root = None,
-    output_file: args.OutputFile = None,
-    file_type: SummaryFileMachine = SummaryFileMachine.MD,  # TODO: help text
-    reset: args.CleanState = False,
-    sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
-    filter_box: _FilterArg = FilterBox.PROJECT,
-    scan_mode: ScanMode = ScanMode.RAW,
-):
-    """Folder Scanner with TreeSelector: Write combined file!"""
-    system: System = ctx.obj["system"]
-    paths: Paths = system.config.paths
-    folder_scanner(
-        scan_root=(root := scan_root or any_root()),
-        output_file=output_file or paths.summary_file(suffix=file_type),
-        cache_file=paths.scanner_cache_file(root),
-        cache_reset=reset,
-        sort=sort,
-        local_printer=system.printer,
-        filter=ProjectFilter.from_args(filter_box.args),
-        scan_mode=scan_mode,
-    )
 
 
 @app.command("config")
