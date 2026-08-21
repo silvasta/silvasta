@@ -1,16 +1,19 @@
 """
-Create Namespace for custom Errors on Level 1 (error package is on Level 2)
+Provide Namespace for Exceptions before SstError is ready
 
-- bricks package (Level 1) builds essential parts as well for the Exceptions
+- sstcore.error[L2] Avaliable for most of the Library
+- sstcore.brick[L1] Build essential parts the Errors
+- sstcore. port[L0] Generally No Errors needed, ...
 
 """
 
 __all__: list[str] = [
-    "BaseError",
+    "Error",
+    "FailedHackError",
 ]
 
 
-class BaseError(Exception):
+class Error(Exception):  # IMPORTANT: MOST LIKELY: this as SstError
     """Match and Catch all Level < 2 Errors"""
 
     def __init__(self, *args) -> None:
@@ -28,7 +31,7 @@ class BaseError(Exception):
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class FailedHackError(BaseError):
+class FailedHackError(Error):
     """It was a nice try, but..."""
 
     def __init__(self, *args) -> None:

@@ -12,12 +12,17 @@ __all__: list[str] = [
 ]
 
 from ._compose import ViewBuilder
+from ._raise import ViewError
 from ._registry import Cli, Log, Repr, Rich, Str
 
 type ViewArg = Cli | Str | Rich | Repr | Log
 
 
-class ViewError(CoreError): ...
+# NEXT: view build
+# NEXT: view build
+# NEXT: view build
+# NEXT: view build
+# NEXT: view build
 
 
 class _View:
@@ -57,6 +62,8 @@ class _View:
                 raise TypeError(
                     f"Invalid view argument type: {type(arg).__name__}"
                 )
+        if arg:
+            raise ViewError()
 
         return ViewBuilder(**kwargs)
         # return ViewBuilder(cli=cli, str=str, rich=rich, repr=repr, log=log)

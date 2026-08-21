@@ -5,8 +5,6 @@ Define the Shape of Exceptions
                                                        DependencyLevel[0]
 """
 
-from sstcore.port.color import ColorBox
-
 __all__: list[str] = [
     "SstError",
 ]
@@ -14,11 +12,15 @@ __all__: list[str] = [
 from typing import Any
 
 from ..brick.color.box import Colors
-from ..brick.view._raise import Error
+from ..brick.view._raise import ViewError as _ViewError
+from ..port.color import ColorBox
+from ..port.error import Error
 from ..port.event.dto import LogDTO, PanelDTO
 from ..port.view import Renderable
 
 c: ColorBox = Colors()
+
+_composed = _ViewError
 
 
 class SstError(Error):  # IMPORTANT: check intermediate Error steps

@@ -5,12 +5,8 @@ Update the internal Error
 
 """
 
-from ...port.error import BaseError
-from ..format import cls_name
+from ..name._raise import PatternError
 
 
-class Error(BaseError):  # IMPORTANT: check intermediate Error steps
-    @property
-    def name(self) -> str:
-        """Provide ClassName ( __str__ already used for message builtins.Exception"""
-        return cls_name(target=self)
+class ViewError(PatternError):
+    """Assemble Views with attached tools"""
