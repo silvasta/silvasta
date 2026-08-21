@@ -19,7 +19,7 @@ __all__: list[str] = [
 from enum import StrEnum
 from typing import Any
 
-from ..bricks.color.box import Colors
+from ..brick.color.box import Colors
 from ..port.color import ColorBox
 from ..port.view import Renderable
 from ._base import SstError
