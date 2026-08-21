@@ -43,7 +43,7 @@ __all__: list[str] = [
 
 
 from enum import Enum, auto
-from typing import NamedTuple, Protocol, runtime_checkable
+from typing import NamedTuple, Protocol, Self, runtime_checkable
 
 from .functional import Colorizing
 from .view import Stringable
@@ -126,6 +126,9 @@ class Painter(Protocol):
     def __call__(self, text: Stringable) -> str:
         """Apply the Colorizing function with lookup to ColorTable"""
 
+    def __str__(self) -> str:
+        """Return yourself"""
+
 
 class ColorManager(Protocol):
     """Control the RuntimePalette and connect Grid, Factory and Box"""
@@ -134,6 +137,8 @@ class ColorManager(Protocol):
     def switch(self, adapter: Adapter) -> None: ...
     def set_palette(self, palette_id: Palette) -> None: ...
     def resolve(self, target: ColorIdentifier) -> Color: ...
+    @classmethod
+    def bootstrap(cls) -> Self: ...
 
 
 class ColorCoordinate(NamedTuple):
@@ -150,24 +155,26 @@ class ColorRegistry(Protocol):  # TODO: Registry type
     def __init__(self, c: Color, a: Adapter, p: Palette): ...
 
 
-class ColorBox(Protocol):
+class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     """Global Orchestrator and Distributor of Colors"""
 
-    # TASK: pyi with assigned color stacks
+    def get(self, color: ColorIdentifier): ...
+
+    def stack(self, *_args, **_kwargs):  # TODO:
+        raise NotImplementedError
 
     def __getattr__(self) -> Painter:
         """Provide Colors on ColorIndex Name and Shortcut"""
 
     def __call__(self, text: Stringable, color: ColorIdentifier) -> str:
+        # IDEA: return here painter!
         """Find Color by Identifier and return painted text"""
 
-    def color_to_paint(self, color: ColorIdentifier) -> Painter | None:
-        # REMOVE: ???
-        """Map ColorIndex to Painter of current Palette/Schema TODO"""
+    def paint(self, color: ColorIdentifier) -> Painter | None:
+        """Map ColorIndex to Painter of active Palette"""
 
-    def paint_to_color(self, target: str | Painter) -> Color | None:
-        # REMOVE: ???
-        """Map Painter to ColorIndex, not always unique!"""
+    def index(self, target: str | Painter) -> Color | None:
+        """Map Identifier or Painter to ColorIndex"""
 
     # REMOVE: when pyi fixed
     b: Painter

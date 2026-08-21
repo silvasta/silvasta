@@ -50,7 +50,15 @@ class ColorHub:
         self._activate(active, palette)
 
     @classmethod
-    def bootstrap(cls, *_args, **_kwargs) -> Self:
+    def load(cls) -> Self:
+        if cls._active is None:
+            cls._active = cls()
+        return cls._active
+
+    _active: ColorBox | None = None
+
+    @classmethod
+    def boot(cls, *_args, **_kwargs) -> Self:
         raise NotImplementedError
 
     def _activate(

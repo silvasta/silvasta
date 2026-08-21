@@ -52,6 +52,7 @@ class Stacking(Protocol):
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
+@runtime_checkable
 class Functorial[**Param, Result](Protocol):
     """Combine values and functions to advanced executables"""
 

@@ -8,7 +8,7 @@ Assemble the Colors and Tools for public Representation
 __all__: list[str] = [
     "Colors",
 ]
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
@@ -39,40 +39,24 @@ class Colors:
 
     def __getattr__(self, name) -> Painter | str:
         if color := SHORTCUTS.get(name):
-            return self.color_to_paint(color)
+            return self.paint(color)
 
         if name in Color:
-            return self.color_to_paint(name)
+            return self.paint(name)
 
         raise AttributeError(f"{self} Missing Attribute: '{name}'!")
 
-    def color_to_paint(self, color: ColorIdentifier) -> Painter:
-        # FIX:
+    def paint(self, color: ColorIdentifier) -> Painter:
         raise NotImplementedError(color)
 
-    def resolve(self, target: ColorIdentifier) -> Color | None:
-        # FIX:
-        try:
-            return self._hub.resolve(target)
-        except ValueError:
-            return None
+    def index(self, target: ColorIdentifier | Painter) -> Color:
+        raise NotImplementedError
 
     def __call__(self, text: Stringable, color: ColorIdentifier) -> str:
-        """Paint text with identified Color"""
-        # FIX:
-        paint: Painter = self.get(color)
-        return paint(text)
+        raise NotImplementedError
 
     def stack(self, *_args, **_kwargs) -> ColorStack:
         raise NotImplementedError
-
-    @classmethod
-    def load(cls) -> Self:
-        if cls._active is None:
-            cls._active = cls()
-        return cls._active
-
-    _active: ColorBox | None = None
 
     @classmethod
     def set_active(cls, box: ColorBox) -> None:
