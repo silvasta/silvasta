@@ -8,7 +8,6 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
 from typing import NoReturn, Self, overload
 
@@ -56,43 +55,20 @@ class PathSpec:
 type PathInput = str | Path | PathSpec
 
 # ---------------------------------------------------------------------------
-# Nested enum (accessible as PathGuard.SyncMode; not a top-level export)
-# ---------------------------------------------------------------------------
-
-# AI: this is now as well in the sstcore.port.pathguard, expose here as well?
-class SyncMode(StrEnum):
-    """Conflict resolution strategy for transfer operations."""
-
-    INCREMENT = "increment"
-    OVERRIDE = "override"
-    IGNORE = "ignore"
-
-# ---------------------------------------------------------------------------
 # Facade
 # ---------------------------------------------------------------------------
 
 class PathGuard:
-    """
-    Safety and comfort toolkit for path access and filesystem operations.
-
-    Not instantiable — use class-level static API only.
-    """
-
     Spec: type[PathSpec]
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
 
-    def __init__(self) -> NoReturn:
-        """PathGuard is not instantiable."""
-        ...
+    def __init__(self) -> NoReturn: ...
 
     # --- metaclass view / introspection (PathGuardMeta) ---
 
     @classmethod
-    def toolkit(cls, sort: bool = True) -> list[str]:
-        """Names of all staticmethods on the toolkit."""
-        ...
-
+    def toolkit(cls, sort: bool = True) -> list[str]: ...
     @classmethod
     def __str__(cls) -> str: ...
     @classmethod

@@ -1,3 +1,9 @@
+"""
+This was the initial Template
+
+-
+"""
+
 from collections.abc import Iterator
 
 from ...port.color import ColorBox
@@ -7,7 +13,10 @@ from ..color.box import Colors
 colors: ColorBox = Colors()
 
 
-# NOTE: compare with util.path.guard._meta
+# IDEAS:
+# - High: auto-wrap plain functions as staticmethods
+# - Later: Attach 4-12 colors: Yes, but complete colors first...
+# - Unsure: StaticToolkitMeta._registry to list all toolkits in the app
 
 
 class StaticToolkitMeta(type):

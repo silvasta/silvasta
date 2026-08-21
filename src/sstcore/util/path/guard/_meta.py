@@ -12,8 +12,6 @@ from ....port.event.dto import LogDTO, PanelDTO
 
 colors: ColorBox = Colors()
 
-# NOTE: compare with brick.meta.static (currently _meta._static_view)
-
 
 class PathGuardMeta(type):
     """Let PathGuard execute the regular instance dunders"""
@@ -41,7 +39,6 @@ class PathGuardMeta(type):
     def __cli__(cls) -> PanelDTO:
         return PanelDTO(
             content="Safety and Comfort for Path and File System operations",
-            # IDEA: cls.toolkit?
             title=cls.__rich__(),
             frame="cyan",
         )

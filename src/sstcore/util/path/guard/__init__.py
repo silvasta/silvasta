@@ -6,24 +6,14 @@ __all__: list[str] = [
     "PathInput",
 ]
 
-from ....error import PathGuardError, PathGuardReason
+from ....error import PathGuardReason
 from . import _ensure, _input, _operate, _relative
 from ._input import PathInput, PathSpec
 from ._meta import PathGuardMeta
 
 
 class PathGuard(metaclass=PathGuardMeta):
-    """
-    Enable Safety and Comfort for Path access and File System operations
-
-    - Use PathSpec for precise input control
-    - ...
-
-    """
-
-    def __init__(self):
-        """PathGuard is Not an Instance!"""
-        raise PathGuardError(reason=PathGuardReason.NO_INIT)
+    """Safety and Comfort for Path access and File System operations"""
 
     Spec: type[PathSpec] = _input.PathSpec
     SyncMode: type[SyncMode] = _operate.SyncMode
