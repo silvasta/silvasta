@@ -27,7 +27,7 @@ from textual.widgets import (
     Static,
 )
 
-from ...port.event import LogDTO
+from ...port.event.dto import LogDTO
 
 PREDEFINED_CATCHES: dict[str, Callable[[LogDTO], bool]] = {
     # TASK: fill this and make id customizable, maybe from config
