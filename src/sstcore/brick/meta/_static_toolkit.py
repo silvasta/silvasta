@@ -5,8 +5,8 @@ Construct the Shape of StaticToolkit Classes
 """
 
 __all__: list[str] = [
-    "StaticToolkitMeta",
-    "ToolkitMetaArgs",
+    "StaticFuncMeta",
+    "StaticFuncMetaData",
     "ClsRendering",  # MOVE: to port when needed at second location
 ]
 
@@ -46,7 +46,7 @@ class ClsRendering(Protocol):  # NOTE: keep until second usage appears
     def __call__(self, cls: type) -> str: ...
 
 
-class ToolkitMetaArgs:
+class StaticFuncMetaData:
     """Define ArgSpace, defaults, pre-filter and provide rendering"""
 
     name: ClsRendering
@@ -94,7 +94,7 @@ class ToolkitMetaArgs:
     def _default_cli_loader(self, content: str) -> CliDtoFactory:
         def _default_cli(cls) -> CliDTO:
             return PanelDTO(
-                content=content or list(cls.toolkit()),
+                content=content or list(cls.show_toolkit()),
                 title=cls.__rich__(),
                 frame=colors.get(self.color),
             )
@@ -102,10 +102,10 @@ class ToolkitMetaArgs:
         return _default_cli
 
 
-class StaticToolkitMeta(type):
-    """Build Metaclass for Static Toolkit without Init"""
+class StaticFuncMeta(type):
+    """Blueprint for StaticMethod Functor"""
 
-    _data: ToolkitMetaArgs
+    _data: StaticFuncMetaData
 
     def __new__(
         mcls,
@@ -113,7 +113,7 @@ class StaticToolkitMeta(type):
         bases: tuple[type, ...],
         namespace: dict[str, Any],
         *_,
-        data: ToolkitMetaArgs | None = None,
+        data: StaticFuncMetaData | None = None,
         **__,
     ):
 
@@ -126,7 +126,7 @@ class StaticToolkitMeta(type):
 
         cls = super().__new__(mcls, name, bases, namespace)
 
-        cls._data = data or ToolkitMetaArgs()
+        cls._data = data or StaticFuncMetaData()
 
         return cls
 
@@ -140,19 +140,20 @@ class StaticToolkitMeta(type):
         return cls._data.rich(cls)
 
     def __repr__(cls) -> str:
-        return f"{cls.__name__}[{', '.join(cls.toolkit()) or 'useless'}]"
+        return f"{cls.__name__}[{', '.join(cls.show_toolkit()) or 'useless'}]"
 
     def __log__(cls) -> LogDTO:
         return LogDTO(
             message=str(cls),
             level="INFO",
-            extra={"toolkit": cls.toolkit()},
+            metrics={"toolkit": cls.show_toolkit()},
+            extra={"toolkit": repr(cls)},
         )
 
     def __call__(cls, *_, **__) -> Any:  # NOTE: candidate for _data.call
-        raise TypeError(f"ToolKit[{cls}] is Not available as Instance!")
+        raise TypeError(f"StaticFunc[{cls}] is Not available as Instance!")
 
-    def toolkit(cls, sort: bool = True) -> list[str]:
+    def show_toolkit(cls, sort: bool = True) -> list[str]:
         """Provide names of all public staticmethods"""
         names: list[str] = [  # NEXT: candidate for format.reflect
             name

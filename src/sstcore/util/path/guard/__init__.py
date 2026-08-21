@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from ....brick.color.box import Colors
 from ....brick.format import cls_name
-from ....brick.meta import StaticToolkitMeta, ToolkitMetaArgs
+from ....brick.meta import StaticFuncMeta, StaticFuncMetaData
 from ....error import PathGuardReason
 from ....port.color import ColorBox
 from ....port.files import SyncMode
@@ -22,7 +22,7 @@ from ._input import PathInput, PathSpec
 colors: ColorBox = Colors()
 
 
-PathGuardMetaArgs = ToolkitMetaArgs(
+PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {cls_name(target=cls)} ",
     rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
     # LATER: use Format to split by CamelCase (and then colorize)
@@ -31,14 +31,14 @@ PathGuardMetaArgs = ToolkitMetaArgs(
 )
 
 
-class PathGuard(metaclass=StaticToolkitMeta, data=PathGuardMetaArgs):
+class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     """Safety and Comfort for Path access and File System operations"""
 
     Spec: type[PathSpec] = PathSpec
     SyncMode: type[SyncMode] = SyncMode
     Reason: type[PathGuardReason] = PathGuardReason
 
-    # AI: the below (not) docstrings and type hints are essential for DX
+    # AI: the below docstring (imitations) and type hints are DX essentials
     # - the .pyi defines the public interface, this is for internal use
 
     """Category 1: Protect Path access operations to avoid File System fails"""

@@ -13,6 +13,7 @@ from typing import NoReturn, Self, overload
 
 from ....error import PathGuardReason
 from ....port.event.dto import LogDTO, PanelDTO
+from ....port.files import SyncMode
 
 # ---------------------------------------------------------------------------
 # Input layer (public)

@@ -1,12 +1,12 @@
 """
-MetaConstruction - Design the Skeleton of Classes
+Meta Construction - Design the Skeleton of Classes
 
-- StaticToolkitMeta: Convert methods to staticmethods and attach Views
+- StaticFuncMetaData: Convert methods to staticmethods and attach Views
 
 """
 
 __all__: list[str] = [
-    "StaticToolkitMeta",
-    "ToolkitMetaArgs",
+    "StaticFuncMeta",
+    "StaticFuncMetaData",
 ]
-from ._static_toolkit import StaticToolkitMeta, ToolkitMetaArgs
+from ._static_toolkit import StaticFuncMeta, StaticFuncMetaData
