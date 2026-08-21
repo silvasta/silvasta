@@ -1,19 +1,26 @@
 """Create basiv View abilities for PathGuard"""
 
 __all__: list[str] = [
-    "PathGuardMeta",
+    # TODO: "PathGuardMeta",
 ]
 
 from collections.abc import Iterator
 
 from ....brick.color.box import Colors
+from ....brick.meta import ToolkitMetaArgs
 from ....port.color import ColorBox
 from ....port.event.dto import LogDTO, PanelDTO
 
 colors: ColorBox = Colors()
 
+PATH_GUARD_BOOT = ToolkitMetaArgs(
+    name=lambda cls: f" {cls} ",
+    rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
+    cli="Safety and Comfort for Path and File System operations",
+)
 
-class PathGuardMeta(type):
+
+class _FormerPathGuardMeta(type):  # REMOVE: when new version works
     """Let PathGuard execute the regular instance dunders"""
 
     def toolkit(cls, sort=True) -> list[str]:

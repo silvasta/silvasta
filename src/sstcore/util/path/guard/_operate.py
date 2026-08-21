@@ -5,7 +5,7 @@ File System Operations
 - Delete
 """
 
-__all__: list[str] = [
+__all__: list[str] = [  # TODO:
     # transfer operations
     "rotate",
     "copy",
@@ -22,11 +22,11 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....bricks.format import cls_name
-from ....bricks.func import SafeFunctor
+from ....brick.format import cls_name
+from ....brick.func import SafeFunctor
 from ....error import PathGuardError, PathGuardReason
-from ....port.functor import ErrorPolicy
-from ....port.pathguard import SyncMode
+from ....port.files import SyncMode
+from ....port.functional import ErrorPolicy
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec
 
@@ -58,7 +58,7 @@ class TransferStrategy(SafeFunctor[[Path, Path], Path]):
         kwargs.setdefault("error_policy", ErrorPolicy.RE_RAISE)
         super().__init__(**kwargs)
 
-    check_sync_mode = staticmethod(check_sync_mode)
+    check_sync_mode: Callable = staticmethod(check_sync_mode)
 
     def synced(self, source: Path, target: Path, mode: SyncMode) -> Path:
         """Apply SyncMode and Transfer Source to confirmed Target"""
