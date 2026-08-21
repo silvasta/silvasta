@@ -7,66 +7,70 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from ....brick.meta import StaticToolkitMeta
+from ....brick.color.box import Colors
+from ....brick.format import cls_name
+from ....brick.meta import StaticToolkitMeta, ToolkitMetaArgs
 from ....error import PathGuardReason
-from . import _ensure, _input, _operate, _relative
+from ....port.color import ColorBox
+from ....port.files import SyncMode
+from ....port.functional import Functorial
+from . import _ensure, _operate, _relative
 from ._input import PathInput, PathSpec
-from ._meta import PATH_GUARD_BOOT, _FormerPathGuardMeta
+
+colors: ColorBox = Colors()
 
 
-class TestPathGuard(metaclass=StaticToolkitMeta, data=PATH_GUARD_BOOT):
+PathGuardMetaArgs = ToolkitMetaArgs(
+    name=lambda cls: f" {cls_name(target=cls)} ",
+    rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
+    # LATER: use Format to split by CamelCase (and then colorize)
+    cli="Safety and Comfort for Path and File System operations",
+    color=2,  # colors, names and even Enums change, but the registry index?
+)
+
+
+class PathGuard(metaclass=StaticToolkitMeta, data=PathGuardMetaArgs):
     """Safety and Comfort for Path access and File System operations"""
 
-    # NOTE: type annotations and "docstrings" below are for DX
+    Spec: type[PathSpec] = PathSpec
+    SyncMode: type[SyncMode] = SyncMode
+    Reason: type[PathGuardReason] = PathGuardReason
+
+    # AI: the below (not) docstrings and type hints are essential for DX
+    # - the .pyi defines the public interface, this is for internal use
 
     """Category 1: Protect Path access operations to avoid File System fails"""
+
     dir: Callable = _ensure.dir
     file: Callable = _ensure.file
     unique: Callable = _ensure.unique_main
     find_sequence: Callable = _ensure.find_sequence
 
     """Category 2: Perform File Transfer operations with comfort and safety"""
+
+    TODO_TRANSFER_STRATEGY: _operate.TransferStrategy = _operate.Rotate
     rotate: Callable = _operate.rotate
-    copy: _operate.TransferStrategy = _operate.copy
+    copy: Callable = _operate.copy
     hardlink: Callable = _operate.hardlink
     symlink: Callable = _operate.symlink
-    #
-    remove: _operate.DeleteStrategy = _operate.remove
-    trash: _operate.DeleteStrategy = _operate.trash
+
+    TODO_DELETE_STRATEGY: _operate.DeleteStrategy = _operate.Trash
+    remove: Callable = _operate.remove
+    trash: Callable = _operate.trash
     prune: Callable = _operate.prune
 
     """Category 3: Use infrastructure for Relative Path and minor helpers.."""
+
     relative: Callable = _relative.relative_main
     relative_duo: Callable = _relative.relative_duo
     relative_string: Callable = _relative.relative_string
     split: Callable = _relative.split
 
 
-class PathGuard(metaclass=_FormerPathGuardMeta):
-    """Safety and Comfort for Path access and File System operations"""
-
-    Spec: type[PathSpec] = _input.PathSpec
-    SyncMode: type[SyncMode] = _operate.SyncMode
-    Reason: type[PathGuardReason] = PathGuardReason
-
-    """Category 1: Protect Path access operations to avoid File System fails"""
-    dir = staticmethod(_ensure.dir)
-    file = staticmethod(_ensure.file)
-    unique = staticmethod(_ensure.unique_main)
-    find_sequence = staticmethod(_ensure.find_sequence)
-
-    """Category 2: Perform File Transfer operations with comfort and safety"""
-    remove = staticmethod(_operate.remove)
-    trash = staticmethod(_operate.trash)
-    prune = staticmethod(_operate.prune)
-    rotate = staticmethod(_operate.rotate)
-    copy = staticmethod(_operate.copy)
-    hardlink = staticmethod(_operate.hardlink)
-    symlink = staticmethod(_operate.symlink)
-
-    """Category 3: Use infrastructure for Relative Path and minor helpers.."""
-    relative = staticmethod(_relative.relative_main)
-    relative_duo = staticmethod(_relative.relative_duo)
-    relative_string = staticmethod(_relative.relative_string)
-    split = staticmethod(_relative.split)
+if TYPE_CHECKING:  # REMOVE: after tests
+    _instance: Functorial = _operate.Rotate
+    _instance: _operate.TransferStrategy = _operate.Hardlink
+    _instance: Functorial = _operate.Remove
+    _instance: _operate.DeleteStrategy = _operate.Trash

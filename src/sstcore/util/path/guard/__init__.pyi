@@ -64,11 +64,6 @@ class PathGuard:
     Reason: type[PathGuardReason]
 
     def __init__(self) -> NoReturn: ...
-
-    # --- metaclass view / introspection (PathGuardMeta) ---
-
-    @classmethod
-    def toolkit(cls, sort: bool = True) -> list[str]: ...
     @classmethod
     def __str__(cls) -> str: ...
     @classmethod
@@ -79,6 +74,8 @@ class PathGuard:
     def __cli__(cls) -> PanelDTO: ...
     @classmethod
     def __log__(cls) -> LogDTO: ...
+    @classmethod
+    def toolkit(cls, sort: bool = True) -> list[str]: ...
 
     # -----------------------------------------------------------------------
     # Category 1: structural guards (hybrid call / decorator)

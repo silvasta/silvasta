@@ -25,25 +25,25 @@ from ..format import cls_name
 colors: ColorBox = Colors()
 
 
-def return_value[T](value: T) -> Callable[..., T]:
-    # MOVE: to sstcore.brick.{format._reflect|_convert}|{func}
+def just_return[Target](constant: Target) -> Callable[..., Target]:
+    def constant_function(*_, **__) -> Target:
+        return constant
 
-    def just_return(*_, **__) -> T:
-        return value
-
-    return just_return
+    return constant_function  # MOVE: to sstcore.brick.format|func
 
 
 @runtime_checkable
 class CliDtoFactory(Protocol):
+    # NEXT:
+    # NEXT:
+    # NEXT:
     # MOVE: to sstcore.port.event.dto
-    def __call__(self, cls) -> CliDTO: ...
+    def __call__(self, cls: type) -> CliDTO: ...
 
 
-@runtime_checkable
-class ClsRendering(Protocol):
-    # NOTE: keep for now, until second usage appears
-    def __call__(self, cls) -> str: ...
+@runtime_checkable  # REMOVE: runtime check useful? dangerous?
+class ClsRendering(Protocol):  # NOTE: keep until second usage appears
+    def __call__(self, cls: type) -> str: ...
 
 
 class ToolkitMetaArgs:
@@ -59,14 +59,14 @@ class ToolkitMetaArgs:
         name: ClsRendering | str = "",
         rich: ClsRendering | str = "",
         cli: CliDtoFactory | str = "",
-        color: ColorIdentifier = 2,
+        color: ColorIdentifier = Color.AZURE,
     ):
         self.color: Color = resolve_color(color_guess=color)
 
         self.name: ClsRendering = (
             name
             if isinstance(name, ClsRendering)
-            else return_value(name)
+            else just_return(constant=name)
             if name
             else self._default_name
         )
@@ -74,7 +74,7 @@ class ToolkitMetaArgs:
         self.rich: ClsRendering = (
             rich
             if isinstance(rich, ClsRendering)
-            else return_value(rich)
+            else just_return(constant=rich)
             if rich
             else self._default_rich
         )
@@ -89,7 +89,6 @@ class ToolkitMetaArgs:
         return cls_name(cls)
 
     def _default_rich(self, cls) -> str:
-        # NOTE: keep for now, later maybe loader with color or mini-colorbox
         return colors(cls, self.color)
 
     def _default_cli_loader(self, content: str) -> CliDtoFactory:
@@ -150,14 +149,12 @@ class StaticToolkitMeta(type):
             extra={"toolkit": cls.toolkit()},
         )
 
-    def __call__(cls, *_, **__) -> Any:
-        # NOTE: candidate for _data.call
+    def __call__(cls, *_, **__) -> Any:  # NOTE: candidate for _data.call
         raise TypeError(f"ToolKit[{cls}] is Not available as Instance!")
 
     def toolkit(cls, sort: bool = True) -> list[str]:
         """Provide names of all public staticmethods"""
-        # NOTE: candidate for format._reflect
-        names: list[str] = [
+        names: list[str] = [  # NEXT: candidate for format.reflect
             name
             for name in dir(cls)
             if not name.startswith("_")
