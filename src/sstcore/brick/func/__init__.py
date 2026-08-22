@@ -11,15 +11,15 @@ __all__: list[str] = [
     "DecoFunctor",
 ]
 
-from ._base import DecoFuncMixin, FunctorCore, SafeFuncMixin
+from ._base import BaseFunctor, DecoFuncMixin, SafeFuncMixin
 
 
 class Functor[**P, R](
-    DecoFuncMixin[P, R], SafeFuncMixin[P, R], FunctorCore[P, R]
+    DecoFuncMixin[P, R], SafeFuncMixin[P, R], BaseFunctor[P, R]
 ): ...
 
 
-class SafeFunctor[**P, R](DecoFuncMixin[P, R], FunctorCore[P, R]): ...
+class SafeFunctor[**P, R](DecoFuncMixin[P, R], BaseFunctor[P, R]): ...
 
 
-class DecoFunctor[**P, R](DecoFuncMixin[P, R], FunctorCore[P, R]): ...
+class DecoFunctor[**P, R](DecoFuncMixin[P, R], BaseFunctor[P, R]): ...

@@ -1,5 +1,5 @@
 """
-Build the Container for the Exception handling
+Build the Error Handler Container
 
                                                        DependencyLevel[1]
 """
@@ -12,9 +12,9 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from ...bricks.registry import DictRegistry
+from ...brick.registry import DictRegistry
 from ...port.registry import DictingRegistry, FunctionalRegistry
-from ._handler import ErrorHandler
+from ._handler import ErrorHandler  # REMOVE: proto???
 
 type HandlerFunc = Callable[[BaseException], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
@@ -33,6 +33,7 @@ class ErrorRegistry(DictRegistry[ErrorHandler, type[BaseException]]):
         self.items: dict[type[BaseException], ErrorHandler] = {}
 
     def _item_identifier(self, item: ErrorHandler):
+        # FIX:
         return item.exception_type, ErrorHandler
 
     def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:

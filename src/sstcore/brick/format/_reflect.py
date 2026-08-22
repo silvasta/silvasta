@@ -6,22 +6,34 @@ Inspect arbitrary objects and safely pull out specific attributes
 
 __all__: list[str] = [
     "cls_name",
+    "data",
+    "just_return",
+    # find
     "name",
     "text",
-    "data",
-    #
+    # extract
     "invoke",
     "rich",
     "cli",
     "log",
 ]
 
+from collections.abc import Callable
 from typing import Any
 
 
 def cls_name(target: Any) -> str:
     """Safely extract class name from instances or classes."""
     return getattr(target, "__name__", type(target).__name__)
+
+
+def just_return[Target](constant: Target) -> Callable[..., Target]:
+    """Wrap target in function that returns constant value"""
+
+    def constant_function(*_, **__) -> Target:
+        return constant
+
+    return constant_function  # MOVE: to sstcore.brick.format|func
 
 
 def data(target: Any, exclude: set[str] | None = None) -> dict[str, Any]:

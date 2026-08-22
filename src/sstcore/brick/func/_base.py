@@ -1,24 +1,30 @@
+"""
+Prepare the Func/Obj
+
+- Pick and provide the best of OOP/FP
+
+"""
+
 import sys
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from loguru import logger
 
-from ...bricks.view import view
-from ...port.builder import Ghost
-from ...port.functor import (
+from ...port.functional import (
     DecoFunctorial,
     ErrorPolicy,
     Functorial,
     SafeFunctorial,
 )
 from ..format import cls_name, reflect
-
-# TASK: check again typing, change Param/Result  or Ghost
+from ..none import Ghost
+from ..view import view
 
 
 @view.functor()
-class FunctorCore[**Param, Result]:
+# TASK: check again typing, change Param/Result  or Ghost
+class BaseFunctor[**Param, Result]:
     def __init__(
         self,
         func: Callable[Param, Result] | None = None,
@@ -27,7 +33,7 @@ class FunctorCore[**Param, Result]:
     ):
         self._func: Callable[Param, Result] | None = func
         self.name: str = name or reflect.func(func, default=cls_name(self))
-        kwargs and self.emit("Unconsumed kwargs at FunctorCore!", **kwargs)
+        kwargs and self.emit("Unconsumed kwargs at BaseFunctor!", **kwargs)
         super().__init__()  # close the MRO forwarding
 
     def __call__(self, *args: Param.args, **kwargs: Param.kwargs) -> Result:
@@ -41,9 +47,9 @@ class FunctorCore[**Param, Result]:
 
 
 if TYPE_CHECKING:
-    _instance: Functorial = FunctorCore()
-    _class: type[Functorial] = FunctorCore
-    _GhostFunctor = FunctorCore
+    _instance: Functorial = BaseFunctor()
+    _class: type[Functorial] = BaseFunctor
+    _GhostFunctor = BaseFunctor
 else:
     _GhostFunctor = Ghost
 
