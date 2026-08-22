@@ -2,33 +2,27 @@
 Define the Objects that Shape and Assemble the Core
 
 Meta
-- Constructor: Design the Structure
-- XxxMeta: Blueprint Xxx MetaClass
-- XxxMetaData: Guard Xxx InputSpace
-  XxxMetaInput: class specific setup (Data -> Input -> class arg -> class data)
-  (Eliminates problems at the highest level truly foolproof)
-- _assemble: method
-- _meta: module
-- _blueprint: module
+- Constructor: Meta Director
+    - assemble: dynamic release (future)
+- Meta: MetaClass Blueprint
+- MetaData: InputSpace Guard
+  - MetaInput: class specific unit -> single meta arg - dto
+- Module: _meta
 
 Class
-- YyyBuilder: Compose the Mixins
-- YyyInjector: Into the Target
-- compose: method (specialized, mixin custom defaults)
-  (compose|build still somehow conflicting...)
-- build: method (simple, countable mixins, clear instructions for assembly)
-- aggregate: method (massively dynamic mixin assembly)
-- _compose: module
+- Builder: Compose the Mixins
+  - compose: method (specialized, mixin custom defaults)
+  - build: method
+- Injector: Into the Target
+- aggregate: method(or builder)
 - draw: generate and write the stub files
-  (most likely easier to forward parse mixin list than for the type checker to backwards identify them)
+- Module: _compose
 
 Unit
-- ZzzFactory: Build and Produce (massivly released units)
-- create: method (specialized input -> unit)
-- produce: method (standardized input -> unit)
-- _produce: module (massively)
-- _factory: module (build and produce)
-- _forge: module (specialized)
+- Factory: Build and Produce
+  - produce: method (standardized input -> unit)
+- _Forge: precise production
+- Module: depending on purpose and location
 
 ---
 
@@ -50,4 +44,4 @@ __all__: list[str] = [
     "Injector",
 ]
 
-from ._core import Builder, Constructor, Injector
+from ._sketch import Builder, Constructor, Injector

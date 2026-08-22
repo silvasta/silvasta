@@ -20,8 +20,16 @@ from .view import Stringable
 
 __all__: list[str] = [
     "Functorial",
-    "Colorizing",
+    "SafeFunctorial",
+    "ErrorPolicy",
+    #
+    "Stacking",
 ]
+
+
+@runtime_checkable
+class ClassRendering(Protocol):
+    def __call__(self, cls: type) -> str: ...
 
 
 @runtime_checkable

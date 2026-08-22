@@ -33,7 +33,7 @@ class Registry[ItemT](Protocol):
         """Yield all items"""
 
     def add(self, *args, **kwargs) -> int:
-        """Extend member by new item, clear Num existing items with same identifier"""
+        """Extend members by new item, clear Num existing items by identifier"""
 
     def get(self, key: Any) -> ItemT | None | list[ItemT]:
         """Provide item by key"""
@@ -46,6 +46,8 @@ class ListingRegistry[ItemT](Registry, Protocol):
     """Establish the Registry with a List of Items"""
 
     items: list[ItemT]
+
+    def add(self, item: ItemT, clear) -> int: ...
 
 
 class DictingRegistry[ItemT, KeyT](Registry, Protocol):
@@ -64,6 +66,7 @@ class FunctionalRegistry[ItemT: Callable](Protocol):
 class FilteringRegistry[ItemT](Protocol):
     """Extend the Registry with filtered items"""
 
+    # NEXT:
     # NOTE: bacically the same as port.filter.Filtering
     # - check when use and take maybe the other
 
@@ -75,21 +78,18 @@ class FilteringRegistry[ItemT](Protocol):
         """Provide items that pass the given (or internal) filter."""
 
 
-# TASK: final check:
-# - is this bulllshit or maybe useful for something??èè!!
+# TASK: define axes
 class IndexingRegistry[ItemT, IndexT: Index | tuple[Index, ...]](
     Registry, Protocol
 ):
     """Establish the Registry with Enum and Tuple"""
 
     items: tuple[ItemT, ...]
-    index: IndexT
+    index: IndexT | tuple[IndexT]
 
 
-# TASK: final check:
-# - is this bulllshit or maybe useful for something??èè!!
 class Index(Enum):
-    """Define the Base Palette with 12 indexed Colors"""
+    """Define one countable Axis"""
 
     def __str__(self) -> str:
         return f"{self.name.capitalize()}"
