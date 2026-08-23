@@ -31,10 +31,15 @@ from ...port.view import (
 from . import _mixin as mixin
 
 
+# MOVE: port
 class ViewRegistry(Enum):
     @property
     def category(self) -> str:
         return cls_name(self).lower()
+
+    # TODO:
+    # @property
+    # def mixin(self) -> type[XXX]:
 
     def fail_info(self, reason: str) -> str:
         return f"{self}View[{self.name}] Failed: {reason}"

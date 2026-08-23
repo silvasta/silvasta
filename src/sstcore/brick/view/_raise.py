@@ -8,5 +8,5 @@ Update the internal Error
 from ..name._raise import PatternError
 
 
-class ViewError(PatternError):
+class ViewError(PatternError):  # TODO: view error
     """Assemble Views with attached tools"""

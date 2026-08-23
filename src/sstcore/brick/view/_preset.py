@@ -1,0 +1,51 @@
+"""
+Collect and combine default Views
+
+- ViewPresets: Support ViewInjector (maybe as mixin)
+
+"""
+
+__all__: list[str] = [
+    "ViewPresets",
+]
+
+from ._compose import ViewComposer
+from ._registry import Cli, Log, Repr, Rich, Str
+
+# LATER: this thing will get very long...
+# TASK: view presets:
+# - defaults for regular classes
+# - attach typing, e.g. by ViewComposer[MergedProtocol]
+
+
+class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
+    pydantic = ViewComposer(
+        cli=Cli.TABLE,
+        string=Str.NAME,
+        rich=Rich.MODULE,
+        repr=Repr.OFF,
+        log=Log.DATA,
+    )
+
+    printer = ViewComposer(
+        cli=Cli.HEADER,
+        string=Str.MODULE,
+        rich=Rich.SHORT,
+        repr=Repr.DEBUG,
+        log=Log.DEBUG,
+    )
+
+    safe_typer = ViewComposer(
+        cli=Cli.PANEL,
+        string=Str.SHORT,
+        rich=Rich.MODULE,
+        repr=Repr.DEBUG,
+        log=Log.DEBUG,
+    )
+    functor = ViewComposer(
+        cli=Cli.PANEL,
+        string=Str.NAME,
+        rich=Rich.MODULE,
+        log=Log.DEBUG,
+        repr=Repr.DATA,
+    )

@@ -14,6 +14,7 @@ __all__: list[str] = [
 ]
 
 from ._compose import ViewComposer
+from ._preset import ViewPresets
 from ._raise import ViewError
 from ._registry import Cli, Log, Repr, Rich, Str, ViewRegistry
 
@@ -111,39 +112,6 @@ def _is_target_class(obj: object) -> bool:
     # REMOVE:
     # ViewArg members are Enums, never classes — this split is reliable.
     return isinstance(obj, type) and not isinstance(obj, ViewRegistry)
-
-
-class ViewPresets:
-    pydantic = ViewComposer(
-        cli=Cli.TABLE,
-        string=Str.NAME,
-        rich=Rich.MODULE,
-        repr=Repr.OFF,
-        log=Log.DATA,
-    )
-
-    printer = ViewComposer(
-        cli=Cli.HEADER,
-        string=Str.MODULE,
-        rich=Rich.SHORT,
-        repr=Repr.DEBUG,
-        log=Log.DEBUG,
-    )
-
-    safe_typer = ViewComposer(
-        cli=Cli.PANEL,
-        string=Str.SHORT,
-        rich=Rich.MODULE,
-        repr=Repr.DEBUG,
-        log=Log.DEBUG,
-    )
-    functor = ViewComposer(
-        cli=Cli.PANEL,
-        string=Str.NAME,
-        rich=Rich.MODULE,
-        log=Log.DEBUG,
-        repr=Repr.DATA,
-    )
 
 
 class View(ViewComposer, ViewPresets): ...

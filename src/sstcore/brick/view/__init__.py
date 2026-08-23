@@ -37,7 +37,7 @@ __all__: list[str] = [
 
 from . import _mixin as views
 from ._compose import ViewInjector
-from ._forge import view
+from ._forge import view  # IDEA: assemble here!
 from ._registry import Cli, Log, Repr, Rich, Str
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
