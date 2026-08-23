@@ -11,23 +11,30 @@ __all__: list[str] = [
     "LogEmitter",
     "ViewEmitter",
 ]
-
+# REFACTOR:
+# REFACTOR:
+# REFACTOR:
+# REFACTOR:
+# REFACTOR:
+# REFACTOR:
+# REFACTOR:
+# REFACTOR:
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from sstcore.port.printer import Protocol
 
-from ..brick.view import Repr, Str, view
-from ..port.event import LogDTO
-from ..port.event._emit import (
+from ...brick.view import Repr, Str, view
+from ...port.event import LogDTO
+from ...port.event._emit import (
     Emit,
     EventEmit,
     EventLogEmit,
     LogEmit,
     LogEmitter,
 )
-from ..port.event._emit import Emitter as Emitter_
-from ..port.event.name import CliEvent, EventName
+from ...port.event._emit import Emitter as Emitter_
+from ...port.event.name import CliEvent, EventName
 
 
 @view(str=Str.SHORT, repr=Repr.BOX)

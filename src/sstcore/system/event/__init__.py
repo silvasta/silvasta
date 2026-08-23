@@ -1,8 +1,8 @@
 """
-Wire the Event Infrastructure.
+Wire the Event Infrastructure
 
-- Provide EventBus with Loader, Handler and if needed, global access
-                                                       DependencyLevel[0]
+- Provide EventBus with Bootstrap and Handler access
+
 """
 
 __all__: list[str] = [
@@ -10,8 +10,8 @@ __all__: list[str] = [
     "EventHandler",
     #
     "Emitter",
-    "EmitFunctor",
-    "create_event_bus",
+    "LogEmitter",  # FIX:
+    "CliEmitter",  # FIX:
 ]
 
 

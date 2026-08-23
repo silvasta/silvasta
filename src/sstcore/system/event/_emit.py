@@ -31,31 +31,17 @@ class Emitter:
     def __call__(self, event: EventName, sender: str, **payload: Any) -> None:
         self.bus.emit(event, sender, **payload)
 
-    # --- Factory methods ---
-    # LATER: Emitter.view as instance ViewEmitter
-    # def view(
-    #     self,
-    #     event: EventName,
-    #     sender: str,
-    #     target: Any,
-    #     *,
-    #     level: str = "INFO",
-    # ) -> None:
-    #     self(event, sender, **ViewEmitter.build_payload(target, level=level))
-
+    # REMOVE: replace by LogEmitter
     def make_log(self, event: EventName, sender: str) -> LogEmitter:
         # LATER: Emitter.log.make(...)
         return LogEmitter(self, sender, event)
 
+    # REMOVE: replace by CliEmitter
     def make_view(
         self, sender: str, *, event: EventName = CliEvent.RENDER
     ) -> ViewEmitter:
         # LATER: Emitter.view.make(...)
         return ViewEmitter(self, sender, event)
-
-    # --- Direct logging helpers (for one-off usage) ---
-
-    # --- View / Render helpers ---
 
     def view(
         # LATER: Emitter.view as instance ViewEmitter

@@ -52,6 +52,7 @@ class EventHandler:
             logger.debug(f"Traceback for {self}:", exc_info=True)
 
 
+# REMOVE: replace by Register
 def register_default_event_handler(bus: EventBus) -> None:
     """Attach EventHandler to EventBus by EventName or EventPattern"""
 
@@ -61,12 +62,14 @@ def register_default_event_handler(bus: EventBus) -> None:
     bus.subscribe_all(TELEMETRY_HANDLER)
 
 
+# REMOVE: replace by Functor
 LOG_HANDLER = EventHandler(
     name="LoguruBridge",
     func=handle_log_event,
     fail_loud=True,
 )
 
+# REMOVE: replace by Functor
 CLI_HANDLER = EventHandler(
     name="CliPrinter",
     func=handle_cli_event,
@@ -74,6 +77,7 @@ CLI_HANDLER = EventHandler(
 )
 
 
+# MOVE: util.log
 def telemetry(event: Event):
     logger.debug(
         "Event: {event_name} | sender={sender} | keys={keys}",
@@ -83,6 +87,7 @@ def telemetry(event: Event):
     )
 
 
+# REMOVE: replace by Functor
 TELEMETRY_HANDLER = EventHandler(
     name="Telemetry",
     func=telemetry,
