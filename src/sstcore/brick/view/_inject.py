@@ -23,10 +23,18 @@ __all__: list[str] = [
 
 from typing import TYPE_CHECKING, Self, overload
 
+from ...brick.none import Ghost
+from ._compose import ViewComposer
+
+if TYPE_CHECKING:
+
+    class _MixInjector(ViewComposer): ...
+else:
+    _MixInjector = Ghost
+
 from ...brick.forge.mix import MixinRegistry
 from ...port.register import MixinRegister
 from ...port.shape import Injector
-from ._compose import ViewComposer
 from ._raise import ViewError
 from ._registry import Cli, Log, Repr, Rich, Str, ViewRegistry
 
@@ -34,15 +42,13 @@ from ._registry import Cli, Log, Repr, Rich, Str, ViewRegistry
 type ViewArg = Cli | Str | Rich | Repr | Log
 
 
-class ViewInjector[MixT: type]:
+class ViewInjector[MixT: type](_MixInjector):
     """view Distributor: Inject or Build with Preset Views or Modify"""
 
-    mixins: tuple[type, ...]
     vault: MixinRegister[MixT]
 
     def __init__(self):
-        # AI: maybe function that loads the mixin registry  from Composer.mixins?
-        self.mixin_registger: MixinRegister[MixT] = MixinRegistry(self.mixins)
+        self.mixin_registger = MixinRegistry(self.mixins)
         super().__init__()
 
     @overload
@@ -57,11 +63,11 @@ class ViewInjector[MixT: type]:
     def __call__(
         self,
         *args: ViewArg,  # LATER: allow for mixins not in Enum registries
-        cli: Cli = Cli.OFF,
-        string: Str = Str.OFF,
-        rich: Rich = Rich.OFF,
-        repr: Repr = Repr.OFF,
-        log: Log = Log.OFF,
+        _cli: Cli = Cli.OFF,  # TEST: view in IDE
+        _string: Str = Str.OFF,
+        _rich: Rich = Rich.OFF,
+        _repr: Repr = Repr.OFF,
+        _log: Log = Log.OFF,
     ) -> Self:  # AI: Self???
 
         selected_views: dict[str, ViewRegistry] = {}
