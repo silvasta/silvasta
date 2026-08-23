@@ -13,9 +13,10 @@ __all__: list[str] = [
 from collections.abc import Callable
 
 from ...brick.registry import DictRegistry
-from ...port.registry import DictingRegistry, FunctionalRegistry
+from ...port.register import DictRegister, FuncRegister
 from ._handler import ErrorHandler  # REMOVE: proto???
 
+# IDEA: Generalize/Parametrize this for FunctorRegistry
 type HandlerFunc = Callable[[BaseException], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
@@ -33,7 +34,6 @@ class ErrorRegistry(DictRegistry[ErrorHandler, type[BaseException]]):
         self.items: dict[type[BaseException], ErrorHandler] = {}
 
     def _item_identifier(self, item: ErrorHandler):
-        # FIX:
         return item.exception_type, ErrorHandler
 
     def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:
@@ -48,8 +48,8 @@ class ErrorRegistry(DictRegistry[ErrorHandler, type[BaseException]]):
 
 if TYPE_CHECKING:
     # LATER: implement and use FunctionalRegistry
-    _instance_check: FunctionalRegistry = ErrorRegistry()
-    _class_check: type[FunctionalRegistry] = ErrorRegistry
+    _instance_check: FuncRegister = ErrorRegistry()
+    _class_check: type[FuncRegister] = ErrorRegistry
     #
-    _instance_check: DictingRegistry = ErrorRegistry()
-    _class_check: type[DictingRegistry] = ErrorRegistry
+    _instance_check: DictRegister = ErrorRegistry()
+    _class_check: type[DictRegister] = ErrorRegistry

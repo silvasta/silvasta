@@ -1,19 +1,32 @@
 """
-Define the shape of the Core Registry.
+Define the Shape of the Core Registry
 
--
+- 1 Interface for Any type of Items
+ -> Make Data handling independant
+
 """
 
 __all__: list[str] = [
     # root
     "Registry",
     # bases
-    "ListedRegistry",
-    "DictedRegistry",
-    "TupleRegistry",  # TODO: setup basic definition
+    "ListRegister",
+    "TupleRegister",
+    "DictRegister",
     # extenstions
-    "FuncRegistry",  # TODO: rename?
-    "FilterRegistry",  # TODO: rename?
+    "MixinRegister",
+    "FilterRegister",
+    "FuncRegister",
+    # TASK: final name for decorator attaching function registry:
+    # - FunctionalRegister
+    # - FunctorialRegister
+    # - FunctorRegister
+    # - CallRegister
+    # - CallableRegister
+    # - DecoratingRegister
+    # - DecoRegister
+    #
+    "Index",
 ]
 
 from collections.abc import Callable, Iterable
@@ -23,87 +36,88 @@ from typing import Any, Protocol
 from .filter import Filter
 
 
-class Registry[Item](Protocol):
-    """Define the Shape of the general Registry"""
+class Registry[Item, Key](Protocol):
+    """Define the Shape of the General Registry"""
 
-    items: Any  # AI: I just set this. items? as the global name?
+    items: Any
 
-    def __len__(self) -> int:
-        """Count all member"""
+    def add(self, *args, **kwargs) -> Any:
+        """Extend Items directly or with processing"""
 
-    def __contains__(self, target: Any) -> bool:
-        """Has member?"""
+    def get(self, key: Key) -> Item | list[Item] | None:
+        # IDEA: find and get?? raise?
+        """Find {0..N} Items by internal identifier Key"""
+
+    def clear(self, key: Key | None = None) -> Any:
+        """Delete the entire content"""
 
     @property
     def all(self) -> Iterable[Item]:
-        """Yield all items"""
+        """Provide all items one by one"""
 
-    def add(self, *args, **kwargs) -> int:
-        """Extend members by new item, clear Num existing items by identifier"""
+    def __len__(self) -> int:
+        """How many Items?"""
 
-    def get(self, key: Any) -> Item | None | list[Item]:
-        """Provide item by key"""
-
-    def clear(self, key: Any | None = None) -> int:
-        """Delete entire content and provide number of cleared items"""
+    def __contains__(self, target: Item) -> bool:
+        """Is target already member?"""
 
 
-class ListedRegistry[Item](Registry, Protocol):
+class ListRegister[Item, Key](Registry[Item, Key], Protocol):
     """Establish the Registry with a List of Items"""
 
     items: list[Item]
 
-    def add(self, item: Item, clear) -> int: ...
+    def add(self, item: Item, *, override: bool) -> int:
+        """Add item, override {0..K} items with same Key"""
 
 
-class DictedRegistry[Item, Key](Registry, Protocol):
+class DictRegister[Item, Key](Registry[Item, Key], Protocol):
     """Establish the Registry with a Dict of Items"""
 
     items: dict[Key, Item]
 
 
-# NEXT: TupleReg, yes it makes sense
+class TupleRegister[Item: Any, Key: int](Registry[Item, Key], Protocol):
+    """Establish the Registry with locking Tuples"""
+
+    items: tuple[Item]
+
+    def add(self, item: Item | list[Item], **kwargs) -> tuple[Item]:
+        """Rebuild internal Tuple with new Items"""
 
 
-class MixingRegistry[Mixin: type](Registry, Protocol):
+class MixinRegister[Mixin: type](Registry, Protocol):
     """Establish the Registry with Tuples (of Mixins, at least for now)"""
 
-    mixins: tuple
+    mixins: tuple[Mixin, ...]
 
 
-class FunctionalRegistry[Item: Callable](Protocol):
+class FuncRegister[Item: Callable](Protocol):
     """Extend the Registry for Functions (LATER: and Functors)"""
 
     def attach(self: Registry) -> Callable[[Item], Item]:
         """Register new member by Decorator"""
 
 
-class FilteringRegistry[Item: Callable](Protocol):
+class FilterRegister[Item: Callable](Protocol):
     """Extend the Registry with Filtering"""
 
-    def filter(self, new_active_filter: Filter | None = None) -> list[Item]:
+    def filter(self, new_active_filter: Filter | None) -> list[Item]:
         """Provide Items that fulfill the active Filter"""
 
-    def set_filter(self, active_filter: Filter) -> None: ...
-    def reset_filter(self) -> None: ...
+    def set_filter(self, active_filter: Filter) -> Filter:
+        """Set and Get attached Filter"""
+
+    def reset_filter(self) -> Filter | None:
+        """Remove attached Filter and provide previous"""
+
     @property
     def active_filter(self) -> Filter:
         """Provide attached Filter, load default first if needed"""
 
 
-# TASK: define axes
-class IndexingRegistry[Item, IndexT: Index | tuple[Index, ...]](
-    Registry, Protocol
-):
-    # LATER: Create Enum members dynamically -> index and length of registry fixed
-    """Establish the Registry with Enum and Tuple"""
-
-    items: tuple[Item, ...]
-    index: IndexT | tuple[IndexT]
-
-
-class Index(Enum):  # LATER: move - some unique primitive, or to shape
-    """Define countable Axis"""
+class Index(Enum):  # LATER: move? some data primitives, or to shape?
+    """Define enumerated Axis for {0..N} member with 1 purpose"""
 
     def __str__(self) -> str:
         return f"{self.name.capitalize()}"
@@ -115,3 +129,13 @@ class Index(Enum):  # LATER: move - some unique primitive, or to shape
     def _generate_next_value_(name, start, count, last_values) -> int:
         """Return the index of the Color inside the Palette"""
         return count
+
+
+class _IndexRegister[Item, IndexT: Index | tuple[Index, ...]](
+    Registry, Protocol
+):
+    """Establish the Registry with Enum and Tuple"""
+
+    items: tuple[Item, ...]
+    index: IndexT | tuple[IndexT]  # LATER: define axes
+    # LATER: Create Enum members dynamically -> index and length of registry fixed
