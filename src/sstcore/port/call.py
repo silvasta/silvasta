@@ -87,7 +87,7 @@ class SafeFunctorial[**Param, Result](Protocol):
     def exit_code(self) -> int: ...
 
 
-class ErrorPolicy(StrEnum):
+class ErrorPolicy(StrEnum):  # TODO: Str? only Enum?
     LOG_AND_CONTINUE = "log"
     LOG_AND_EXIT = "exit"
     RE_RAISE = "raise"
