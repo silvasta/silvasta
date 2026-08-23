@@ -4,20 +4,37 @@ Scan Folders, Files, ... parsed with(out) syntax and context grouping
 -
 """
 
-# IDEAS: Scanner
-# - (Static) Master object, Scanner: unite functions like PathGuard
-
 __all__: list[str] = [
-    "FileExtractor",
+    "FolderScan",
+    "FileScan",
+    # IDEAS:
+    # "AstExtract",
+    # "CstExtract",
+    # "MarkdownExtract",
+    # "PdfExtract",
 ]
 
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Protocol
 
+from .filter import PathFiltering
+from .tree import PathTree
 from .view import Stringable
 
 
-class FileExtractor(Protocol):
+class FolderScan(Protocol):
+    """Scans a directory with a PathFilter/ProjectFilter."""
+
+    scan_root: Path
+    filter: PathFiltering  # IDEA: Registry??
+
+    def get_files(self) -> list[Path]: ...
+    def walk(self) -> Iterator[Path]: ...
+    def tree(self) -> PathTree: ...
+
+
+class FileScan(Protocol):
     """Define the Shape of the File extraction Engine"""
 
     def __call__(self, path: Path) -> Stringable:
