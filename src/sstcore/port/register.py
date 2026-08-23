@@ -31,7 +31,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable, Iterable
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 from .filter import Filter
 
@@ -77,13 +77,13 @@ class DictRegister[Item, Key](Registry[Item, Key], Protocol):
     items: dict[Key, Item]
 
 
-class TupleRegister[Item: Any, Key: int](Registry[Item, Key], Protocol):
+class TupleRegister[Item: Any, int](Registry[Item, int], Protocol):
     """Establish the Registry with locking Tuples"""
 
-    items: tuple[Item]
+    items: tuple[Item, ...]
 
-    def add(self, item: Item | list[Item], **kwargs) -> tuple[Item]:
-        """Rebuild internal Tuple with new Items"""
+    def add(self, items: tuple[tuple[Item, int]], **kwargs) -> Self:
+        """Rebuild internal Tuple with Num new Items"""
 
 
 class MixinRegister[Mixin: type](Registry, Protocol):

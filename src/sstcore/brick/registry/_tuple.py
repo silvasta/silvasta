@@ -4,55 +4,63 @@ TupleRegistry - Main Variation of the Core Registry
 -
 """
 
+from pathlib import Path
+
 __all__: list[str] = [
     "TupleRegistry",
 ]
 
-from collections.abc import Callable, Iterable, Iterator
-from typing import TYPE_CHECKING, Any
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Self, overload
 
 from ...port.register import TupleRegister
 
 
-# NEXT: Tuple Registry
-# - add = rebuild or error if locked
-# - encode rules, similar like above
-# - visualize with index
-# - sort! rebuild and apply new sorting
-# - no mixing here!
-# -> only gatekeeper for new mixins and order
-class TupleRegistry[ItemT]:  # TODO: derive??
-    """An immutable, high-speed contiguous array-backed registry."""
+class TupleRegistry[ItemT]:
+    """Implement the Shape of the Registry with Tuples"""
 
-    __slots__ = ("_items", "_identifiers")
+    def __init__(self, items: tuple[ItemT, ...], **_kwargs):
+        self.items: tuple[ItemT, ...] = tuple(items)
 
-    def __init__(self, items: Iterable[ItemT], key_fn: Callable[[ItemT], Any]):
-        self._items: tuple[ItemT, ...] = tuple(items)
-        self._identifiers: tuple[Any, ...] = tuple(
-            key_fn(item) for item in self._items
+    def add(self, items: tuple[tuple[ItemT, int]], **_kwargs) -> Self:
+        """Extend Items directly or with processing"""
+        modified_data: list[ItemT] = list(self.items)
+        for item, index in items:
+            if index in self:
+                modified_data[index] = item
+        return type(self)(items=tuple(modified_data))
+
+    def get(self, key: int) -> ItemT | None:
+        if key in self:
+            return self.items[key]
+        return None
+
+    @overload
+    def clear(self, key: None) -> tuple[ItemT, ...]: ...
+    @overload
+    def clear(self, key: int) -> ItemT: ...
+    def clear(self, key: int | None = None) -> tuple[ItemT, ...] | ItemT:
+        """Delete and return full registry or return selected element"""
+        old_data: tuple[ItemT, ...] | ItemT = (
+            self.items[key]
+            if key is not None and key in self
+            else tuple(*self.items)
         )
-
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __contains__(self, key: Any) -> bool:
-        return key in self._identifiers
-
-    def __iter__(self) -> Iterator[ItemT]:
-        return iter(self._items)
+        self.items = ()
+        return old_data
 
     @property
-    def all(self) -> tuple[ItemT, ...]:
-        return self._items
+    def all(self) -> Iterable[ItemT]:
+        return iter(self.items)
 
-    def get(self, key: Any) -> ItemT | None:
-        try:
-            idx = self._identifiers.index(key)
-            return self._items[idx]
-        except ValueError:
-            return None
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __contains__(self, target) -> bool:
+        # AI: check if that works
+        return (target is None) or (0 <= target < len(self))
 
 
 if TYPE_CHECKING:
-    _instance: TupleRegister = TupleRegistry()
-    _class: type[TupleRegister] = TupleRegistry
+    _instance: TupleRegister[Path, int] = TupleRegistry[Path]()
+    _class: type[TupleRegister[Path, int]] = TupleRegistry[Path]
