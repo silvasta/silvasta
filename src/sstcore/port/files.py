@@ -19,7 +19,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol, Self
 
-from .filter import Filter, PathFiltering
+from .filter import PathFiltering
 from .registry import ListingRegistry
 from .tree import PathTree
 
@@ -99,22 +99,13 @@ class FileQuery(Protocol):
         """Check Status on Disk and provide unconfirmed Files"""
 
 
-class FileFiltering(Filter[str, File], Protocol):
-    """Filter SstFiles by keywords"""
-
-
 class FileFilterRegistry(Protocol):
     """Keyword-based filtering queries (FilterMixin)."""
 
-    def set_filter(self, file_filter: FileFiltering) -> None: ...
-    def reset_filter(self) -> None: ...
-    def get_by_filter(
-        self, file_filter: FileFiltering | None = None
-    ) -> list[File]: ...
     def get_by_keyword(
         self, keywords: str | list[str] | set[str]
     ) -> list[File]: ...
-    def get_files_with_all_keywords(
+    def get_by_all_keywords(
         self, keywords: list[str] | set[str]
     ) -> list[File]: ...
 
@@ -149,7 +140,7 @@ class FileScanning(Protocol):
     ) -> PathTree: ...
 
 
-type _PathS = Path | list[Path]
+type PathS = Path | list[Path]
 
 
 class FileSyncing(Protocol):
@@ -158,11 +149,11 @@ class FileSyncing(Protocol):
     mode: SyncMode
 
     def mirror_from_path(
-        self, source: _PathS, mode: SyncMode = SyncMode.IGNORE
+        self, source: PathS, mode: SyncMode = SyncMode.IGNORE
     ) -> list[File]: ...
 
     def absorb_from_path(
-        self, source: _PathS, mode: SyncMode = SyncMode.IGNORE
+        self, source: PathS, mode: SyncMode = SyncMode.IGNORE
     ) -> list[File]: ...
 
     def mirror_from_registry(
