@@ -22,9 +22,9 @@ from collections.abc import Callable
 from typing import Any
 
 
-def cls_name(target: Any) -> str:
+def cls_name(_target: Any) -> str:
     """Safely extract class name from instances or classes."""
-    return getattr(target, "__name__", type(target).__name__)
+    return getattr(_target, "__name__", type(_target).__name__)
 
 
 def just_return[Target](constant: Target) -> Callable[..., Target]:
@@ -58,11 +58,11 @@ def dig_attr(target: Any, check_attrs: list[str], default=None) -> str | None:
         return default
 
 
-def name(target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
+def name(_target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
     """Check attribute list, provide match or default"""
     default_checks: list[str] = ["_inside_brackets", "_name", "name"]
     check_attrs: list[str] = (attrs or []) + default_checks
-    if detected := dig_attr(target, check_attrs):
+    if detected := dig_attr(_target, check_attrs):
         return detected
     return default
 
