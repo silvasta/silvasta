@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ...port.files import File, FileFiltering
-from ...port.filter import PathFiltering, ProjectFiltering
+from ...port.files import File
+from ...port.filter import FileFiltering, PathFiltering, ProjectFiltering
 from ._box import FilterArgs
 from ._core import FilterSet
 

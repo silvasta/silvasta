@@ -96,3 +96,6 @@ class PathFiltering(Filter[str, Path], Protocol):
 
 class ProjectFiltering(PathFiltering, Protocol):
     """Filter by Project specific defaults (exclude common dirs, require code files)"""
+
+
+class FileFiltering(Protocol): ...

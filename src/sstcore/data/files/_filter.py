@@ -11,28 +11,16 @@ __all__: list[str] = [
 
 from typing import TYPE_CHECKING
 
-from ...brick.registry import ListRegistry
-from ...port.files import File, FileFiltering
+from ...brick.registry import FilterRegistry, ListRegistry
+from ...port.files import File, FileFilterRegistry
+from ...port.filter import Filter
 from ...util.filter import FileFilter
 
 type KeyWords = str | list[str] | set[str]
 
 
-class FileFilterMixin(ListRegistry[File]):
+class FileFilterMixin(FilterRegistry, ListRegistry[File]):  # LATER: emit?
     """Provide Keyword filtering"""
-
-    filter: FileFiltering = FileFilter()  # TODO: better...
-
-    def set_filter(self, file_filter: FileFilter) -> None:
-        """Install new custom FileFilter"""
-        self.filter: FileFilter = file_filter
-
-    # NEXT:
-    # def get_by_filter(
-    #     self, file_filter: FileFilter | None = None
-    # ) -> list[File]:
-    #     """Get all files filtered by keywords setup in file_filter"""
-    #     return self.filter(file_filter)
 
     def get_by_keyword(self, keywords: KeyWords) -> list[File]:
         """Get all files that have at least 1 of the required keywords"""
@@ -46,8 +34,8 @@ class FileFilterMixin(ListRegistry[File]):
 
 
 if TYPE_CHECKING:
-    _instance_check: FileFilter = SstFileFilter()
-    _class_check: type[FileFilter] = SstFileFilter
+    _instance_check: Filter = FileFilter()
+    _class_check: type[Filter] = FileFilter
     #
-    _instance_check: FileFiltering = FileFilterMixin()
-    _class_check: type[FileFiltering] = FileFilterMixin
+    _instance_check: FileFilterRegistry = FileFilterMixin()
+    _class_check: type[FileFilterRegistry] = FileFilterMixin
