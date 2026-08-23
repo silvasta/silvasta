@@ -10,19 +10,24 @@ Define the Shape of the Filters
 """
 
 __all__: list[str] = [
-    "Filter",
     "FilterSpec",
+    "Filter",
+    #
+    "FileFiltering",
+    "KeyWords",
+    "KeyWord",
+    #
     "PathFiltering",
     "ProjectFiltering",
+    "FilterArgs",
 ]
 
 from enum import IntEnum, auto
 from pathlib import Path
 from typing import Protocol, Self, overload
 
+from ..port.files import File
 from .error import FailedHackError
-
-# LATER: FilterBox: PathFilter,FileFilter...
 
 
 class FilterSpec[SetType](Protocol):
@@ -65,17 +70,39 @@ class Filter[SetType, TargetType](FilterSpec, Protocol):
         """Run validation logic -> override for custom behaviour"""
 
     @overload
-    def __call__(self, target: TargetType) -> bool: ...
-    @overload
     def __call__(self, target: list[TargetType]) -> list[TargetType]: ...
+    @overload
+    def __call__(self, target: TargetType) -> bool: ...
     def __call__(
         self, target: TargetType | list[TargetType]
     ) -> bool | list[TargetType]:
         """Check single item (bool) or filter multiple items from list"""
 
 
-class FilterArgs(IntEnum):
-    """Selectable Filter Presets"""
+class FileFiltering[FileT: File](Filter[str, FileT], Protocol):
+    def _fulfill(self, target: FileT) -> bool:
+        """Filter Registry Files by their Keyword Sets"""
+
+
+type KeyWords = list[str] | set[str]
+type KeyWord = list[str] | set[str] | str
+# TASK: generalize for FilterSet, str->hashable, with parameter
+
+
+class PathFiltering(Filter[str, Path], Protocol):
+    def _fulfill(self, target: Path) -> bool:
+        """Filter decomposed Paths: parents, name, stem, suffix..."""
+
+
+class ProjectFiltering(PathFiltering, Protocol):
+    def _fulfill(self, target: Path) -> bool:
+        """Filter Project by Dir and File Paths"""
+
+
+class FilterArgs(IntEnum):  # IDEA: FilterData -> FilterInput??
+    """Select Presets for Path- and Project Filter"""
+
+    # LATER: FilterBox: provide -> PathFilter,FileFilter...
 
     PROJECT = auto()
     PYTHON = auto()
@@ -88,14 +115,3 @@ class FilterArgs(IntEnum):
 
     def __call__(self) -> FilterSpec:
         raise FailedHackError("Import sstcore.util.filter to attach args")
-
-
-class PathFiltering(Filter[str, Path], Protocol):
-    """Decomposes Path into parts/stem/suffix for filtering"""
-
-
-class ProjectFiltering(PathFiltering, Protocol):
-    """Filter by Project specific defaults (exclude common dirs, require code files)"""
-
-
-class FileFiltering(Protocol): ...

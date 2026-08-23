@@ -17,12 +17,11 @@ from typing import TYPE_CHECKING
 from ...port.files import File
 from ...port.filter import FileFiltering, PathFiltering, ProjectFiltering
 from ._box import FilterArgs
-from ._core import FilterSet
+from ._engine import FilterSet
 
 
-class FileFilter(FilterSet[str, File]):
-    def _fulfill(self, target: File) -> bool:
-        """Filter SstFiles by their keywords set"""
+class FileFilter[FileT: File](FilterSet[str, FileT]):
+    def _fulfill(self, target: FileT) -> bool:
         return self.fulfills_trio(target_set=target.keywords)
 
 

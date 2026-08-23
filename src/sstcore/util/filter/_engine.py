@@ -1,7 +1,7 @@
 """
-Prepare Cascade of Filters
+FilterSet: Core Engine as Base for Specifications
 
-- FilterSet: Implement Core Logic as Base for Specifications
+- Prepare Cascade of Filters
                                                  DependencyLevel[1]
 """
 
@@ -19,16 +19,20 @@ from ._base import FilterData
 
 @dataclass
 class FilterSet[SetType: str | Path | int, TargetT: Any](FilterData[SetType]):
+    """Wire different Checks and Execute when Called"""
+
     @overload
     def __call__(self, target: TargetT) -> bool: ...
     @overload
     def __call__(self, target: list[TargetT]) -> list[TargetT]: ...
+    @overload
+    def __call__(self, target: set[TargetT]) -> set[TargetT]: ...
 
     def __call__(
         self, target: TargetT | list[TargetT]
     ) -> bool | list[TargetT]:
         """Dispatch to single item (bool) or list filtering"""
-        if isinstance(target, list):
+        if isinstance(target, (list, set)):
             return self._fulfill_filter(target)
         return self._fulfill(target)
 

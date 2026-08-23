@@ -21,5 +21,5 @@ __all__: list[str] = [
 ]
 from ._base import FilterData
 from ._box import FilterArgs
-from ._core import FilterSet
+from ._engine import FilterSet
 from ._filters import FileFilter, PathFilter, ProjectFilter
