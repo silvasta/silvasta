@@ -14,28 +14,24 @@ from typing import TYPE_CHECKING, Self
 
 from loguru import logger
 
-from ...port.files import File, FileScanning
+from ...port.files import File, ScanRegister
 from ...port.filter import PathFiltering, ProjectFiltering
 from ...port.tree import PathTree
-from ...utils import FolderScanner
-from ...utils.filter import ProjectFilter
-from ...utils.tree import build_path_tree
+from ...util import FolderScanner
+from ...util.filter import ProjectFilter
+from ...util.tree import build_path_tree
 from ._filter import FileFilter
 
 
 class FileScanMixin:
     """Setup scanner, load directories and build tree"""
 
-    # --- Mixin Dependencies (Expected from Host & SstFiles) ---
-    # AI: the only mess that is somehow left:
-    # - how to avoid this?
     root_dir: Path
     files: list[File]
     attach_from_path: Callable[[Path], File]
     filtered: Callable[[FileFilter | None], list[File]]
     clear: Callable[..., int]
     paths: Callable[..., set[Path]]
-    # ----------------------------------------------------------
 
     scanner: FolderScanner | None = None
 
@@ -97,5 +93,5 @@ class FileScanMixin:
 
 
 if TYPE_CHECKING:
-    _instance: FileScanning = FileScanMixin.sprout_at(scan_root=Path.cwd())
-    _class_check: type[FileScanning] = FileScanMixin
+    _instance: ScanRegister = FileScanMixin.sprout_at(scan_root=Path.cwd())
+    _class_check: type[ScanRegister] = FileScanMixin

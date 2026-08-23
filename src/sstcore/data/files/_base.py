@@ -4,8 +4,6 @@ Provide Container for Files and Tools for FileSystem Operations
                                                        DependencyLevel[0]
 """
 
-from sstcore.utils.registry import ListRegistry
-
 __all__: list[str] = [
     "SstFiles",
 ]
@@ -13,12 +11,13 @@ __all__: list[str] = [
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ...brick.registry import ListRegistry
 from ...error import PathGuardError, RegistrySyncError
 from ...port.files import File, Files
-from ...utils import PathGuard
+from ...util import PathGuard
 
 
-class SstFiles(ListRegistry):  # AI: if ListRegistry just used once? why not?
+class SstFiles(ListRegistry):
     """Provide basic registry access and confirmation"""
 
     root_dir: Path
