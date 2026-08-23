@@ -20,6 +20,7 @@ __all__: list[str] = [
 
 from enum import Enum, auto
 
+from ...brick.format import cls_name
 from ...port.view import (
     CliRenderable,
     LogSerializable,
@@ -30,7 +31,19 @@ from ...port.view import (
 from . import _mixin as mixin
 
 
-class Cli(Enum):
+class ViewRegistry(Enum):
+    @property
+    def category(self) -> str:
+        return cls_name(self).lower()
+
+    def fail_info(self, reason: str) -> str:
+        return f"{self}View[{self.name}] Failed: {reason}"
+
+    def __str__(self) -> str:
+        return f"{cls_name(self)}View[{self.name}]"
+
+
+class Cli(ViewRegistry):
     LINE = auto()
     PANEL = auto()
     TABLE = auto()
@@ -68,11 +81,16 @@ class Cli(Enum):
                 return mixin.MixinSentinel
 
 
-class Str(Enum):
+class Str(ViewRegistry):
     SHORT = auto()
     NAME = auto()
     MODULE = auto()
     OFF = auto()
+
+    @property
+    def category(self) -> str:
+        """Override str that silently causes issues"""
+        return "string"
 
     @property
     def mixin(self) -> type[Stringable]:
@@ -90,7 +108,7 @@ class Str(Enum):
                 return mixin.MixinSentinel
 
 
-class Rich(Enum):
+class Rich(ViewRegistry):
     SHORT = auto()
     NAME = auto()
     MODULE = auto()
@@ -112,7 +130,7 @@ class Rich(Enum):
                 return mixin.MixinSentinel
 
 
-class Repr(Enum):
+class Repr(ViewRegistry):
     BOX = auto()
     DATA = auto()
     DEBUG = auto()
@@ -134,7 +152,7 @@ class Repr(Enum):
                 return mixin.MixinSentinel
 
 
-class Log(Enum):
+class Log(ViewRegistry):
     DATA = auto()
     DEBUG = auto()
     OFF = auto()

@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from ....bricks.format import reflect
+from ....brick.format import reflect
 from ....port.event.dto import CliDTO, LogDTO
 from ....port.view import RichRenderable
 

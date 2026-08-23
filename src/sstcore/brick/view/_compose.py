@@ -5,20 +5,21 @@ Compose Views at runtime and inject them into target Classes
 """
 
 __all__: list[str] = [
-    "ViewBuilder",
+    "ViewComposer",
 ]
 
 from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
-from ...port.builder import Builder, Injector
+from ...brick.mix import combine_mixins
+from ...port.shape import Composer
 from ._mixin import MixinSentinel
 from ._registry import Cli, Log, Repr, Rich, Str
 
 
 @dataclass(frozen=True)
-class ViewBuilder[MixClass: type]:
+class ViewComposer[ViewBase: type]:
     """Configure ViewMixin sets and build composed classes"""
 
     cli: Cli = Cli.OFF
@@ -27,58 +28,65 @@ class ViewBuilder[MixClass: type]:
     string: Str = Str.OFF
     rich: Rich = Rich.OFF
 
-    def all_enums(
-        self,
-    ) -> tuple[Cli, Log, Repr, Str, Rich]:
-        """Provide all attached member raw and unfiltered"""
-        return (self.cli, self.log, self.repr, self.string, self.rich)
-
     def evolve(self, **changes: Any) -> Self:
         """Copy with overrides"""
         return replace(self, **changes)
+
+    def all_enums(
+        self,
+    ) -> tuple[Cli, Log, Repr, Str, Rich]:
+        """Provide all attached ViewRegistry member"""
+        return (self.cli, self.log, self.repr, self.string, self.rich)
 
     def __bool__(self) -> bool:
         return bool(self.mixins)
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Builder
+    ### Implement: Composer(Protocol)
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+    def mix_name(self, name="") -> str:
+        return f"{name}View" if name else "ViewBase"
 
     @cached_property
     def mixins(self) -> tuple[type, ...]:
-        """Provide all selected Mixins in a stable order"""
+        """Provide all selected internal Mixins in a stable order"""
         return tuple(
             mixin
             for category in self.all_enums()
             if (mixin := category.mixin) is not MixinSentinel
         )
 
-    def mix_name(self, name="") -> str:
-        """Compose name of mixed Class"""
-        return f"{name}View" if name else "ViewBase"
-
     def build(
-        self, name="", format_name=True, extras: dict | None = None
-    ) -> MixClass:
+        self,
+        name="",
+        format_name=True,
+        extras: dict | None = None,
+        *,
+        mixins: tuple[type, ...] = (),
+        prepend: bool = True,
+    ) -> ViewBase:
         """Assemble selected Mixins to ViewBase"""
         cls_name: str = self.mix_name(name) if format_name else name or "View"
+        bases: tuple[type, ...] = combine_mixins(
+            self.mixins, mixins, prepend=prepend
+        )
         new_cls: type = type(cls_name, self.mixins, extras or {})
-        return cast(typ=MixClass, val=new_cls)
 
-    def compose(self, *mixins: type) -> Self:
-        raise NotImplementedError
+        return cast(typ=ViewBase, val=new_cls)
 
-    ## -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ## Injector
-    ## -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def inject[Class: type](self, cls: Class) -> Class:
+    def inject[Target: type](
+        self,
+        cls: Target,
+        /,
+        *mixins: type,
+        prepend: bool = True,
+    ) -> Target:
         """Compose selected Mixins and Inject to new Subclass of Target"""
 
-        if not self.mixins:
+        if not (bases := combine_mixins(self.mixins, mixins, prepend=prepend)):
             return cls
 
-        bases: tuple[type, ...] = self.mixins + (cls,)
         namespace: dict[str, Any] = {
             "__module__": cls.__module__,
             "__qualname__": cls.__qualname__,
@@ -87,36 +95,32 @@ class ViewBuilder[MixClass: type]:
         if hasattr(cls, "model_config"):  # Pydantic support
             namespace["model_config"] = getattr(cls, "model_config", {})
 
-        new_cls: type = type(cls.__name__, bases, namespace)
+        new_cls: type = type(cls.__name__, (*bases, cls), namespace)
 
         if hasattr(new_cls, "model_rebuild"):  # Pydantic rebuild hook
             new_cls.model_rebuild()
 
-        return cast(Class, new_cls)
+        return cast(typ=Target, val=new_cls)
 
-    def plus(self, *args: type):
-        pass
+    # # MOVE: to ViewInjector decorator facade
+    # def plus(self, *mixins: type) -> Self:
+    #     """Chain extra arbitrary mixins to this composer."""
+    #     # IMPORTANT: no self.extra_mixins allowed!!!
+    #     return replace(self, extra_mixins=self.extra_mixins + mixins)
 
     @overload
     def __call__[Class: type](self, cls: Class, /) -> Class: ...
 
-    # AI_QUESTION: how to use the Injector(Protocol) to avoid the  overload here?
-
     @overload
     def __call__(self, /) -> type: ...
 
-    def __call__(self, cls: type | None = None, /) -> type:
+    def __call__(
+        self, cls: type | None = None, **mixin_overrides_and_additionals
+    ) -> type:
         """Inject composed mixins to decorated target or build class"""
-
-        if cls is None:
-            return self.build()
-
-        return self.inject(cls)
+        return self.build() if cls is None else self.inject(cls)
 
 
 if TYPE_CHECKING:
-    _instance_check: Builder = ViewBuilder()
-    _class_check: type[Builder] = ViewBuilder
-    #
-    _instance_check: Injector = ViewBuilder()
-    _class_check: type[Injector] = ViewBuilder
+    _instance_check: Composer = ViewComposer()
+    _class_check: type[Composer] = ViewComposer

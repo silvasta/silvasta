@@ -7,23 +7,25 @@ Meta
 - Meta: MetaClass Blueprint
 - MetaData: InputSpace Guard
   - MetaInput: class specific unit -> single meta arg - dto
-- Module: _meta
+- Global location: brick.meta
+- Local Module: _meta
 
 Class
-- Builder: Compose the Mixins
-  - compose: method (specialized, mixin custom defaults)
-  - build: method
+- Composer: Assemble the Mixins
+  - Method: __call__ BUT check with Injector
+  - draw: generate and write the stub files -> mixin for composer
+  - Module: _compose
+  - Module: _forge
 - Injector: Into the Target
+
 - aggregate: method(or builder)
-- draw: generate and write the stub files
-- Module: _compose
 
 Unit
-- Factory: Build and Produce
-  - produce: method (standardized input -> unit)
-- _Forge: precise production
-- Module: depending on purpose and location
+- Factory: (Build and) Produce
+  - Method: __call__, produce units
+  - Module: _produce
 
+- Plus: individual modules, functions and names, depending on purpose
 ---
 
 Strategy:
@@ -39,9 +41,11 @@ Strategy:
 """
 
 __all__: list[str] = [
-    "Builder",
-    "Constructor",
+    "Meta",
+    "MetaData",
+    "Composer",
     "Injector",
+    "Factory",
 ]
 
-from ._sketch import Builder, Constructor, Injector
+from ._architecture import Composer, Factory, Injector, Meta, MetaData

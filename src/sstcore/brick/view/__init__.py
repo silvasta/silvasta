@@ -2,7 +2,7 @@
 Shape the View of the Classes
 
 - view: attach configurable view to the decorated class
-- ViewBuilder: store and apply one view Mixin combination
+- ViewInjector: store and apply one view Mixin combination
 - Cli, Log, Repr, Rich, Str: provide category Mixin selection
 - views: provide all mixins as class with single __dunder__
 
@@ -24,7 +24,7 @@ from sstcore.port.view import CliRenderable
 
 __all__: list[str] = [
     "view",
-    "ViewBuilder",
+    "ViewInjector",
     # enums
     "Cli",
     "Str",
@@ -36,9 +36,13 @@ __all__: list[str] = [
 ]
 
 from . import _mixin as views
-from ._compose import ViewBuilder
-from ._presets import view
+from ._compose import ViewInjector
+from ._forge import view
 from ._registry import Cli, Log, Repr, Rich, Str
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### TESTS
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 # REMOVE:
@@ -53,6 +57,8 @@ class AnyView:
 
 
 # REMOVE:
+# AI_FOCUS: beside all this tests around, the .plus was the latest idea
+# - including this directly in the protocol?
 @view(Cli.HEADER, Rich.MODULE, Rich.NAME).plus(AnyView)
 class Extended:
     x = 3
@@ -63,13 +69,13 @@ class Extended:
 # REMOVE:
 test1 = view(Cli.HEADER, Rich.MODULE, Rich.NAME).compose(AnyView)
 
-test2: ViewBuilder[type[Extended]] = ViewBuilder(Cli.DEBUG)
+test2: ViewInjector[type[Extended]] = ViewInjector(Cli.DEBUG)
 
 class2 = test2.build()
 instance = class2()
 is_int = instance.x
 
-test3: ViewBuilder[type[CliRenderable]] = ViewBuilder(Cli.HEADER)
+test3: ViewInjector[type[CliRenderable]] = ViewInjector(Cli.HEADER)
 class3 = test3.build("Class3")
 to_print = class3()
 

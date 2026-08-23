@@ -55,7 +55,7 @@ class Stringable(Protocol):
 
 @runtime_checkable
 class RichRenderable(Protocol):
-    def __rich__(self) -> RichRenderable: ...
+    def __rich__(self) -> Renderable: ...
 
 
 @runtime_checkable
