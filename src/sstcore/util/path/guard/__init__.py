@@ -12,23 +12,25 @@ from typing import TYPE_CHECKING
 from ....brick.color.box import Colors
 from ....brick.format import cls_name
 from ....brick.meta import StaticFuncMeta, StaticFuncMetaData
-from ....error import PathGuardReason
+from ....error import PathGuardError, PathGuardReason
+from ....port.call import Functorial
 from ....port.color import ColorBox
 from ....port.files import SyncMode
-from ....port.functional import Functorial
 from . import _ensure, _operate, _relative
 from ._input import PathInput, PathSpec
 
-colors: ColorBox = Colors()
+colors: ColorBox = Colors()  # ty:ignore
 
 
 PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {cls_name(target=cls)} ",
     rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
-    # LATER: use Format to split by CamelCase (and then colorize)
+    # LATER: split by CamelCase (and then colorize)
     cli="Safety and Comfort for Path and File System operations",
     color=2,  # colors, names and even Enums change, but the registry index?
 )
+
+example = PathGuardError(PathGuardReason.NO_INIT)
 
 
 class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
@@ -37,6 +39,13 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     Spec: type[PathSpec] = PathSpec
     SyncMode: type[SyncMode] = SyncMode
     Reason: type[PathGuardReason] = PathGuardReason
+
+    # AI: this was before the Meta upgrade:
+    # def __init__(self):
+    #     """PathGuard is Not an Instance!"""
+    #     raise PathGuardError(reason=PathGuardReason.NO_INIT)
+
+    ...
 
     # AI: the below docstring (imitations) and type hints are DX essentials
     # - the .pyi defines the public interface, this is for internal use
