@@ -4,6 +4,7 @@ Define the Config Management and Structure
 -
 """
 
+# NEXT: copy docstrings here
 __all__: list[str] = [
     "Config",
     "Log",
