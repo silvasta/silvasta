@@ -18,6 +18,30 @@ from ...port.shape import Composer
 from ._mixin import MixinSentinel
 from ._registry import Cli, Log, Repr, Rich, Str
 
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+
 
 @dataclass(frozen=True)
 class ViewComposer[ViewBase: type]:
@@ -39,11 +63,8 @@ class ViewComposer[ViewBase: type]:
         """Provide all attached ViewRegistry member"""
         return (self.cli, self.log, self.repr, self.string, self.rich)
 
-    def __bool__(self) -> bool:
-        return bool(self.mixins)
-
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Implement: Composer(Protocol)
+    ### Composer(Protocol)
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
     def mix_name(self, name="") -> str:

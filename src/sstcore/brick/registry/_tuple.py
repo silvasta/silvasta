@@ -25,11 +25,18 @@ class TupleRegistry[ItemT]:
         self.items: tuple[ItemT, ...] = tuple(items)
 
     def _guard_input(self, item) -> None | NoReturn:
+        # NEXT:y
+        # NEXT:y
+        # NEXT:y
+        # NEXT:y
+        # NEXT:y
         """LATER: define Error Handling, on which level?"""
 
     def add(self, items: tuple[tuple[ItemT, int]], **_kwargs) -> Self:
         """Extend Items directly or with processing"""
         modified_data: list[ItemT] = list(self.items)
+        # NEXT:y
+        # NEXT:y
         for item, index in items:
             if index in self:
                 # NOTE: order and everything:
@@ -47,6 +54,8 @@ class TupleRegistry[ItemT]:
     @overload
     def clear(self, key: int) -> ItemT: ...
     def clear(self, key: int | None = None) -> tuple[ItemT, ...] | ItemT:
+        # NEXT:y
+        # NEXT:y
         """Delete and return full registry or return selected element"""
         old_data: tuple[ItemT, ...] | ItemT = (
             self.items[key]
@@ -64,6 +73,7 @@ class TupleRegistry[ItemT]:
         return len(self.items)
 
     def __contains__(self, target) -> bool:
+        # NEXT:y
         # AI: check if that works
         return (target is None) or (0 <= target < len(self))
 

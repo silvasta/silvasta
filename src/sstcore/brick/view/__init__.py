@@ -13,7 +13,7 @@ Examples:
     @view.pydantic
     class Model(BaseModel): ...
 
-    @view.pydantic.evolve(cli=Cli.DEBUG)
+    @view.pydantic.plus(cli=Cli.DEBUG)
     class Noisy(BaseModel): ...
 
     @view(Log.DATA, Repr.DEBUG, Cli.PANEL, Rich.NAME, Str.MODULE)

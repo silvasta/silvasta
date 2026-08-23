@@ -10,6 +10,16 @@ Define common Views and Defaults
 __all__: list[str] = [
     "ViewInjector",
 ]
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
 
 from typing import TYPE_CHECKING, Self, overload
 
@@ -24,14 +34,11 @@ from ._registry import Cli, Log, Repr, Rich, Str, ViewRegistry
 type ViewArg = Cli | Str | Rich | Repr | Log
 
 
-class ViewInjector[MixT: type](
-    # REMOVE: do not derive in final setup! (now just for typing)
-    ViewComposer
-):
+class ViewInjector[MixT: type]:
     """view Distributor: Inject or Build with Preset Views or Modify"""
 
     mixins: tuple[type, ...]
-    mixin_register: MixinRegister[MixT]
+    vault: MixinRegister[MixT]
 
     def __init__(self):
         # AI: maybe function that loads the mixin registry  from Composer.mixins?
