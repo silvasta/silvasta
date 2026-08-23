@@ -35,8 +35,8 @@ __all__: list[str] = [
 ]
 
 from ._dict import DictRegistry
-from ._extend import FilterRegistry
-from ._extend import FunctorRegistry as _FunctorRegistry
+from ._extensions import FilterRegistry
+from ._extensions import FunctorRegistry as _FunctorRegistry
 from ._list import ListRegistry
 from ._tuple import TupleRegistry
 

@@ -5,17 +5,16 @@ Collect and combine default Views
 
 """
 
+# LATER: this thing will get very long...
+# - defaults for regular classes
+# - attach typing, e.g. by ViewComposer[MergedProtocol]
+
 __all__: list[str] = [
     "ViewPresets",
 ]
 
 from ._compose import ViewComposer
 from ._registry import Cli, Log, Repr, Rich, Str
-
-# LATER: this thing will get very long...
-# TASK: view presets:
-# - defaults for regular classes
-# - attach typing, e.g. by ViewComposer[MergedProtocol]
 
 
 class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?

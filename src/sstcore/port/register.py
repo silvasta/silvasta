@@ -89,7 +89,10 @@ class TupleRegister[Item: Any, int](Registry[Item, int], Protocol):
 class MixinRegister[Mixin: type](Registry, Protocol):
     """Establish the Registry with Tuples (of Mixins, at least for now)"""
 
-    mixins: tuple[Mixin, ...]
+    @property
+    def mixins(self) -> tuple[Mixin, ...]: ...
+    def build(self, *_args, **_kwargs) -> Mixin: ...
+    def inject[Target: type](self, *_args, **_kwargs) -> Target: ...
 
 
 class FuncRegister[Item: Callable](Protocol):

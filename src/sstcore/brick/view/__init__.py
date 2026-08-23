@@ -20,6 +20,8 @@ Examples:
     class Full: ...
 """
 
+from typing import TYPE_CHECKING
+
 from sstcore.port.view import CliRenderable
 
 __all__: list[str] = [
@@ -35,10 +37,24 @@ __all__: list[str] = [
     "views",
 ]
 
+from ...port.shape import Injector
 from . import _mixin as views
-from ._compose import ViewInjector
-from ._forge import view  # IDEA: assemble here!
+from ._compose import ViewComposer
+from ._inject import ViewInjector
+from ._preset import ViewPresets
 from ._registry import Cli, Log, Repr, Rich, Str
+
+
+class _View(ViewInjector, ViewComposer, ViewPresets):
+    """The Final assembled Decorator"""
+
+
+view = _View()
+
+if TYPE_CHECKING:
+    _instance_check: Injector = view
+    _class_check: type[Injector] = View
+
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### TESTS

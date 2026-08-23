@@ -11,7 +11,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Self, overload
+from typing import TYPE_CHECKING, NoReturn, Self, overload
 
 from ...port.register import TupleRegister
 
@@ -20,14 +20,21 @@ class TupleRegistry[ItemT]:
     """Implement the Shape of the Registry with Tuples"""
 
     def __init__(self, items: tuple[ItemT, ...], **_kwargs):
+        for item in items:
+            self._guard_input(item)
         self.items: tuple[ItemT, ...] = tuple(items)
+
+    def _guard_input(self, item) -> None | NoReturn:
+        """LATER: define Error Handling, on which level?"""
 
     def add(self, items: tuple[tuple[ItemT, int]], **_kwargs) -> Self:
         """Extend Items directly or with processing"""
         modified_data: list[ItemT] = list(self.items)
         for item, index in items:
             if index in self:
-                modified_data[index] = item
+                # NOTE: order and everything:
+                # -> solve once proper here, then fine forever
+                modified_data.insert(index, item)
         return type(self)(items=tuple(modified_data))
 
     def get(self, key: int) -> ItemT | None:

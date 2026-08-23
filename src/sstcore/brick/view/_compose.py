@@ -12,7 +12,8 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
-from ...brick.mix import combine_mixins
+from ...brick.forge.mix import combine_mixins
+from ...port.register import MixinRegister
 from ...port.shape import Composer
 from ._mixin import MixinSentinel
 from ._registry import Cli, Log, Repr, Rich, Str
@@ -57,6 +58,7 @@ class ViewComposer[ViewBase: type]:
             if (mixin := category.mixin) is not MixinSentinel
         )
 
+    # REMOVE: combine build/inject to mix
     def build(
         self,
         name="",
@@ -71,10 +73,11 @@ class ViewComposer[ViewBase: type]:
         bases: tuple[type, ...] = combine_mixins(
             self.mixins, mixins, prepend=prepend
         )
-        new_cls: type = type(cls_name, self.mixins, extras or {})
+        new_cls: type = type(cls_name, bases, extras or {})
 
         return cast(typ=ViewBase, val=new_cls)
 
+    # REMOVE: combine build/inject to mix
     def inject[Target: type](
         self,
         cls: Target,
@@ -84,6 +87,9 @@ class ViewComposer[ViewBase: type]:
     ) -> Target:
         """Compose selected Mixins and Inject to new Subclass of Target"""
 
+        # AI: this method looks for example way to heavy for the registry,
+        # - maybe this method with others in a BuilderBox inside brick
+        # - ViewComposer takes the functions from there and the mixins from registry
         if not (bases := combine_mixins(self.mixins, mixins, prepend=prepend)):
             return cls
 
@@ -102,23 +108,39 @@ class ViewComposer[ViewBase: type]:
 
         return cast(typ=Target, val=new_cls)
 
-    # # MOVE: to ViewInjector decorator facade
-    # def plus(self, *mixins: type) -> Self:
-    #     """Chain extra arbitrary mixins to this composer."""
-    #     # IMPORTANT: no self.extra_mixins allowed!!!
-    #     return replace(self, extra_mixins=self.extra_mixins + mixins)
-
     @overload
-    def __call__[Class: type](self, cls: Class, /) -> Class: ...
-
+    def mix[MixInjected](
+        self,
+        cls: type,
+    ) -> MixInjected: ...
     @overload
-    def __call__(self, /) -> type: ...
+    def mix(
+        self,
+        cls: None,
+    ) -> ViewBase: ...
 
-    def __call__(
-        self, cls: type | None = None, **mixin_overrides_and_additionals
-    ) -> type:
-        """Inject composed mixins to decorated target or build class"""
-        return self.build() if cls is None else self.inject(cls)
+    def mix[
+        MixInjected: type
+    ](  # # TODO: maybe insert here mixed proto? for cast?
+        self,
+        cls: type | None = None,
+        *,
+        mixins: tuple[type, ...] = (),
+        data: MixinRegister[MixInjected],
+    ) -> ViewBase | MixInjected:
+        """Build new Class from Mixins or Inject to Target for new Subclass"""
+
+        # AI: it makes no sense to insert mixins and data together,
+        # at least 1 should be already attached before,
+        # anyway I hope the idea is clear how to handle the registry:
+        # - use it like a mobile jukebox, handing around, butten pressed for some action
+        if mixins:
+            data.add(mixins)
+
+        if cls is None:
+            return data.build()
+        else:
+            return data.inject()
 
 
 if TYPE_CHECKING:
