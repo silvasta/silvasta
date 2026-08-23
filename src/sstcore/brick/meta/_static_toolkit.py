@@ -1,7 +1,13 @@
 """
-Construct the Shape of StaticToolkit Classes
+Shape the Blueprint for Toolkits equipped with Static Functions
 
--
+StaticFuncMeta
+ - auto-convert public methods in class body to staticmethod
+ - attach customizable views with defaults
+
+StaticFuncMetaData
+
+
 """
 
 __all__: list[str] = [
@@ -12,21 +18,22 @@ __all__: list[str] = [
 
 import inspect
 from types import FunctionType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from ...port.call import ClassRendering
 from ...port.color import Color, ColorBox, ColorIdentifier
 from ...port.event.dto import CliDTO, LogDTO, PanelDTO
 from ...port.event.dto._produce import CliDtoCreator
-from ...port.functional import ClassRendering
+from ...port.shape import Meta, MetaData
 from ..color._arg import resolve_color
 from ..color.box import Colors
 from ..format import cls_name, reflect
 
-colors: ColorBox = Colors()
+colors: ColorBox = Colors()  # ty:ignore
 
 
 class StaticFuncMeta(type):
-    """Blueprint for Static Functorial Toolkit"""
+    """Create Blueprint for Static Functorials"""
 
     _data: StaticFuncMetaData
 
@@ -145,3 +152,9 @@ class StaticFuncMetaData:
             )
 
         return _default_cli
+
+
+if TYPE_CHECKING:
+    _cls_meta: type[Meta] = StaticFuncMeta
+    _cls_data: type[MetaData] = StaticFuncMetaData
+    _instance_data: MetaData = StaticFuncMetaData()
