@@ -18,9 +18,9 @@ from pathlib import Path
 
 from loguru import logger
 
+from ...brick.view import Cli, Str, view
 from ..path.guard import PathGuard
 from ..print import printer
-from ..view import Cli, Str, view
 from ._file import FileScanner, ScanMode
 
 

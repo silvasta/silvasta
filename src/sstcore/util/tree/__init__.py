@@ -8,11 +8,17 @@ Build Tree-like structures - Directed Graphs
 """
 
 __all__: list[str] = [
+    "example_trees",
+    #
     "SimpleTreeNode",
+    #
     "PathTreeNode",
     "build_path_tree",
-    "example_trees",
+    #
+    "AstNode",
 ]
 
-from . import _examples as example_trees
-from ._nodes import PathTreeNode, SimpleTreeNode, build_path_tree
+from . import _show as example_trees
+from ._ast import AstNode
+from ._path import PathTreeNode, build_path_tree
+from ._simple import SimpleTreeNode

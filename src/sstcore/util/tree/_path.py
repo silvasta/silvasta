@@ -1,17 +1,16 @@
 """
-Generate Simple Tree with Nodes that have Branches
+Generate File System Tree with Nodes from Paths
 
-- SimpleTreeNode: Provide basic layout
 - PathTreeNode: Represent FileTree built with decomposed Paths
 - build_path_tree: Recursively stack folder and files
-                                                       DependencyLevel[0]
+                                                       DependencyLevel[1]
 """
 
 __all__: list[str] = [
-    "SimpleTreeNode",
     "PathTreeNode",
     "build_path_tree",
 ]
+
 
 from collections import defaultdict, deque
 from collections.abc import Sequence
@@ -20,25 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
 from ...port.tree import PathTree
-
-
-@dataclass(frozen=True)
-class SimpleTreeNode:
-    """Build Node with 0..N subnodes each with own subnodes"""
-
-    name: str
-    id: str | None = None
-    branches: Sequence[Self] = field(default_factory=list)
-
-    @property
-    def display_label(self) -> str:
-        """Show public representation e.g. in Selector or Visualization"""
-        return self.name
-
-    @property
-    def identifier(self):
-        """Provide value that allows identification (No test for uniqness here!)"""
-        return self.id
+from ._simple import SimpleTreeNode
 
 
 @dataclass(frozen=True)
@@ -76,6 +57,9 @@ def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
 
 
 def _recursive_path_tree(
+    # NEXT: generalize, first for SimpleTreeNode
+    # NEXT: generalize, first for SimpleTreeNode
+    # NEXT: generalize, first for SimpleTreeNode
     path_parts: list[deque[str]],
     current_node_name: str = "",
     current_node_path: Path = Path(),

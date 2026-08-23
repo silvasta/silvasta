@@ -7,6 +7,7 @@ Scan Folders, Files, ... parsed with(out) syntax and context grouping
 __all__: list[str] = [
     "FolderScan",
     "FileScan",
+    "ScanMode",
     # IDEAS:
     # "AstExtract",
     # "CstExtract",
@@ -15,6 +16,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Iterator
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol
 
@@ -39,3 +41,12 @@ class FileScan(Protocol):
 
     def __call__(self, path: Path) -> Stringable:
         """Provide str or container object that produces str"""
+
+
+class ScanMode(StrEnum):
+    # IDEA: all scanner?? - FolderScanner,...
+    """Govern the exectuion modes of FileScanner"""
+
+    READ = auto()
+    AST = auto()
+    FST = auto()  # file system tree

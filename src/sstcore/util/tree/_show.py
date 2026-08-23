@@ -11,7 +11,7 @@ __all__: list[str] = [
 
 import random
 
-from ._nodes import SimpleTreeNode
+from ._simple import SimpleTreeNode
 
 
 def simple_tree():
@@ -54,7 +54,7 @@ def simple_tree():
     return biome
 
 
-def big_tree():
+def big_tree(forest=(4, 8), tree=(6, 8), sprout=(2, 12)):
     """Random node generator for around 300 nodes (up to 700+)"""
 
     id: int = 0
@@ -65,26 +65,26 @@ def big_tree():
         return str(id)
 
     return SimpleTreeNode(
-        "biome",
+        name="biome",
         id=branches_id(),
         branches=[
             SimpleTreeNode(
-                "forest",
+                name="forest",
                 branches=[
                     SimpleTreeNode(
-                        "tree",
+                        name="tree",
                         branches=[
                             SimpleTreeNode(
-                                "sprout", branches=[], id=branches_id()
+                                name="sprout", branches=[], id=branches_id()
                             )
-                            for _sprout in range(random.randint(2, 12))
+                            for _sprout in range(random.randint(*sprout))
                         ],
                         id=branches_id(),
                     )
-                    for _tree in range(random.randint(6, 8))
+                    for _tree in range(random.randint(*tree))
                 ],
                 id=branches_id(),
             )
-            for _forest in range(random.randint(4, 8))
+            for _forest in range(random.randint(*forest))
         ],
     )

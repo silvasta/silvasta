@@ -14,14 +14,13 @@
 """
 
 __all__: list[str] = [
+    "FolderScanner",
     "FileScanner",
-    "ScanMode",
     "SummaryFile",
     "SummaryFileMachine",
-    "FolderScanner",
 ]
 
-from ._file import FileScanner, ScanMode
+from ._file import FileScanner
 from ._folder import FolderScanner
 from ._summary import SummaryFile, SummaryFileMachine
 
