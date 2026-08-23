@@ -18,7 +18,7 @@ from collections.abc import Callable, Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 from ..port.filter import Filter
-from ..port.registry import (
+from ..port.register import (
     DictingRegistry,
     FilteringRegistry,
     ListingRegistry,
@@ -68,23 +68,39 @@ class ListRegistry[ItemT]:
         return before - len(self)
 
 
-class FilterRegistry[ItemT]:  # FIX: why ListRegistry??
+class FilterRegistry[FilterT: Filter, ItemT]:
     """Extend the ListRegistry with filtered items"""
 
-    filter: Filter | None
-    all: Iterable[ItemT]
+    _active_filter: FilterT | None = None
 
-    def _prepare_filter(self, filter: Filter | None) -> Filter | None:
-        """Cache filter if provided and provide resulting cached Filter"""
-        if filter:
-            self.filter: Filter = filter
-        return self.filter
+    def set_filter(self, active_filter: FilterT) -> None:
+        """Install custom Filter"""
+        self._filter: FilterT = active_filter
 
-    def filtered(self, filter: Filter | None = None) -> list[ItemT]:
-        """Filter items using provided filter or instance filter."""
-        if active_filter := self._prepare_filter(filter):
-            return active_filter(self.all)  # ty:ignore # FIX: overload
-        return list(self.all)
+    def reset_filter(self) -> None:
+        self._filter: None = None
+
+    @property
+    def active_filter(self) -> FilterT:
+        """Provide FilterT, bootstrap for non-initialized"""  # LATER: emit?
+        if self._active_filter is None:  # LATER: _strict?
+            self._active_filter: FilterT = self._default_filter
+        return self._filter
+
+    @property
+    def _default_filter(self) -> FilterT:
+        # LATER: when error location clear, PropertyMissing...Error
+        raise NotImplementedError("Missing attribute: _active_filter")
+
+    @property
+    def _items_to_filter(self) -> list[ItemT]:
+        raise NotImplementedError("Missing attribute: _active_filter")
+
+    def filter(self, new_active_filter: FilterT | None = None) -> list[ItemT]:
+        """Get all files filtered by keywords setup in active_filter"""
+        if new_active_filter:
+            self.set_filter(new_active_filter)
+        return self.active_filter(self._items_to_filter)  # ty:ignore -- overload..
 
 
 if TYPE_CHECKING:
@@ -132,45 +148,6 @@ if TYPE_CHECKING:
     _registry: DictingRegistry = DictRegistry()
 
 
-class TupleIndexRegistry[ItemT, IndexT]:
-    # FIX:
-    # FIX:
-    # FIX:
-    # FIX:
-    # FIX:
-    # FIX: or remove
-    def __init__(self, index: type[IndexT], items: tuple[ItemT, ...]) -> None:
-        if len(items) != len(index):
-            raise ValueError(f"need {len(index)} items, got {len(items)}")
-        self.index = index
-        self.items = items
-        self._by_name = {m.name.lower(): m for m in index}
-
-    def __len__(self) -> int:
-        return len(self.items)
-
-    def __contains__(self, target: Any) -> bool:
-        try:
-            self.resolve(target)
-            return True
-        except KeyError, ValueError:
-            return False
-
-    @property
-    def all(self) -> Iterable[ItemT]:
-        return self.items
-
-    def resolve(self, key: EnumT | int | str) -> EnumT:
-        if isinstance(key, self.index):
-            return key
-        if isinstance(key, int):
-            return self.index(key)
-        return self._by_name[str(key).lower()]
-
-    def get(self, key: EnumT | int | str) -> ItemT:
-        return self.items[self.resolve(key).value]
-
-
 class TupleRegistry[ItemT]:
     """An immutable, high-speed contiguous array-backed registry."""
 
@@ -201,3 +178,43 @@ class TupleRegistry[ItemT]:
             return self._items[idx]
         except ValueError:
             return None
+
+
+# AI_IGNORE: this is right now not priority
+class _TupleIndexRegistry[ItemT, IndexT]:
+    # FIX: with next try Enum Meta Hack
+    # IDEA: multi dimensional grid
+    # - auto-generated enums with index for grid
+    # - at runtime use enum coordinates for access
+    # - most likely tuple based, try to keep flexible
+    # - static: define protocol around enum
+    def __init__(self, index: type[IndexT], items: tuple[ItemT, ...]) -> None:
+        if len(items) != len(index):
+            raise ValueError(f"need {len(index)} items, got {len(items)}")
+        self.index = index
+        self.items = items
+        self._by_name = {m.name.lower(): m for m in index}
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __contains__(self, target: Any) -> bool:
+        try:
+            self.resolve(target)
+            return True
+        except KeyError, ValueError:
+            return False
+
+    @property
+    def all(self) -> Iterable[ItemT]:
+        return self.items
+
+    def resolve(self, key: EnumT | int | str) -> EnumT:
+        if isinstance(key, self.index):
+            return key
+        if isinstance(key, int):
+            return self.index(key)
+        return self._by_name[str(key).lower()]
+
+    def get(self, key: EnumT | int | str) -> ItemT:
+        return self.items[self.resolve(key).value]
