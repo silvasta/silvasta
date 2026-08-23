@@ -24,7 +24,7 @@ from ..port.color import ColorBox
 from ..port.view import Renderable
 from ._base import SstError
 
-c: ColorBox = Colors()
+c: ColorBox = Colors()  # ty:ignore
 
 
 class PathGuardError(SstError):
@@ -82,3 +82,8 @@ class PathGuardReason(StrEnum):
     RELATIVE = "No Relative connection inside FileTree"
 
     DECORATOR = "Target Invalid for Hybrid-Decorator"
+
+    # AI: Idea 1:
+    def get_error(
+        self,
+    ): ...

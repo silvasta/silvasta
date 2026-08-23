@@ -32,7 +32,13 @@ class Error(Exception):  # IMPORTANT: MOST LIKELY: this as SstError
 
 
 class FailedHackError(Error):
-    """It was a nice try, but..."""
+    """
+    It was a nice try, but...
+
+    (I hope I don't have to  explain that this
+      is mostly for internal reasons and tests...)
+
+    """
 
     def __init__(self, *args) -> None:
         """Forward Args to Exception"""
