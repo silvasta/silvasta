@@ -2,10 +2,8 @@
 Shape the Blueprint for Toolkits equipped with Static Functions
 
 StaticFuncMeta
- - auto-convert public methods in class body to staticmethod
- - attach customizable views with defaults
-
-StaticFuncMetaData
+  - auto-convert public methods in class body to staticmethod
+  - attach customizable views with defaults
 
 
 """
@@ -20,14 +18,14 @@ import inspect
 from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
-from ...port.call import ClassRendering
-from ...port.color import Color, ColorBox, ColorIdentifier
-from ...port.event.dto import CliDTO, LogDTO, PanelDTO
-from ...port.event.dto._produce import CliDtoCreator
-from ...port.shape import Meta, MetaData
-from ..color._arg import resolve_color
-from ..color.box import Colors
-from ..format import cls_name, reflect
+from ....port.call import ClassRendering
+from ....port.color import Color, ColorBox, ColorIdentifier
+from ....port.event.dto import CliDTO, LogDTO, PanelDTO
+from ....port.event.dto._produce import CliDtoCreator
+from ....port.shape import Meta, MetaData
+from ...color._arg import resolve_color
+from ...color.box import Colors
+from ...format import cls_name, reflect
 
 colors: ColorBox = Colors()  # ty:ignore
 

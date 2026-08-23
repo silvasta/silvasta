@@ -22,10 +22,5 @@ def combine_mixins(  # LATER: this but with like a mix plan
     return extra + registered if prepend else registered + extra
 
 
-# NEXT: Tuple Registry
-# - add = rebuild or error if locked
-# - encode rules, similar like above
-# - visualize with index
-# - sort! rebuild and apply new sorting
-# - no mixing here!
-# -> only gatekeeper for new mixins and order
+# NEXT:
+class MixinRegistry: ...
