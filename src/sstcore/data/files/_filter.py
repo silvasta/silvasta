@@ -13,10 +13,8 @@ from typing import TYPE_CHECKING
 
 from ...brick.registry import FilterRegistry, ListRegistry
 from ...port.files import File, FileFilterRegistry
-from ...port.filter import Filter
+from ...port.filter import Filter, KeyWords
 from ...util.filter import FileFilter
-
-type KeyWords = str | list[str] | set[str]
 
 
 class FileFilterMixin(FilterRegistry, ListRegistry[File]):  # LATER: emit?

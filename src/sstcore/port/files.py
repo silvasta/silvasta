@@ -1,17 +1,21 @@
 """
-Define the Shape of the File Tracker and the Composed Registry
+How to track Files with composed Registries?
 
 -
 """
 
 __all__: list[str] = [
+    "SyncMode",
+    #
     "File",
+    "FileRegister",  # MERGE: with Query?
+    "QueryRegister",
+    "FilterRegister",
+    "SyncRegister",
+    "ScanRegister",
+    #
+    "ScanFiles",
     "Files",
-    "FileQuery",
-    "FileFiltering",
-    "FileFilterRegistry",
-    "FileScanning",
-    "FileScanRegistry",
 ]
 
 from collections.abc import Iterator
@@ -19,13 +23,14 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol, Self
 
-from .filter import PathFiltering
-from .registry import ListingRegistry
+from .filter import FileFiltering, KeyWord, KeyWords, PathFiltering
+from .register import ListRegister
+from .scanner import FolderScan
 from .tree import PathTree
 
 
 class SyncMode(StrEnum):
-    """(PathGuard) File Transfer Conflict Resolution Strategy"""
+    """Conflict Resolution Strategy for PathGuard File Transfers"""
 
     INCREMENT = auto()
     OVERRIDE = auto()
@@ -49,7 +54,7 @@ class File(Protocol):
         """Compose global path and check if your File is still there"""
 
 
-class Files(Protocol):
+class FileRegister(Protocol):
     """Govern Files in Registry and on Disk"""
 
     @property
@@ -76,7 +81,7 @@ class Files(Protocol):
         """Subhook for derived Registry: File Constructor"""
 
 
-class FileQuery(Protocol):
+class QueryRegister(Protocol):
     """Govern Files in Registry and on Disk"""
 
     def paths(self, resolve=False) -> set[Path]:
@@ -99,37 +104,23 @@ class FileQuery(Protocol):
         """Check Status on Disk and provide unconfirmed Files"""
 
 
-class FileFilterRegistry(Protocol):
-    """Keyword-based filtering queries (FilterMixin)."""
+class FilterRegister(Protocol):
+    """Keyword-based filtering queries (Filter)."""
 
-    def get_by_keyword(
-        self, keywords: str | list[str] | set[str]
-    ) -> list[File]: ...
-    def get_by_all_keywords(
-        self, keywords: list[str] | set[str]
-    ) -> list[File]: ...
+    def get_by_keyword(self, keyword: KeyWord) -> list[File]: ...
+    def get_by_all_keywords(self, keywords: KeyWords) -> list[File]: ...
 
 
-# MOVE:
-# NEXT:
-class FolderScanning(Protocol):
-    """Scans a directory with a PathFilter/ProjectFilter."""
+class ScanRegister(Protocol):
+    """Scanner / tree / reload logic (Scan). Prepares for SyncModes."""
 
-    scan_root: Path
-    filter: PathFiltering
-
-    def get_files(self) -> list[Path]: ...
-    def walk(self) -> Iterator[Path]: ...
-    def tree(self) -> PathTree: ...
-
-
-class FileScanning(Protocol):
-    """Scanner / tree / reload logic (ScanMixin). Prepares for SyncModes."""
-
+    # NEXT:
+    # NEXT:
+    # NEXT:
     @property
-    def scanner(self) -> FolderScanning | None: ...
-    def setup_scanner(self, path_filter: PathFiltering) -> FolderScanning: ...
-    def get_scanner(self) -> FolderScanning: ...
+    def scanner(self) -> FolderScan | None: ...
+    def setup_scanner(self, path_filter: PathFiltering) -> FolderScan: ...
+    def get_scanner(self) -> FolderScan: ...
     def scan_local_dir(self) -> list[Path]: ...
     def walk_from_root(self) -> Iterator[Path]: ...
     @classmethod
@@ -143,10 +134,15 @@ class FileScanning(Protocol):
 type PathS = Path | list[Path]
 
 
-class FileSyncing(Protocol):
-    """Sync operations (mirror/absorb) using PathGuard (FileSyncMixin)."""
+class SyncRegister(Protocol):
+    """Sync operations (mirror/absorb) using PathGuard (FileSync)."""
 
     mode: SyncMode
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
 
     def mirror_from_path(
         self, source: PathS, mode: SyncMode = SyncMode.IGNORE
@@ -173,22 +169,22 @@ class FileSyncing(Protocol):
     ) -> Self: ...
 
 
-class FileScanRegistry(
-    Files,
-    FileQuery,
-    FileFilterRegistry,
-    FileScanning,
-    ListingRegistry[File],
+class ScanFiles[FileT: File](
+    ScanRegister,
+    FilterRegister,
+    QueryRegister,
+    FileRegister,
+    ListRegister[File, str],
     Protocol,
 ): ...
 
 
-class FileRegistry(
-    Files,
-    FileQuery,
-    FileFilterRegistry,
-    FileScanning,
-    FileSyncing,
-    ListingRegistry[File],
+class Files(
+    SyncRegister,
+    ScanRegister,
+    FilterRegister,
+    QueryRegister,
+    FileRegister,
+    ListRegister[File, str],
     Protocol,
 ): ...

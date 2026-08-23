@@ -10,8 +10,8 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from ....brick.color.box import Colors
+from ....brick.forge.blueprint import StaticFuncMeta, StaticFuncMetaData
 from ....brick.format import cls_name
-from ....brick.meta import StaticFuncMeta, StaticFuncMetaData
 from ....error import PathGuardError, PathGuardReason
 from ....port.call import Functorial
 from ....port.color import ColorBox
@@ -23,7 +23,7 @@ colors: ColorBox = Colors()  # ty:ignore
 
 
 PathGuardMetaInput = StaticFuncMetaData(
-    name=lambda cls: f" {cls_name(target=cls)} ",
+    name=lambda cls: f" {cls_name(cls)} ",
     rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
     # LATER: split by CamelCase (and then colorize)
     cli="Safety and Comfort for Path and File System operations",
