@@ -70,7 +70,17 @@ class MetaData(Protocol):
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class Composer[Base: type](Protocol):
+class MixData(Protocol):  # REMOVE: most of them only in Implementation
+    # IDEA: build data, maybe as 1 dto with mixin registry??
+    # - MixinData?
+    name: str
+    format_name: bool
+    extras: dict | None
+    # Mixin data (maybe include in new tuple registry)
+    prepend: bool = True
+
+
+class Composer[BaseMixType: type](Protocol):
     """Assemble Mixins dynamically and provide assembled Class"""
 
     def mix_name(self, name: str = "") -> str:
@@ -80,68 +90,59 @@ class Composer[Base: type](Protocol):
     def mixins(self) -> tuple[type, ...]:
         """Provide all selected Mixins"""
 
-    def build(
+    # TODO: overloads dispatch on cls
+    @overload
+    def mix[MixInjected](
         self,
-        name: str,
-        format_name: bool,
-        extras: dict | None,
-        *,
+        cls: type,
         mixins: tuple[type, ...],
-        prepend: bool,
-    ) -> Base:
-        """Compose combined Mixins to new Class"""
-
-    def inject[Target: type](
+        data: MixData,
+    ) -> MixInjected: ...
+    @overload
+    def mix(
         self,
-        cls: Target,
-        /,
-        *mixins: type,
-        prepend: bool = True,
-    ) -> Target:
-        """Inject combined Mixins to new Subclass of Target"""
+        mixins: tuple[type, ...],
+        data: MixData,
+    ) -> BaseMixType: ...
 
-    # @overload
-    # def __call__(self, cls: Mixed, **kwargs) -> Mixed: ...
-    # @overload
-    # def __call__(self, **kwargs) -> Base: ...
-    # def __call__(self, cls: type | None = None, **kwargs) -> type:
-    #     """Compose mixins and if provided, inject to inserted cls"""
+    def mix[MixInjected](  # # TODO: maybe insert here mixed proto? for cast?
+        self,
+        cls: type | None = None,
+        *,
+        # AI: Maybe send mixins as TupleRegistry, but then:
+        # - overload for sending mixins standalone!
+        mixins: tuple[type, ...],
+        data: MixData,
+    ) -> BaseMixType | MixInjected:
+        """Build new Class from Mixins or Inject to Target for new Subclass"""
 
 
-class Injector[Base: type, Mixed: type](Protocol):
+class Injector[BaseMixType: type](Protocol):
     """Decorate Target Class and Inject Compose Mixins"""
 
-    # def __call__(self, cls: type | None = None, /) -> type:
-    #     """Inject Mixins to decorated Target or just compose"""
+    @overload
+    def __call__[MixInjected](self, cls: MixInjected, /) -> MixInjected: ...
+    @overload
+    def __call__(self, /) -> BaseMixType: ...
+    def __call__(self, cls: type | None = None, /) -> type:
+        """Inject Mixins to Target including changeable Presets"""
 
     def plus(self, *args, **kwargs) -> Self:
         """Update existing Mixin selection"""
 
-    @overload
-    def __call__(self, cls: Mixed, /) -> Mixed: ...
-    @overload
-    def __call__(self, /) -> Base: ...
-    def __call__(self, cls: type | None = None, /) -> type:
-        """
-        Inject Mixins to decorated Target or build bare class
 
-        -
-        """
+class Documenter(Protocol):  # LATER:
+    """Supply the Static Type Checker with Information"""
 
-
-class Documenter(Protocol):
     # TASK: as soon as AST scanner ready:
     # - "invert" the process which for now looks like much easier
     # looks so far less painful than any already failed attempt...
-    """Supply the Static Type Checker with Information"""
-
     def draw(self):
         """Write .pyi for selected Mixins"""
 
 
-class _Aggregator(Composer, Protocol):  # LATER: if ever needed
-    def aggregate(self):
-        """Massively collect and assemble Mixins at Runtime"""
+class _Aggregator(Composer, Protocol):  # LATER: if ever needed...
+    """Massively collect and assemble Mixins at Runtime"""
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --

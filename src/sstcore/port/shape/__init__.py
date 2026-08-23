@@ -1,31 +1,42 @@
 """
-Define the Objects that Shape and Assemble the Core
+Define the Assembler that Shape the Objects of the Core
 
 Meta
+- Home: brick.forge.blueprint
+
 - Constructor: Meta Director
     - assemble: dynamic release (future)
+
 - Meta: MetaClass Blueprint
 - MetaData: InputSpace Guard
   - MetaInput: class specific unit -> single meta arg - dto
-- Global location: brick.meta
-- Local Module: _meta
+  - Local Module: _meta
 
-Class
+
+Clas
+- Home: brick.forge.mix
+
 - Composer: Assemble the Mixins
-  - Method: __call__ BUT check with Injector
+  Method:
+  - mix: dispatch for build or inject
   - draw: generate and write the stub files -> mixin for composer
-  - Module: _compose
-  - Module: _forge
-- Injector: Into the Target
+  Module: _compose
 
-- aggregate: method(or builder)
+- Injector: Into the Target
+  Method: __call__,
+  Module: _inject
+
 
 Unit
-- Factory: (Build and) Produce
+- Home: brick.forge.units
+
+- Factory: (Order composition and) Produce
   - Method: __call__, produce units
   - Module: _produce
 
 - Plus: individual modules, functions and names, depending on purpose
+
+
 ---
 
 Strategy:
@@ -37,6 +48,7 @@ Strategy:
   - Collect best working concepts
   Final
   - The Generalized and Typed assemble Pipeline
+
 
 """
 
