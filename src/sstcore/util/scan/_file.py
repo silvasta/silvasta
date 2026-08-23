@@ -2,7 +2,7 @@
 Scan File Content
 
                                                        DependencyLevel[0]
-"""  # TODO: level when ast drops
+"""
 
 __all__: list[str] = [
     "FileExtractor",
@@ -14,34 +14,29 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Protocol
 
 from loguru import logger
 
+from ...port.scanner import FileExtractor
 from ..path.guard import PathGuard
 
 
 class ScanMode(StrEnum):
+    # MOVE: port (when the enum import hack actually works)
     """Govern the exectuion modes of FileScanner"""
 
     RAW = auto()
-    API = auto()
+    AST = auto()
 
     @property
     def extractor(self) -> FileExtractor:
         """Provide the right tool for the right task"""
         match self:
-            case ScanMode.API:
+            case ScanMode.AST:
+                # TASK: return ast_api_extractor
                 return raw_content_extractor
-                # FIX: return ast_api_extractor
             case ScanMode.RAW:
                 return raw_content_extractor
-
-
-class FileExtractor(Protocol):  # MOVE: port
-    """Define the Shape of the File extraction Engine"""
-
-    def __call__(self, path: Path) -> str: ...
 
 
 @dataclass
