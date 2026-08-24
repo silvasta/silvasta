@@ -16,6 +16,7 @@ from sstcore.system.config._homes import ProjectInfo  # ERROR: dependency fail
 from ...port.config import ProjectInformation  # TODO:
 from ...port.event.dto import CliDTO
 from ...port.printer import Print, PrintMode
+from ..path import ProjectInfo
 
 
 class PrinterModus:
