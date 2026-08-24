@@ -15,14 +15,15 @@ __all__: list[str] = [
 from collections.abc import Callable
 from typing import Any, Self
 
-from colorprint.port.collections import Stringable
+from ...port.func import Listening
+from ...port.view import Stringable
 
-from ...helper import FullReprMixin
-from ...port.collections import Listening
+# WARN: below: mix of different implementations and experiments!!
+# WARN: below: mix of different implementations and experiments!!
+# WARN: below: mix of different implementations and experiments!!
 
 
-# TODO: check g45
-class ColorStack[**Param, Result](FullReprMixin):
+class ColorStack[**Param, Result]:
     """Stack Colors and Attributes on top of each other and Functions"""
 
     def __init__(

@@ -1,13 +1,14 @@
 """
-Assemble the Colors and Tools for public Representation
+Supply the Color and Tools with a nice public Interface
 
-- ColorBox
+- ColorBox -> Colors (the protocol implementation)
 
 """
 
 __all__: list[str] = [
     "Colors",
 ]
+
 from typing import TYPE_CHECKING
 
 from loguru import logger
@@ -30,9 +31,10 @@ class Colors:
     """Assembe and Orchestrate the Color Distribution"""
 
     # IMPORTANT: init strategy
+    # - maybe provide adapter specific variations to simplify/allow strong typing
 
     def __init__(self, *_args, **_kwargs) -> None:
-        self._hub: ColorManager = ColorHub.bootstrap()
+        self._hub: ColorManager = ColorHub.boot()
 
     def __str__(self) -> str:
         return f"{cls_name(self)}[{self.active}]"
@@ -60,6 +62,9 @@ class Colors:
 
     @classmethod
     def set_active(cls, box: ColorBox) -> None:
+        # MOVE: do this in the manager?
+        # - spawn the facade everywhere without considering about others
+        # - the manager handles and maybe the factory holds the active
         if cls._active is box:
             logger.info(f"Already set as global active Box: {box!r}")
         else:

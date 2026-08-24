@@ -1,9 +1,19 @@
+"""
+Transform the Adapter Data to internal Structure
+
+- Validate and prepare incoming values
+- Hold and supply standardized interface
+
+"""
+
 from typing import TYPE_CHECKING, Self
 
 from ....port.color import Color, Painter
 from .._adapter import PaletteDTO
 
-# TASK: fix this for combinatorial grids!
+# WARN: below: mix of different implementations and experiments!!
+# WARN: below: mix of different implementations and experiments!!
+# WARN: below: mix of different implementations and experiments!!
 
 
 class PaintPalette(PaletteDTO):

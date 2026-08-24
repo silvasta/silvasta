@@ -1,3 +1,15 @@
+"""
+Pre-filter incoming args and provide clean input
+
+- NOTE: placeholder until global location ready
+
+"""
+
+__all__: list[str] = [
+    "resolve_color",
+    "resolve_color_input",
+]
+
 from typing import Any
 
 from ...port.color import Color
@@ -23,3 +35,11 @@ def resolve_color(color_guess: Any, default: Color | None = None) -> Color:
         if default is not None:
             return default
         raise ValueError(f"Map Color failed: {color_guess=}") from error
+
+
+def resolve_color_input(default=Color.AZURE):
+    # WARN: this is just a sketch, check ArgCast
+    def arg_cast(color_guess: Any, *_, **__):
+        return resolve_color(color_guess, default=default)
+
+    return arg_cast

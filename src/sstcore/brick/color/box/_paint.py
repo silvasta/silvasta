@@ -15,7 +15,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from ....port.color import Adapter, Color, ColorFactory, Painter
-from ....port.functional import Colorizing, Stringable
+from ....port.func import Colorizing, Stringable
 
 
 class Paint(str):

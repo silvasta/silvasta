@@ -8,4 +8,4 @@ __all__: list[str] = [
     "Colors",
 ]
 
-from ._facade import Colors
+from ._colors import Colors

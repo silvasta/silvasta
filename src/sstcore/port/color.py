@@ -8,21 +8,12 @@ Define the Interface Colors and the Shape of the ColorBox
 - ColorCoordinate: Navigate inside the 3d ColorGrid
 - ColorIdentifier: Valid input types to get Color
 
--
-
 - ColorManager: Connect Factory, Grid and Facade
 - ColorBox: Provide Simple and Fast Color Supply
 
-Ideas:
+Future Ideas:
 - ColorBus: global control of already distributed colors
 """
-
-# TASK: fix last pieces, create the 3-axis And their spans:
-# - Color-Adapter
-# - Adapter-Schema
-# - Schema-Color
-# auto checks for standardized Palette by Color(Index) sizes,
-# interface for Adapter including colors and tricks
 
 __all__: list[str] = [
     "Color",
@@ -42,14 +33,15 @@ __all__: list[str] = [
 ]
 
 
-from enum import Enum, auto
+from enum import auto
 from typing import NamedTuple, Protocol, Self, runtime_checkable
 
-from .functional import Colorizing
+from .func import Colorizing
+from .register import Index
 from .view import Stringable
 
 
-class GridIndex(Enum):  # WARN: fix index=0
+class GridIndex(Index):
     """Provide unique Base for Grid-Axes and Grid-Registries"""
 
 
@@ -57,7 +49,9 @@ type ColorIdentifier = int | str | Color
 
 
 class Color(GridIndex):
-    """Define the Base Palette with 12 indexed Colors"""
+    """Define the Base Palette with 12 indexed Colors (Start at 0)"""
+
+    # TODO: think about 2x6, 3x4 or 4x3 as minimal quantize
 
     WHITE = auto()
     BLACK = auto()
