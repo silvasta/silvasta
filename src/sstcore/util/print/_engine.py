@@ -45,8 +45,8 @@ class PrinterCore:
 
         indent: int = getattr(target, "indent", kwargs.pop("indent", 0))
 
-        i_hope_it_renders: Renderable = (
-            Padding(renderable, (0, 0, 0, indent))  # ty:ignore
+        i_hope_it_renders: Renderable = (  # ty:ignore
+            Padding(renderable, (0, 0, 0, indent))
             if indent and renderable is not None
             else renderable
         )

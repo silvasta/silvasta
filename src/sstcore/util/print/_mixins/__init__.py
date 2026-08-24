@@ -21,10 +21,8 @@ __all__: list[str] = [
     "MarkdownMixin",
     # Optional
     "ToolMixin",
-    "EmitMixin",
 ]
 
-from .emit import EmitMixin
 from .essential import ColorMixin, NormalizeMixin
 from .layout import (
     BoxMixin,

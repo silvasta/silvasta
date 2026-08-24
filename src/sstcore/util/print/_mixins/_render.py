@@ -16,7 +16,7 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from ....port import (
+from ....port.event.dto import (
     CliDTO,
     LineDTO,
     LogDTO,
@@ -26,7 +26,6 @@ from ....port import (
     RuleDTO,
     TableDTO,
 )
-from ..blueprint import Printer
 
 
 class RenderMixin:

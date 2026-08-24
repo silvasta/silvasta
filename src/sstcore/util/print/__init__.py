@@ -10,13 +10,8 @@ Dynamiacally build the 'Printer' with optional Mixins.
 """
 
 __all__: list[str] = [
-    "Printer",
-    "PrinterFactory",
-    "printer",
-    "boxes",
+    "box",
 ]
 
 
-from . import boxes
-from .blueprint import Printer
-from .compose import PrinterFactory, printer
+from . import _box as box

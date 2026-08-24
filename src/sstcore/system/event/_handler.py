@@ -6,7 +6,7 @@ Provide Infrastructure for Events
                                                        DependencyLevel[0]
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 __all__: list[str] = [
     "EventHandler",
@@ -25,8 +25,18 @@ from loguru import logger
 
 from ...port.event import Event, EventBus
 from ...port.event import EventHandler as EventHandler_
+from ...util import printer
 from ...util.log import handle_log_event
-from ...util.print import handle_cli_event
+
+
+def register_default_event_handler(bus: EventBus) -> None:
+    # REMOVE: replace by Register
+    """Attach EventHandler to EventBus by EventName or EventPattern"""
+
+    bus.subscribe("*", CLI_HANDLER)  # payload has cli=...
+    bus.subscribe("*", LOG_HANDLER)  # payload has log=...
+
+    bus.subscribe_all(TELEMETRY_HANDLER)
 
 
 @dataclass(frozen=True)
@@ -52,14 +62,13 @@ class EventHandler:
             logger.debug(f"Traceback for {self}:", exc_info=True)
 
 
-# REMOVE: replace by Register
-def register_default_event_handler(bus: EventBus) -> None:
-    """Attach EventHandler to EventBus by EventName or EventPattern"""
-
-    bus.subscribe("*", CLI_HANDLER)  # if payload has cli=...
-    bus.subscribe("*", LOG_HANDLER)  # if payload has log=...
-
-    bus.subscribe_all(TELEMETRY_HANDLER)
+def handle_cli_event(event: Event) -> None:
+    """Bridge __cli__ events from the EventBus to the Printer"""
+    # TODO: hand in printer from bootstrap
+    cli_payload: Any | None = event.payload.get("cli")
+    if cli_payload is None:
+        return
+    printer(cli_payload)
 
 
 # REMOVE: replace by Functor

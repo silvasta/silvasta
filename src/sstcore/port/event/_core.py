@@ -19,10 +19,6 @@ from .name import EventName, EventPattern
 
 type BusRegistration = Callable[[EventBus], None]
 
-# TASK: EventDTO
-# - make this working with the DTO!?
-# - especially the Bus, somehow related to dto
-
 
 @dataclass(frozen=True)
 class Event:
@@ -34,7 +30,8 @@ class Event:
 
 
 class EventHandler(Protocol):
-    def __call__(self, event: Event) -> None: ...
+    def __call__(self, event: Event) -> None:
+        """Process emitted Events dispatched by the Bus"""
 
 
 class EventBus(Protocol):

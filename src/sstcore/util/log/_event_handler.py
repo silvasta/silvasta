@@ -12,11 +12,13 @@ from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
-from ...port.event import Event, EventHandler, LogDTO
+from ...port.event import Event, EventHandler
+from ...port.event.dto import LogDTO
 from ...port.view import LogSerializable
 
 
 def handle_log_event(event: Event) -> None:
+    # TODO: this directly with Functor
     """Process payload['log'] only; no-op for every other event."""
 
     log_payload: Any | None = event.payload.get("log")

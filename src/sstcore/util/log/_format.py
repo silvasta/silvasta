@@ -14,8 +14,18 @@ __all__: list[str] = [
 import json
 from typing import Any
 
-from ...port.event import LogDTO
+from ...port.event.dto import LogDTO
 from ...port.view import LogSerializable
+
+
+def log_dto_to_dict(dto: LogDTO) -> dict[str, Any]:
+    """Refactor LogDTO into it's strigly components"""
+    return {
+        "message": dto.message,
+        "level": dto.level.upper(),
+        **dto.metrics,
+        **dto.extra,
+    }
 
 
 def load_format_pattern() -> str:
@@ -53,7 +63,7 @@ def ndjson_formatter(record) -> str:
     if isinstance(raw_obj, LogSerializable):
         try:
             dto: LogDTO = raw_obj.__log__()
-            payload.update(dto.to_dict())
+            payload.update(log_dto_to_dict(dto))
         except Exception as error:
             payload["serialization_error"] = str(error)
 

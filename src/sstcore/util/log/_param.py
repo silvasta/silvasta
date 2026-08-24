@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import BaseModel, Field
 
-from ...port.config import Log
+from ...port.config import LogData
 from ..path import any_root
 from ..path.guard import PathGuard
 
@@ -32,7 +32,7 @@ class LogParam(BaseModel):
     log_to_json: bool = True
 
     # Directories and names
-    log_dir: Path = Field(default_factory=any_root)  # NEXT:
+    log_dir: Path = Field(default_factory=any_root)  # TODO:
     log_file_stem: str = "debug"
     file_suffix: str = ".log"
     json_suffix: str = ".jsonl"
@@ -67,5 +67,5 @@ class LogParam(BaseModel):
 
 
 if TYPE_CHECKING:
-    _instance_check: Log = LogParam()
-    _class_check: type[Log] = LogParam
+    _instance_check: LogData = LogParam()
+    _class_check: type[LogData] = LogParam

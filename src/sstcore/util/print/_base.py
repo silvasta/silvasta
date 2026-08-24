@@ -11,18 +11,30 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
-from sstcore.system.config._homes import ProjectInfo  # ERROR: dependency fail
-
-from ...port.config import ProjectInformation  # TODO:
+from ...port.config import ProjectInformation
 from ...port.event.dto import CliDTO
 from ...port.printer import Print, PrintMode
-from ..path import ProjectInfo
+
+
+class PrinterInfo:
+    """Collect toml info and show in Panel"""
+
+    info: ProjectInformation
+
+    @property
+    def project_info(self) -> str:
+        """Override in ColorMixin"""
+        return f"{self.info.name} v{self.info.version}"
+
+    def set_info(self, info: ProjectInformation) -> None:
+        """Fill at System Bootstrap with info from Config"""
+        self.info: ProjectInformation = info
 
 
 class PrinterModus:
     """Control state of Modus"""
 
-    modus: PrintMode = PrintMode.RICH
+    modus: PrintMode = PrintMode.SST
 
     def mute(self) -> None:
         """Send all prints to nowhere"""
@@ -30,7 +42,7 @@ class PrinterModus:
 
     def unmute(self) -> None:
         """Switch to regular Printer setup"""
-        self.modus: PrintMode = PrintMode.RICH
+        self.modus: PrintMode = PrintMode.SST
 
     def debug(self) -> None:
         """Switch to Python standard print of Args"""
@@ -49,31 +61,22 @@ class PrinterModus:
             self.modus: PrintMode = before
 
 
-class PrinterInfo:
-    @property
-    def project_info(self) -> str:
-        return f"{self.info.name} v{self.info.version}"
-
-    def set_info(self, info: ProjectInfo) -> None:
-        self.info: ProjectInformation = info
-
-
-class PrinterBase(PrinterModus, ProjectInfo):
+class PrinterBase(PrinterModus, PrinterInfo):
     """Provide Base with Rich Console and Theme setup"""
 
     def __init__(self):
-        # IMPORTANT: forward (or backward) down to here!!!
         self.console = Console()
 
+        # IMPORTANT: forward (or backward) always down to here!!!
+
     def __call__(self, target: CliDTO, **kwargs) -> CliDTO:
-        # IMPORTANT: forward (or backward) down to here!!!
         match self.modus:
             case PrintMode.DEBUG:
                 print("Target DTO: ", target, "kwargs: ", kwargs)
                 raise NotImplementedError
             case PrintMode.NULL:
                 raise NotImplementedError
-            case PrintMode.RICH:
+            case PrintMode.SST:
                 self.console.print(target)
                 return target
 
@@ -81,3 +84,10 @@ class PrinterBase(PrinterModus, ProjectInfo):
 if TYPE_CHECKING:
     _instance: Print = PrinterBase()
     _class: type[Print] = PrinterBase
+
+    class _BasePrint(PrinterBase): ...
+
+else:
+    from ...brick.none import Ghost
+
+    _BasePrint = Ghost

@@ -14,7 +14,6 @@ EventNames:
 
 __all__: list[str] = [
     "EventName",
-    #
     "EventPattern",
     "WildCard",
     #
@@ -33,12 +32,14 @@ class EventName(_StrEnum):
 
 
 class CliEvent(EventName):
-    RENDER = "cli.render"  # payload: PanelDTO | TableDTO | ...
-    INPUT = "cli.input"  # payload: log= or cli=
-    EXEC_FAIL = "cli.exec.fail"  # bridge toward process exit / ErrorHandler
+    """Use Payload (log=... or cli=...) for dispatch to Printer/Loguru"""
+
+    RENDER = "cli.render"
+    INPUT = "cli.input"
+    EXEC_FAIL = "cli.exec.fail"
 
 
 class CoreEvent(EventName):
     BUS_READY = "core.bus.ready"
-    BUS_DIAG = "core.bus.warn"  # one channel; level in LogDTO
+    BUS_DIAG = "core.bus.warn"
     LIFECYCLE = "core.system.lifecycle"

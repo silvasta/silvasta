@@ -2,7 +2,7 @@
 Provide Infrastructure for Events
 
 - EventBus: Route Events by name to registred EventHandler
-- EventHandler: Process Event with optional Error handling
+- XXX EventHandler: Process Event with optional Error handling
                                                        DependencyLevel[1]
 """
 
@@ -16,9 +16,9 @@ import fnmatch
 from functools import lru_cache
 
 from ...brick.format import cls_name
-from ...port.event import BusRegistration, Event, EventHandler, EventName
+from ...port.event import BusRegistration, Event, EventHandler
 from ...port.event import EventBus as EventBus_
-from ...port.event.name import CoreEvent, EventPattern
+from ...port.event.name import CoreEvent, EventName, EventPattern
 from ._handler import register_default_event_handler
 
 
@@ -59,7 +59,7 @@ class EventBus:
     def __str__(self) -> str:
         return cls_name(self)
 
-    def __repr__(self) -> str:  # TEST:
+    def __repr__(self) -> str:
         return f"{self}(  {self.n_global_handler} 󰌌 {self.n_handler} 󰍹 )"
 
     def _match_subscribers(

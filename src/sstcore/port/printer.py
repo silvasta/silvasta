@@ -4,8 +4,6 @@ print
 .
 """
 
-from sstcore.port.color import ColorBox
-
 __all__: list[str] = [
     "Print",
     "PrintMode",
@@ -20,23 +18,16 @@ from enum import Enum, auto
 from typing import Any, Literal
 from typing import Protocol as Protocol
 
+from ..port.color import ColorBox, ColorIdentifier
 from .config import ProjectInformation
-from .event.dto import (
-    CliDTO,
-    LineDTO,
-    LogDTO,
-    MarkdownDTO,
-    PanelDTO,
-    RuleDTO,
-    TableDTO,
-)
+from .event.dto import CliDTO
 from .view import RichRenderable
 
 
 class PrintMode(Enum):
-    RICH = auto()
     DEBUG = auto()
     NULL = auto()
+    SST = auto()
 
 
 class Print(Protocol):
@@ -47,37 +38,35 @@ class Print(Protocol):
 
     @property
     def info(self) -> ProjectInformation: ...
-    def project_info(self) -> str: ...
+    @property
+    def project_info(self) -> str:
+        """Style the top right title of printer.title Panel"""
+
     def set_info(self, info: ProjectInformation) -> None:
         """Attach Project specific information for Printer layouts"""
 
-    modus: PrintMode = PrintMode.RICH
+    modus: PrintMode = PrintMode.SST
 
     def muted(self) -> Any: ...
     def mute(self) -> None: ...
     def unmute(self) -> None: ...
     def debug(self) -> Any: ...
-    def in_mode(self, modus: PrintMode): ...
+    def in_modus(self, modus: PrintMode): ...
 
 
-class PrintCore(Protocol):
-    color_box: ColorBox
+class ColorPrint(Protocol):
+    colors: ColorBox  # TODO: stack
 
-    @property
-    def _cb(self) -> ColorBox: ...
-    def color(self, text: str, color: str | None = None) -> str: ...
+    def colorize(self, text: str, color: ColorIdentifier | None) -> str: ...
     def normalize(self, target: Any, **kwargs) -> str: ...
-    def render(self, target: CliDTO | LogDTO, **kwargs) -> RichRenderable: ...
-    #
-    def render_panel(self, dto: PanelDTO) -> RichRenderable: ...
-    def render_line(self, dto: LineDTO) -> RichRenderable: ...
-    def render_rule(self, dto: RuleDTO) -> RichRenderable: ...
-    def render_table(self, dto: TableDTO) -> RichRenderable: ...
-    def render_markdown(self, dto: MarkdownDTO) -> RichRenderable: ...
-    def render_log(self, dto: LogDTO) -> RichRenderable: ...
 
 
-class PrintLayouts(Protocol):
+class CorePrint(Protocol):
+    def render(self, target: CliDTO, **kwargs) -> RichRenderable: ...
+    def display(self, target: CliDTO, **kwargs) -> RichRenderable: ...
+
+
+class LayoutPrint(Protocol):
     def panel(self, target: Any, **kwargs) -> None: ...
     def line(self, style: str = "", title: str | None = None) -> None: ...
     def lines(
@@ -133,7 +122,7 @@ class PrintLayouts(Protocol):
     def md(self, text: str, *args, header: int = 0, **kwargs) -> None: ...
 
 
-class PrintTools(Protocol):
+class SpecialPrint(Protocol):
     def path_exists_table(
         # self, paths: list[Path], title=None, header="Path"
     ) -> None: ...

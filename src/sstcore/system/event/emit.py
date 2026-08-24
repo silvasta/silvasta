@@ -6,6 +6,10 @@ Provide ergonomic facade on top of the EventBus
                                                        DependencyLevel[X]
 """
 
+from collections.abc import Callable
+
+from sstcore.port.view import CliRenderable, LogSerializable
+
 __all__: list[str] = [
     "Emitter",
     "LogEmitter",
@@ -15,42 +19,25 @@ __all__: list[str] = [
 # REFACTOR:
 # REFACTOR:
 # REFACTOR:
-# REFACTOR:
-# REFACTOR:
-# REFACTOR:
-# REFACTOR:
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from sstcore.port.printer import Protocol
-
 from ...brick.view import Repr, Str, view
-from ...port.event import LogDTO
-from ...port.event._emit import (
+from ...port.event.dto import LogDTO
+from ...port.event.emit import (
+    #
+    BoundEmit,
+    BoundEmitted,
+    BoundLogEmitted,
     Emit,
-    EventEmit,
-    EventLogEmit,
     LogEmit,
-    LogEmitter,
+    LogEmitted,
+    UnboundEmit,
 )
-from ...port.event._emit import Emitter as Emitter_
 from ...port.event.name import CliEvent, EventName
 
 
-@view(str=Str.SHORT, repr=Repr.BOX)
-# AI: this for bounded emits
-class _EmitterView:
-    sender: str
-    event: EventName
-
-    @property
-    def _repr_box_text(self):
-        return f"{self.sender}  {self.event!r}"
-
-
-@dataclass(frozen=True)
-# AI: this for bind on raw emitter
-class EventEmitter:  # REMOVE: ??
+class EventEmitter:
     """Bind Emit Context for 1 Purpose and Task"""
 
     emit: Emit
@@ -63,31 +50,25 @@ class EventEmitter:  # REMOVE: ??
 
 
 if TYPE_CHECKING:
-    _class_check: type[EventEmit] = EventEmitter
-
-
-class _RequiresCall(Protocol):
-    """Dummy Protocol so the Mixin knows `self` has a __call__ accepting `level`."""
-
-    def __call__(self, *args: Any, level: str, **kwargs: Any) -> None: ...
+    _class_check: type[BoundEmitted] = EventEmitter
 
 
 class LogLevelMixin:
     """Share level-specific logging logic depending on child class __call__"""
 
-    def debug(self: _RequiresCall, *args: Any, **extra: Any) -> None:
+    def debug(self: Callable, *args: Any, **extra: Any) -> None:
         self(*args, level="DEBUG", **extra)
 
-    def info(self: _RequiresCall, *args: Any, **extra: Any) -> None:
+    def info(self: Callable, *args: Any, **extra: Any) -> None:
         self(*args, level="INFO", **extra)
 
-    def warning(self: _RequiresCall, *args: Any, **extra: Any) -> None:
+    def warning(self: Callable, *args: Any, **extra: Any) -> None:
         self(*args, level="WARNING", **extra)
 
-    def error(self: _RequiresCall, *args: Any, **extra: Any) -> None:
+    def error(self: Callable, *args: Any, **extra: Any) -> None:
         self(*args, level="ERROR", **extra)
 
-    def success(self: _RequiresCall, *args: Any, **extra: Any) -> None:
+    def success(self: Callable, *args: Any, **extra: Any) -> None:
         self(*args, level="SUCCESS", **extra)
 
 
@@ -103,8 +84,8 @@ class EventLogEmitter(LogLevelMixin):
         self.emit(self.event, self.sender, log=dto)
 
 
-_log: type[EventLogEmit] = EventLogEmitter
-_log: type[LogEmitter] = EventLogEmitter
+_log: type[BoundLogEmitted] = EventLogEmitter
+_log: type[LogEmit] = EventLogEmitter
 
 
 @dataclass(frozen=True)
@@ -124,15 +105,23 @@ class FullLogEmitter(LogLevelMixin):
         self.emit(event, sender, log=dto)
 
 
-_log: type[LogEmit] = FullLogEmitter
-_log: type[LogEmitter[LogEmit]] = FullLogEmitter
+_log: type[LogEmitted] = FullLogEmitter
 
 
-# @dataclass(frozen=True)
+@view(Str.SHORT, Repr.BOX)
+class _EmitterView:
+    sender: str
+    event: EventName
+
+    @property
+    def _repr_box_text(self):
+        return f"{self.sender}  {self.event!r}"
+
+
 class ViewEmitter(_EmitterView):
     """Bind Emit Context for 1 CLI and Log Session"""
 
-    emit: EventEmit
+    emit: BoundEmit
     sender: str
     event: EventName = CliEvent.RENDER
 
@@ -153,6 +142,9 @@ class ViewEmitter(_EmitterView):
     def build_payload(target: Any, *, level: str = "INFO") -> dict[str, Any]:
         """Extract Log and Cli DTOs or default to flat string log"""
 
+        # EXTRACT:
+        # EXTRACT:
+        # EXTRACT:
         payload: dict[str, Any] = {}
 
         if isinstance(target, CliRenderable):
@@ -164,31 +156,34 @@ class ViewEmitter(_EmitterView):
         return payload or {"log": LogDTO(message=str(target), level=level)}
 
 
-class EmitMaker:
-    emit: EventEmit
-
-    def make(self, event: EventName, sender: str, **defaults: Any) -> Emitter:
-        return type(self)(  # AI: something  like this
-            self.emit, event, sender, defaults
-        )
-
-    def bind(
-        self, event: EventName, sender: str, **defaults: Any
-    ) -> EventEmitter:
-        return Emitter(self.emit, event, sender, defaults)  # AI: or emit
-
-
 @dataclass(frozen=True)
-@view(str=Str.SHORT, repr=Repr.BOX)  # TODO: others?
+@view(str=Str.SHORT, repr=Repr.BOX)
 class Emitter(LogLevelMixin):
     """Lead the Distribution of globally wired Bus Entry Points"""
+
+    emit: Emit
+
+    log: FullLogEmitter = field(init=False)
+
+    def __post_init__(self):
+        object.__setattr__(self, "log", FullLogEmitter(self.emit))
 
     def __call__(self, event: EventName, sender: str, **payload: Any) -> None:
         self.emit(event, sender, **payload)
 
-    emit: Emit
+    def bind(
+        self, event: EventName, sender: str, **defaults: Any
+    ) -> UnboundEmit:
+        """Create a specialized, pre-bound emitter."""
+        return EventEmitter(self.emit, event, sender, defaults)
 
-    log: LogEmitter[LogEmit]  # AI: this or Mixin
+    def view(
+        self, sender: str, event: EventName = CliEvent.RENDER
+    ) -> ViewEmitter:
+        """Create a CLI/Log hybrid emitter for complex objects."""
+        return ViewEmitter(
+            emit=self.bind(event, sender), sender=sender, event=event
+        )
 
 
 if TYPE_CHECKING:
