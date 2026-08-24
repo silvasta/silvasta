@@ -6,7 +6,7 @@ Provide Infrastructure for Events
                                                        DependencyLevel[0]
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 __all__: list[str] = [
     "EventHandler",
@@ -50,6 +50,7 @@ class EventHandler:
     def __str__(self) -> str:
         return f"EventHandler[{self.name}]"
 
+    # REMOVE: replace by Functor
     def __call__(self, event: Event) -> None:
         """Execute handler function and manage fail if flag is set"""
         try:
@@ -63,12 +64,11 @@ class EventHandler:
 
 
 def handle_cli_event(event: Event) -> None:
-    """Bridge __cli__ events from the EventBus to the Printer"""
     # TODO: hand in printer from bootstrap
-    cli_payload: Any | None = event.payload.get("cli")
-    if cli_payload is None:
-        return
-    printer(cli_payload)
+    """Bridge __cli__ events from the EventBus to the Printer"""
+
+    if cli_payload := event.payload.get("cli"):
+        printer(cli_payload)
 
 
 # REMOVE: replace by Functor
@@ -88,7 +88,7 @@ CLI_HANDLER = EventHandler(
 
 # MOVE: util.log
 def telemetry(event: Event):
-    logger.debug(
+    logger.debug(  # WARN: is this to JSON???
         "Event: {event_name} | sender={sender} | keys={keys}",
         event_name=event.name,
         sender=event.sender,

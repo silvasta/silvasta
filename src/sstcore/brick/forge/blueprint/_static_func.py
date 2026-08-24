@@ -20,8 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 from ....port.call import ClassRendering
 from ....port.color import Color, ColorBox, ColorIdentifier
-from ....port.event.dto import CliDTO, LogDTO, PanelDTO
-from ....port.event.dto._produce import CliDtoCreator
+from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
 from ....port.shape import Meta, MetaData
 from ...color._arg import resolve_color
 from ...color.box import Colors

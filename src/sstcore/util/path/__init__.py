@@ -12,6 +12,7 @@ __all__: list[str] = [
     "find_project_root",
     "get_project_root",
     # pyproject.toml
+    "ProjectInfo",
     "pytoml",
     "pyproject_path",
     "pyproject_name",
@@ -30,5 +31,10 @@ from ._search import (
     recursive_parent,
     recursive_root,
 )
-from ._toml import pyproject_name, pyproject_path, pyproject_sns
+from ._toml import (
+    ProjectInfo,
+    pyproject_name,
+    pyproject_path,
+    pyproject_sns,
+)
 from ._xdg import HomeDirs, XdgDefaults, XdgHomes

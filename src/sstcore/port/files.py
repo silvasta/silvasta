@@ -29,6 +29,8 @@ from .scanner import FolderScan
 from .tree import PathTree
 
 
+# AI_FOCUS: this here is mainly for PathGuard, used to provide Files,
+# with FolderScanner as important already well working Tool
 class SyncMode(StrEnum):
     """Conflict Resolution Strategy for PathGuard File Transfers"""
 

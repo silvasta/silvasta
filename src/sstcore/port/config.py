@@ -1,13 +1,14 @@
 """
-Define the Config Management and Structure
+Define the Shape of the Config Pipeline and Management
 
 -
 """
 
 # NEXT: copy docstrings here
+
 __all__: list[str] = [
     "Config",
-    "Log",
+    "LogData",
     #
     "Settings",
     "Paths",
@@ -18,17 +19,23 @@ __all__: list[str] = [
     "ProjectInformation",
 ]
 
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Protocol, Self
 
 from .view import Stringable
 
 
-class ProjectInformation(Protocol):  # MOVE: printer? or remove?
+class ProjectInformation(Protocol):
+    """Collect Data and forward to Display"""
+
     @property
-    def name(self) -> str: ...
+    def name(self) -> str:
+        """Pyproject.toml Project Name"""
+
     @property
-    def version(self) -> str: ...
+    def version(self) -> str:
+        """Pyproject.toml Project Version"""
 
 
 class Defaults(Protocol):
@@ -48,14 +55,14 @@ class Names(Protocol):
     def scanner_cache_file(self) -> str: ...
 
 
-class Log(Protocol):  # MOVE: maybe, but where?
+class LogData(Protocol):  # MOVE: maybe, but where?
     log_dir: Path  # TASK: sync with Homes,utils.log,etc
 
     @property
     def log_file(self) -> Path: ...
     @property
     def struct_log_file(self) -> Path: ...
-    def with_overrides(self, verbose: bool, quiet: bool) -> Log: ...
+    def with_overrides(self, verbose: bool, quiet: bool) -> LogData: ...
 
 
 class Settings(Protocol):
@@ -67,11 +74,18 @@ class Settings(Protocol):
     @property
     def names(self) -> Names: ...
     @property
-    def log(self) -> Log: ...
+    def log(self) -> LogData: ...
     @classmethod
     def load(cls, file: Path) -> Self: ...
     def save(self, file: Path) -> None: ...
     def touch(self) -> Any: ...
+
+
+class HomeSetup(StrEnum):
+    GLOBAL = auto()
+    PROJECT = auto()
+    LOCAL = auto()
+    CUSTOM = auto()
 
 
 class Homes(Protocol):
@@ -133,13 +147,13 @@ class Config(Protocol):
     @property
     def project_info(self) -> ProjectInformation: ...
     @property
-    def log_result(self) -> Log: ...
+    def log_result(self) -> LogData: ...
 
     def save_settings(self, file: Path | None = None) -> Any: ...
     def from_env(self, key: str) -> str: ...
     def launch_log_setup(
         self, verbose: bool = False, quiet: bool = False
-    ) -> Log: ...
+    ) -> LogData: ...
 
     @classmethod
     def bootstrap(cls, *args, **kwargs) -> Self: ...

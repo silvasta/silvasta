@@ -5,7 +5,7 @@ Library Info
 - sstcore/main: only data for publish
 - sstcore/core: condenser for main and history, sketches, todos (marked with ___filename.py)
 - sstcore/some: outer layer everything allowed, todos like _TODO_registry.py
-Right now we are in the 'Outer Layer' (ugly details drop on the way to the core and again to main)
+Right now we are in the 'Outer Layer' (ugly details drop on the way to the inner branches)
 
 
 Implementations
@@ -28,6 +28,7 @@ __all__: list[str] = [
     "MetaData",
     "Composer",
     "Injector",
+    # NEXT: "StubWriter",
     "Factory",
 ]
 
@@ -35,7 +36,7 @@ __all__: list[str] = [
 from typing import Any, Protocol, Self, overload
 
 
-class Constructor(Protocol):  # LATER: this as Meta Head Organizer
+class _Constructor(Protocol):  # LATER: this as Meta Head Organizer
     """Engineer Meta Planning and Distribution"""
 
     def release(self, *args, **kwargs) -> str:
@@ -117,8 +118,8 @@ class Composer[BaseMixType: type](Protocol):
         """Build new Class from Mixins or Inject to Target for new Subclass"""
 
 
-class Injector[BaseMixType: type](Protocol):
-    """Decorate Target Class and Inject Compose Mixins"""
+class Injector[BaseMixType: type](Protocol):  # TODO: derive?
+    """Decorate Target Class and Inject composed Mixins"""
 
     @overload
     def __call__[MixInjected](self, cls: MixInjected, /) -> MixInjected: ...
@@ -131,7 +132,7 @@ class Injector[BaseMixType: type](Protocol):
         """Update existing Mixin selection"""
 
 
-class Documenter(Protocol):  # LATER:
+class StubWriter(Protocol):  # LATER: soon
     """Supply the Static Type Checker with Information"""
 
     # TASK: as soon as AST scanner ready:

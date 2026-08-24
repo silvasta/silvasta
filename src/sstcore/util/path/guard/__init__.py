@@ -40,14 +40,7 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     SyncMode: type[SyncMode] = SyncMode
     Reason: type[PathGuardReason] = PathGuardReason
 
-    # AI: this was before the Meta upgrade:
-    # def __init__(self):
-    #     """PathGuard is Not an Instance!"""
-    #     raise PathGuardError(reason=PathGuardReason.NO_INIT)
-
-    ...
-
-    # AI: the below docstring (imitations) and type hints are DX essentials
+    # AI: the below docstring (imitations) and type hints are DX essential
     # - the .pyi defines the public interface, this is for internal use
 
     """Category 1: Protect Path access operations to avoid File System fails"""

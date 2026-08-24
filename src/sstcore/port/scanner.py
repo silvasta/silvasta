@@ -29,7 +29,7 @@ class FolderScan(Protocol):
     """Scans a directory with a PathFilter/ProjectFilter."""
 
     scan_root: Path
-    filter: PathFiltering  # IDEA: Registry??
+    filter: PathFiltering
 
     def get_files(self) -> list[Path]: ...
     def walk(self) -> Iterator[Path]: ...
@@ -43,8 +43,8 @@ class FileScan(Protocol):
         """Provide str or container object that produces str"""
 
 
+# AI_FOCUS: I need setup that works for all scanner
 class ScanMode(StrEnum):
-    # IDEA: all scanner?? - FolderScanner,...
     """Govern the exectuion modes of FileScanner"""
 
     READ = auto()

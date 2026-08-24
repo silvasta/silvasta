@@ -114,6 +114,7 @@ class ViewComposer[ViewBase: type]:
         if not (bases := combine_mixins(self.mixins, mixins, prepend=prepend)):
             return cls
 
+        # EXTRACT: to forge.mix
         namespace: dict[str, Any] = {
             "__module__": cls.__module__,
             "__qualname__": cls.__qualname__,

@@ -4,7 +4,7 @@ Define the Assembler that Shape the Objects of the Core
 Meta
 - Home: brick.forge.blueprint
 
-- Constructor: Meta Director
+- Constructor: Meta Director (future)
     - assemble: dynamic release (future)
 
 - Meta: MetaClass Blueprint
@@ -13,11 +13,13 @@ Meta
   - Local Module: _meta
 
 
-Clas
+Class
 - Home: brick.forge.mix
 
 - Composer: Assemble the Mixins
   Method:
+  - build: compose new class only from mixins and bases
+  - inject: compose and inject to existing class
   - mix: dispatch for build or inject
   - draw: generate and write the stub files -> mixin for composer
   Module: _compose
@@ -30,7 +32,8 @@ Clas
 Unit
 - Home: brick.forge.units
 
-- Factory: (Order composition and) Produce
+- Factory: (Order composition and) massively produce, e.g. DtoFactory
+- Producer: designed to create specialized units, e.g. LogDtoProducer
   - Method: __call__, produce units
   - Module: _produce
 

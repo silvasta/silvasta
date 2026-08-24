@@ -19,11 +19,52 @@ __all__: list[str] = [
 ]
 
 import tomllib
+from dataclasses import dataclass
 from functools import lru_cache
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, Self
 
+from loguru import logger
+
+from ...port.config import ProjectInformation
+from ...system.config import HomeSetup
 from ._search import get_project_root
+
+
+@dataclass
+class ProjectInfo:
+    """Check toml to provide Config and Printer with Info"""
+
+    name: str = "sstcore"
+    version: str = "0.0.0"
+
+    @classmethod
+    def collect(cls, home_setup, name: str | None = None) -> Self:
+        try:
+            name: str = name or pyproject_name()
+            info: Self = cls(name=name or pyproject_name())
+        except Exception as error:
+            if home_setup == HomeSetup.GLOBAL:
+                raise RuntimeError("Project Name Missing!") from error
+        return info._update_version()
+
+    def _update_version(self) -> Self:
+        try:
+            if project_version := version(distribution_name=self.name):
+                self.version: str = project_version
+        except PackageNotFoundError:
+            logger.warning(
+                f"Package '{self.name}' not installed in this environment. "
+                "Are you running in dev mode without 'uv tool install -e .'?"
+            )
+        return self
+
+
+if TYPE_CHECKING:
+    _instance_check: ProjectInformation = ProjectInfo()
+    _class_check: type[ProjectInformation] = ProjectInfo
 
 
 def pyproject_path() -> Path:

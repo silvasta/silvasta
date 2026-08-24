@@ -15,30 +15,19 @@ Path composition according to schema below.
                                                        DependencyLevel[0]
 """
 
+from sstcore.system.config import HomeSetup
+
 __all__: list[str] = [
     "HomeSetup",
     "SstHomes",
-    "ProjectInfo",
 ]
 
 from dataclasses import asdict, dataclass
-from enum import StrEnum, auto
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
-from loguru import logger
-
 from ...port.config import Homes
-from ...port.config import ProjectInfo as ProjectInfo_
-from ...util.path import HomeDirs, pyproject_name
-
-
-class HomeSetup(StrEnum):
-    GLOBAL = auto()
-    PROJECT = auto()
-    LOCAL = auto()
-    CUSTOM = auto()
+from ...util.path import HomeDirs
 
 
 @dataclass
@@ -73,37 +62,7 @@ class SstHomes(HomeDirs):
         raise RuntimeError(f"Bad home setup, {message}")
 
 
-@dataclass
-class ProjectInfo:  # NEXT: sync with printer and port
-    name: str = "sstcore"
-    version: str = "0.0.0"
-
-    @classmethod
-    def collect(cls, home_setup, name: str | None = None) -> Self:
-        try:
-            name: str = name or pyproject_name()
-            info: Self = cls(name=name or pyproject_name())
-        except Exception as error:
-            if home_setup == HomeSetup.GLOBAL:
-                raise RuntimeError("Project Name Missing!") from error
-        return info._update_version()
-
-    def _update_version(self) -> Self:
-        """Get project_version from installation with project_name"""
-        try:
-            if project_version := version(distribution_name=self.name):
-                self.version: str = project_version
-        except PackageNotFoundError:
-            logger.warning(
-                f"Package '{self.name}' not installed in this environment. "
-                "Are you running in dev mode without 'uv tool install -e .'?"
-            )
-        return self
-
-
 if TYPE_CHECKING:
     _instance_check: Homes = SstHomes(**dict())
     _class_check: type[Homes] = SstHomes
     #
-    _instance_check: ProjectInfo_ = ProjectInfo()
-    _class_check: type[ProjectInfo_] = ProjectInfo

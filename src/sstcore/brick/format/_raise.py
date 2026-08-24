@@ -15,4 +15,4 @@ class FormatError(Error):
     @property
     def name(self) -> str:
         """Format the Name of the Exception"""
-        return cls_name(target=self)
+        return cls_name(self)
