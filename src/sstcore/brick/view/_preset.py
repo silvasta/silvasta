@@ -14,6 +14,7 @@ __all__: list[str] = [
 ]
 
 from ._compose import ViewComposer
+from ._inject import ViewInjector
 from ._registry import Cli, Log, Repr, Rich, Str
 
 # NEXT:
@@ -23,7 +24,7 @@ from ._registry import Cli, Log, Repr, Rich, Str
 
 
 class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
-    pydantic = ViewComposer(
+    pydantic = ViewInjector(
         cli=Cli.TABLE,
         string=Str.NAME,
         rich=Rich.MODULE,

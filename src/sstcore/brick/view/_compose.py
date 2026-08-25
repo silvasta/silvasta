@@ -43,7 +43,7 @@ from ._registry import Cli, Log, Repr, Rich, Str
 # NEXT:
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # TODO: needed?
 class ViewComposer[ViewBase: type]:
     """Configure ViewMixin sets and build composed classes"""
 

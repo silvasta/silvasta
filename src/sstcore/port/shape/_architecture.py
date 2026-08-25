@@ -49,7 +49,7 @@ class Meta(Protocol):
     def __new__(
         mcls,
         name: str,
-        bases: tuple[type, ...],
+        bases: Mixins,
         namespace: dict[str, Any],
         data: MetaData | None = None,
     ):
@@ -70,65 +70,51 @@ class MetaData(Protocol):
 ### """Class Level - Create the Class"""
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-
-class MixData(Protocol):  # REMOVE: most of them only in Implementation
-    # IDEA: build data, maybe as 1 dto with mixin registry??
-    # - MixinData?
-    name: str
-    format_name: bool
-    extras: dict | None
-    # Mixin data (maybe include in new tuple registry)
-    prepend: bool = True
+type Mixins = tuple[type, ...]
 
 
-class Composer[BaseMixType: type](Protocol):
+# NEXT:
+class Composer[BaseT: type](Protocol):
     """Assemble Mixins dynamically and provide assembled Class"""
+
+    @property
+    def mixins(self) -> Mixins:
+        """Provide all selected Mixins"""
 
     def mix_name(self, name: str = "") -> str:
         """Format Name of mixed class"""
 
-    @property
-    def mixins(self) -> tuple[type, ...]:
-        """Provide all selected Mixins"""
+    def build(self) -> BaseT:
+        """Create a purely generic Base Mixin Class"""
 
-    # TODO: overloads dispatch on cls
-    @overload
-    def mix[MixInjected](
-        self,
-        cls: type,
-        mixins: tuple[type, ...],
-        data: MixData,
-    ) -> MixInjected: ...
-    @overload
-    def mix(
-        self,
-        mixins: tuple[type, ...],
-        data: MixData,
-    ) -> BaseMixType: ...
+    def inject[Target: type](self, cls: Target, **kwargs: Any) -> Target:
+        """Inject mixins into an existing Class to form a new Subclass"""
 
-    def mix[MixInjected](  # # TODO: maybe insert here mixed proto? for cast?
-        self,
-        cls: type | None = None,
-        *,
-        # AI: Maybe send mixins as TupleRegistry, but then:
-        # - overload for sending mixins standalone!
-        mixins: tuple[type, ...],
-        data: MixData,
-    ) -> BaseMixType | MixInjected:
+    @overload
+    def mix[TargeT](self, cls: type, mixins: Mixins) -> TargeT: ...
+    @overload
+    def mix(self, mixins: Mixins) -> BaseT: ...
+
+    def mix[TargeT](self, cls: type | None = None, **kwargs) -> BaseT | TargeT:
         """Build new Class from Mixins or Inject to Target for new Subclass"""
 
 
-class Injector[BaseMixType: type](Protocol):  # TODO: derive?
+# NEXT:
+# NEXT:
+
+
+class Injector[BaseT: type](Protocol):  # TODO: derive?
     """Decorate Target Class and Inject composed Mixins"""
 
     @overload
-    def __call__[MixInjected](self, cls: MixInjected, /) -> MixInjected: ...
+    def __call__[TargeT](self, cls: TargeT, /) -> TargeT: ...
     @overload
-    def __call__(self, /) -> BaseMixType: ...
+    def __call__(self, /) -> BaseT: ...
     def __call__(self, cls: type | None = None, /) -> type:
         """Inject Mixins to Target including changeable Presets"""
 
-    def plus(self, *args, **kwargs) -> Self:
+    def plus(self) -> Self:
+        # TODO: ?? def plus(self, *args, **kwargs) -> Self:
         """Update existing Mixin selection"""
 
 

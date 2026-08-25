@@ -12,7 +12,7 @@ __all__: list[str] = [
 from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 from ....port.register import MixinRegister
-from ...registry import TupleRegistry
+from ...vault import TupleRegistry
 
 
 class MixinRegistry[MixinT: type](TupleRegistry[MixinT]):

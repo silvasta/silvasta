@@ -53,7 +53,7 @@ view = _View()
 
 if TYPE_CHECKING:
     _instance_check: Injector = view
-    _class_check: type[Injector] = View
+    _class_check: type[Injector] = _View
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -83,18 +83,18 @@ class Extended:
 # REMOVE:
 # REMOVE:
 # REMOVE:
-test1 = view(Cli.HEADER, Rich.MODULE, Rich.NAME).compose(AnyView)
+test1 = view(Cli.HEADER, Rich.MODULE, Rich.NAME).plus(AnyView)
 
-test2: ViewInjector[type[Extended]] = ViewInjector(Cli.DEBUG)
+test2: ViewInjector[type[Extended]] = view(Cli.DEBUG)
 
 class2 = test2.build()
 instance = class2()
 is_int = instance.x
 
-test3: ViewInjector[type[CliRenderable]] = ViewInjector(Cli.HEADER)
+test3: ViewInjector[type[CliRenderable]] = view(Cli.HEADER)
 class3 = test3.build("Class3")
 to_print = class3()
 
 
-@view(Cli.HEADER, Rich.MODULE, Rich.NAME).compose(AnyView)
+@view(Cli.HEADER, Rich.MODULE, Rich.NAME).plus(AnyView)
 class Extended2: ...
