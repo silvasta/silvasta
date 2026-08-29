@@ -11,7 +11,9 @@ Dynamiacally build the 'Printer' with optional Mixins.
 
 __all__: list[str] = [
     "box",
+    "printer",
 ]
 
 
 from . import _box as box
+from ._compose import printer

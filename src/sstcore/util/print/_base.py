@@ -11,24 +11,25 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
-from ...port.config import ProjectInformation
+from ...brick.attr._IDEA_ed import Derived, Injected
 from ...port.event.dto import CliDTO
 from ...port.printer import Print, PrintMode
+from ..path import ProjectInfo
 
 
 class PrinterInfo:
     """Collect toml info and show in Panel"""
 
-    info: ProjectInformation
+    info: Injected[ProjectInfo] = Injected(ProjectInfo)
 
-    @property
+    @Derived
     def project_info(self) -> str:
         """Override in ColorMixin"""
         return f"{self.info.name} v{self.info.version}"
 
-    def set_info(self, info: ProjectInformation) -> None:
-        """Fill at System Bootstrap with info from Config"""
-        self.info: ProjectInformation = info
+
+x = PrinterInfo()
+y = x.info
 
 
 class PrinterModus:
