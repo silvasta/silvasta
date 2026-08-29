@@ -17,9 +17,8 @@ from loguru import logger
 from pydantic import BaseModel
 
 from ...error import NotImplementedDispatchError
-from ...port.files import File, FileSyncing
-from ...port.pathguard import SyncMode
-from ...utils import PathGuard
+from ...port.files import File, SyncMode, SyncRegister
+from ...util import PathGuard
 from ._file import SstFile
 
 type _PathS = Path | list[Path]
@@ -228,5 +227,5 @@ class FileSyncMixin[File: SstFile]:
 
 
 if TYPE_CHECKING:
-    _instance_check: FileSyncing = FileSyncMixin()
-    _class_check: type[FileSyncing] = FileSyncMixin
+    _instance_check: SyncRegister = FileSyncMixin()
+    _class_check: type[SyncRegister] = FileSyncMixin

@@ -14,12 +14,12 @@ __all__: list[str] = [
     "FullView",
     "Renderable",
 ]
+# TODO: sort the dependencies
+# - preferably not depend on event
 
 
 from typing import Protocol, runtime_checkable
 
-# TODO: sort the dependencies
-# - preferably not depend on event
 from .event.dto import CliDTO, LogDTO
 
 
