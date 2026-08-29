@@ -45,6 +45,11 @@ def data(_target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
     }
 
 
+def _dict(_target: Any, *, key: str) -> Any:
+    """Direct __dict__ access"""
+    return _target.__dict__[key]
+
+
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Find Attr
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
