@@ -1,7 +1,9 @@
 from string.templatelib import Template
 from typing import Any
 
-from sstcore.port.view import CliRenderable, Renderable, RichRenderable
+from rich.text import Text
+
+from ...port.view import CliRenderable, Renderable, RichRenderable
 
 
 def tstring_to_renderables(
@@ -41,12 +43,8 @@ def tstring_to_renderables(
 
         # 3. Unknown object strategy
         if unknown_handler == "rich_yellow":
-            from rich.text import Text
-
             result.append(Text(str(obj), style="bold yellow"))
         elif unknown_handler == "debug":
-            from rich.text import Text
-
             label = f"{item.expr}={obj!r}"
             result.append(Text(label, style="dim red"))
         elif unknown_handler == "repr":
@@ -55,14 +53,3 @@ def tstring_to_renderables(
             result.append(str(obj))
 
     return result
-
-
-# Adapter for your printer
-def render_template(
-    template: Template, /, **spec: Unpack[PrintSpec]
-) -> CliDTO:
-    renderables = tstring_to_renderables(
-        template, unknown_handler="rich_yellow"
-    )
-    # Call your existing normalized printer engine
-    return printer_engine(*renderables, **spec)
