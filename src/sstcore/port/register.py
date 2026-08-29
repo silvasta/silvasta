@@ -6,6 +6,8 @@ Define the Shape of the Core Registry
 
 """
 
+from functools import partial
+
 __all__: list[str] = [
     # root
     "Registry",
@@ -29,9 +31,9 @@ __all__: list[str] = [
     "Index",
 ]
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterator
 from enum import Enum
-from typing import Any, Protocol, Self
+from typing import Any, Protocol, Self, overload
 
 from .filter import Filter
 
@@ -42,24 +44,69 @@ class Registry[Item, Key](Protocol):
     items: Any
 
     def add(self, *args, **kwargs) -> Any:
-        """Extend Items directly or with processing"""
+        """Extend items directly or with processing"""
 
-    def get(self, key: Key) -> Item | list[Item] | None:
-        # IDEA: find and get?? raise?
-        """Find {0..N} Items by internal identifier Key"""
+    def clear(self, key: Key | None = None) -> list[Item]:
+        """Reset and provide content that match the item identifier"""
 
-    def clear(self, key: Key | None = None) -> Any:
-        """Delete the entire content"""
+    def find(self, key: Key) -> list[Item]:
+        """Provide 0..N items that match the item identifier"""
 
-    @property
-    def all(self) -> Iterable[Item]:
-        """Provide all items one by one"""
+    def count(self, key: Key) -> int:
+        """How many items match the item identifier?"""
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Item]: ...
+    @overload
+    def __getitem__(self, index: int) -> Item: ...
+    def __getitem__(self, index: int | slice) -> Item | list[Item]:
+        """Get the value or slice of the Item at the target position"""
 
     def __len__(self) -> int:
-        """How many Items?"""
+        """How many items are in the vault?"""
+
+    def __iter__(self) -> Iterator[Item]:
+        """Provide value of all items"""
 
     def __contains__(self, target: Item) -> bool:
-        """Is target already member?"""
+        """Is the target item already member?"""
+
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+    # TODO:
+    # def __call__(self):
+    #     """No idea for what but I know that I want to use it for something..."""
+    # TODO: use like this?
+    # @classmethod
+    # def as_field(cls, *args, **kwargs) -> RegistryField:
+    #     return RegistryField(cls, *args, **kwargs)
+
+
+type RegistryLoader = Callable[[], Registry]
+
+
+class RegistryField:
+    # MOVE:
+    def __init__(self, registry: type[Registry], *args, **kwargs):
+        self.loader: RegistryLoader = partial(registry, *args, **kwargs)
+
+    def __set_name__(self, owner, name):
+        self.private_name = f"_{name}"
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        if not hasattr(instance, self.private_name):
+            setattr(instance, self.private_name, self.loader())
+
+        return getattr(instance, self.private_name)
+
+
+# TODO: check with update in base above
+# TODO: check with update in base above
+# TODO: check with update in base above
+# TODO: check with update in base above
 
 
 class ListRegister[Item, Key](Registry[Item, Key], Protocol):
@@ -67,7 +114,7 @@ class ListRegister[Item, Key](Registry[Item, Key], Protocol):
 
     items: list[Item]
 
-    def add(self, item: Item, *, override: bool) -> int:
+    def add(self, *items: Item, override: bool) -> list[Item]:
         """Add item, override {0..K} items with same Key"""
 
 
@@ -78,16 +125,18 @@ class DictRegister[Item, Key](Registry[Item, Key], Protocol):
 
 
 class TupleRegister[Item: Any, int](Registry[Item, int], Protocol):
-    """Establish the Registry with locking Tuples"""
+    """Establish the Registry with Tuples"""
 
     items: tuple[Item, ...]
 
     def add(self, items: tuple[tuple[Item, int]], **kwargs) -> Self:
-        """Rebuild internal Tuple with Num new Items"""
+        """Rebuild internal Tuple with new Items"""
 
 
-class MixinRegister[Mixin: type](Registry, Protocol):
-    """Establish the Registry with Tuples (of Mixins, at least for now)"""
+class MixinRegister[Mixin: type](TupleRegister, Protocol):
+    """Provide a stable Container for Compositiions"""
+
+    # IMPORTANT: sorting
 
     @property
     def mixins(self) -> tuple[Mixin, ...]: ...
@@ -102,6 +151,8 @@ class FuncRegister[Item: Callable](Protocol):
 
 class FilterRegister[Item: Callable](Protocol):
     """Extend the Registry with Filtering"""
+
+    # NEXT: this is 1:1 a descriptor task...
 
     def filter(self, new_active_filter: Filter | None) -> list[Item]:
         """Provide Items that fulfill the active Filter"""
