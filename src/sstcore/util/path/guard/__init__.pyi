@@ -9,11 +9,12 @@ __all__: list[str] = [
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NoReturn, Self, overload
+from typing import Any, NoReturn, Self, overload
 
 from ....error import PathGuardReason
 from ....port.event.dto import LogDTO, PanelDTO
 from ....port.files import SyncMode
+from ._attr import GuardedPath
 
 # ---------------------------------------------------------------------------
 # Input layer (public)
@@ -123,6 +124,39 @@ class PathGuard:
     def find_sequence(base_target: PathInput) -> list[Path]:
         """Sequence members for base path, newest mtime first."""
         ...
+
+    # -----------------------------------------------------------------------
+    # Descriptors
+    # -----------------------------------------------------------------------
+    @staticmethod
+    def Dir(fget: Callable[[Any], Path]) -> GuardedPath: ...
+    @overload
+    @staticmethod
+    def File(fget: Callable[[Any], Path]) -> GuardedPath: ...
+    @overload
+    @staticmethod
+    def File(
+        fget: None = None,
+        *,
+        raise_error: bool = True,
+        default_content: str | None = None,
+    ) -> Callable[[Callable[[Any], Path]], GuardedPath]: ...
+    @overload
+    @staticmethod
+    def Unique(fget: Callable[[Any], Path]) -> GuardedPath: ...
+    @overload
+    @staticmethod
+    def Unique(
+        fget: None = None,
+        *,
+        ensure_parent: bool = False,
+    ) -> Callable[[Callable[[Any], Path]], GuardedPath]: ...
+    @staticmethod
+    def Val(
+        logic: Callable[..., Path],
+        /,
+        **policy: object,
+    ) -> Callable[..., GuardedPath]: ...
 
     # -----------------------------------------------------------------------
     # Category 2: transfer & delete

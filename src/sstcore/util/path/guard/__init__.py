@@ -16,7 +16,7 @@ from ....error import PathGuardError, PathGuardReason
 from ....port.call import Functorial
 from ....port.color import ColorBox
 from ....port.files import SyncMode
-from . import _ensure, _operate, _relative
+from . import _attr, _ensure, _operate, _relative
 from ._input import PathInput, PathSpec
 
 colors: ColorBox = Colors()  # ty:ignore
@@ -25,8 +25,8 @@ colors: ColorBox = Colors()  # ty:ignore
 PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {cls_name(cls)} ",
     rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
-    # LATER: split by CamelCase (and then colorize)
     cli="Safety and Comfort for Path and File System operations",
+    # LATER: split by CamelCase (and then colorize)
     color=2,  # colors, names and even Enums change, but the registry index?
 )
 
@@ -49,6 +49,10 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     file: Callable = _ensure.file
     unique: Callable = _ensure.unique_main
     find_sequence: Callable = _ensure.find_sequence
+
+    Dir: _attr.GuardedPath = _attr.Dir
+    File: _attr.GuardedPath = _attr.File
+    Unique: _attr.GuardedPath = _attr.Unique
 
     """Category 2: Perform File Transfer operations with comfort and safety"""
 
