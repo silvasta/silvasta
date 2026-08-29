@@ -8,111 +8,104 @@ __all__: list[str] = [
     "Injected",
     "Collected",
     "Derived",
-    "Format",
+    "Forward",
 ]
 
-from typing import TYPE_CHECKING, Any, Self, overload
+from typing import TYPE_CHECKING, Any
 
 from ...port.attach import (
     FieldLoader,
     LazyDescriptor,
     ReadDescriptor,
-    ValidateDescriptor,
+    ValidDescriptor,
     WriteDescriptor,
 )
 from ..format import reflect
-from ._base import ReadField, ValidField
-
-type Types[T] = type[T] | tuple[type[T], ...]
+from ._base import ReadField, TypedField, WriteField
 
 
-class Injected[T](ReadField, ValidField):
-    """Required instance attribute. No default. Set before first get."""
+class Injected[T](ReadField[T], TypedField[T]):
+    """
+    TEXT
 
-    def __init__(self, expected: Types[T] | None = None) -> None:
-        self.expected: Types[T] | None = expected
+    Example:
+        class Renderer:
+            device = Injected(types=str)
 
-    def validate(self, unit: object, value: T) -> T:
-        if self.expected and not isinstance(value, self.expected):
-            raise TypeError(
-                f"{reflect.cls_name(unit)}.{self.public_name} expected "
-                f"{self.expected!r}, got {reflect.cls_name(value)}"
-            )
-        return value
+        r = Renderer()
+        r.device = "GPU"   # Valid
+        print(r.device)    # "GPU"
+        r.device = 123     # TypeError: expected str, got int
+    """
 
 
-class Collected[T](ReadField[T]):
-    """Lazy cached value. Factory runs once per instance on first get."""
+class Collected[T](WriteField, ReadField[T]):
+    """
+    Prepare function for lazy loading
 
-    def __init__(self, loader: FieldLoader) -> None:
+    Example:
+        class Project:
+            # Expensive calculation deferred until actually needed
+            stats = Collected(loader=lambda unit: unit._compute_stats())
+    """
+
+    def __init__(self, *args, loader: FieldLoader, **kwargs) -> None:
         self.loader: FieldLoader = loader
+        super().__init__(*args, **kwargs)
 
-    @overload
-    def __get__(self, unit: None, owner: type | None) -> Self: ...
-    @overload
-    def __get__(self, unit: object, owner: type | None) -> T: ...
-    def __get__(
-        self, unit: object | None, owner: type | None = None
-    ) -> T | Self:
-
-        if unit and self.private_name not in unit.__dict__:
-            self.__set__(unit, self.loader(unit))
-
-        return super().__get__(unit, owner)
-
-    def __set__(self, unit: object, value: T) -> None:
-        unit.__dict__[self.private_name] = value
+    def read(self, unit: object) -> T:
+        if not self._has_val(unit):
+            self.write(unit, value=self.loader(unit))
+        return super().read(unit)
 
 
 class Derived[T](ReadField[T]):
-    """Computed view. No storage, no setter — subclasses may replace the descriptor."""
+    """
+    Recalculate view on every access without maintaining state
 
-    def __init__(self, func: FieldLoader) -> None:
-        """Named Method"""
-        self.func: FieldLoader = func
-        self.__doc__: str | None = func.__doc__
-        self.public_name: str = reflect.func(func)
+    Example:
+        class Window:
+            width = Injected(types=int)
+            height = Injected(types=int)
 
-    @overload
-    def __get__(self, unit: None, owner: type | None) -> Self: ...
-    @overload
-    def __get__(self, unit: object, owner: type | None) -> T: ...
-    def __get__(
-        self, unit: object | None, owner: type | None = None
-    ) -> T | Self:
-        return self if unit is None else self.func(unit)
+            # Recalculates every time it's called
+            aspect_ratio = Derived(derived=lambda w: w.width / w.height)
+    """
+
+    def __init__(self, *args, derived: FieldLoader, **kwargs) -> None:
+        self.derived: FieldLoader = derived
+        self.__doc__: str | None = derived.__doc__
+        self.public_name: str = reflect.func(derived)
+        super().__init__(*args, **kwargs)
+
+    def read(self, unit: object) -> T:
+        return self.derived(unit)
 
 
-class Forward(ReadField):
-    """A descriptor that forwards method calls to an inner attribute."""
+class Forward[T](ReadField[T]):
+    """
+    Forwards attribute access to an inner components
 
-    def __init__(self, target_attr, method_name):
-        self.target_attr = target_attr
-        self.method_name = method_name
+    Example:
+        class Application:
+            def __init__(self):
+                self._bus = EventBus()
 
-    def __get__(self, unit: object | None, owner: type | None = None) -> Any:
-        if unit is None:
-            return self
-        target = getattr(unit, self.target_attr)
+            # Expose the bus's emit method directly on the App
+            emit = Forward(target_attr="_bus", method_name="emit")
+    """
+
+    def __init__(self, target_attr: str, method_name: str):
+        self.target_attr: str = target_attr
+        self.method_name: str = method_name
+
+    def read(self, unit: object) -> T:
+        target: object = getattr(unit, self.target_attr)
         return getattr(target, self.method_name)
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Specifications
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
-class Format(Derived[str]):
-    def __init__(self, template: str) -> None:
-        super().__init__(lambda unit, t=template: t.format(info=unit.info))
-
-
-class RegistryField(Collected):  # NEXT:
-    """Attach Container to SstRegistry"""
 
 
 if TYPE_CHECKING:
     _injected: type[WriteDescriptor] = Injected
-    _injected: type[ValidateDescriptor] = Injected
+    _injected: type[ValidDescriptor] = Injected
     _collected: type[LazyDescriptor[Any]] = Collected
     _derived: type[ReadDescriptor[Any]] = Derived
