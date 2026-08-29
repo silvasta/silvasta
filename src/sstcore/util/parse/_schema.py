@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
-from ...format.name import NameParser
+from ...brick.name import NameParser
 
 __all__: list[str] = [
     "SchemaName",

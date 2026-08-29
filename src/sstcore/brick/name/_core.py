@@ -11,6 +11,8 @@ Diamond (NameParser -> both normalizers -> NamePattern) works cleanly via MRO.
                                                        DependencyLevel[1]
 """
 
+from sstcore.util.print._mixins import NormalizeMixin
+
 __all__: list[str] = [
     "NamePattern",
     "FormatNormalizer",
@@ -22,11 +24,11 @@ import re
 import string
 from collections.abc import Iterable
 from datetime import datetime
-from functools import singledispatchmethod
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, overload
 
 from ...error import NotImplementedDispatchError
+from ..none import Ghost
 from ._base import BaseName as _BaseName
 
 
@@ -135,23 +137,41 @@ class ExtractNormalizer(NamePattern):
         return super().extract(clean_string)
 
 
-# IDEA:
-# class PatternCaller(FormatNormalizer,ExtractNormalizer):
-#     """ __call__ and distribute """
-#     @singledispatchmethod
-#     def __call__(self, target: Any):
-#         raise NotImplementedDispatchError(target)
-#     @__call__.register
-#     def _(self, target: Path | str) -> dict[str, Any]:
-#         """Send Path and String to ExtractNormalizer"""
-#         return self.extract(target)
-#     @__call__.register
-#     def _(self, target: dict | list | tuple) -> str:
-#         """Send Dict, List and Tuple to FormatNormalizer"""
-#         return self.format(target)
+if TYPE_CHECKING:
+
+    class _NormalizedName(NormalizeMixin, FormatNormalizer): ...
+else:
+    _NormalizedName = Ghost
 
 
-class NameParser(FormatNormalizer, ExtractNormalizer):
+class BidirectionalName(_NormalizedName):
+    """Route the Calls trough the right channel"""
+
+    # IDEA: 2 more overload, and then inherit from base???
+    @overload
+    def __call__(self, target: Path | str) -> dict[str, str]: ...
+    @overload
+    def __call__(self, target: dict | list | tuple) -> str: ...
+
+    def __call__(self, target: Any):
+        """
+        Add the bidirectional dispatch
+
+        Send:
+        - Path and String to ExtractNormalizer
+        - Dict, List and Tuple to FormatNormalizer
+        """
+        match target:
+            case Path() | str():
+                return self.extract(target)
+
+            case dict() | list() | tuple():
+                return self.format(target)
+
+        raise NotImplementedDispatchError(target)
+
+
+class NameParser(BidirectionalName, FormatNormalizer, ExtractNormalizer):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
 
@@ -159,23 +179,3 @@ class NameParser(FormatNormalizer, ExtractNormalizer):
     - Start as new Root for many Parsed Names
 
     """
-
-    # IDEA: 1 more level: separate __call__! (or Protocol)
-    # - why? make FormatNormalizer and ExtractNormalizer replaceable
-    #   NameParser MRO like: (PatternCaller, AnyFormatN, AnyExtractN, NamePattern)
-    #   - with: NameParser(PatternCaller)
-    # - issue: Able to change Format/Extract but attach dispatch?
-
-    @singledispatchmethod
-    def __call__(self, target: Any):
-        raise NotImplementedDispatchError(target)
-
-    @__call__.register
-    def _(self, target: Path | str) -> dict[str, Any]:
-        """Send Path and String to ExtractNormalizer"""
-        return self.extract(target)
-
-    @__call__.register
-    def _(self, target: dict | list | tuple) -> str:
-        """Send Dict, List and Tuple to FormatNormalizer"""
-        return self.format(target)
