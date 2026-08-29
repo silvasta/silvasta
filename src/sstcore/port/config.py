@@ -134,6 +134,7 @@ class Paths(Protocol):
 
 
 class Config(Protocol):
+    # TASK: Descripor config override
     @property
     def defaults(self) -> Defaults: ...
     @property

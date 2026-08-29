@@ -1,7 +1,15 @@
 """
 Define the Shape of the System
 
--
+- Central Layer of the Core Orchestration
+
+Combine Boot, Interface and Distribution:
+- EventBus: Handler and Emitter
+- Config: Settings and Paths
+- Printer: Nice UX and DX
+
+System: The sst Director
+
 """
 
 from pathlib import Path
@@ -20,7 +28,8 @@ from collections.abc import Callable
 from typing import Any, Protocol, Self
 
 from .config import Config
-from .event import Emitter, EventBus, EventName
+from .event import EventBus
+from .event.name import EventName
 from .printer import Printer
 
 type SystemLoader = Callable[..., CliSystem]
@@ -29,40 +38,57 @@ type BusLoader = Callable[..., EventBus]
 
 
 class System(Protocol):
-    """Level 0 - Any System must fulfill:"""
+    """
+    Level 0 - Minimal Boundary
+
+    Any System must fulfill:
+    """
 
     @property
     def bus(self) -> EventBus:
-        """Distribute the wires"""
+        """Distribute global wiring"""
 
     def emit(self, event: EventName, sender: str, **payload: Any) -> None:
-        """Export and execute the calls"""
+        """Provide and execute calls"""
 
     @classmethod
-    def bootstrap(cls, *args, **kwargs) -> Self:
-        """Be ready to launch"""
+    def boot(cls, *args, **kwargs) -> Self:
+        """Bind ready-to-use setup"""
 
 
 class SstSystem(System, Protocol):
-    """Level 1 - Essentials"""
+    """
+    Level 1 - Library Essentials
+
+    - Check individual Protocols for more information
+    """
 
     @property
     def config(self) -> Config: ...
     @property
     def printer(self) -> Printer: ...
-    @property
-    def emitter(self) -> Emitter: ...
+
+    # IMPORTANT:
+    # IMPORTANT:
+    # IMPORTANT:
+    # IMPORTANT:
+    # IMPORTANT:
+    # @property
+    # def emitter(self) -> Emitter: ...
 
     @classmethod
-    def bootstrap(cls) -> Self:
-        """Silence Liskov and launch without input"""
+    def boot(cls) -> Self: ...
 
 
 class CliSystem(SstSystem, Protocol):
-    """Level 2 - Console Pipeline Requirements"""
+    """
+    Level 2 - Console Pipeline Requirements
+
+    - Specification as used in: sst
+    """
 
     @classmethod
-    def bootstrap(
+    def boot(
         cls,
         *,
         config_loader: ConfigLoader | None = None,
@@ -72,4 +98,5 @@ class CliSystem(SstSystem, Protocol):
         verbose: bool = False,
         quiet: bool = False,
         home: Any = None,
-    ) -> Self: ...
+    ) -> Self:
+        """Accept Changes and Provide the full Infrastructure"""

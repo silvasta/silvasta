@@ -26,10 +26,19 @@ from dotenv import load_dotenv
 from loguru import logger
 
 from ...brick.format import cls_name
-from ...brick.time import day_count
-from ...port.config import Config, Defaults, Homes, Log, Names, Paths, Settings
+from ...brick.format.time import day_count
+from ...port.config import (
+    Config,
+    Defaults,
+    Homes,
+    LogData,
+    Names,
+    Paths,
+    Settings,
+)
 from ...util.log import setup_logging
-from ._homes import HomeSetup, ProjectInfo, SstHomes
+from ...util.path import ProjectInfo
+from ._homes import HomeSetup, SstHomes
 from ._paths import SstPaths
 from ._settings import SstSettings
 
@@ -67,12 +76,12 @@ class ConfigManager:
 
     def launch_log_setup(
         self, verbose: bool = False, quiet: bool = False
-    ) -> Log:
+    ) -> LogData:
         """Use Param with overrides for log setup and store applied param"""
         runtime_param = self.settings.log.with_overrides(
             verbose=verbose, quiet=quiet
         )
-        self.log_result: Log = setup_logging(runtime_param)
+        self.log_result: LogData = setup_logging(runtime_param)
         return self.log_result
 
     @property

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Self
 
 from ..port.config import Config
 from ..port.event import EventBus as EventBus
+from ..port.event.emit import Emitter as Emitter_
 from ..port.event.name import CoreEvent, EventName
 from ..port.printer import Printer
 from ..port.system import BusLoader, CliSystem, ConfigLoader, SstSystem
@@ -40,26 +41,25 @@ class System:
         self.bus: EventBus = bus
         self.config: Config = config
         self.printer: Printer = printer
-        self.emitter = Emitter(self.bus)
+        self.emitter: Emitter_ = Emitter(self.bus)
 
     def emit(self, event: EventName, sender: str, **payload: Any) -> None:
         """Provide direct bus access"""
         self.bus.emit(event, sender, **payload)
 
     @classmethod
-    def bootstrap(
+    def boot(
         cls,
         *,
         config_loader: ConfigLoader | None = None,
         bus_loader: BusLoader | None = None,
-        # WARN: printer empty!
         printer: Printer | None = None,
         settings: Path | None = None,
         verbose: bool = False,
         quiet: bool = False,
         home: HomeSetup = HomeSetup.PROJECT,
     ) -> Self:
-        """Assemble Config, wire Bus, ensure Printer and Compose to System"""
+        """Assemble Config, wire Bus, ensure Printer and launch the System"""
 
         setup_minimal_logging(level="DEBUG" if verbose else "WARNING")
 
@@ -72,7 +72,8 @@ class System:
         bus: EventBus = bus_loader()
 
         system_printer: Printer = printer or global_printer
-        system_printer.set_project_info(config.project_info)
+        # TASK: descriptor?!
+        system_printer.set_info(config.project_info)
 
         system: Self = cls(config=config, printer=system_printer, bus=bus)
         system.emit(event=CoreEvent.BUS_READY, sender="System")
@@ -82,11 +83,11 @@ class System:
 
 if TYPE_CHECKING:
     # base protocol
-    _instance_check: System_ = System.bootstrap()
+    _instance_check: System_ = System.boot()
     _class_check: type[System_] = System
     # only internals
-    _instance_check: SstSystem = System.bootstrap()
+    _instance_check: SstSystem = System.boot()
     _class_check: type[SstSystem] = System
     # with externals (current implementation)
-    _instance_check: CliSystem = System.bootstrap()
+    _instance_check: CliSystem = System.boot()
     _class_check: type[CliSystem] = System
