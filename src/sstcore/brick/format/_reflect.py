@@ -28,7 +28,7 @@ def cls_name(_target: Any) -> str:
 
 
 def just_return[Target](constant: Target) -> Callable[..., Target]:
-    """Wrap target in function that returns constant value"""
+    """Wrap _target in function that returns constant value"""
 
     def constant_function(*_, **__) -> Target:
         return constant
@@ -36,11 +36,11 @@ def just_return[Target](constant: Target) -> Callable[..., Target]:
     return constant_function  # MOVE: to sstcore.brick.format|func
 
 
-def data(target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
+def data(_target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
     """Extract public attributes filtered by exclude"""
     return {
         k: v
-        for k, v in vars(target).items()
+        for k, v in vars(_target).items()
         if not k.startswith("_") and k not in (exclude or set())
     }
 
@@ -50,9 +50,9 @@ def data(target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def dig_attr(target: Any, check_attrs: list[str], default=None) -> str | None:
+def dig_attr(_target: Any, check_attrs: list[str], default=None) -> str | None:
     for guess in check_attrs:
-        if detected := getattr(target, guess, ""):
+        if detected := getattr(_target, guess, ""):
             return detected
     else:
         return default
@@ -67,17 +67,17 @@ def name(_target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
     return default
 
 
-def text(target: Any, attrs: list[str] | None = None) -> str | None:
+def text(_target: Any, attrs: list[str] | None = None) -> str | None:
     """Check if text in attribute list, provide match or None"""
     check_attrs: list[str] = (attrs or []) + ["_text", "text"]
-    return dig_attr(target, check_attrs)
+    return dig_attr(_target, check_attrs)
 
 
-def func(target: Any, attrs: list[str] | None = None, default="Func") -> str:
+def func(_target: Any, attrs: list[str] | None = None, default="Func") -> str:
     """Check attribute list, provide match or default"""
     default_checks: list[str] = ["__qualname__", "__name__"]
     check_attrs: list[str] = (attrs or []) + default_checks
-    if detected := dig_attr(target, check_attrs):
+    if detected := dig_attr(_target, check_attrs):
         return detected
     return default
 
@@ -87,30 +87,30 @@ def func(target: Any, attrs: list[str] | None = None, default="Func") -> str:
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def invoke(target: Any, method_name: str, *, strict: bool = False) -> Any:
+def invoke(_target: Any, method_name: str, *, strict: bool = False) -> Any:
     """Extract and execute specific method if it exists"""
     try:
-        if method := getattr(target, method_name, None):
+        if method := getattr(_target, method_name, None):
             return method()
     except Exception as error:
         if strict:
             raise AttributeError(
-                f"Issue for {target} while extracting {method_name}: {error}"
+                f"Issue for {_target} while extracting {method_name}: {error}"
             ) from error
 
-    return str(target)
+    return str(_target)
 
 
-def rich(target: Any, *, strict: bool = False) -> Any:
+def rich(_target: Any, *, strict: bool = False) -> Any:
     """Provide __rich__ value or default to str()"""
-    return invoke(target, method_name="__rich__", strict=strict)
+    return invoke(_target, method_name="__rich__", strict=strict)
 
 
-def cli(target: Any, *, strict: bool = False) -> Any:
+def cli(_target: Any, *, strict: bool = False) -> Any:
     """Provide __cli__ value or default to str()"""
-    return invoke(target, method_name="__cli__", strict=strict)
+    return invoke(_target, method_name="__cli__", strict=strict)
 
 
-def log(target: Any, *, strict: bool = False) -> Any:
+def log(_target: Any, *, strict: bool = False) -> Any:
     """Provide __log__ value or default to str()"""
-    return invoke(target, method_name="__log__", strict=strict)
+    return invoke(_target, method_name="__log__", strict=strict)
