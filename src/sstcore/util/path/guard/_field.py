@@ -15,10 +15,16 @@ type Getter = Callable[[Any], Path]
 type Logic = Callable[..., Path]
 
 
-class GuardedPath(Derived[Path]):
-    """Derived Path run through PathGuard logic; assignment is forbidden."""
+class PathGuardField(Derived[Path]):
+    """
+    Descriptor that runs a getter then applies PathGuard logic.
 
-    def __inij__(
+    - Read-only by design (assignment raises).
+    - Supports __set_name__ for clean error messages.
+    - Can be used directly or via the Val/Dir/File factories.
+    """
+
+    def __init__(
         self, *args: Any, derived: Getter, logic: Logic, **policy: Any
     ) -> None:
         self.logic: Logic = logic
@@ -30,20 +36,32 @@ class GuardedPath(Derived[Path]):
         return self.logic(base_path, **self.policy)
 
     def __set__(self, unit: object, value: object) -> None:
+        # LATER: NoWriteField with something like that
         _cls_attr = self._cls_attr_name(unit)
         raise AttributeError(f"{_cls_attr} Path is not Writable!")
 
 
-def Val(logic: Logic, /, **default_policy: Any):
-    """Build Descriptor Factory for PathGuard methods (@PathGuard.Dir, etc.)."""
+def Val(logic: Logic, /, **default_policy: Any):  # noqa: N802
+    """
+    Create a descriptor factory for a guard logic.
+
+    Usage:
+        @PathGuard.Dir
+        def logs(self): ...
+
+        @PathGuard.File(raise_error=False, default_content="")
+        def config(self): ...
+    """
 
     def factory(fget: Getter | None = None, /, **policy: Any):
-        bound_policy = {**default_policy, **policy}
+        bound: dict[str, Any] = default_policy | policy
         if fget is None:
-            return lambda fn: GuardedPath(
-                derived=fn, logic=logic, **bound_policy
-            )
-        return GuardedPath(derived=fget, logic=logic, **bound_policy)
+
+            def wrapper(fn: Getter) -> PathGuardField:
+                return PathGuardField(fn, logic, **bound)
+
+            return wrapper
+        return PathGuardField(fget, logic, **bound)
 
     return factory
 

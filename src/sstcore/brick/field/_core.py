@@ -24,9 +24,10 @@ from ..format import reflect
 from ._base import ReadField, TypedField, WriteField
 
 
+# TODO: better name
 class Injected[T](ReadField[T], TypedField[T]):
     """
-    TEXT
+    Typed attribute must be set before first read.
 
     Example:
         class Renderer:
@@ -39,9 +40,10 @@ class Injected[T](ReadField[T], TypedField[T]):
     """
 
 
+# TODO: better name
 class Collected[T](WriteField, ReadField[T]):
     """
-    Prepare function for lazy loading
+    Load lazy cached value on first read
 
     Example:
         class Project:
@@ -59,9 +61,10 @@ class Collected[T](WriteField, ReadField[T]):
         return super().read(unit)
 
 
+# TODO: better name, Property?
 class Derived[T](ReadField[T]):
     """
-    Recalculate view on every access without maintaining state
+    Calculate view on every access without maintaining state
 
     Example:
         class Window:
@@ -82,6 +85,7 @@ class Derived[T](ReadField[T]):
         return self.derived(unit)
 
 
+# NOTE: this name is perfect
 class Forward[T](ReadField[T]):
     """
     Forwards attribute access to an inner components

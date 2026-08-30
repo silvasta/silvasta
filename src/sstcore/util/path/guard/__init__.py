@@ -16,7 +16,7 @@ from ....error import PathGuardError, PathGuardReason
 from ....port.call import Functorial
 from ....port.color import ColorBox
 from ....port.files import SyncMode
-from . import _attr, _ensure, _operate, _relative
+from . import _ensure, _field, _operate, _relative
 from ._input import PathInput, PathSpec
 
 colors: ColorBox = Colors()  # ty:ignore
@@ -50,9 +50,10 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     unique: Callable = _ensure.unique_main
     find_sequence: Callable = _ensure.find_sequence
 
-    Dir: _attr.GuardedPath = _attr.Dir
-    File: _attr.GuardedPath = _attr.File
-    Unique: _attr.GuardedPath = _attr.Unique
+    Dir: _field.PathGuardField = _field.Dir
+    File: _field.PathGuardField = _field.File
+    Unique: _field.PathGuardField = _field.Unique
+    Field: type[_field.PathGuardField] = _field.PathGuardField
 
     """Category 2: Perform File Transfer operations with comfort and safety"""
 

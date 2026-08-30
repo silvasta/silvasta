@@ -14,7 +14,6 @@ from typing import Any, NoReturn, Self, overload
 from ....error import PathGuardReason
 from ....port.event.dto import LogDTO, PanelDTO
 from ....port.files import SyncMode
-from ._attr import GuardedPath
 
 # ---------------------------------------------------------------------------
 # Input layer (public)
@@ -56,6 +55,11 @@ class PathSpec:
 
 type PathInput = str | Path | PathSpec
 
+class PathGuardField[T]:
+    def __get__(self, unit: T, objtype: type[T] | None = None) -> Path: ...
+    def __set__(self, unit: T, value: object) -> NoReturn: ...
+    def __set_name__(self, owner: type, name: str) -> None: ...
+
 # ---------------------------------------------------------------------------
 # Facade
 # ---------------------------------------------------------------------------
@@ -64,6 +68,7 @@ class PathGuard:
     Spec: type[PathSpec]
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
+    Descriptor: type[PathGuardField]
 
     def __init__(self) -> NoReturn: ...
     @classmethod
@@ -128,40 +133,44 @@ class PathGuard:
     # -----------------------------------------------------------------------
     # Descriptors
     # -----------------------------------------------------------------------
-    @staticmethod
-    def Dir(fget: Callable[[Any], Path]) -> GuardedPath: ...
     @overload
     @staticmethod
-    def File(fget: Callable[[Any], Path]) -> GuardedPath: ...
+    def Dir(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    @overload
+    @staticmethod
+    def Dir() -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    @staticmethod
+    def Dir(fget: Callable[[Any], Path] | None = None) -> Any: ...  # noqa: N802
+    @overload
+    @staticmethod
+    def File(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
     @overload
     @staticmethod
     def File(
-        fget: None = None,
         *,
         raise_error: bool = True,
         default_content: str | None = None,
-    ) -> Callable[[Callable[[Any], Path]], GuardedPath]: ...
+    ) -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    @staticmethod
+    def File(  # noqa: N802
+        fget: Callable[[Any], Path] | None = None, **policy: Any
+    ) -> Any: ...
     @overload
     @staticmethod
-    def Unique(fget: Callable[[Any], Path]) -> GuardedPath: ...
+    def Unique(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
     @overload
     @staticmethod
     def Unique(
-        fget: None = None,
         *,
         ensure_parent: bool = False,
-    ) -> Callable[[Callable[[Any], Path]], GuardedPath]: ...
+    ) -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
     @staticmethod
-    def Val(
-        logic: Callable[..., Path],
-        /,
-        **policy: object,
-    ) -> Callable[..., GuardedPath]: ...
-
+    def Unique(  # noqa: N802
+        fget: Callable[[Any], Path] | None = None, **policy: Any
+    ) -> Any: ...
     # -----------------------------------------------------------------------
     # Category 2: transfer & delete
     # -----------------------------------------------------------------------
-
     @staticmethod
     def remove(target: PathInput) -> bool: ...
     @staticmethod

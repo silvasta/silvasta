@@ -25,8 +25,8 @@ from loguru import logger
 from ....brick.format import cls_name
 from ....brick.func import SafeFunctor
 from ....error import PathGuardError, PathGuardReason
+from ....port.call import ErrorPolicy
 from ....port.files import SyncMode
-from ....port.functional import ErrorPolicy
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec
 

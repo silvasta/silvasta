@@ -41,6 +41,9 @@ from ..format import cls_name, reflect
 
 
 class NamedField:
+    def __init__(self, *args, **kwargs):
+        pass
+
     def __set_name__(self, owner: type, name: str) -> None:
         self.public_name: str = name
         self.private_name: str = f"_{name}"
@@ -59,7 +62,7 @@ class NamedField:
 
     def _cls_attr_name(self, unit: object) -> str:
         """Simply rendered: Cls.attribute"""
-        return f"{cls_name(unit)}.{self.public_name} expected "
+        return f"{cls_name(unit)}.{self.public_name}"
 
     def raise_on_missing(self, unit: object) -> NoReturn:
         raise AttributeError(f"{self._cls_attr_name(unit)} is Missing!")

@@ -33,33 +33,27 @@ class SstPaths:
         self._names: Names = names or SstNames()
         self._homes: Homes = homes or SstHomes.from_setup(HomeSetup.GLOBAL)
 
-    @property
-    @PathGuard.dir
+    @PathGuard.Dir
     def project_root(self) -> Path:
         return self._homes.root
 
-    @property
-    @PathGuard.dir
+    @PathGuard.Dir
     def config_dir(self) -> Path:
         return self._homes.config
 
-    @property
-    @PathGuard.dir
+    @PathGuard.Dir
     def log_dir(self) -> Path:
         return self._homes.log
 
-    @property
-    @PathGuard.dir
+    @PathGuard.Dir
     def data_dir(self) -> Path:
         return self._homes.data
 
-    @property
-    @PathGuard.dir
+    @PathGuard.Dir
     def plot_dir(self) -> Path:
         return self.project_root / self._names.plot_dir
 
-    @property
-    @PathGuard.dir
+    @PathGuard.Dir
     def state_dir(self) -> Path:
         return self._homes.state
 
@@ -75,14 +69,14 @@ class SstPaths:
         """Provide bare dot_env Path without any checks"""
         return self.config_dir / ".env"
 
-    def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
-        """Provide location for Scanner state data"""
-        return (scan_root or self.state_dir) / self._names.scanner_cache_file
-
     @PathGuard.unique(ensure_parent=True)
     def summary_file(self, suffix: str = "md") -> Path:
         filename: str = self._names.summary_file(suffix=suffix)
         return self.data_dir / filename
+
+    def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
+        """Provide location for Scanner state data"""
+        return (scan_root or self.state_dir) / self._names.scanner_cache_file
 
 
 if TYPE_CHECKING:
