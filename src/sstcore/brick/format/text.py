@@ -84,14 +84,15 @@ def indent(
     text: str, prefix: str = "  ", first_line_prefix: str | None = None
 ) -> str:
     """Indent lines cleanly, with optional distinct prefix for the first line."""
-    lines = text.splitlines()
-    if not lines:
+    if not (lines := text.splitlines()):
         return ""
-
-    first = (
+    first: str = (
         first_line_prefix if first_line_prefix is not None else prefix
     ) + lines[0]
-    rest = [f"{prefix}{line}" if line.strip() else line for line in lines[1:]]
+
+    rest: list[str] = [
+        f"{prefix}{line}" if line.strip() else line for line in lines[1:]
+    ]
     return "\n".join([first] + rest)
 
 
