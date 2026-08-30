@@ -36,7 +36,7 @@ __all__: list[str] = [
 from enum import auto
 from typing import NamedTuple, Protocol, Self, runtime_checkable
 
-from .func import Colorizing
+from .call import Colorizing
 from .register import Index
 from .view import Stringable
 

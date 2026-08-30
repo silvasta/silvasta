@@ -5,12 +5,6 @@ Define the Shape of the Event Bus Calling
 """
 
 __all__: list[str] = [
-    # Type Aliases
-    # Raw Callables (Unbound)
-    # Bound Callables
-    # Facade / Composite Emitters
-]
-__all__: list[str] = [
     "Emit",
     "Emitter",
     "BoundEmit",
@@ -81,7 +75,7 @@ class CliPrint(_Protocol):
         """Maximally bound CLI call to EventBus"""
 
 
-class CliEmitter(_Protocol):  # TODO: work out
+class CliEmitter(_Protocol):  # NEXT: work out
     """Call to Bus with predefined cli emits"""
 
     __call__: CliEmit

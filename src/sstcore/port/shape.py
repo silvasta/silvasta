@@ -1,13 +1,7 @@
 """
-First Sketch of a strategic Blueprint for the Assembler
+Define the Assembler that Shape the Objects of the Core
 
-Library Info
-- sstcore/main: only data for publish
-- sstcore/core: condenser for main and history, sketches, todos (marked with ___filename.py)
-- sstcore/some: outer layer everything allowed, todos like _TODO_registry.py
-Right now we are in the 'Outer Layer' (ugly details drop on the way to the inner branches)
-
-
+- First Sketch of a strategic Blueprint for the Assembler
 Implementations
 - Soon: Scanner: maybe StaticFunctor
 - Later: Format/Normalize: maybe StaticFunctor
@@ -20,6 +14,56 @@ Implementations
 
 - Now: ColorFactory
 - Now: DtoFactory
+
+Meta
+- Home: brick.forge.blueprint
+
+- Constructor: Meta Director (future)
+    - assemble: dynamic release (future)
+
+- Meta: MetaClass Blueprint
+- MetaData: InputSpace Guard
+  - MetaInput: class specific unit -> single meta arg - dto
+  - Local Module: _meta
+
+
+Class
+- Home: brick.forge.mix
+
+- Composer: Assemble the Mixins
+  Method:
+  - build: compose new class from mixins and bases
+  - inject: compose and inject to existing class
+  - mix: dispatch build and inject
+  - draw: generate and write the stub files -> mixin for composer
+  Module: _compose
+
+- Injector: Into the Target
+  Method: __call__,
+  Module: _inject
+
+
+Unit
+- Home: brick.forge.units
+
+- Factory: (Order composition and) massively produce, e.g. DtoFactory
+- Producer: designed to create specialized units, e.g. LogDtoProducer
+  - Method: __call__, produce units
+  - Module: _produce
+
+- Plus: individual modules, functions and names, depending on purpose
+
+---
+
+Strategy:
+  Done
+  + Protocol support for Builder (as guidance, without obligation)
+  + Consistent naming for builder: package, module, class, function
+  + Basic infrastructur (mainly gatekeeper protocol for now)
+  Soon
+  - Collect best working concepts
+  Final
+  - The Generalized and Typed assemble Pipeline
 
 """
 
