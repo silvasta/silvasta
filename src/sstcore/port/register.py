@@ -6,8 +6,6 @@ Define the Shape of the Core Registry
 
 """
 
-from functools import partial
-
 __all__: list[str] = [
     # root
     "Registry",
@@ -19,140 +17,144 @@ __all__: list[str] = [
     "MixinRegister",
     "FilterRegister",
     "FuncRegister",
-    # TASK: final name for decorator attaching function registry:
-    # - FunctionalRegister
-    # - FunctorialRegister
-    # - FunctorRegister
-    # - CallRegister
-    # - CallableRegister
-    # - DecoratingRegister
-    # - DecoRegister
-    #
     "Index",
 ]
 
 from collections.abc import Callable, Iterator
 from enum import Enum
-from typing import Any, Protocol, Self, overload
+from typing import Any, NoReturn, Protocol, Self, overload
 
+from .attach import LazyDescriptor
 from .filter import Filter
 
+type Basic = list | tuple | dict
 
-class Registry[Item, Key](Protocol):
+
+class Registry[Base: Basic, Item, Key](Protocol):
     """Define the Shape of the General Registry"""
 
-    items: Any
+    vault: Base
 
-    def add(self, *args, **kwargs) -> Any:
-        """Extend items directly or with processing"""
+    # NOTE: expand for dict to kwargs
+    def add(self, *items: Item, override: bool = False) -> Base | Self:
+        """Extend vault by Items, get removed files back"""
 
-    def clear(self, key: Key | None = None) -> list[Item]:
-        """Reset and provide content that match the item identifier"""
+    def clear(self, *keys: Key) -> Base | Self:
+        """Remove all Items or filter removed by Keys"""
 
-    def find(self, key: Key) -> list[Item]:
+    def find(self, *key: Key) -> list[Item]:
         """Provide 0..N items that match the item identifier"""
 
-    def count(self, key: Key) -> int:
+    def get(self, key: Key) -> Item | NoReturn:
+        """Find precisely the unique Item to the Key"""
+
+    def count(self, *key: Key) -> int:
         """How many items match the item identifier?"""
+
+    @classmethod
+    def as_field(cls, *args, **kwargs) -> RegistryDescriptor: ...
 
     @overload
     def __getitem__(self, index: slice) -> list[Item]: ...
     @overload
     def __getitem__(self, index: int) -> Item: ...
     def __getitem__(self, index: int | slice) -> Item | list[Item]:
-        """Get the value or slice of the Item at the target position"""
+        """Get the value or slice of the Item at the index position"""
 
     def __len__(self) -> int:
         """How many items are in the vault?"""
 
-    def __iter__(self) -> Iterator[Item]:
+    def __iter__(self) -> Iterator[Any]:  # here probably special case for dict
         """Provide value of all items"""
 
     def __contains__(self, target: Item) -> bool:
+        # AI: here i am unsure, any other idea what to allow here?
+        # - one idea was to open it widely with a huge dispatch,
+        # - but it looked too time consuming for too less gain...
         """Is the target item already member?"""
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-    # TODO:
-    # def __call__(self):
-    #     """No idea for what but I know that I want to use it for something..."""
-    # TODO: use like this?
-    # @classmethod
-    # def as_field(cls, *args, **kwargs) -> RegistryField:
-    #     return RegistryField(cls, *args, **kwargs)
+class RegistryDescriptor(LazyDescriptor, Protocol):
+    """Mount the vault keeper proper to the classes"""
+
+    @classmethod
+    def as_field(cls, *args, **kwargs) -> Self: ...
 
 
-type RegistryLoader = Callable[[], Registry]
-
-
-class RegistryField:
-    # MOVE:
-    def __init__(self, registry: type[Registry], *args, **kwargs):
-        self.loader: RegistryLoader = partial(registry, *args, **kwargs)
-
-    def __set_name__(self, owner, name):
-        self.private_name = f"_{name}"
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self
-
-        if not hasattr(instance, self.private_name):
-            setattr(instance, self.private_name, self.loader())
-
-        return getattr(instance, self.private_name)
-
-
-# TODO: check with update in base above
-# TODO: check with update in base above
-# TODO: check with update in base above
-# TODO: check with update in base above
-
-
-class ListRegister[Item, Key](Registry[Item, Key], Protocol):
+class ListRegister[Item, Key](Registry[list, Item, Key], Protocol):
     """Establish the Registry with a List of Items"""
 
-    items: list[Item]
+    vault: list[Item]
 
-    def add(self, *items: Item, override: bool) -> list[Item]:
-        """Add item, override {0..K} items with same Key"""
+    def add(self, *items: Item, override: bool = False) -> list[Item]: ...
+    def clear(self, *keys: Key) -> list[Item]: ...
+    def find(self, *key: Key) -> list[Item]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Item]: ...
+    @overload
+    def __getitem__(self, index: int) -> Item: ...
+    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
+    def __iter__(self) -> Iterator[Item]: ...
 
 
-class DictRegister[Item, Key](Registry[Item, Key], Protocol):
+# NOTE: overload will later on be removed, just to silence ty now,
+# - and to show that the index and slices reg[1:2] hold everywhere
+
+
+class DictRegister[Item, Key](Registry[dict, Item, Key], Protocol):
     """Establish the Registry with a Dict of Items"""
 
-    items: dict[Key, Item]
+    vault: dict[Key, Item]
+
+    def add(self, *_, override: bool = False, **kwargs) -> dict[Key, Item]: ...
+    def clear(self, *keys: Key) -> dict[Key, Item]: ...
+    def find(self, *key: Key) -> list[Item]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Item]: ...
+    @overload
+    def __getitem__(self, index: int) -> Item: ...
+    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
+    def __iter__(self) -> Iterator[tuple[Key, Item]]: ...
 
 
-class TupleRegister[Item: Any, int](Registry[Item, int], Protocol):
+class TupleRegister[Item, Key](Registry[tuple, Item, Key], Protocol):
     """Establish the Registry with Tuples"""
 
-    items: tuple[Item, ...]
+    vault: tuple[Item, ...]
 
-    def add(self, items: tuple[tuple[Item, int]], **kwargs) -> Self:
-        """Rebuild internal Tuple with new Items"""
+    # TODO: returning new tuple or manipulate directly on registry?
+    def add(self, *items: Item, override: bool = False) -> Self: ...
+    def clear(self, *keys: Key) -> tuple | Self: ...
+    def find(self, *key: Key) -> list[Item]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Item]: ...
+    @overload
+    def __getitem__(self, index: int) -> Item: ...
+    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
 
 
-class MixinRegister[Mixin: type](TupleRegister, Protocol):
+class MixinRegister[Mixin: type, Key](TupleRegister[Mixin, Key], Protocol):
     """Provide a stable Container for Compositiions"""
 
-    # IMPORTANT: sorting
-
     @property
+    # IMPORTANT: sorting mechanism
     def mixins(self) -> tuple[Mixin, ...]: ...
 
 
 class FuncRegister[Item: Callable](Protocol):
     """Extend the Registry for Functions (LATER: and Functors)"""
 
-    def attach(self: Registry) -> Callable[[Item], Item]:
+    def attach(self) -> Callable[[Item], Item]:
         """Register new member by Decorator"""
 
 
 class FilterRegister[Item: Callable](Protocol):
     """Extend the Registry with Filtering"""
 
-    # NEXT: this is 1:1 a descriptor task...
+    # LATER: this is 1:1 a descriptor mock...
 
     def filter(self, new_active_filter: Filter | None) -> list[Item]:
         """Provide Items that fulfill the active Filter"""

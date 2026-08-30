@@ -4,8 +4,6 @@ ListRegistry - Main Variation of the Core Registry
 -
 """
 
-from sstcore.port.error import Error
-
 __all__: list[str] = [
     "ListRegistry",
 ]
@@ -14,9 +12,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, overload
 
 from ...port.register import ListRegister
-
-
-class RegistryError(Error): ...  # TODO:
+from ._base import RegistryError
 
 
 class ListRegistry[ItemT, KeyT]:

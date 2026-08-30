@@ -6,23 +6,39 @@ Extensions for the Core Registry
 
 """
 
+from collections.abc import Callable
+
 __all__: list[str] = [
     "FilterRegistry",
     "FunctorRegistry",  # TODO: check with realisations, e.g. with Handler
 ]
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from ...port.filter import Filter
-from ...port.register import FilterRegister
+from ...port.register import FilterRegister, Registry, RegistryDescriptor
+from ..field import Collected, ValidField
 
 
 class FunctorRegistry:
     """Same as regular Func registry??"""
 
 
+type RegistryLoader = Callable[[], Registry]
+
+
+class RegistryField(Collected, ValidField):
+    """Provide access on demand"""
+
+    @classmethod
+    def as_field(cls, *args, **kwargs) -> Self:
+        raise NotImplementedError
+
+
 class FilterRegistry[FilterT: Filter, ItemT]:
     """Extend the FilterRegistry with filtered items"""
+
+    # TASK: Replace most by FilterField?
 
     _active_filter: FilterT | None = None
 
@@ -58,5 +74,6 @@ class FilterRegistry[FilterT: Filter, ItemT]:
 
 
 if TYPE_CHECKING:
+    _reg: type[RegistryDescriptor] = RegistryField
     _registry: FilterRegister = FilterRegistry()
     _registry: type[FilterRegister[Filter]] = FilterRegistry[Filter, Any]
