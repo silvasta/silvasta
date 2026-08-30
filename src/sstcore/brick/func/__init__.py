@@ -6,20 +6,10 @@ The Functor - Easy and Safe Binding!
 """
 
 __all__: list[str] = [
-    "Functor",
     "SafeFunctor",
-    "DecoFunctor",
+    "_DecoFunctor",
+    "SafeFuncCore",
+    "FunctorBase",
 ]
 
-from ._base import BaseFunctor, DecoFuncMixin, SafeFuncMixin
-
-
-class Functor[**P, R](
-    DecoFuncMixin[P, R], SafeFuncMixin[P, R], BaseFunctor[P, R]
-): ...
-
-
-class SafeFunctor[**P, R](DecoFuncMixin[P, R], BaseFunctor[P, R]): ...
-
-
-class DecoFunctor[**P, R](DecoFuncMixin[P, R], BaseFunctor[P, R]): ...
+from ._tor import FunctorBase, SafeFuncCore, SafeFunctor, _DecoFunctor

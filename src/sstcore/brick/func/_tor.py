@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, NoReturn
 
 from loguru import logger
 
-from ...port.functional import (
+from ...port.call import (
     DecoFunctorial,
     ErrorPolicy,
     Functorial,
@@ -19,12 +19,9 @@ from ...port.functional import (
 )
 from ..format import cls_name, reflect
 from ..none import Ghost
-from ..view import view
 
 
-@view.functor()
-# TASK: check again typing, change Param/Result  or Ghost
-class BaseFunctor[**Param, Result]:
+class FunctorBase[**Param, Result]:
     def __init__(
         self,
         func: Callable[Param, Result] | None = None,
@@ -33,7 +30,7 @@ class BaseFunctor[**Param, Result]:
     ):
         self._func: Callable[Param, Result] | None = func
         self.name: str = name or reflect.func(func, default=cls_name(self))
-        kwargs and self.emit("Unconsumed kwargs at BaseFunctor!", **kwargs)
+        kwargs and self.emit("Unconsumed kwargs at FunctorBase!", **kwargs)
         super().__init__()  # close the MRO forwarding
 
     def __call__(self, *args: Param.args, **kwargs: Param.kwargs) -> Result:
@@ -47,9 +44,9 @@ class BaseFunctor[**Param, Result]:
 
 
 if TYPE_CHECKING:
-    _instance: Functorial = BaseFunctor()
-    _class: type[Functorial] = BaseFunctor
-    _GhostFunctor = BaseFunctor
+    _instance: Functorial = FunctorBase()
+    _class: type[Functorial] = FunctorBase
+    _GhostFunctor = FunctorBase
 else:
     _GhostFunctor = Ghost
 
@@ -59,7 +56,9 @@ else:
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class SafeFuncMixin[**Param, Result](_GhostFunctor):
+class SafeFuncCore[**Param, Result]:
+    __call__: Callable
+
     def __init__(
         self,
         catch: Callable[[Exception, Any], Result | None] | None = None,
@@ -91,7 +90,7 @@ class SafeFuncMixin[**Param, Result](_GhostFunctor):
             raise RuntimeError("Nonething is impossible...")
         return result
 
-    def on_error(self, error: Exception) -> None | NoReturn:
+    def on_error(self, error: Exception, *_, **__) -> Any | NoReturn:
         """Handle Function fail by Policy if Catch is not defined"""
         logger.critical(f"{self} failed: {error}")
 
@@ -108,8 +107,8 @@ class SafeFuncMixin[**Param, Result](_GhostFunctor):
 
 
 if TYPE_CHECKING:
-    _instance: SafeFunctorial = SafeFuncMixin()
-    _class: type[SafeFunctorial] = SafeFuncMixin
+    _instance: SafeFunctorial = SafeFuncCore()
+    _class: type[SafeFunctorial] = SafeFuncCore
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -117,11 +116,17 @@ if TYPE_CHECKING:
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class DecoFuncMixin[**Param, Result](_GhostFunctor):  # TODO:
+class DecoFuncMixin[**Param, Result]:  # TODO:
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+class _DecoFunctor[**P, R](DecoFuncMixin[P, R], FunctorBase[P, R]): ...
 
 
 if TYPE_CHECKING:
     _instance: DecoFunctorial = DecoFuncMixin()
     _class: type[DecoFunctorial] = DecoFuncMixin
+
+
+class SafeFunctor[**P, R](SafeFuncCore[P, R], FunctorBase[P, R]): ...
