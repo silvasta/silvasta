@@ -20,6 +20,12 @@
 - Opinionated but flexible configuration management (`ConfigManager`)
 - Rich logging, printing, and Typer CLI integration
 
+## Git Info
+
+- sstcore/main: the clean global data with precise commits intended for publish
+- sstcore/core: condenser befor main and collector of history, sketches and todos
+- sstcore/some: outer layer todos in best case marke with 3 _ like: ___argspace.py
+
 ## Features
 
 - **`PathGuard`**: Hybrid decorator + function API for safe path handling, automatic directory creation, unique filenames, rotation, pruning, and relative path helpers.
