@@ -16,7 +16,7 @@ from ...system import System
 from ...util.filter import ProjectFilter
 from ...util.path import any_root
 from ...util.print import printer
-from ...util.scan import ScanMode, SummaryFileMachine
+from ...util.scan import SummaryFileMachine
 from .. import _args as args
 from .._engine import SafeTyper
 from ..select import TreeSelectorApp
@@ -45,7 +45,7 @@ def launch_folder_scanner(
     reset: args.CleanState = False,
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
     filter_box: _FilterArg = FilterArgs.PROJECT,
-    scan_mode: ScanMode = ScanMode.RAW,
+    # scan_mode: ScanMode = ScanMode.RAW,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
     system: System = ctx.obj["system"]
@@ -62,7 +62,7 @@ def launch_folder_scanner(
                 # LATER: include/exclude
             )
         ),
-        scan_mode=scan_mode,
+        # scan_mode=scan_mode,
     )
 
 

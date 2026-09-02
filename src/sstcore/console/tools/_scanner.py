@@ -20,7 +20,7 @@ import typer
 from ...util import FolderScanner, Printer
 from ...util import printer as backup_printer
 from ...util.filter import PathFilter, ProjectFilter
-from ...util.scan import ScanMode, SummaryFile
+from ...util.scan import SummaryFile
 from ..select import TreeSelectorApp
 
 # TASK: global setup
@@ -40,7 +40,7 @@ def folder_scanner(
     sort: str = TreeSelectorApp.Sort.SELECTION,
     local_printer: Printer | None = None,
     filter: PathFilter | None = None,
-    scan_mode: ScanMode = ScanMode.RAW,
+    # scan_mode: ScanMode = ScanMode.RAW,
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
 
