@@ -12,7 +12,8 @@ For Scripts and small Projects:
 
 __all__: list[str] = [
     "System",
+    "SstSystem",
 ]
 
 
-from ._core import System
+from ._core import SstSystem, System

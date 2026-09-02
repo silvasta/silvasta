@@ -12,7 +12,6 @@ __all__: list = [
     "System",
 ]
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
 from ..port.config import Config
@@ -22,15 +21,15 @@ from ..port.event.name import CoreEvent, EventName
 from ..port.printer import Printer
 from ..port.system import (
     BusLoader,
-    CliSystem,
-    CliSystemArgs,
     ConfigLoader,
     SstSystem,
+    SystemCliArgs,
+    SystemCliInput,
 )
 from ..port.system import System as System_
 from ..util.log import setup_minimal_logging
 from ..util.print import printer as global_printer
-from .config import ConfigManager, HomeSetup
+from .config import ConfigManager
 from .event import Emitter
 from .event import EventBus as Bus
 
@@ -60,23 +59,20 @@ class System:
         config_loader: ConfigLoader | None = None,
         bus_loader: BusLoader | None = None,
         printer: Printer | None = None,
-        **cli_args: Unpack[CliSystemArgs],
+        **cli_args: Unpack[SystemCliArgs],
     ) -> Self:
         """Assemble Config, wire Bus, ensure Printer and launch the System"""
 
-        # TASK: make this more elegant!
-        # - removed kwargs inside signature, but same ceremony here...
-        verbose: bool = cli_args.get("verbose", False)
-        quiet: bool = cli_args.get("quiet", False)
-        settings: Path | None = cli_args.get("settings", None)
-        home: HomeSetup = cli_args.get("home", HomeSetup.PROJECT)
+        args = SystemCliInput(**cli_args)  # LATER: with cast.args decorator
 
-        setup_minimal_logging(level="DEBUG" if verbose else "WARNING")
+        setup_minimal_logging(level="DEBUG" if args.verbose else "WARNING")
 
         config_loader: ConfigLoader = config_loader or ConfigManager.bootstrap
-        config: Config = config_loader(setting_file=settings, home_setup=home)
+        config: Config = config_loader(
+            setting_file=args.settings, home_setup=args.home
+        )
 
-        config.launch_log_setup(verbose=verbose, quiet=quiet)
+        config.launch_log_setup(verbose=args.verbose, quiet=args.quiet)
 
         bus_loader: BusLoader = bus_loader or Bus.ready
         bus: EventBus = bus_loader()
@@ -97,6 +93,3 @@ if TYPE_CHECKING:
     # only internals
     _instance_check: SstSystem = System.boot()
     _class_check: type[SstSystem] = System
-    # with externals (current implementation)
-    _instance_check: CliSystem = System.boot()
-    _class_check: type[CliSystem] = System

@@ -13,7 +13,7 @@ from loguru import logger
 
 from ..brick.view import view
 from ..error.catch import ErrorRegistry
-from ..port.system import CliSystemArgs, SstSystem
+from ..port.system import SstSystem, SystemCliArgs
 from ..system.boot import System, SystemLoader, sst_system_loader
 from ..system.config import HomeSetup
 from . import _args as args
@@ -23,7 +23,7 @@ from .cli import _scroll as scroll
 @view.safe_typer  # ty:ignore
 class SafeTyper(typer.Typer):
     """
-    Lead CLI execution and distribute bootstrapped System
+    Lead the CLI execution and distribute the booted System
 
     - Provide Framework with callback dispatch and scroll prints
     - Prepare System with EventBus for main app
@@ -58,7 +58,6 @@ class SafeTyper(typer.Typer):
         @self.callback()
         def dispatcher(
             ctx: typer.Context,
-            # AI: here is clear, args for typer, written out!
             verbose: args.Verbose = False,
             quiet: args.Quiet = False,
             settings: args.SettingFile = None,
@@ -76,11 +75,9 @@ class SafeTyper(typer.Typer):
             else:
                 self._run_sub_callback(ctx)
 
+    # AI: Input spectrum must be No DTO!
     def _run_main_callback(
-        # AI: here is unclear, internal args by **cli_args fine?
-        self,
-        ctx: typer.Context,
-        **cli_args: Unpack[CliSystemArgs],
+        self, ctx: typer.Context, **cli_args: Unpack[SystemCliArgs]
     ):
         """Setup Config and Logging and show Status"""
 

@@ -22,9 +22,9 @@ from ..port.event import BusRegistration
 from ..port.printer import Printer
 from ..port.system import (
     BusLoader,
-    CliSystem,
-    CliSystemArgs,
     ConfigLoader,
+    SstSystem,
+    SystemCliArgs,
     SystemLoader,
 )
 from ._core import System
@@ -40,7 +40,7 @@ def sst_system_loader(  # intended for project configs
 ) -> SystemLoader:
     """Prepare Loader function ready to setup System"""
 
-    def loader(**cli_args: Unpack[CliSystemArgs]) -> CliSystem:
+    def loader(**cli_args: Unpack[SystemCliArgs]) -> SstSystem:
         return System.boot(
             config_loader=config_loader,
             bus_loader=bus_loader,
