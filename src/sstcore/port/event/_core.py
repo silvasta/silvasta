@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 from .name import EventName, EventPattern
 
@@ -40,3 +40,5 @@ class EventBus(Protocol):
     ) -> None: ...
     def subscribe(self, name: EventPattern, handler: EventHandler) -> None: ...
     def subscribe_all(self, handler: EventHandler) -> None: ...
+    @classmethod
+    def ready(cls) -> Self: ...

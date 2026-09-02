@@ -24,8 +24,8 @@ from rich.box import Box
 from ....brick.color import colorize
 from ....brick.color.box import Colors
 from ....port.color import ColorBox
+from ....port.config import Config
 from ....system.boot import ConfigLoader
-from ....system.config import ConfigManager
 from ....util import PathGuard, printer
 from ....util.log import fetch_log_result
 from ....util.print import boxes
@@ -84,7 +84,7 @@ intro = MainIntroScroll(select_mode=toggle["intro_"])
 
 type Mode = Literal["up", "both", "down"]
 
-type ConfigSignature = Callable[[ConfigManager, ConfigLoader], None]
+type ConfigSignature = Callable[[Config, ConfigLoader], None]
 type LoaderStyler = Callable[[ConfigLoader], str]
 
 
@@ -95,7 +95,7 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
 
     def _template(
         self,
-        config: ConfigManager,
+        config: Config,
         loader: ConfigLoader,
         styler: LoaderStyler,
         mode: Mode,
@@ -127,7 +127,7 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
         self.grid(self._template, param_grid=param_grid)
 
 
-def _config_modules_2(config: ConfigManager, loader: ConfigLoader) -> None:
+def _config_modules_2(config: Config, loader: ConfigLoader) -> None:
     # MOVE: do stuff like this in colorize
     project, *modules = loader.__module__.split(".")
     module: str = ".".join([c.cyan(project), *modules])
@@ -177,7 +177,7 @@ config_loader = ConfigLoaderScroll(select_mode=toggle["setup_"])
 log_or_config_path = ConfigAndLogPanel(select_mode=toggle["sub___"])
 
 
-def setup(config: ConfigManager, loader: Callable):
+def setup(config: Config, loader: Callable):
     """Provide main callback text"""
 
     # TODO: quiet?

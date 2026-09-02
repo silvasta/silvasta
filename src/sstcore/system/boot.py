@@ -15,39 +15,38 @@ __all__: list[str] = [
 
 
 from pathlib import Path
+from typing import Unpack
 
+from ..port.config import Config
 from ..port.event import BusRegistration
 from ..port.printer import Printer
-from ..port.system import BusLoader, ConfigLoader, SystemLoader
+from ..port.system import (
+    BusLoader,
+    CliSystem,
+    CliSystemArgs,
+    ConfigLoader,
+    SystemLoader,
+)
 from ._core import System
 from .config import ConfigManager, HomeSetup, SstPaths, SstSettings
 from .event import EventBus
 
 
 def sst_system_loader(  # intended for project configs
+    # LATER: system's loaders as TypedDict?
     config_loader: ConfigLoader | None = None,
     bus_loader: BusLoader | None = None,
     printer: Printer | None = None,
 ) -> SystemLoader:
     """Prepare Loader function ready to setup System"""
 
-    def loader(  # intended for cli args or any other runtime override
-        verbose: bool = False,
-        quiet: bool = False,
-        settings: Path | None = None,
-        home: HomeSetup = HomeSetup.PROJECT,
-    ) -> System:
-        system: System = System.bootstrap(
+    def loader(**cli_args: Unpack[CliSystemArgs]) -> CliSystem:
+        return System.boot(
             config_loader=config_loader,
             bus_loader=bus_loader,
             printer=printer,
-            settings=settings,
-            verbose=verbose,
-            quiet=quiet,
-            home=home,
+            **cli_args,
         )
-
-        return system
 
     return loader
 
@@ -64,7 +63,7 @@ def sst_config_loader(
     def loader(  # CLI input
         setting_file: Path | None = None,
         home_setup: HomeSetup = home_setup,
-    ) -> ConfigManager:
+    ) -> Config:
         return ConfigManager.bootstrap(
             settings_cls=settings_cls,
             paths_cls=paths_cls,
@@ -85,7 +84,7 @@ def sst_bus_loader(
     """Prepare Loader function ready to setup EventBus"""
 
     def loader() -> EventBus:
-        return EventBus.bootstrap(
+        return EventBus.ready(
             bus_registration=bus_registration,
             use_default_registration=use_default_registration,
         )

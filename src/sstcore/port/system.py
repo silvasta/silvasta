@@ -23,18 +23,22 @@ __all__: list[str] = [
     "ConfigLoader",
     "BusLoader",
 ]
-
 from collections.abc import Callable
-from typing import Any, Protocol, Self
+from typing import Any, Protocol, Self, TypedDict, Unpack
 
-from .config import Config
+from .config import Config, HomeSetup
 from .event import EventBus
+from .event.emit import Emitter
 from .event.name import EventName
 from .printer import Printer
 
-type SystemLoader = Callable[..., CliSystem]
 type ConfigLoader = Callable[..., Config]
+# LATER: Protocol with TypedDict args?
 type BusLoader = Callable[..., EventBus]
+
+
+class SystemLoader(Protocol):
+    def __call__(self, **kwargs: Unpack[CliSystemArgs]) -> SstSystem: ...
 
 
 class System(Protocol):
@@ -56,6 +60,7 @@ class System(Protocol):
         """Bind ready-to-use setup"""
 
 
+# LATER: collapse levels?
 class SstSystem(System, Protocol):
     """
     Level 1 - Library Essentials
@@ -67,19 +72,23 @@ class SstSystem(System, Protocol):
     def config(self) -> Config: ...
     @property
     def printer(self) -> Printer: ...
-
-    # IMPORTANT:
-    # IMPORTANT:
-    # IMPORTANT:
-    # IMPORTANT:
-    # IMPORTANT:
-    # @property
-    # def emitter(self) -> Emitter: ...
+    @property
+    def emitter(self) -> Emitter: ...
 
     @classmethod
     def boot(cls) -> Self: ...
 
 
+class CliSystemArgs(TypedDict, total=False):
+    """Provide typed arguments for the System CLI setup"""
+
+    verbose: bool
+    quiet: bool
+    settings: Path | None
+    home: HomeSetup
+
+
+# LATER: collapse levels?
 class CliSystem(SstSystem, Protocol):
     """
     Level 2 - Console Pipeline Requirements
@@ -91,12 +100,10 @@ class CliSystem(SstSystem, Protocol):
     def boot(
         cls,
         *,
+        # TASK: second TypedDict for loader?
         config_loader: ConfigLoader | None = None,
         bus_loader: BusLoader | None = None,
         printer: Printer | None = None,
-        settings: Path | None = None,
-        verbose: bool = False,
-        quiet: bool = False,
-        home: Any = None,
+        **cli_args: Unpack[CliSystemArgs],
     ) -> Self:
         """Accept Changes and Provide the full Infrastructure"""

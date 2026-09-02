@@ -6,21 +6,21 @@ Extend typer.Typer
 """
 
 import sys
-from pathlib import Path
+from typing import Unpack
 
 import typer
 from loguru import logger
 
 from ..brick.view import view
 from ..error.catch import ErrorRegistry
-from ..port.system import CliSystem
+from ..port.system import CliSystemArgs, SstSystem
 from ..system.boot import System, SystemLoader, sst_system_loader
 from ..system.config import HomeSetup
 from . import _args as args
 from .cli import _scroll as scroll
 
 
-@view.safe_typer
+@view.safe_typer  # ty:ignore
 class SafeTyper(typer.Typer):
     """
     Lead CLI execution and distribute bootstrapped System
@@ -56,8 +56,9 @@ class SafeTyper(typer.Typer):
         """Dispatch callback for Main or Subapp"""
 
         @self.callback()
-        def dispatcher(  # NEXT: check args
+        def dispatcher(
             ctx: typer.Context,
+            # AI: here is clear, args for typer, written out!
             verbose: args.Verbose = False,
             quiet: args.Quiet = False,
             settings: args.SettingFile = None,
@@ -65,44 +66,49 @@ class SafeTyper(typer.Typer):
         ):
             """Route and provide CLI args for Main app"""
             if ctx.parent is None:
-                self._run_main_callback(ctx, verbose, quiet, settings, home)
+                self._run_main_callback(
+                    ctx,
+                    verbose=verbose,
+                    quiet=quiet,
+                    settings=settings,
+                    home=home,
+                )
             else:
                 self._run_sub_callback(ctx)
 
     def _run_main_callback(
+        # AI: here is unclear, internal args by **cli_args fine?
         self,
         ctx: typer.Context,
-        verbose: bool,
-        quiet: bool,
-        settings: Path | None,
-        home: HomeSetup = HomeSetup.PROJECT,
+        **cli_args: Unpack[CliSystemArgs],
     ):
         """Setup Config and Logging and show Status"""
 
         self.errors: ErrorRegistry = self._error_registry or ErrorRegistry()
 
-        # NEXT: system_loader
         loader: SystemLoader = self._system_loader or sst_system_loader()
-        self.system: CliSystem = loader(
-            verbose=verbose, quiet=quiet, settings=settings, home=home
-        )
-        # IDEA: small helper for this update?
+        self.system: SstSystem = loader(**cli_args)
+        self._update_system_context(ctx)
+
+        # LATER: update input scroll prints
+        # if not quiet:  # TODO: send system! (emit!)
+        #     scroll.safe_typer.intro(ctx.info_name)  # FIX: info_name
+        #     # TASK: split quiet: scroll prints, subapps, general, ...
+        #     scroll.safe_typer.setup(self.system.config, loader)
+
+    def _update_system_context(
+        self, ctx: typer.Context, system: SstSystem | None = None
+    ) -> None:
         ctx.obj = ctx.obj or {}
-        ctx.obj.update(
-            {
-                "system": self.system,
-                "config": self.system.config,
-                "printer": self.system.printer,
-                "bus": self.system.bus,
-                "emitter": self.system.emitter,
-            }
-        )
-        if not quiet:  # TODO: send system! (emit!)
-            # NEXT: split quiet: scroll prints, subapps, general, ...
-            scroll.safe_typer.intro(
-                project_name=ctx.info_name
-            )  # FIX: info_name
-            scroll.safe_typer.setup(self.system.config, loader)
+        system: SstSystem = system or self.system
+        system_context: dict = {
+            "system": system,
+            "config": system.config,
+            "printer": system.printer,
+            "bus": system.bus,
+            "emitter": system.emitter,
+        }
+        ctx.obj.update(system_context)
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice subapp title"""

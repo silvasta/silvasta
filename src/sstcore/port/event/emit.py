@@ -4,6 +4,8 @@ Define the Shape of the Event Bus Calling
 -
 """
 
+from ._core import EventBus as _EventBus
+
 __all__: list[str] = [
     "Emit",
     "Emitter",
@@ -89,6 +91,7 @@ class Emitter(_Protocol):
     """Distribute the Emit and Emitter and send the Events"""
 
     __call__: Emit
+    bus: _EventBus
     log: LogEmitter
     cli: CliEmitter
 

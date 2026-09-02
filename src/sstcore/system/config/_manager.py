@@ -122,6 +122,7 @@ class ConfigManager:
     @classmethod
     def bootstrap(
         cls,
+        # TASK: this but with TypedDict?
         settings_cls: type[Settings] | None = None,
         paths_cls: type[Paths] | None = None,
         setting_file: Path | None = None,

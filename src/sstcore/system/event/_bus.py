@@ -78,7 +78,7 @@ class EventBus:
         return tuple(dict.fromkeys(matched_handlers))
 
     @classmethod
-    def bootstrap(
+    def ready(
         cls,
         bus_registration: BusRegistration | None = None,
         use_default_registration=True,
