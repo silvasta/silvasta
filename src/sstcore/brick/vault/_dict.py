@@ -1,53 +1,60 @@
-"""
-DictRegistry - Main Variation of the Core Registry
-
--
-"""
-
-__all__: list[str] = [
-    "DictRegistry",
-]
-
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
-
-from ...port.register import DictRegister
-
-
-class DictRegistry[ItemT, KeyT]:
-    """Implement the Shape of the Registry with Dict"""
-
-    items: dict[KeyT, ItemT]
-
-    def __len__(self) -> int:
-        return len(self.items)
-
-    def __contains__(self, target: KeyT) -> bool:
-        return target in self.items
-
-    @property
-    def all(self) -> Iterable[ItemT]:
-        yield from self.items.values()
-
-    def _item_identifier(self, item: ItemT) -> tuple[KeyT, ItemT]:
-        raise NotImplementedError(item)
-
-    def add(self, target: Any, *, clear: bool = False, **kwargs) -> int:
-        _key, _item = self._item_identifier(target, **kwargs)
-        if _key in self.items and not clear:
-            raise KeyError("Item already in Registry!", _item, _key)
-        self.items[_key] = _item
-        return 1  # amount of new items
-
-    def get(self, key: KeyT) -> ItemT | None:
-        return self.items.get(key)
-
-    def clear(self, key: KeyT | None = None) -> int:
-        if key is None:
-            self.items.clear()
-        return 0 if self.items.pop(key, None) is None else 1
-
-
-if TYPE_CHECKING:
-    _instance: DictRegister = DictRegistry()
-    _class: type[DictRegister] = DictRegistry
+# """
+# DictRegistry - Main Variation of the Core Registry
+#
+# -
+# """
+#
+# __all__: list[str] = [
+#     "DictRegistry",
+# ]
+#
+# from collections.abc import Iterable
+# from typing import TYPE_CHECKING, Any, Unpack
+#
+# from ...port.register import DictRegister
+#
+# type D[K,I]=dict[K,I]
+#
+# class DictRegistry[I, K]:
+#     """Implement the Shape of the Registry with Dict"""
+#
+#     items: D[K, I]
+#
+#     def __len__(self) -> int:
+#         return len(self.items)
+#
+#
+#
+#     def add(
+#         self, override: bool = False, **items: Unpack[K, I]
+#     ) -> list[I]:
+#         cleared: dict[K, I] = {}
+#         for key, item in items:
+#             if override:
+#                 cleared.update(self.clear(key))
+#             self.items.update(**{key: item})
+#         return cleared
+#
+#     def clear(self, *keys: K) -> dict[K, I]:
+#         cleared: dict[K, I] = {}
+#         if not keys:
+#             self.items.clear()
+#         else:
+#             for key in keys:
+#                 if item := self.items.pop(key, None):
+#                     cleared[key] = item
+#         return cleared
+#
+#     def find(self, key: K) -> D[K,I]:
+#         return {key:item for ( item:=self.items.pop(key)if item is not None )}
+#
+#     def __iter__(self) -> Iterable[I]:
+#         yield from self.items.values()
+#
+#     def __contains__(self, target: K) -> bool:
+#         return target in self.items
+#
+#
+# if TYPE_CHECKING:
+#     _instance: DictRegister = DictRegistry()
+#     _class: type[DictRegister] = DictRegistry

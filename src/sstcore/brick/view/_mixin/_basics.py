@@ -12,11 +12,9 @@ __all__: list[str] = [
 
 from typing import Any
 
-from pydantic import BaseModel
-
 from ....brick.format import reflect
 from ....port.event.dto import CliDTO, LogDTO
-from ....port.view import RichRenderable
+from ....port.view import PydanticModel, RichRenderable
 
 
 class MixinSentinel:
@@ -37,12 +35,12 @@ class MixinSentinel:
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def data(self: Any, exclude: set[str] | None = None) -> dict[str, Any]:
+def data(_target: Any, *, exclude: set[str] | None = None) -> dict[str, Any]:
     """Extract public data filtered by exclude, dispatch for Pydantic"""
 
     exclude: set[str] = exclude or set()
 
-    if isinstance(self, BaseModel):
-        return self.model_dump(exclude=exclude)
+    if isinstance(_target, PydanticModel):
+        return _target.model_dump(exclude=exclude)
 
-    return reflect.data(self, exclude)
+    return reflect.data(_target, exclude)

@@ -27,6 +27,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
+# WARN: dependency violation
 from ...error import NotImplementedDispatchError
 from ..none import Ghost
 from ._base import BaseName as _BaseName

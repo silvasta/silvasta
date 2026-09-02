@@ -12,7 +12,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from ...brick.registry import DictRegistry
+from ...brick.vault import DictRegistry
 from ...port.register import DictRegister, FuncRegister
 from ._handler import ErrorHandler  # REMOVE: proto???
 
