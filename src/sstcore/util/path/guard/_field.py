@@ -36,7 +36,7 @@ class PathGuardField(Derived[Path]):
         return self.logic(base_path, **self.policy)
 
     def __set__(self, unit: object, value: object) -> None:
-        # LATER: NoWriteField with something like that
+        # EXTRACT: and create: NoWriteField
         _cls_attr = self._cls_attr_name(unit)
         raise AttributeError(f"{_cls_attr} Path is not Writable!")
 

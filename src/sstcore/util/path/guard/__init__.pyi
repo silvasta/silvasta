@@ -4,6 +4,7 @@ __all__: list[str] = [
     "PathGuard",
     "PathSpec",
     "PathInput",
+    "PathGuardField",
 ]
 
 from collections.abc import Callable
@@ -68,7 +69,6 @@ class PathGuard:
     Spec: type[PathSpec]
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
-    Descriptor: type[PathGuardField]
 
     def __init__(self) -> NoReturn: ...
     @classmethod

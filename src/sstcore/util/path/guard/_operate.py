@@ -192,9 +192,7 @@ class DeleteStrategy(SafeFunctor[[Path], bool]):
             self.emit(f"Failed to parse input: {error}", error=error)
         return self.safe(target_ok) is not None  # TEST:
 
-    def on_error(
-        self, error: PathGuardError | OSError, target: PathInput
-    ) -> bool:
+    def on_error(self, error: Exception, target: PathInput) -> bool:
         logger.warning(f"{self.name}: {cls_name(error)}", error, target)
         return False
 

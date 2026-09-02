@@ -1,0 +1,74 @@
+"""Unite all Path Tools under PathGuard"""
+
+__all__: list[str] = [
+    "PathGuard",
+    "PathSpec",
+    "PathInput",
+]
+
+from collections.abc import Callable
+
+from ....brick.color.box import Colors
+from ....brick.forge.blueprint import StaticFuncMeta, StaticFuncMetaData
+from ....brick.format import cls_name
+from ....error import PathGuardError, PathGuardReason
+from ....port.color import ColorBox
+from ....port.files import SyncMode
+from . import _ensure, _field, _operate, _relative
+from ._field import PathGuardField
+from ._input import PathInput, PathSpec
+
+colors: ColorBox = Colors()  # ty:ignore
+
+PathGuardMetaInput = StaticFuncMetaData(
+    name=lambda cls: f" {cls_name(cls)} ",
+    rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
+    cli="Safety and Comfort for Path and File System operations",
+    # LATER: split by CamelCase (and then colorize)
+    color=2,  # colors, names and even Enums change, but the registry index?
+)
+
+_example = PathGuardError(PathGuardReason.NO_INIT)
+
+
+class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
+    """Safety and Comfort for Path access and File System operations"""
+
+    Spec: type[PathSpec] = PathSpec
+    SyncMode: type[SyncMode] = SyncMode
+    Reason: type[PathGuardReason] = PathGuardReason
+
+    # AI: the below docstring (imitations) and type hints are DX essential
+    # - the .pyi defines the public interface, this is for internal use
+
+    """Category 1: Protect Path access operations to avoid File System fails"""
+
+    dir: Callable = _ensure.dir
+    file: Callable = _ensure.file
+    unique: Callable = _ensure.unique_main
+    find_sequence: Callable = _ensure.find_sequence
+
+    Dir: PathGuardField = _field.Dir
+    File: PathGuardField = _field.File
+    Unique: PathGuardField = _field.Unique
+    # AI: the below descriptor attach, will this ever be useful? (otherwise maybe export from init?)
+
+    """Category 2: Perform File Transfer operations with comfort and safety"""
+
+    TODO_TRANSFER_STRATEGY: _operate.TransferStrategy = _operate.Rotate
+    rotate: Callable = _operate.rotate
+    copy: Callable = _operate.copy
+    hardlink: Callable = _operate.hardlink
+    symlink: Callable = _operate.symlink
+
+    TODO_DELETE_STRATEGY: _operate.DeleteStrategy = _operate.Trash
+    remove: Callable = _operate.remove
+    trash: Callable = _operate.trash
+    prune: Callable = _operate.prune
+
+    """Category 3: Use infrastructure for Relative Path and minor helpers.."""
+
+    relative: Callable = _relative.relative_main
+    relative_duo: Callable = _relative.relative_duo
+    relative_string: Callable = _relative.relative_string
+    split: Callable = _relative.split
