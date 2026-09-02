@@ -1,59 +1,37 @@
 """
-sstcore - Generalize Project Patterns and Bootstrap with Batteries
+AUTO-GENARATED
 
-- System: Unite config, printer and bus and distribute
-- Emitter: Launch events from ergonomic facade
-- Printer: Visualize fast and with comfort
-- ConfigManager: Bootstrap and simple access
-- SafeTyper: CLI Pipeline with defaults
-- PathGuard: Fail and File system safety
-
-The Top Level Packages:
-
-- L5/󰉋 /console  # current main interface
-- L4/󰉋 /data     # intermediate support layer
-- L4/󰉋 /system   # central  of the sstcore
-- L3/󰉋 /util     # well prepared helpers
-- L2/󰉋 /error    # exception and handlers
-- L1/󰉋 /brick    # universal building blocks
-- L0/󰉋 /port     # contracts and definitions
-
-
-Package and Subpackages are considered like one Module for Imports and Exports.
-
-- From an outside perspective all of them have the same dependency level
-- Internally everything starts again at 0, every import bumps to +1 from import
-- The __init__ has always the highest level inside its package
-  - its DependencyLevel[X] counts for the entire package like a module outside
-
-Despite that the port heavily relaxed dependency conflicts:
-  - Strict application is desired without any violation
-
+- DO NOT EDIT!
 
 """
 
-__all__: list[str] = [
-    "__version__",
-    "System",
-    "Emitter",
-    "printer",
-    "ConfigManager",
-    "SafeTyper",
-    "PathGuard",
-]
-
-
+from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 
-from .console import SafeTyper
-from .system import System
-from .system.config import ConfigManager
-from .system.event import Emitter
-from .util.path.guard import PathGuard
-from .util.print import printer
+_LAZY_IMPORTS = {
+    "SafeTyper": ".console",
+    "System": ".system",
+    "ConfigManager": ".system.config",
+    "Emitter": ".system.event",
+    "PathGuard": ".util.path.guard",
+    "printer": ".util.print",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_IMPORTS:
+        module_path = _LAZY_IMPORTS[name]
+        module = import_module(module_path, package=__package__)
+        return getattr(module, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return list(_LAZY_IMPORTS.keys())
+
 
 try:
-    __version__: str = version(distribution_name="sstcore")
-    # Show pyproject.toml package name
+    __version__: str = version(distribution_name="sstcore-py")
+    # AI: fixed from sstcore, must be like toml right? not like package in src
 except PackageNotFoundError:
     __version__ = "unknown"
