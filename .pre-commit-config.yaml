@@ -12,6 +12,6 @@ repos:
     rev: v0.15.12
     hooks:
       - id: ruff
-        # args: [--fix, --exit-non-zero-on-fix] # NOTE: default!
-        args: [--exit-zero] # WARN: Forces pass even if errors exist
+        args: [--fix, --exit-non-zero-on-fix] # NOTE: default!
+        # args: [--exit-zero] # WARN: Forces pass even if errors exist
       - id: ruff-format
