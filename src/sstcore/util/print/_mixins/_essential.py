@@ -18,13 +18,12 @@ __all__: list[str] = [
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel
 from rich.console import ConsoleRenderable, RichCast
 
 from ....brick.color import colorize
 from ....brick.color.box import Colors
 from ....port.printer import ColorPrint
-from ....port.view import Renderable
+from ....port.view import PydanticModel, Renderable
 from .._base import _BasePrint
 
 
@@ -32,7 +31,7 @@ class NormalizeMixin(_BasePrint):
     def normalize(self, target: Any) -> Renderable:
         """Normalize targets into renderable representations."""
         match target:  # TASK: find better check for this group
-            case ConsoleRenderable() | RichCast() | str() | BaseModel():
+            case ConsoleRenderable() | RichCast() | str() | PydanticModel():
                 return target
             case list() as items:
                 return "\n".join(str(self.normalize(item)) for item in items)

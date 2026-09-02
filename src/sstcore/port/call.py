@@ -16,8 +16,6 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import Concatenate, Protocol, runtime_checkable
 
-from .view import Stringable
-
 __all__: list[str] = [
     "Functorial",
     "SafeFunctorial",
@@ -30,6 +28,11 @@ __all__: list[str] = [
 @runtime_checkable
 class ClassRendering(Protocol):
     def __call__(self, cls: type) -> str: ...
+
+
+class Stringable(Protocol):
+    # TODO: check with view
+    def __str__(self) -> str: ...
 
 
 @runtime_checkable
@@ -66,9 +69,7 @@ class Functorial[**Param, Result](Protocol):
 
     @property
     def name(self) -> str: ...
-    @property
     def emit(self, *args, **kwargs) -> None: ...
-
     def __call__(self, *args: Param.args, **kwargs: Param.kwargs) -> Result:
         """The Core of the entire Topic, override or inject _func"""
 

@@ -18,10 +18,12 @@ __all__: list[str] = [
 ]
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
 from ..color import Color, ColorIdentifier
-from ..view import Renderable
+
+if TYPE_CHECKING:
+    from ..view import Renderable
 
 _AlignMethod = Literal["left", "center", "right"]
 

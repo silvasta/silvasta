@@ -18,9 +18,9 @@ __all__: list[str] = [
 # - preferably not depend on event
 
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
-from .event.dto import CliDTO, LogDTO
+from .event.dto import CliDTO, LogDTO  # TASK: how to remove this?
 
 
 @runtime_checkable
@@ -66,3 +66,11 @@ type Renderable = RichRenderable | _RichConsolable | CliRenderable | str
 class _RichConsolable(Protocol):
     def __rich_console__(self):
         """Just extend the Renderable type"""
+
+
+@runtime_checkable
+class PydanticModel(Protocol):  # MOVE: but where?
+    """Find BaseModels without importing them"""
+
+    def __pydantic_validator__(self): ...
+    def model_dump(self) -> dict[str, Any]: ...
