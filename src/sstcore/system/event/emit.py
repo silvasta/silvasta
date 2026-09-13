@@ -25,15 +25,12 @@ from typing import TYPE_CHECKING, Any
 from ...brick.view import Repr, Str, view
 from ...port.event.dto import LogDTO
 from ...port.event.emit import (
-    #
     BoundEmit,
-    BoundEmitted,
-    BoundLogEmitted,
+    #
     Emit,
-    LogEmit,
-    LogEmitted,
-    UnboundEmit,
+    LogEmitter,
 )
+from ...port.event.emit import Emitter as Emitter_
 from ...port.event.name import CliEvent, EventName
 
 
@@ -50,7 +47,7 @@ class EventEmitter:
 
 
 if TYPE_CHECKING:
-    _class_check: type[BoundEmitted] = EventEmitter
+    _class_check: type[BoundEmit] = EventEmitter
 
 
 class LogLevelMixin:
@@ -84,8 +81,8 @@ class EventLogEmitter(LogLevelMixin):
         self.emit(self.event, self.sender, log=dto)
 
 
-_log: type[BoundLogEmitted] = EventLogEmitter
-_log: type[LogEmit] = EventLogEmitter
+if TYPE_CHECKING:
+    _log: type[LogEmitter] = EventLogEmitter
 
 
 @dataclass(frozen=True)
@@ -105,7 +102,7 @@ class FullLogEmitter(LogLevelMixin):
         self.emit(event, sender, log=dto)
 
 
-_log: type[LogEmitted] = FullLogEmitter
+_log: type[LogEmitter] = FullLogEmitter
 
 
 @view(Str.SHORT, Repr.BOX)
@@ -173,7 +170,7 @@ class Emitter(LogLevelMixin):
 
     def bind(
         self, event: EventName, sender: str, **defaults: Any
-    ) -> UnboundEmit:
+    ) -> BoundEmit:
         """Create a specialized, pre-bound emitter."""
         return EventEmitter(self.emit, event, sender, defaults)
 

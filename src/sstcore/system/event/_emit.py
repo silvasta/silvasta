@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING, Any
 
 from ...brick.view import Repr, Str, view
 from ...port.event import EventBus
-from ...port.event._emit import Emitter as Emitter_
+from ...port.event.emit import Emitter as Emitter_
 from ...port.event.name import CliEvent, EventName
-from ...util.emit import LogEmitter, ViewEmitter
+from .emit import LogEmitter, ViewEmitter  # FIX:
 
 
 @dataclass(frozen=True)
