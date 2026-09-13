@@ -7,10 +7,10 @@ print
 __all__: list[str] = [
     "Print",
     "PrintMode",
-    "PrintCore",
-    # NEXT: Render? Normalize? Color?
-    "PrintLayouts",
-    "PrintTools",
+    # "PrintCore",
+    # # NEXT: Render? Normalize? Color?
+    # "PrintLayouts",
+    # "PrintTools",
 ]
 
 
@@ -202,4 +202,5 @@ class Printer(Protocol):
     """TEMP"""
 
     def set_info(self, info: ProjectInformation) -> None:
+        # TASK: descriptor?!
         """Attach Project specific information for Printer layouts"""
