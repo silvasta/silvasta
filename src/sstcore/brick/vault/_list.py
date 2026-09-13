@@ -18,17 +18,17 @@ from ._base import RegistryError
 class ListRegistry[ItemT, KeyT]:
     """Implement the Shape of the Registry with List"""
 
-    items: list[ItemT]  # NEXT: compare with bisect
+    vault: list[ItemT]  # NEXT: compare with bisect
 
     def __init__(self, *items: ItemT) -> None:
-        self.items: list[ItemT] = [*items]
+        self.vault: list[ItemT] = [*items]
 
     def add(self, *items: ItemT, override: bool = False) -> list[ItemT]:
         cleared: list[ItemT] = []
         for item in items:
             if override:
                 cleared.extend(self.clear(self._item_identifier(item)))
-            self.items.append(item)
+            self.vault.append(item)
         return cleared
 
     def clear(self, key: KeyT | None = None) -> list[ItemT]:
@@ -48,29 +48,29 @@ class ListRegistry[ItemT, KeyT]:
     @overload
     def __getitem__(self, index: int) -> ItemT: ...
     def __getitem__(self, index: int | slice) -> list[ItemT]:
-        if TYPE_CHECKING:
-            index: Any = Any  # Avoid grey shadow Error for code not reachable
+        if TYPE_CHECKING:  # LATER: remove when work mainly finished
+            index: Any = Any  # Avoid grey shadowed text for ty warning for code not reachable
         match index:
-            case slice():  # LATER: return maybe sliced registry
-                return self.items[index]
+            case slice():  # LATER: return maybe sliced registry?
+                return self.vault[index]
             case int():
-                return self.items[index]
+                return self.vault[index]
         raise RegistryError(f"Registry Index[{index}] failed!", index)
 
     def __len__(self) -> int:
-        return len(self.items)
+        return len(self.vault)
 
     def __iter__(self) -> Iterator[ItemT]:
-        yield from self.items
+        yield from self.vault
 
     def __contains__(self, target: ItemT) -> bool:
-        return target in self.items
+        return target in self.vault
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
     def _clear_all(self) -> list[ItemT]:
-        items: list[ItemT] = [*self.items]
-        self.items.clear()
+        items: list[ItemT] = [*self.vault]
+        self.vault.clear()
         return items
 
     def _clear_by_key(self, key: KeyT) -> list[ItemT]:
@@ -82,7 +82,7 @@ class ListRegistry[ItemT, KeyT]:
                 clear.append(item)
             else:
                 keep.append(item)
-        self.items: list[ItemT] = keep
+        self.vault: list[ItemT] = keep
         return clear
 
     def _item_identifier(self, item: ItemT) -> KeyT:

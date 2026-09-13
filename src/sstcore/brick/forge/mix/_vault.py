@@ -25,7 +25,7 @@ class MixinRegistry[MixinT: type](TupleRegistry[MixinT]):
 
     @property
     def mixins(self) -> tuple[type, ...]:
-        return self.items
+        return self.vault
 
 
 class DuoRegistry[DuoT: tuple[type, type]](TupleRegistry[DuoT]):
@@ -49,9 +49,6 @@ class DuoRegistry[DuoT: tuple[type, type]](TupleRegistry[DuoT]):
         return self._split(mixin_or_protocol=1)
 
 
-# NEXT:
-# NEXT:
-# NEXT:
 # NEXT:
 if TYPE_CHECKING:
     _instance: MixinRegister = MixinRegistry()

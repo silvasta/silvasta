@@ -51,7 +51,6 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     Dir: PathGuardField = _field.Dir
     File: PathGuardField = _field.File
     Unique: PathGuardField = _field.Unique
-    # AI: the below descriptor attach, will this ever be useful? (otherwise maybe export from init?)
 
     """Category 2: Perform File Transfer operations with comfort and safety"""
 

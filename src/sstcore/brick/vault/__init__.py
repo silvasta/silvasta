@@ -9,24 +9,6 @@ Info:
   - Registry: Implementation approaches -> derive further
 """
 
-# IMPORTANT: check again the name...
-# /󰉋 /color
-# /󰉋 /forge
-# /󰉋 /format
-# /󰉋 /func
-# /󰉋 /meta
-# /󰉋 /name
-# /󰉋 /none
-# /󰉋 /registry # Somehow Outlier... ideas?
-# /󰉋 /view
-# /󰌠 /time.py
-# IDEAS: name of registry
-# - [X] Rating (5 best to 0)
-# - [4] order
-# - [3] sort
-# - [0] data
-# - [2] box
-
 __all__: list[str] = [
     "ListRegistry",
     "FilterRegistry",
@@ -34,10 +16,11 @@ __all__: list[str] = [
     "TupleRegistry",
 ]
 
+# NEXT: BisectRegistry
+
+# LATER: FunctorRegistry
+
 from ._dict import DictRegistry
-from ._extensions import FilterRegistry
-from ._extensions import FunctorRegistry as _FunctorRegistry
+from ._extras import FilterRegistry
 from ._list import ListRegistry
 from ._tuple import TupleRegistry
-
-_TODO = _FunctorRegistry

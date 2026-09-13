@@ -30,7 +30,7 @@ from typing import Any, Protocol, Self, overload
 from .event.emit import Emit
 
 type Types[T] = type[T] | tuple[type, ...]
-type FieldLoader[T] = Callable[[Any], T]
+type FieldLoader[T] = Callable[[], T]
 
 
 class DescriptorBase(Protocol):
@@ -103,18 +103,26 @@ class LazyDescriptor[T](Descriptor[T], Protocol):
     loader: FieldLoader
 
 
-class EventDescriptor[T](CompleteDescriptor[T], Protocol):
-    emit: Emit
+class PolicyEnum(Enum):
+    # MOVE: find best place
+    # TODO: attach something?
+    """Base for all policy enums, ensuring shared namespace and branding views."""
 
-    def __init__(self, func: Emit) -> None:
-        """Listen to all Chanels and message to EventBus"""
 
+class PolicyDescriptor[EnumT: PolicyEnum, ResulT: Any](Protocol):
+    """Govern the Enum including match and dispatch"""
 
-class ConfigDescriptor[DataT](Protocol):
-    def update(self, **config: DataT) -> Any:
-        """Change behaviour with new values"""
+    @property
+    def match_func(self) -> Callable[[EnumT, object], ResulT] | None:
+        """Inject this or override the hook"""
 
-    config: DataT  # NOTE: check _ExampleConfig in brick.field
+    def match_hook(self, state: EnumT, unit: object) -> ResulT:
+        # TODO: Needed here? maybe informative...
+        """Launch match_func, get overridden or Raise"""
+
+    def execute(self, unit: object) -> ResulT:  # LATER: specify
+        # RENAME: just match?
+        """Apply the injected or overridden Matching-Function"""
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -135,3 +143,22 @@ class TransitionDescriptor[T: Enum](TypedDescriptor[T], Protocol):
 
 class StateDescriptor[T: Enum](TransitionDescriptor[T], CompleteDescriptor[T]):
     """Govern the Lifecycle of the State"""
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Experimental
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+class EventDescriptor[T](CompleteDescriptor[T], Protocol):
+    emit: Emit
+
+    def __init__(self, func: Emit) -> None:
+        """Listen to all Chanels and message to EventBus"""
+
+
+class ConfigDescriptor[DataT](Protocol):
+    def update(self, **config: DataT) -> Any:
+        """Change behaviour with new values"""
+
+    config: DataT  # NOTE: check _ExampleConfig in brick.field

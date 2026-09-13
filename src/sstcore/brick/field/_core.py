@@ -24,8 +24,7 @@ from ..format import reflect
 from ._base import ReadField, TypedField, WriteField
 
 
-# TODO: better name
-class Injected[T](ReadField[T], TypedField[T]):
+class Injected[T](ReadField[T], TypedField[T]):  # TODO: better name
     """
     Typed attribute must be set before first read.
 
@@ -40,8 +39,7 @@ class Injected[T](ReadField[T], TypedField[T]):
     """
 
 
-# TODO: better name
-class Collected[T](WriteField, ReadField[T]):
+class Collected[T](WriteField, ReadField[T]):  # TODO: better name
     """
     Load lazy cached value on first read
 
@@ -61,8 +59,8 @@ class Collected[T](WriteField, ReadField[T]):
         return super().read(unit)
 
 
-# TODO: better name, Property?
-class Derived[T](ReadField[T]):
+class Derived[T](ReadField[T]):  # TODO: better name
+    # AI: is this more than just a self implemented Property?
     """
     Calculate view on every access without maintaining state
 
@@ -85,8 +83,7 @@ class Derived[T](ReadField[T]):
         return self.derived(unit)
 
 
-# NOTE: this name is perfect
-class Forward[T](ReadField[T]):
+class Forward[T](ReadField[T]):  # NOTE: this name is perfect
     """
     Forwards attribute access to an inner components
 

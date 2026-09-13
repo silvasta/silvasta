@@ -4,7 +4,7 @@ Provide the Bricks for Descriptor Compositions
 - Transition from State to State
 
 """
-# TASK: state for bisect transition?
+# TASK: state for bisect transition? or something similar, at least with Enums
 
 __all__: list[str] = [
     "TransitionField",
@@ -20,7 +20,7 @@ from ._base import ReadField, ResetField, TypedField
 type NodeIdentifier = TransitionGraph | str | int
 
 
-# TODO: cast.arg
+# MOVE: ArgCast
 def normalize(node_guess: NodeIdentifier | Any) -> TransitionGraph:
     match node_guess:
         case TransitionGraph():
@@ -59,10 +59,9 @@ class TransitionField[T: Enum](TypedField[T], ResetField[T]):
         states = f"({current},{next})"
         raise RuntimeError(f"Failed transfer for {cls_attr}: {states}")
 
-    # FIX:
     def state_graph_evaluation(
         self, unit: object, current: T, next: T, action: Any = None
-    ) -> Any:
+    ) -> Any:  # FIX: later
         """Implement rigid state-machine rules here"""
         return self.transfer(unit, current, next, action=action)
 
@@ -82,7 +81,7 @@ class StateField[T: TransitionGraph](TransitionField[T], ReadField):
     def remove(self, unit: object) -> None:
         self.write(unit, value=self.default)
 
-    # FIX:
+    # FIX: later
     def state_graph_evaluation(self, unit: object, current: T, next: T) -> Any:
         action = get_action(unit, current, next)
         result = super().state_graph_evaluation(

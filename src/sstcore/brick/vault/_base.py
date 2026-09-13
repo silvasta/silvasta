@@ -1,92 +1,101 @@
-# """
-# ListRegistry - Main Variation of the Core Registry
-#
-# -
-# """
-#
-# from sstcore.port.error import Error
-#
-# __all__: list[str] = [
-#     "BaseRegistry",
-# ]
-#
-# from collections.abc import Iterator
-# from typing import TYPE_CHECKING, overload
-#
-# from ...port.register import Registry
-#
-#
-# class RegistryError(Error): ...  # TODO:
-#
-#
-# type Basic = list | tuple | dict
-#
-#
-# class BaseRegistry[B: Basic, I, K]:  # FIX:
-#     """Implement the Shape of the Registry with List"""
-#
-#     items: B  # NEXT: compare with bisect
-#
-#     def clear(self, *keys: K) -> B:
-#         if not keys:
-#             items: B = self.items  # TODO: slice all)
-#             self._clear_all()
-#         else:
-#             keep: list[I] = []
-#             clear: list[I] = []
-#             for key in keys:
-#                 for entry in self:
-#                     return self._clear_by_key(key)
-#
-#     def _clear_all(self) -> B:
-#         # NOTE: maybe with descriptors?
-#         items: B = [*self.items]
-#         self.items.clear()
-#         return items
-#
-#     def _clear_by_key(self, key: K) -> B:
-#         keep: list[I] = []
-#         clear: list[I] = []
-#         for entry in self:
-#             if self.match(entry, key):
-#                 clear.append(entry)
-#             else:
-#                 keep.append(entry)
-#         return clear
-#
-#     def match(self, entry: I | C, key: K) -> bool:
-#         raise NotImplementedError
-#
-#     def find(self, key: K) -> list[I]:
-#         return [item for item in self if self.match(item, key)]
-#
-#     def count(self, key: K) -> int:
-#         return len(self.find(key))
-#
-#     @overload
-#     def __getitem__(self, index: slice) -> B: ...
-#     @overload
-#     def __getitem__(self, index: int) -> I: ...
-#     def __getitem__(self, index: int | slice) -> B:
-#         match index:
-#             case slice():  # LATER: return maybe sliced registry
-#                 return self.items[index]
-#             case int():
-#                 return self.items[index]
-#         raise RegistryError(f"Registry Index[{index}] failed!", index)
-#
-#     def __len__(self) -> int:
-#         return len(self.items)
-#
-#     def __iter__(self) -> Iterator[I]:
-#         yield from self.items
-#
-#     def __contains__(self, target: I | K) -> bool:
-#         return target in self.items
-#
-#     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-#
-#
-# if TYPE_CHECKING:
-#     _instance: Registry = BaseRegistry()
-#     _class: type[Registry] = BaseRegistry
+"""
+ListRegistry - Main Variation of the Core Registry
+
+-
+"""
+
+__all__: list[str] = [
+    "BaseRegistry",
+]
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, assert_never, overload
+
+from ...port.error import SstError
+from ...port.register import Registry
+
+
+class RegistryError(SstError): ...  # TODO:
+
+
+# NEXT:
+
+type Basic = list | tuple | dict
+
+
+class BaseRegistry[B: list, I, K]:  # FIX:
+    """Implement the Shape of the Registry with List"""
+
+    vault: list[I]  # NEXT: compare with bisect
+
+    def clear(self, *keys: K) -> B:
+        if not keys:
+            items: B = self.vault  # TODO: slice all)
+            self._clear_all()
+        else:
+            keep: list[I] = []
+            clear: list[I] = []
+            for key in keys:
+                for entry in self:
+                    return self._clear_by_key(key)
+
+    def _clear_all(self) -> B:
+        # NOTE: maybe with descriptors?
+        items: B = [*self.vault]
+        self.vault.clear()
+        return items
+
+    def _clear_by_key(self, key: K) -> B:
+        keep: list[I] = []
+        clear: list[I] = []
+        for entry in self:
+            if self.match(entry, key):
+                clear.append(entry)
+            else:
+                keep.append(entry)
+        return clear
+
+    def match(self, entry: I | C, key: K) -> bool:
+        raise NotImplementedError
+
+    def find(self, key: K) -> list[I]:
+        return [item for item in self if self.match(item, key)]
+
+    def count(self, key: K) -> int:
+        return len(self.find(key))
+
+    @overload
+    def __getitem__(self, index: slice) -> B: ...
+    @overload
+    def __getitem__(self, index: int) -> I: ...
+    def __getitem__(self, index: int | slice) -> B | I:
+        match index:
+            # FIX:
+            # FIX:
+            # FIX:
+            # FIX:
+            case slice():
+                return self.vault[index]
+            case int():
+                return self.vault[index]
+            case _ as unreachable:
+                # AI: new
+                assert_never(unreachable)
+        # AI: before
+        raise RegistryError(f"Registry Index[{index}] failed!", index)
+
+    def __len__(self) -> int:
+        return len(self.vault)
+
+    def __iter__(self) -> Iterator[I]:
+        yield from self.vault
+
+    def __contains__(self, target: I | K) -> bool:
+        return target in self.vault
+
+    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+if TYPE_CHECKING:
+    _instance: Registry = BaseRegistry()
+    _class: type[Registry] = BaseRegistry

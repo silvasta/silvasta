@@ -32,6 +32,21 @@ from ._input import PathInput, PathSpec
 
 
 def check_sync_mode(target: Path, mode: SyncMode) -> Path:
+    # AI_FOCUS: something like this, maybe as SyncBase(Enum).check:NotImplementedError?
+    # - probaly to unstable and uncomfortable with the Enum derivative
+    # Still some shared synergies might be possible to generate:
+    # - Maybe a functor base that has the Enum as descriptor
+    # - Some other object that holds the Mode/Policy with a shared interface
+    # IDEA: how to implement this:
+    # - the descriptor ensures some common empty Enum, others derive and add Member
+    # - the Enums are the Sync/Registry/Whatever-Mode
+    # - the wrapper class with the derived enum is the Sync/Registry/Whatever-Policy
+    # Advantages are the generalized handling and control
+    # - still loose enough to allow flexibility and intermediate bases
+    # - the port defines the enum and orchestrates a familiar interface
+    # - once immplemented the Enums and Fields can easily adapt to a new setup
+    # Disadvantage are the increased complexity at the root and slighly decreased flexibility
+    # - still I would say after once solving the initial problem, many future problems will not even occure
     """Provide SyncMode Path that is valid to write or Raise"""
 
     if not target.exists():
@@ -72,9 +87,6 @@ def _rotate(source: Path, target: Path) -> Path:
 Rotate: TransferStrategy = TransferStrategy(
     name="PathGuard - Rotate", func=_rotate
 )
-
-x = Rotate.name
-y = Rotate()
 
 
 def _copy(source: Path, target: Path) -> Path:
@@ -173,6 +185,8 @@ def hardlink(
         mode=mode,
     )
 
+
+# AI_IGNORE: no further SyncMode until EoF
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Delete Operations

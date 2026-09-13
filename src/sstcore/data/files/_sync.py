@@ -8,6 +8,10 @@ __all__: list[str] = [
     "FileSyncMixin",
 ]
 
+# AI: just for information, the Files were refactored but not already completed
+# -> issues and potential fixes here doesn't matter
+# Main purpose for showing this is the usage of SyncMode
+
 from collections.abc import Callable
 from functools import singledispatchmethod
 from pathlib import Path
@@ -179,7 +183,6 @@ class FileSyncMixin[File: SstFile]:
         ):
             return self.attach_from_path(result)
 
-        # AI: cleaned up but messed up as well...
         if self.sync_mode == SyncMode.IGNORE:
             logger.debug(f"skipping existing file: {target.name}")
             return None

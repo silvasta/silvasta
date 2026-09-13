@@ -29,8 +29,7 @@ from .scanner import FolderScan
 from .tree import PathTree
 
 
-# AI_FOCUS: this here is mainly for PathGuard, used to provide Files,
-# with FolderScanner as important already well working Tool
+# IMPORTANT: compare with .register.SyncMode
 class SyncMode(StrEnum):
     """Conflict Resolution Strategy for PathGuard File Transfers"""
 
@@ -114,11 +113,10 @@ class FilterRegister(Protocol):
 
 
 class ScanRegister(Protocol):
+    # NEXT:
+    # NEXT:
     """Scanner / tree / reload logic (Scan). Prepares for SyncModes."""
 
-    # NEXT:
-    # NEXT:
-    # NEXT:
     @property
     def scanner(self) -> FolderScan | None: ...
     def setup_scanner(self, path_filter: PathFiltering) -> FolderScan: ...
@@ -137,14 +135,12 @@ type PathS = Path | list[Path]
 
 
 class SyncRegister(Protocol):
+    # NEXT:
+    # NEXT:
+    # NEXT:
     """Sync operations (mirror/absorb) using PathGuard (FileSync)."""
 
     mode: SyncMode
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
 
     def mirror_from_path(
         self, source: PathS, mode: SyncMode = SyncMode.IGNORE

@@ -32,13 +32,16 @@ class RegistryField(Collected, ValidField):
 
     @classmethod
     def as_field(cls, *args, **kwargs) -> Self:
-        raise NotImplementedError
+        raise NotImplementedError(*args, **kwargs)
 
 
 class FilterRegistry[FilterT: Filter, ItemT]:
     """Extend the FilterRegistry with filtered items"""
 
-    # TASK: Replace most by FilterField?
+    # TASK: Replace almost everything by 1 FilterField descriptor
+    # - make filter an attribute where a class can have even multiple off
+    # - control attach/detach/change by Field -> check brick.field
+    # - access by class.attribute with dot and everything
 
     _active_filter: FilterT | None = None
 

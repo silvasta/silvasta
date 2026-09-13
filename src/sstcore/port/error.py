@@ -8,12 +8,17 @@ Provide Namespace for Exceptions before SstError is ready
 """
 
 __all__: list[str] = [
-    "Error",
+    "SstError",
     "FailedHackError",
 ]
 
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
 
-class Error(Exception):  # IMPORTANT: MOST LIKELY: this as SstError
+
+class SstError(Exception):  # IMPORTANT: MOST LIKELY: this as SstError
     """Match and Catch all Level < 2 Errors"""
 
     def __init__(self, *args) -> None:
@@ -31,13 +36,11 @@ class Error(Exception):  # IMPORTANT: MOST LIKELY: this as SstError
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class FailedHackError(Error):
+class FailedHackError(SstError):
     """
     It was a nice try, but...
 
-    (I hope I don't have to  explain that this
-      is mostly for internal reasons and tests...)
-
+    (I hope I don't have to  explain that this is mostly for internal tests...)
     """
 
     def __init__(self, *args) -> None:

@@ -6,8 +6,6 @@ Define the Shape of the Core Registry
 
 """
 
-# TASK: bisect register, maybe from or from common base with ListRegist(-er/-ry)
-
 __all__: list[str] = [
     # root
     "Registry",
@@ -26,28 +24,36 @@ from collections.abc import Callable, Iterator
 from enum import Enum
 from typing import Any, NoReturn, Protocol, Self, overload
 
-from .attach import LazyDescriptor
+from .attach import LazyDescriptor, BasePolicyEnum, EnumPolicyField
 from .filter import Filter
 
-type Basic = list | tuple | dict
+type Vaults = list | tuple | dict
 
 
-class Registry[Base: Basic, Item, Key](Protocol):
+class BisectUpdatePolicy(BasePolicyEnum):
+    RAISE = 1
+    OVERRIDE = 2
+
+
+class Registry[Vault: Vaults, Item, Key](Protocol):
     """Define the Shape of the General Registry"""
 
-    vault: Base
+    vault: Vault
 
-    # NOTE: expand for dict to kwargs
-    def add(self, *items: Item, override: bool = False) -> Base | Self:
+    def add(self, *items: Item, override: bool = False) -> Vault | Self:
+        # TODO: expand for dict to kwargs?
+        # TODO: Self?
         """Extend vault by Items, get removed files back"""
 
-    def clear(self, *keys: Key) -> Base | Self:
+    def clear(self, *keys: Key) -> Vault | Self:
+        # TODO: Self?
         """Remove all Items or filter removed by Keys"""
 
     def find(self, *key: Key) -> list[Item]:
         """Provide 0..N items that match the item identifier"""
 
     def get(self, key: Key) -> Item | NoReturn:
+        # TODO: None?
         """Find precisely the unique Item to the Key"""
 
     def count(self, *key: Key) -> int:
@@ -61,6 +67,8 @@ class Registry[Base: Basic, Item, Key](Protocol):
     @overload
     def __getitem__(self, index: int) -> Item: ...
     def __getitem__(self, index: int | slice) -> Item | list[Item]:
+        # TODO: NoReturn?
+        # TODO: index: str|Key? Any? (then reduce Any in derived?)
         """Get the value or slice of the Item at the index position"""
 
     def __len__(self) -> int:
@@ -70,9 +78,6 @@ class Registry[Base: Basic, Item, Key](Protocol):
         """Provide value of all items"""
 
     def __contains__(self, target: Item) -> bool:
-        # AI: here i am unsure, any other idea what to allow here?
-        # - one idea was to open it widely with a huge dispatch,
-        # - but it looked too time consuming for too less gain...
         """Is the target item already member?"""
 
 
@@ -80,12 +85,24 @@ class RegistryDescriptor(LazyDescriptor, Protocol):
     """Mount the vault keeper proper to the classes"""
 
     @classmethod
+    # TODO: where to define? how to use best?
     def as_field(cls, *args, **kwargs) -> Self: ...
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Level 1 Mixins
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+### -- Start of potential SequenceRegistry -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+# IDEA: don't create SequenceRegister here as Protocol,
+# but SequenceRegistry as implementation base in brick?
 
 
 class ListRegister[Item, Key](Registry[list, Item, Key], Protocol):
     """Establish the Registry with a List of Items"""
 
+    # TASK: check how much to get parametrized from the base class
     vault: list[Item]
 
     def add(self, *items: Item, override: bool = False) -> list[Item]: ...
@@ -96,6 +113,7 @@ class ListRegister[Item, Key](Registry[list, Item, Key], Protocol):
     def __getitem__(self, index: slice) -> list[Item]: ...
     @overload
     def __getitem__(self, index: int) -> Item: ...
+    # IMPORTANT: same as base class? remove here?
     def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
     def __iter__(self) -> Iterator[Item]: ...
 
@@ -104,30 +122,14 @@ class ListRegister[Item, Key](Registry[list, Item, Key], Protocol):
 # - and to show that the index and slices reg[1:2] hold everywhere
 
 
-class DictRegister[Item, Key](Registry[dict, Item, Key], Protocol):
-    """Establish the Registry with a Dict of Items"""
-
-    vault: dict[Key, Item]
-
-    def add(self, *_, override: bool = False, **kwargs) -> dict[Key, Item]: ...
-    def clear(self, *keys: Key) -> dict[Key, Item]: ...
-    def find(self, *key: Key) -> list[Item]: ...
-
-    @overload
-    def __getitem__(self, index: slice) -> list[Item]: ...
-    @overload
-    def __getitem__(self, index: int) -> Item: ...
-    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
-    def __iter__(self) -> Iterator[tuple[Key, Item]]: ...
-
-
 class TupleRegister[Item, Key](Registry[tuple, Item, Key], Protocol):
     """Establish the Registry with Tuples"""
 
+    # TASK: check how much to get parametrized from the base class
     vault: tuple[Item, ...]
 
-    # TODO: returning new tuple or manipulate directly on registry?
     def add(self, *items: Item, override: bool = False) -> Self: ...
+    # NEXT: return just tuple? why Self?
     def clear(self, *keys: Key) -> tuple | Self: ...
     def find(self, *key: Key) -> list[Item]: ...
 
@@ -138,18 +140,59 @@ class TupleRegister[Item, Key](Registry[tuple, Item, Key], Protocol):
     def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
 
 
+class BisectRegister[Item, Key, DTO](Registry[list, Item, Key]):
+    """Define the Registry with sort-and-read bisect access"""
+
+    # TASK: check how much to get parametrized from the base class
+    vault: list[Item]  # TODO: ensure sorted (in implementation)
+    # TODO: insert_policy: InsertPolicy = InsertPolicy.RAISE,
+    # TODO: boundary_policy: BoundaryPolicy = BoundaryPolicy.INCLUSIVE,
+    # TASK: define them as new EnumPolicyField
+    # AI_QUESTION: how to announce a descriptor here?
+
+
+### -- END of potential SequenceRegistry -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+class DictRegister[Item, Key](Registry[dict, Item, Key], Protocol):
+    """Establish the Registry with a Dict of Items"""
+
+    # TASK: check how much to get parametrized from the base class
+    vault: dict[Key, Item]
+
+    def add(self, *_, override: bool = False, **kwargs) -> dict[Key, Item]: ...
+    def clear(self, *keys: Key) -> dict[Key, Item]: ...
+    def find(self, *key: Key) -> list[Item]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Item]: ...
+    @overload
+    def __getitem__(self, index: int) -> Item: ...
+    # IMPORTANT: same as base class? remove here?
+    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
+    def __iter__(self) -> Iterator[tuple[Key, Item]]: ...
+
+
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+### Mixin Extensions
+### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
 class MixinRegister[Mixin: type, Key](TupleRegister[Mixin, Key], Protocol):
     """Provide a stable Container for Compositiions"""
 
     @property
     # IMPORTANT: sorting mechanism
+    # TODO: type for return? like the mixed mixin protocols??
     def mixins(self) -> tuple[Mixin, ...]: ...
 
 
 class FuncRegister[Item: Callable](Protocol):
+    # TODO: Functor? (FunctorDecorator?)
     """Extend the Registry for Functions (LATER: and Functors)"""
 
     def attach(self) -> Callable[[Item], Item]:
+        # RENAME: sync with bisect
         """Register new member by Decorator"""
 
 
@@ -157,6 +200,7 @@ class FilterRegister[Item: Callable](Protocol):
     """Extend the Registry with Filtering"""
 
     # LATER: this is 1:1 a descriptor mock...
+    # - find the proper descriptor for filters and remove this
 
     def filter(self, new_active_filter: Filter | None) -> list[Item]:
         """Provide Items that fulfill the active Filter"""
@@ -172,14 +216,26 @@ class FilterRegister[Item: Callable](Protocol):
         """Provide attached Filter, load default first if needed"""
 
 
-class Index(Enum):  # LATER: move? some data primitives, or to shape?
+class Index(Enum):
+    # TASK: move to some data primitives, or to shape? port.base?
     """Define enumerated Axis for {0..N} member with 1 purpose"""
+
+    # IDEA: split view! but how to mix it in then? left or right?
+    # AI_QUESTION: SstEnum(Index,_EnumView) or opposite?
 
     def __str__(self) -> str:
         return f"{self.name.capitalize()}"
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.value}]::{self}"
+
+    # IDEA: use the int|slice|str __getitem__?? somehow unify this!
+    # AI_QUESTION: the idea is to create an Enum with member=auto(),
+    # starting from index 0 to N_member-1 and a Enum.name.lower()
+    # then use 1 access for all, like a classmethod or even like Enum[MultiKey]
+    # something like the resolve_color in the file below, but like universal
+    # - defined once and proper in the port, use it everywhere out of the box
+    # AI_FOCUS: How to achieve this? 2-3 pieces could build the base of most Enums
 
     @staticmethod
     def _generate_next_value_(name, start, count, last_values) -> int:
@@ -189,9 +245,9 @@ class Index(Enum):  # LATER: move? some data primitives, or to shape?
 
 class _IndexRegister[Item, IndexT: Index | tuple[Index, ...]](
     Registry, Protocol
-):
+):  # NOTE: not urgent
     """Establish the Registry with Enum and Tuple"""
 
-    items: tuple[Item, ...]
-    index: IndexT | tuple[IndexT]  # LATER: define axes
+    items: tuple[Item, ...]  # LATER: define axes
     # LATER: Create Enum members dynamically -> index and length of registry fixed
+    index: IndexT | tuple[IndexT]

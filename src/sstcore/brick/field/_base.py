@@ -17,6 +17,7 @@ __all__: list[str] = [
     "ConfigField",
 ]
 
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -31,6 +32,8 @@ from ...port.attach import (
     ConfigDescriptor,
     DeleteDescriptor,
     EventDescriptor,
+    PolicyDescriptor,
+    PolicyEnum,
     ReadDescriptor,
     Types,
     ValidDescriptor,
@@ -110,12 +113,6 @@ class ResetField[DefaulT](DeleteField):
         self._set_val(unit, self.default)
 
 
-if TYPE_CHECKING:
-    _check: type[ReadDescriptor] = ReadDescriptor
-    _check: type[WriteDescriptor] = WriteDescriptor
-    _check: type[DeleteDescriptor] = DeleteDescriptor
-
-
 class ValidField[T](WriteField):
     def validate(self, unit: object, value: T) -> T:
         """Finish the loop and return the value"""
@@ -142,6 +139,48 @@ class TypedField[T](ValidField[T]):
             self.raise_on_typing(unit, value)
         return super().validate(unit, value)
 
+
+class PolicyField[
+    EnumT: PolicyEnum,
+    MatchT: Callable,  # LATER: specify or sync with port
+](
+    ReadField[EnumT],  # TODO: needed? or use later on as mixin if desired?
+    TypedField[EnumT],
+):
+    def __init__(
+        self,
+        enum_type: type[EnumT],
+        *args,
+        match_func: MatchT | None = None,
+        **kwargs,
+    ):
+
+        self.enum_type: type[EnumT] = enum_type
+        self.match_func: MatchT | None = match_func
+        super().__init__(*args, **kwargs)
+
+    def validate(self, unit: object, value: EnumT) -> EnumT:
+        # IDEA: check if there is a valid match_func or override already here?
+        # -> otherwise, forward enum_type as types=enum_type in __init__
+        raise NotImplementedError
+
+    def match_hook(self, state: PolicyEnum, unit: object, *args, **kwargs):
+        if self.match_func:
+            return self.match_func(state, unit, *args, **kwargs)
+        raise NotImplementedError(f"No Match Policy defined: {self.enum_type}")
+
+    def execute(self, unit, *args, **kwargs):
+        current_state = getattr(unit, self.private_name)
+        return self.match_hook(current_state, unit, *args, **kwargs)
+
+
+if TYPE_CHECKING:
+    _read: type[ReadDescriptor[Any]] = ReadField
+    _write: type[WriteDescriptor] = WriteField
+    _delete: type[DeleteDescriptor] = DeleteField
+    _valid: type[ValidDescriptor] = ValidField
+    _typed: type[ValidDescriptor] = TypedField
+    _typed: type[PolicyDescriptor] = PolicyField
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### From here, Experimental
@@ -198,9 +237,5 @@ class ConfigField(WriteField):
 
 
 if TYPE_CHECKING:
-    _read: type[ReadDescriptor[Any]] = ReadField
-    _write: type[WriteDescriptor] = WriteField
-    _delete: type[DeleteDescriptor] = DeleteField
-    _valid: type[ValidDescriptor] = ValidField
     _emit: type[EventDescriptor] = EmitField
     _config: type[ConfigDescriptor] = ConfigField
