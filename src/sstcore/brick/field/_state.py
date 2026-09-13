@@ -4,6 +4,7 @@ Provide the Bricks for Descriptor Compositions
 - Transition from State to State
 
 """
+# TASK: state for bisect transition?
 
 __all__: list[str] = [
     "TransitionField",
@@ -56,7 +57,7 @@ class TransitionField[T: Enum](TypedField[T], ResetField[T]):
     def raise_on_transition(self, unit: object, current: T, next: T) -> T:
         cls_attr: str = self._cls_attr_name(unit)
         states = f"({current},{next})"
-        raise RuntimeError(f"{cls_attr} failed transfer for {states}")
+        raise RuntimeError(f"Failed transfer for {cls_attr}: {states}")
 
     # FIX:
     def state_graph_evaluation(

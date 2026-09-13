@@ -18,7 +18,7 @@ from ._base import RegistryError
 class ListRegistry[ItemT, KeyT]:
     """Implement the Shape of the Registry with List"""
 
-    items: list[ItemT]
+    items: list[ItemT]  # NEXT: compare with bisect
 
     def __init__(self, *items: ItemT) -> None:
         self.items: list[ItemT] = [*items]

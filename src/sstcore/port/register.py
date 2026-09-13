@@ -6,6 +6,8 @@ Define the Shape of the Core Registry
 
 """
 
+# TASK: bisect register, maybe from or from common base with ListRegist(-er/-ry)
+
 __all__: list[str] = [
     # root
     "Registry",
