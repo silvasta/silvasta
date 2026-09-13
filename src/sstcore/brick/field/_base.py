@@ -142,7 +142,6 @@ class TypedField[T](ValidField[T]):
 
 class PolicyField[
     EnumT: PolicyEnum,
-    MatchT: Callable,  # LATER: specify or sync with port
 ](
     ReadField[EnumT],  # TODO: needed? or use later on as mixin if desired?
     TypedField[EnumT],
@@ -151,12 +150,12 @@ class PolicyField[
         self,
         enum_type: type[EnumT],
         *args,
-        match_func: MatchT | None = None,
+        match_func: Callable | None = None,  # LATER: specify or sync with port
         **kwargs,
     ):
 
         self.enum_type: type[EnumT] = enum_type
-        self.match_func: MatchT | None = match_func
+        self.match_func: Callable | None = match_func
         super().__init__(*args, **kwargs)
 
     def validate(self, unit: object, value: EnumT) -> EnumT:
@@ -164,14 +163,15 @@ class PolicyField[
         # -> otherwise, forward enum_type as types=enum_type in __init__
         raise NotImplementedError
 
-    def match_hook(self, state: PolicyEnum, unit: object, *args, **kwargs):
+    def match(self, policy: PolicyEnum, unit: object, *args, **kwargs):
         if self.match_func:
-            return self.match_func(state, unit, *args, **kwargs)
+            return self.match_func(policy, unit, *args, **kwargs)
         raise NotImplementedError(f"No Match Policy defined: {self.enum_type}")
 
     def execute(self, unit, *args, **kwargs):
+        # NEXT: here must the sorted list from registry pass to the Fields.match
         current_state = getattr(unit, self.private_name)
-        return self.match_hook(current_state, unit, *args, **kwargs)
+        return self.match(current_state, unit, *args, **kwargs)
 
 
 if TYPE_CHECKING:

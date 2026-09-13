@@ -112,16 +112,10 @@ class PolicyEnum(Enum):
 class PolicyDescriptor[EnumT: PolicyEnum, ResulT: Any](Protocol):
     """Govern the Enum including match and dispatch"""
 
-    @property
-    def match_func(self) -> Callable[[EnumT, object], ResulT] | None:
-        """Inject this or override the hook"""
-
-    def match_hook(self, state: EnumT, unit: object) -> ResulT:
-        # TODO: Needed here? maybe informative...
-        """Launch match_func, get overridden or Raise"""
+    def match(self, state: EnumT, unit: object) -> ResulT:  # LATER: specify
+        """Launch match_func, get override or Raise"""
 
     def execute(self, unit: object) -> ResulT:  # LATER: specify
-        # RENAME: just match?
         """Apply the injected or overridden Matching-Function"""
 
 

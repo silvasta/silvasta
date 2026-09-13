@@ -90,8 +90,8 @@ class BaseRegistry[B: list, I, K]:  # FIX:
     def __iter__(self) -> Iterator[I]:
         yield from self.vault
 
-    def __contains__(self, target: I | K) -> bool:
-        return target in self.vault
+    # def __contains__(self, target: I | K) -> bool:
+    #     return target in self.vault
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 

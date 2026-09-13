@@ -13,6 +13,10 @@ __all__: list[str] = [
     "ListRegister",
     "TupleRegister",
     "DictRegister",
+    ## bisect
+    "BoundaryPolicy",
+    "InsertPolicy",
+    "BisectRegister",
     # extenstions
     "MixinRegister",
     "FilterRegister",
@@ -21,18 +25,13 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable, Iterator
-from enum import Enum
+from enum import Enum, auto
 from typing import Any, NoReturn, Protocol, Self, overload
 
-from .attach import LazyDescriptor, BasePolicyEnum, EnumPolicyField
+from .attach import LazyDescriptor, PolicyEnum
 from .filter import Filter
 
 type Vaults = list | tuple | dict
-
-
-class BisectUpdatePolicy(BasePolicyEnum):
-    RAISE = 1
-    OVERRIDE = 2
 
 
 class Registry[Vault: Vaults, Item, Key](Protocol):
@@ -118,7 +117,7 @@ class ListRegister[Item, Key](Registry[list, Item, Key], Protocol):
     def __iter__(self) -> Iterator[Item]: ...
 
 
-# NOTE: overload will later on be removed, just to silence ty now,
+# INFO: overload will later on be removed, just to silence ty now,
 # - and to show that the index and slices reg[1:2] hold everywhere
 
 
@@ -140,14 +139,63 @@ class TupleRegister[Item, Key](Registry[tuple, Item, Key], Protocol):
     def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
 
 
+class BisectPolicyBase(PolicyEnum):
+    """Build Namespace for PolicyDescriptor"""
+
+
+class InsertPolicy(BisectPolicyBase):
+    """
+    Dictate behavior for inserting threshold that already exists
+
+    - ALLOW_LEFT: Place new duplicate BEFORE existing ones
+    - ALLOW_RIGHT: Place new duplicate AFTER existing ones
+    - OVERWRITE: Replace the existing data at the threshold (left)
+    - RAISE: Throw ValueError on duplicated insertion
+    """  # TODO: explain maybe in implementation
+
+    OVERRIDE = auto()
+    RAISE = auto()
+    ALLOW_LEFT = auto()  # WARN: check again how to keep this safe
+    ALLOW_RIGHT = auto()  # WARN: check again how to keep this safe
+
+
+class BoundaryPolicy(BisectPolicyBase):
+    """
+    Dictate mathematical boundaries during lookup
+
+    - INCLUSIVE (>=) bisect_right: Evaluate to its own tier for exact match
+    - EXCLUSIVE (>) bisect_left: Fall back to the previous tier for exact match
+    """  # TODO: explain maybe in implementation
+
+    INCLUSIVE = auto()
+    EXCLUSIVE = auto()
+
+
+class BisectData[ThreshT: int | float](Protocol):
+    """Define the Shape of the BisectDTOs"""
+
+    @property
+    def threshold(self) -> ThreshT:
+        """The value for the sorting"""
+
+    @property
+    def label(self) -> str:
+        """Present the Item in 1 sentence"""
+
+    def key(self) -> ThreshT:
+        """Extract the sorting value from the Self-DTO"""
+
+
 class BisectRegister[Item, Key, DTO](Registry[list, Item, Key]):
+    # TASK: check how much to get parametrized from the base class
     """Define the Registry with sort-and-read bisect access"""
 
-    # TASK: check how much to get parametrized from the base class
-    vault: list[Item]  # TODO: ensure sorted (in implementation)
+    vault: list[Item]
+    dto: BisectData
+
+    # TASK: define PolicyField here?
     # TODO: insert_policy: InsertPolicy = InsertPolicy.RAISE,
     # TODO: boundary_policy: BoundaryPolicy = BoundaryPolicy.INCLUSIVE,
-    # TASK: define them as new EnumPolicyField
     # AI_QUESTION: how to announce a descriptor here?
 
 
