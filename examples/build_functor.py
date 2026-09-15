@@ -1,3 +1,0 @@
-import sstcore
-
-print("yes")

@@ -26,7 +26,7 @@ from ...color._arg import resolve_color
 from ...color.box import Colors
 from ...format import cls_name, reflect
 
-colors: ColorBox = Colors()  # ty:ignore
+# colors: ColorBox = Colors()  # ty:ignore
 
 
 class StaticFuncMeta(type):
@@ -96,12 +96,12 @@ class StaticFuncMeta(type):
 
 
 class StaticFuncMetaData:
-    """InputSpace, Defaults, Pre-processing -> finally data container"""
+    """Collect cls-views"""
 
     name: ClassRendering
     rich: ClassRendering
     cli: CliDtoCreator
-    color: Color
+    color: Color  # LATER: to base?
 
     def __init__(
         self,

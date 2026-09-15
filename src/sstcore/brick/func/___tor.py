@@ -25,24 +25,16 @@ from ...port.functor import (
     HybridFunctorial,
     SafeFunctorial,
 )
-from ..forge.blueprint import FunctorMeta, FunctorMetaData
 from ..format import cls_name, reflect
 from ..none import Ghost
 
-FunctorInput = FunctorMetaData()
 
-
-class BaseFunctor[**Param, Result](metaclass=FunctorMeta, data=FunctorInput):
+class BaseFunctor[**Param, Result]:
     """Ensure Requirements and close MRO forwarding"""
 
-    def emit(self, *args, **kwargs) -> None:  # LATER: override or inject?
-        logger.debug(*args, **kwargs)
-
-    def _set_names(self, name: str):  # TASK: this to Meta
-        if not name:
-            name = reflect.func(self._func, default=f"{cls_name(self)}Unit")
-        self.__name__: str = name
-        self.__qualname__: str = name
+    # IDEA: all relevant functions, inject in __init__ Or override, or defaults
+    # -> looks like it can be solved once in meta, then work everywhere!
+    # - here: func, maybe init
 
     def __init__(
         self,
@@ -55,24 +47,21 @@ class BaseFunctor[**Param, Result](metaclass=FunctorMeta, data=FunctorInput):
         kwargs and self.emit("Unconsumed kwargs at BaseFunctor!", **kwargs)
         super().__init__()
 
-        self.config = kwargs  # NEXT: why?
+    def _set_names(self, name: str):
+        # TASK: this to Meta
+        if not name:
+            name = reflect.func(self._func, default=f"{cls_name(self)}Unit")
+        self.__name__: str = name
+        self.__qualname__: str = name
 
-    def apply(self, target: Any, *args, **kwargs) -> Any:
-        """Core logic to be overridden by subclasses."""
-        if not self._func:  # TODO: standardize, maybe FunctorMetaData
-            raise NotImplementedError(f"{cls_name(self)} missing logic.")
-        return self._func(target, *args, **kwargs)
+    def __call__(self, *args: Param.args, **kwargs: Param.kwargs) -> Result:
+        # IDEA: instead of override this, override BaseFunctor.func?
+        if not self._func:
+            raise NotImplementedError("Provide func or override __call__!")
+        return self._func(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
-        """Instance-Level Execution & Delayed Binding"""
-
-        # NEXT: Phase 2 of CASE 3: We received @MyFunctor(kwargs), now we get the function
-        if getattr(self, "_func", None) is None:
-            self._func = args[0]
-            functools.update_wrapper(self, self._func)
-            return self
-
-        return self.apply(args[0], *args[1:], **kwargs)
+    def emit(self, *args, **kwargs) -> None:  # LATER: override or inject?
+        logger.debug(*args, **kwargs)
 
 
 if TYPE_CHECKING:
