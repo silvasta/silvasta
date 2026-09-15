@@ -55,8 +55,10 @@ def _dict(_target: Any, *, key: str) -> Any:
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def dig_attr(_target: Any, check_attrs: list[str], default=None) -> str | None:
-    for guess in check_attrs:
+def dig(_target: Any, attrs: list[str], default=None) -> Any | None:
+    """Work trough the list with getattr and provide first hit or default"""
+
+    for guess in attrs:
         if detected := getattr(_target, guess, ""):
             return detected
     else:
@@ -68,7 +70,7 @@ def name(_target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
     """Check attribute list, provide match or default"""
     default_checks: list[str] = ["_inside_brackets", "_name", "name"]
     check_attrs: list[str] = (attrs or []) + default_checks
-    if detected := dig_attr(_target, check_attrs):
+    if detected := dig(_target, check_attrs):
         return detected
     return default
 
@@ -76,14 +78,14 @@ def name(_target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
 def text(_target: Any, attrs: list[str] | None = None) -> str | None:
     """Check if text in attribute list, provide match or None"""
     check_attrs: list[str] = (attrs or []) + ["_text", "text"]
-    return dig_attr(_target, check_attrs)
+    return dig(_target, check_attrs)
 
 
 def func(_target: Any, attrs: list[str] | None = None, default="Func") -> str:
     """Check attribute list, provide match or default"""
     default_checks: list[str] = ["__qualname__", "__name__"]
     check_attrs: list[str] = (attrs or []) + default_checks
-    if detected := dig_attr(_target, check_attrs):
+    if detected := dig(_target, check_attrs):
         return detected
     return default
 
