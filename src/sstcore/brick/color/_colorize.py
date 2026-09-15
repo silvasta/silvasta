@@ -21,9 +21,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from .box import ColorBox
+from ...port.color import ColorBox
+from .box import Colors
 
-c: ColorBox = ColorBox.bold()
+c: ColorBox = Colors()
 
 
 def modules(

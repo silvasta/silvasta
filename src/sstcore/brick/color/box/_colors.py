@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
+from ....port.call import Stringable
 from ....port.color import (
     Color,
     ColorBox,
@@ -20,10 +21,10 @@ from ....port.color import (
     ColorManager,
     Painter,
 )
-from ....port.view import Stringable
 from ...format import cls_name
 from .._mappings import SHORTCUTS
-from .._stack import ColorStack
+
+# from .._stack import ColorStack
 from ._manager import ColorHub
 
 
