@@ -60,7 +60,6 @@ class Collected[T](WriteField, ReadField[T]):  # TODO: better name
 
 
 class Derived[T](ReadField[T]):  # TODO: better name
-    # AI: is this more than just a self implemented Property?
     """
     Calculate view on every access without maintaining state
 
@@ -99,6 +98,7 @@ class Forward[T](ReadField[T]):  # NOTE: this name is perfect
     def __init__(self, target_attr: str, method_name: str):
         self.target_attr: str = target_attr
         self.method_name: str = method_name
+        # WARN: no forward by super here right?
 
     def read(self, unit: object) -> T:
         target: object = getattr(unit, self.target_attr)

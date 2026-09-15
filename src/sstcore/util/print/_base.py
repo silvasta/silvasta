@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
+
 from ...brick.attr._IDEA_ed import Derived, Injected
 from ...port.event.dto import CliDTO
 from ...port.printer import Print, PrintMode
@@ -20,8 +21,14 @@ from ..path import ProjectInfo
 class PrinterInfo:
     """Collect toml info and show in Panel"""
 
+    # WARN: check descriptor
+    # WARN: check descriptor
+    # WARN: check descriptor
     info: Injected[ProjectInfo] = Injected(ProjectInfo)
 
+    # WARN: check descriptor
+    # WARN: check descriptor
+    # WARN: check descriptor
     @Derived
     def project_info(self) -> str:
         """Override in ColorMixin"""

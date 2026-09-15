@@ -64,6 +64,7 @@ def dig_attr(_target: Any, check_attrs: list[str], default=None) -> str | None:
 
 
 def name(_target: Any, attrs: list[str] | None = None, default=" 󰂒 ") -> str:
+    # LATER: extend with pre/post fix, eg: BaseName or NameDefault etc.
     """Check attribute list, provide match or default"""
     default_checks: list[str] = ["_inside_brackets", "_name", "name"]
     check_attrs: list[str] = (attrs or []) + default_checks

@@ -105,7 +105,7 @@ class LazyDescriptor[T](Descriptor[T], Protocol):
 
 class PolicyEnum(Enum):
     # MOVE: find best place
-    # TODO: attach something?
+    # TODO: attach/mix something?
     """Base for all policy enums, ensuring shared namespace and branding views."""
 
 

@@ -1,5 +1,5 @@
 """
-Define the Shape of the Event Bus Calling
+Define the Shape of the Event Bus Caller
 
 -
 """
@@ -34,6 +34,11 @@ type Log = LogEmit | EventLog
 class Emit(_Protocol):
     def __call__(self, event: _EventName, sender: str, **payload) -> None:
         """Call to EventBus"""
+
+
+class BoundEmit(_Protocol):
+    def __call__(self, **kwargs) -> None:
+        """Call to bus with predefined Event or Sender"""
 
 
 class LogEmit(_Protocol):
@@ -97,8 +102,3 @@ class Emitter(_Protocol):
 
     def make(self, **defaults) -> Emitter | LogEmitter | CliEmitter: ...
     def bind(self, event: _EventName, sender: str, **kwargs) -> BoundEmit: ...
-
-
-class BoundEmit(_Protocol):
-    def __call__(self, **kwargs) -> None:
-        """Call to bus with predefined Event or Sender"""
