@@ -26,7 +26,7 @@ from ...color._arg import resolve_color
 from ...color.box import Colors
 from ...format import cls_name, reflect
 
-# colors: ColorBox = Colors()  # ty:ignore
+colors: ColorBox = Colors()  # ty:ignore
 
 
 class StaticFuncMeta(type):
@@ -42,6 +42,7 @@ class StaticFuncMeta(type):
         data: StaticFuncMetaData | None = None,
     ):
         """Attach all methods as staticmethod and load input for dunder data"""
+
         new_static_methods: dict[str, Any] = {
             key: staticmethod(value)
             for key, value in namespace.items()
@@ -51,9 +52,17 @@ class StaticFuncMeta(type):
 
         cls = super().__new__(mcls, name, bases, namespace)
 
+        # AI:  _data attach
+        # - this will happen as well in like any custom meta
+        # - holds as well for all non-static that will come
+        # AI_TASK: propose how to add data to a base
         cls._data = data or StaticFuncMetaData()
 
         return cls
+
+    # AI_FOCUS: the 5 views below are the main target
+    # - the objective for the base now is  __XXX__(cls)
+    # - view attach by __XXX__(self) is an idea as well
 
     def __cli__(cls) -> CliDTO:
         return cls._data.cli(cls)
@@ -77,7 +86,7 @@ class StaticFuncMeta(type):
 
     def __call__(cls, *_, **__) -> Any:
         # NOTE: candidate for _data.call
-        # TODO: route the Error here
+        # TODO: route the SstError here, inject somehow?
         raise TypeError(f"StaticFunc[{cls}] is Not available as Instance!")
 
     def toolkit(cls, sort: bool = True) -> list[str]:
@@ -96,12 +105,21 @@ class StaticFuncMeta(type):
 
 
 class StaticFuncMetaData:
+    # IDEA: delete all except new toggle for:
+    # - toolkit, some config thing
+    # - namespace update?
+    # - namespace policy, eg: FunctionType or how to handle other Enum selection
     """Collect cls-views"""
 
+    # AI: from port.call:
+    # @runtime_checkable
+    # class ClassRendering(Protocol):
+    #     def __call__(self, cls: type) -> str:
+    #         """Process Classes like if they where Instances (e.g StaticFuncMeta)"""
     name: ClassRendering
     rich: ClassRendering
     cli: CliDtoCreator
-    color: Color  # LATER: to base?
+    color: Color
 
     def __init__(
         self,

@@ -21,26 +21,6 @@ from ._registry import Cli, Log, Repr, Rich, Str
 # NEXT:
 # NEXT:
 # NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
 
 
 @dataclass(frozen=True)  # TODO: needed?

@@ -81,7 +81,7 @@ __all__: list[str] = [
     "MetaData",
     "Composer",
     "Injector",
-    # NEXT: "StubWriter",
+    "StubWriter",  # TODO:
     "Factory",
 ]
 
@@ -109,7 +109,7 @@ class MetaData(Protocol):
     """Single DTO Interface - InputSpace, Defaults, Pre-processing"""
 
     def __init__(self):
-        """Ensure Meta.__new__ defaults and bundle valid injection"""
+        """Ensure Meta.__new__ defaults and valid injection"""
 
 
 #  LINE: -- Class Level -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -118,15 +118,16 @@ class MetaData(Protocol):
 type Mixins = tuple[type, ...]
 
 
-class Composer[BaseT: type](Protocol):
-    # NEXT: composer finish!
+class Composer[BaseT: type](Protocol):  # NEXT: composer finish!
     """Assemble Mixins dynamically and provide assembled Class"""
 
     @property
     def mixins(self) -> Mixins:
+        # MOVE: to __getitem__ or __yield??__
         """Provide all selected Mixins"""
 
     def mix_name(self, name: str = "") -> str:
+        # MOVE: to Registry!
         """Format Name of mixed class"""
 
     def build(self) -> BaseT:
@@ -144,8 +145,7 @@ class Composer[BaseT: type](Protocol):
         """Build new Class from Mixins or Inject to Target for new Subclass"""
 
 
-class Injector[BaseT: type](Protocol):  # TODO: derive?
-    # NEXT: injector finish!
+class Injector[BaseT: type](Protocol):  # NEXT: injector finish!
     """Decorate Target Class and Inject composed Mixins"""
 
     @overload
@@ -155,13 +155,11 @@ class Injector[BaseT: type](Protocol):  # TODO: derive?
     def __call__(self, cls: type | None = None, /) -> type:
         """Inject Mixins to Target including changeable Presets"""
 
-    def plus(self) -> Self:
-        # TODO: ?? def plus(self, *args, **kwargs) -> Self:
+    def plus(self) -> Self:  # TODO: input space?
         """Update existing Mixin selection"""
 
 
-class StubWriter(Protocol):
-    # IMPORTANT: generate stubs
+class StubWriter(Protocol):  # IMPORTANT: generate stubs
     # TASK: as soon as AST scanner ready:
     # - read and understand the composer process
     #   - the mixins that come in, especially the protocols!

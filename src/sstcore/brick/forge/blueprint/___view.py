@@ -9,6 +9,8 @@ Next: Evaluate pro/con of both approaches
 
 from typing import TYPE_CHECKING
 
+# AI: this was a first sketch, unsure if something is useful (for now)
+
 
 class ViewMeta(type):
     def __new__(mcs, name, bases, namespace):

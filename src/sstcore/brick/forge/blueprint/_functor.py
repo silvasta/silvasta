@@ -37,6 +37,9 @@ class FunctorMeta[MaybeUsefulT](type):
         cls = super().__new__(mcls, name, bases, namespace)
         cls._data = data or FunctorMetaData()
 
+        # TODO: __name__,__qualname__, see brick.func
+        # TODO: emit?
+
         if extract_detect := reflect.dig(cls, attrs=["detect"]):
             # TODO: add better
             cls._data.detect = extract_detect
