@@ -1,0 +1,3 @@
+import sstcore
+
+print("yes")

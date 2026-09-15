@@ -1,37 +1,35 @@
 """
-Functor - Define the Shape of Functions as Objects as Functions
+TEMPORARY separatet from .call
 
-Base:
-- Functorial: Define the Core functionality
-- SafeFunctorial: Control Errors with Handlers
-  - ErrorPolicy: Decide the default behaviour
-
-Extended: (TODO)
-- EmitFunctorial: Report the Status
-- DecoFunctorial: Act on Signatures
-
+- better workflow at functor operation
 """
 
-from collections.abc import Callable
-from enum import StrEnum
-from typing import Concatenate, Protocol, runtime_checkable
+from typing import (
+    Protocol,
+    runtime_checkable,
+)
 
 __all__: list[str] = [
-    "Functorial",
-    "SafeFunctorial",
-    "ErrorPolicy",
-    #
     "Stacking",
+    "ClassRendering",
 ]
 
 
 @runtime_checkable
 class ClassRendering(Protocol):
-    def __call__(self, cls: type) -> str: ...
+    def __call__(self, cls: type) -> str:
+        """Process Classes like if they where Instances (e.g StaticFuncMeta)"""
 
 
-class Stringable(Protocol):
-    # TODO: check with view
+class Stacking(Protocol):
+    def __getattr__(self, name: str) -> Stacking:
+        """Stack Attributes on top of each other by attribute calls"""
+
+
+#  REFACTOR:  - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+class Stringable(Protocol):  # TODO: check with view
     def __str__(self) -> str: ...
 
 
@@ -49,50 +47,3 @@ class Colorizing(Protocol):
 class Listening[T](Protocol):
     def __call__(self, target: T) -> T:
         """Forward target after routing and inspection"""
-
-
-class Stacking(Protocol):
-    """Stack Attributes on top of each other by Functions"""
-
-    def __getattr__(self, name: str) -> Stacking:
-        """Add one layer of color or modifier and stack again..."""
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Functor
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
-@runtime_checkable
-class Functorial[**Param, Result](Protocol):
-    """Combine values and functions to advanced executables"""
-
-    @property
-    def name(self) -> str: ...
-    def emit(self, *args, **kwargs) -> None: ...
-    def __call__(self, *args: Param.args, **kwargs: Param.kwargs) -> Result:
-        """The Core of the entire Topic, override or inject _func"""
-
-
-class SafeFunctorial[**Param, Result](Protocol):
-    """Provide safe execution environement"""
-
-    catch: Callable[Concatenate[Exception, Param], Result | None] | None
-
-    def safe(self, *args: Param.args, **kwargs: Param.kwargs) -> Result | None:
-        """Catch and handle"""
-
-    @property
-    def error_policy(self) -> ErrorPolicy: ...
-    @property
-    def exit_code(self) -> int: ...
-
-
-class ErrorPolicy(StrEnum):  # TODO: Str? only Enum?
-    LOG_AND_CONTINUE = "log"
-    LOG_AND_EXIT = "exit"
-    RE_RAISE = "raise"
-
-
-class DecoFunctorial[**P, R](Protocol):
-    """Execute on top of other functions"""
