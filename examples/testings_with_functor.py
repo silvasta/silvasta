@@ -1,3 +1,19 @@
+"""
+Functor Meta Tests
+
+- Output
+---
+uv run testings_with_functor.py
+Usage 2: Direct
+/tmp/file.txt
+Usage 2: Bare Decorator
+/tmp/system_log.txt
+Usage 2: Parameterized
+/var/log/AUTO.log
+---
+
+"""
+
 from typing import Any, TypeGuard
 
 from sstcore.brick.forge.blueprint._functor import FunctorMetaData
@@ -24,20 +40,32 @@ class PathResolver(BaseFunctor, data=FunctorInput):
         return f"{prefix}/{target}"
 
 
-# Usage 1: Direct
-PathResolver("file.txt")  # -> "/tmp/file.txt"
+print("Usage 2: Direct")
+
+y = PathResolver("file.txt")
+y: str = y
+print(y)
 
 
-# Usage 2: Bare Decorator
+print("Usage 2: Bare Decorator")
+
+
 @PathResolver
-def get_name(name: str):
+def get_name(name: str) -> str:
     return f"{name}_log.txt"
 
 
-get_name("system")  # -> "/tmp/system_log.txt"
+x = get_name("system")
+x: str = get_name("system")
+print(x)
 
 
-# Usage 3: Parameterized
+print("Usage 2: Parameterized")
+
+
 @PathResolver(prefix="/var/log")
 def get_sys_name(name: str):
     return f"{name}.log"
+
+
+print(get_sys_name("AUTO"))
