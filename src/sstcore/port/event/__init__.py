@@ -8,6 +8,8 @@ Define the Structure of the Event Data and Pipeline
 - LogDTO  Intended for __log__ and processed by logger
 - CliDTO: Intended for __cli__ and processed by printer
 
+                                                 DependencyLevel[4]
+                                                 - color
 """
 
 __all__: list[str] = [

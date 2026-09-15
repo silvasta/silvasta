@@ -4,6 +4,7 @@ Define the Shape of the Core Registry
 - 1 Interface for Any type of Items
  -> Make Data handling independant
 
+                                                 DependencyLevel[2]
 """
 
 __all__: list[str] = [

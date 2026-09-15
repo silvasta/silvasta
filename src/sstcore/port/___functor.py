@@ -15,9 +15,6 @@ Extensions:
 - SafeFunctorial: Include error handling with policy
 - TODO: Hybrid
 
-                                                 DependencyLevel[0]
-                                                 - NEW: (maybe)
-                                                   - .attach
 """
 
 from collections.abc import Callable

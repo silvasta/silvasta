@@ -1,7 +1,7 @@
 """
 Define the Shape of the Config Pipeline and Management
 
--
+                                                 DependencyLevel[1]
 """
 
 # NEXT: copy docstrings here
@@ -23,7 +23,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Protocol, Self
 
-from .view import Stringable
+from .call import Stringable
 
 
 class ProjectInformation(Protocol):

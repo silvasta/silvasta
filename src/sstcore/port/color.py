@@ -13,6 +13,9 @@ Define the Interface Colors and the Shape of the ColorBox
 
 Future Ideas:
 - ColorBus: global control of already distributed colors
+
+
+                                                 DependencyLevel[3]
 """
 
 __all__: list[str] = [
@@ -36,9 +39,8 @@ __all__: list[str] = [
 from enum import auto
 from typing import NamedTuple, Protocol, Self, runtime_checkable
 
-from .call import Colorizing
+from .call import Colorizing, Stringable
 from .register import Index
-from .view import Stringable
 
 
 class GridIndex(Index):
@@ -49,9 +51,8 @@ type ColorIdentifier = int | str | Color
 
 
 class Color(GridIndex):
-    """Define the Base Palette with 12 indexed Colors (Start at 0)"""
-
     # TODO: think about 2x6, 3x4 or 4x3 as minimal quantize
+    """Define the Base Palette with 12 indexed Colors (Start at 0)"""
 
     WHITE = auto()
     BLACK = auto()

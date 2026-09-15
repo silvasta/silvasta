@@ -1,7 +1,7 @@
 """
 How to track Files with composed Registries?
 
--
+                                                 DependencyLevel[3]
 """
 
 __all__: list[str] = [
@@ -23,10 +23,15 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol, Self
 
-from .filter import FileFiltering, KeyWord, KeyWords, PathFiltering
+from .filter import Filter, KeyWord, KeyWords, PathFiltering
 from .register import ListRegister
 from .scanner import FolderScan
 from .tree import PathTree
+
+
+class FileFiltering[FileT: File](Filter[str, FileT], Protocol):
+    def _fulfill(self, target: FileT) -> bool:
+        """Filter Registry Files by their Keyword Sets"""
 
 
 # IMPORTANT: compare with .register.SyncMode

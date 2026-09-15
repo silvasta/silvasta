@@ -10,6 +10,7 @@ Combine Boot, Interface and Distribution:
 
 System: The sst Director
 
+                                                 DependencyLevel[6]
 """
 
 __all__: list[str] = [
@@ -112,7 +113,7 @@ class SystemCliArgs(TypedDict, total=False):
     quiet: bool
     settings: NotRequired[
         Path | None
-    ]  # None was needed for _attach_internal_callback...
+    ]  # was needed for _attach_internal_callback...
     home: HomeSetup
 
 

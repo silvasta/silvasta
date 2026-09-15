@@ -1,57 +1,50 @@
 """
 Define the Assembler that Shape the Objects of the Core
 
-- First Sketch of a strategic Blueprint for the Assembler
-Implementations
-- Soon: Scanner: maybe StaticFunctor
-- Later: Format/Normalize: maybe StaticFunctor
+- First Strategic Blueprint of the Assembler Definitions
 
-- Now: PrintBuilder: outdated status (maybe PrintForge)
-    - Soon: EmitBuilder: will share most of mixins with Printer (like +1 new, -5 old)
-- Now: FileRegistryBuilder: in progress
-- Later: Registry(Injector|Builder) so far they are mixed in like everywhere, could be automated
-- Done: ViewInjector: best example so far (this is like an aggragator)
+                                                 DependencyLevel[0]
 
-- Now: ColorFactory
-- Now: DtoFactory
+---
 
-Meta
-- Home: brick.forge.blueprint
-
-- Constructor: Meta Director (future)
-    - assemble: dynamic release (future)
+Meta - Home: brick.forge.blueprint
 
 - Meta: MetaClass Blueprint
-- MetaData: InputSpace Guard
-  - MetaInput: class specific unit -> single meta arg - dto
-  - Local Module: _meta
+- MetaData: InputSpace DTO (and Guard?)
+  - MetaInput: name for class specific implementation
+- Local Module: _meta (if ever needed again, the dto collapsed everything)
 
+---
 
-Class
-- Home: brick.forge.mix
+Class - Home: brick.forge.mix
 
 - Composer: Assemble the Mixins
-  Method:
-  - build: compose new class from mixins and bases
-  - inject: compose and inject to existing class
-  - mix: dispatch build and inject
-  - draw: generate and write the stub files -> mixin for composer
-  Module: _compose
+- Methods:
+  - mix: dispatch composition
+    - build: compose new class from mixins and bases
+    - inject: compose and inject to existing class
+- Local Module: _compose
 
-- Injector: Into the Target
+- Injector: Compose and sit on Functions and Classes
   Method: __call__,
   Module: _inject
 
+- Writer: read the manual and write the stub file
+- Methods:
+  - draw|print: release the final stub file
+    maybe others, generate, display, validate,...
 
-Unit
-- Home: brick.forge.units
+---
 
-- Factory: (Order composition and) massively produce, e.g. DtoFactory
+Instances - Home: brick.forge.unit
+
+- Factory: Massively produce Units ordered by catalogue
+
 - Producer: designed to create specialized units, e.g. LogDtoProducer
   - Method: __call__, produce units
   - Module: _produce
 
-- Plus: individual modules, functions and names, depending on purpose
+- Depending on purpose: individual modules, functions and names
 
 ---
 
@@ -64,6 +57,22 @@ Strategy:
   - Collect best working concepts
   Final
   - The Generalized and Typed assemble Pipeline
+
+Status:
+meta
+- Soon: Scanner: maybe StaticFunctor
+- Later: Format/Normalize: maybe StaticFunctor
+
+class
+- Now: PrintBuilder: outdated status (maybe PrintForge)
+    - Soon: EmitBuilder: will share most of mixins with Printer (like +1 new, -5 old)
+- Now: FileRegistryBuilder: in progress
+- Later: Registry(Injector|Builder) so far they are mixed in like everywhere, could be automated
+- Done: ViewInjector: best example so far (this is like an aggragator)
+
+unit
+- Now: ColorFactory
+- Now: DtoFactory
 
 """
 
@@ -78,13 +87,6 @@ __all__: list[str] = [
 
 
 from typing import Any, Protocol, Self, overload
-
-
-class _Constructor(Protocol):  # LATER: this as Meta Head Organizer
-    """Engineer Meta Planning and Distribution"""
-
-    def release(self, *args, **kwargs) -> str:
-        """Assemble Blueprint Creators"""
 
 
 class Meta(Protocol):
@@ -104,21 +106,20 @@ class Meta(Protocol):
 
 
 class MetaData(Protocol):
-    """InputSpace, Defaults, Pre-processing"""
+    """Single DTO Interface - InputSpace, Defaults, Pre-processing"""
 
     def __init__(self):
-        """Ensure defaults for Meta.__new__"""
+        """Ensure Meta.__new__ defaults and bundle valid injection"""
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### """Class Level - Create the Class"""
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Class Level -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
 
 type Mixins = tuple[type, ...]
 
 
-# NEXT:
 class Composer[BaseT: type](Protocol):
+    # NEXT: composer finish!
     """Assemble Mixins dynamically and provide assembled Class"""
 
     @property
@@ -143,11 +144,8 @@ class Composer[BaseT: type](Protocol):
         """Build new Class from Mixins or Inject to Target for new Subclass"""
 
 
-# NEXT:
-# NEXT:
-
-
 class Injector[BaseT: type](Protocol):  # TODO: derive?
+    # NEXT: injector finish!
     """Decorate Target Class and Inject composed Mixins"""
 
     @overload
@@ -162,23 +160,22 @@ class Injector[BaseT: type](Protocol):  # TODO: derive?
         """Update existing Mixin selection"""
 
 
-class StubWriter(Protocol):  # LATER: soon
+class StubWriter(Protocol):
+    # IMPORTANT: generate stubs
+    # TASK: as soon as AST scanner ready:
+    # - read and understand the composer process
+    #   - the mixins that come in, especially the protocols!
+    # - ast and cst
+    # - write the specific pyi file
+    #   - location and (automatic) updates
+    # - Validation?
     """Supply the Static Type Checker with Information"""
 
-    # TASK: as soon as AST scanner ready:
-    # - "invert" the process which for now looks like much easier
-    # looks so far less painful than any already failed attempt...
     def draw(self):
         """Write .pyi for selected Mixins"""
 
 
-class _Aggregator(Composer, Protocol):  # LATER: if ever needed...
-    """Massively collect and assemble Mixins at Runtime"""
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### """Unit Level - Create the Instances"""
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Unit Level -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class Factory[UniT](Protocol):

@@ -4,7 +4,9 @@ Define the Event DTOs for Log and Print
 - LogDTO  Intended for __log__ and processed by Loguru.logger
 - CliDTO: Intended for __cli__ and processed by printer
 
+                                                 DependencyLevel[2]
 """
+# TASK: filter out the to much render information
 
 __all__: list[str] = [
     "CliDtoCreator",
@@ -15,19 +17,31 @@ __all__: list[str] = [
     "MarkdownDTO",
     "PanelDTO",
     "TableDTO",
+    # views
+    "LogSerializable",  # __log__
+    "LogSerializable",  # __log__
+    "Renderable",
 ]
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
+from ..call import RichRendering
 from ..color import Color, ColorIdentifier
-
-if TYPE_CHECKING:
-    from ..view import Renderable
 
 _AlignMethod = Literal["left", "center", "right"]
 
-# NEXT: filter out the here unneeded render information
+type Renderable = str | CliRenderable | RichRendering
+
+
+@runtime_checkable
+class CliRenderable(Protocol):
+    def __cli__(self) -> CliDTO: ...
+
+
+@runtime_checkable
+class LogSerializable(Protocol):
+    def __log__(self) -> LogDTO: ...
 
 
 @dataclass
@@ -63,7 +77,7 @@ class PanelDTO(CliDTO[Renderable | list[Renderable]]):
     color: str = "bold white"
     frame: str = Color(value=2).name
     title: str | None = None
-    # NEXT: detach to much information somehow
+    # TASK: filter out the to much render information
     title_align: _AlignMethod = "right"
     expand: bool = True
     padding: tuple = (0, 1)

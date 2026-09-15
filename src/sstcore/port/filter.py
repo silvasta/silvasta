@@ -7,13 +7,13 @@ Define the Shape of the Filters
 - PathFiltering: Path specification
 - ProjectFiltering: Programming Project specification
 
+                                                 DependencyLevel[1]
 """
 
 __all__: list[str] = [
     "FilterSpec",
     "Filter",
     #
-    "FileFiltering",
     "KeyWords",
     "KeyWord",
     #
@@ -26,7 +26,6 @@ from enum import IntEnum, auto
 from pathlib import Path
 from typing import Protocol, Self, overload
 
-from ..port.files import File
 from .error import FailedHackError
 
 
@@ -77,11 +76,6 @@ class Filter[SetType, TargetType](FilterSpec, Protocol):
         self, target: TargetType | list[TargetType]
     ) -> bool | list[TargetType]:
         """Check single item (bool) or filter multiple items from list"""
-
-
-class FileFiltering[FileT: File](Filter[str, FileT], Protocol):
-    def _fulfill(self, target: FileT) -> bool:
-        """Filter Registry Files by their Keyword Sets"""
 
 
 type KeyWords = list[str] | set[str]

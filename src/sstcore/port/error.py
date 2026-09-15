@@ -2,9 +2,10 @@
 Provide Namespace for Exceptions before SstError is ready
 
 - sstcore.error[L2] Avaliable for most of the Library
-- sstcore.brick[L1] Build essential parts the Errors
-- sstcore. port[L0] Generally No Errors needed, ...
+- sstcore.brick[L1] Build essential parts of the Errors
+- sstcore. port[L0] Generally No Errors needed...
 
+                                                 DependencyLevel[0]
 """
 
 __all__: list[str] = [
@@ -12,13 +13,14 @@ __all__: list[str] = [
     "FailedHackError",
 ]
 
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
+# IMPORTANT::
+# STRATEGY: ideas
+# - subclass detection
+# - ghost color box
+# ...
 
 
-class SstError(Exception):  # IMPORTANT: MOST LIKELY: this as SstError
+class SstError(Exception):
     """Match and Catch all Level < 2 Errors"""
 
     def __init__(self, *args) -> None:

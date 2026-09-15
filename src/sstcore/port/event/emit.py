@@ -1,10 +1,8 @@
 """
 Define the Shape of the Event Bus Caller
 
--
+                                                 DependencyLevel[2]
 """
-
-from ._core import EventBus as _EventBus
 
 __all__: list[str] = [
     "Emit",
@@ -25,6 +23,7 @@ __all__: list[str] = [
 from typing import Any as _Any
 from typing import Protocol as _Protocol
 
+from ._core import EventBus as _EventBus
 from .name import EventName as _EventName
 
 type Print = CliEmit | CliPrint

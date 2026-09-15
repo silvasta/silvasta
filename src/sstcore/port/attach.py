@@ -3,6 +3,7 @@ Define the Shape of Descripors
 
 - Attach attributes to Classes
 
+                                                 DependencyLevel[0]
 """
 
 from enum import Enum
@@ -26,8 +27,6 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 from typing import Any, Protocol, Self, overload
-
-from .event.emit import Emit
 
 type Types[T] = type[T] | tuple[type, ...]
 type FieldLoader[T] = Callable[[], T]

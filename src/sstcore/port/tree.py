@@ -1,3 +1,19 @@
+"""
+Define the Shape of Nodes and Edges
+
+- preferably without too much cycles
+                                                 DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "SimpleTree",
+    "PathTree",
+    "AsTree",
+    "AstKind",
+    "CsTree",
+]
+
+
 from collections.abc import Sequence
 from enum import StrEnum, auto
 from typing import Any, Protocol
@@ -6,12 +22,7 @@ from typing import Any, Protocol
 class SimpleTree(Protocol):
     """Protocol for any hierarchical tree node."""
 
-    # NEXT: modify
-    # NEXT: modify
-    # NEXT: modify
-    # NEXT: modify
-    # NEXT: modify
-    # NEXT: modify
+    # IMPORTANT: modify
     @property
     def name(self) -> str: ...
     @property
@@ -31,19 +42,14 @@ class PathTree(SimpleTree, Protocol):
     def path(self) -> Any: ...
 
 
-class ASTree(SimpleTree, Protocol):
-    """Protocol for path-based tree nodes."""
-
-    # NEXT: modify
-    # NEXT: modify
-
-
-class _CSTree(SimpleTree, Protocol):
+class AsTree(SimpleTree, Protocol):
     # NEXT: modify
     """Protocol for path-based tree nodes."""
 
+
+class CsTree(SimpleTree, Protocol):
     # NEXT: modify
-    # NEXT: modify
+    """Protocol for path-based tree nodes."""
 
     @property
     def path(self) -> Any: ...

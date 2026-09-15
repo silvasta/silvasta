@@ -1,7 +1,7 @@
 """
 print
 
-.
+                                                 DependencyLevel[5]
 """
 
 __all__: list[str] = [
@@ -19,10 +19,10 @@ from string import Template
 from typing import Any, Literal, Required, TypedDict, Unpack
 from typing import Protocol as Protocol
 
-from ..port.color import ColorBox, ColorIdentifier
+from .call import RichRendering
+from .color import ColorBox, ColorIdentifier
 from .config import ProjectInformation
-from .event.dto import CliDTO
-from .view import Renderable, RichRenderable
+from .event.dto import CliDTO, Renderable
 
 
 class PrintSpec(TypedDict, total=False):
@@ -116,8 +116,8 @@ class ColorPrint(Protocol):
 
 
 class CorePrint(Protocol):
-    def render(self, target: CliDTO, **kwargs) -> RichRenderable: ...
-    def display(self, target: CliDTO, **kwargs) -> RichRenderable: ...
+    def render(self, target: CliDTO, **kwargs) -> RichRendering: ...
+    def display(self, target: CliDTO, **kwargs) -> RichRendering: ...
 
 
 class LayoutPrint(Protocol):
