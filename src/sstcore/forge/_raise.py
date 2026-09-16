@@ -8,7 +8,7 @@ from ..port.error import SstError
 
 
 class ViewError(SstError):  # TODO: view error
-    # IMPORTANT: already used
+    # IMPORTANT: already used and desired
     """Explain what forge.view failed"""
 
 

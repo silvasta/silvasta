@@ -7,14 +7,14 @@ Collect and combine default Views
 
 # LATER: this thing will get very long...
 # - defaults for regular classes
-# - attach typing, e.g. by ViewComposer[MergedProtocol]
+# - attach typing, e.g. by ViewBuilder[MergedProtocol]
 
 __all__: list[str] = [
     "ViewPresets",
 ]
 
 from ...brick.views import Cli, Log, Repr, Rich, Str
-from ._compose import ViewComposer
+from ._compose import ViewBuilder
 from ._inject import ViewInjector
 
 # NEXT:
@@ -33,7 +33,7 @@ class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
         log=Log.DATA,
     )
 
-    printer = ViewComposer(
+    printer = ViewBuilder(
         cli=Cli.HEADER,
         string=Str.MODULE,
         rich=Rich.SHORT,
@@ -41,14 +41,14 @@ class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
         log=Log.DEBUG,
     )
 
-    safe_typer = ViewComposer(
+    safe_typer = ViewBuilder(
         cli=Cli.PANEL,
         string=Str.SHORT,
         rich=Rich.MODULE,
         repr=Repr.DEBUG,
         log=Log.DEBUG,
     )
-    functor = ViewComposer(
+    functor = ViewBuilder(
         cli=Cli.PANEL,
         string=Str.NAME,
         rich=Rich.MODULE,

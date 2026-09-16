@@ -5,7 +5,7 @@ Compose Views at runtime and inject them into target Classes
 """
 
 __all__: list[str] = [
-    "ViewComposer",
+    "ViewBuilder",
 ]
 
 from dataclasses import dataclass, replace
@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Self, cast, overload
 from ...brick.none import ViewSentinel
 from ...brick.views import Cli, Log, Repr, Rich, Str
 from ...port.register import MixinRegister
-from ...port.shape import Composer
+from ...port.shape import Builder
 
 # FIX:
 from ..engine import combine_mixins
@@ -25,7 +25,7 @@ from ..engine import combine_mixins
 
 
 @dataclass(frozen=True)  # TODO: needed?
-class ViewComposer[ViewBase: type]:
+class ViewBuilder[ViewBase: type]:
     """Configure ViewMixin sets and build composed classes"""
 
     cli: Cli = Cli.OFF
@@ -45,7 +45,7 @@ class ViewComposer[ViewBase: type]:
         return (self.cli, self.log, self.repr, self.string, self.rich)
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Composer(Protocol)
+    ### Builder(Protocol)
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
     def mix_name(self, name="") -> str:
@@ -60,8 +60,7 @@ class ViewComposer[ViewBase: type]:
             if (mixin := category.mixin) is not ViewSentinel
         )
 
-    # REMOVE: combine build/inject to mix
-    def build(
+    def mix(  # REFACTOR:
         self,
         name="",
         format_name=True,
@@ -79,8 +78,7 @@ class ViewComposer[ViewBase: type]:
 
         return cast(typ=ViewBase, val=new_cls)
 
-    # REMOVE: combine build/inject to mix
-    def inject[Target: type](
+    def inject[Target: type](  # REFACTOR:
         self,
         cls: Target,
         /,
@@ -92,7 +90,8 @@ class ViewComposer[ViewBase: type]:
         # NEXT: functions like this could be placed in sstcore.forge._fragments
         # TASK: this method looks for example way to heavy for the registry,
         # - maybe this method with others in a BuilderBox inside brick
-        # - ViewComposer takes the functions from there and the mixins from registry
+        # - ViewBuilder takes the functions from there and the mixins from registry
+        # STRATEGY: decompose, put in catalog, select any desired combination, assemble
         if not (bases := combine_mixins(self.mixins, mixins, prepend=prepend)):
             return cls
 
@@ -113,17 +112,17 @@ class ViewComposer[ViewBase: type]:
         return cast(typ=Target, val=new_cls)
 
     @overload
-    def mix[MixInjected](
+    def compose[MixInjected](
         self,
         cls: type,
     ) -> MixInjected: ...
     @overload
-    def mix(
+    def compose(
         self,
         cls: None,
     ) -> ViewBase: ...
 
-    def mix[
+    def compose[
         MixInjected: type
     ](  # # TODO: maybe insert here mixed proto? for cast?
         self,
@@ -142,11 +141,12 @@ class ViewComposer[ViewBase: type]:
             data.add(mixins)
 
         if cls is None:
+            # REMOVE: here is the composition, mixin handles container, maybe sort
             return data.build()
         else:
             return data.inject()
 
 
 if TYPE_CHECKING:
-    _instance_check: Composer = ViewComposer()
-    _class_check: type[Composer] = ViewComposer
+    _instance_check: Builder = ViewBuilder()
+    _class_check: type[Builder] = ViewBuilder

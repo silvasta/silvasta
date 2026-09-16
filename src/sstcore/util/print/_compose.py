@@ -1,13 +1,13 @@
 """
 Compose Printer Essentials, Interchangeables and Optionals
 
-- Dynamically assemble customized Printers with PrintComposer
+- Dynamically assemble customized Printers with PrintBuilder
 - Provide preconfigured default printer instance
 
 """
 
 __all__: list[str] = [
-    "PrintComposer",
+    "PrintBuilder",
     "printer",
 ]
 
@@ -17,15 +17,16 @@ from typing import TYPE_CHECKING, cast
 from rich.console import Console
 
 from ...brick.color import colorize
-from ...brick.view import view
+from ...forge.view import view
 from ...port.printer import PrintCore
-from ...port.shape import Composer
+from ...port.shape import Builder
 from . import _mixins
 from ._engine import PrinterCore
 
 
 @dataclass(frozen=True)
-class PrintComposer[PrinT: PrintCore]:
+class PrintBuilder[PrinT: PrintCore]:
+    # NOTE: PrinterFactory was still much better....
     """Configure PrinterMixins and build composed classes"""
 
     core: type = PrinterCore
@@ -92,8 +93,8 @@ class PrintComposer[PrinT: PrintCore]:
         return cast(typ=PrinT, val=new_cls)
 
 
-printer = PrintComposer().build(mixins=tuple(view.printer.build()))
+printer = PrintBuilder().build(mixins=tuple(view.printer.build()))
 
 if TYPE_CHECKING:
-    _instance_check: Composer = PrintComposer()
-    _class_check: type[Composer] = PrintComposer
+    _instance_check: Builder = PrintBuilder()
+    _class_check: type[Builder] = PrintBuilder

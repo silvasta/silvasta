@@ -29,18 +29,18 @@ __all__: list[str] = [
     "view",
     "View",
     "ViewInjector",
-    "ViewComposer",
+    "ViewBuilder",
 ]
 
 from typing import TYPE_CHECKING as _TYPE_CHECKING
 
 from ...port.shape import Injector
-from ._compose import ViewComposer
+from ._compose import ViewBuilder
 from ._inject import ViewInjector
 from ._preset import ViewPresets
 
 
-class View(ViewInjector, ViewComposer, ViewPresets):
+class View(ViewInjector, ViewBuilder, ViewPresets):
     """The Final assembled Decorator"""
 
 

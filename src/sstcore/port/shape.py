@@ -19,13 +19,13 @@ Meta - Home: brick.forge.blueprint
 
 Class - Home: brick.forge.mix
 
-- Composer: Assemble the Mixins # NEXT: Builder???
+- Builder: Assemble the Mixins
 - Methods:
-  - mix: dispatch composition
-    - build: compose new class from mixins and bases
+  - compose: dispatch composition
+    - mix: compose new class from mixins and bases
     - inject: compose and inject to existing class
 - Local Module: _compose
-- Local Package: build # IDEA: SWAP WITH COMPOSE????
+- Local Package: build
 
 - Injector: Compose and sit on Functions and Classes
   Method: __call__,
@@ -80,7 +80,7 @@ unit
 __all__: list[str] = [
     "Meta",
     "MetaData",
-    "Composer",
+    "Builder",
     "Injector",
     "Typer",  # TODO:
     "Factory",
@@ -119,30 +119,32 @@ class MetaData(Protocol):
 type Mixins = tuple[type, ...]
 
 
-class Composer[BaseT: type](Protocol):  # NEXT: composer finish!
+class Builder[BaseT: type](Protocol):  # NEXT: composer finish!
     """Assemble Mixins dynamically and provide assembled Class"""
 
     @property
     def mixins(self) -> Mixins:
-        # MOVE: to __getitem__ or __yield??__
+        # TODO: forward from vault?
         """Provide all selected Mixins"""
 
     def mix_name(self, name: str = "") -> str:
-        # MOVE: to Registry!
+        # MOVE: to Registry! new_clsname target_name
         """Format Name of mixed class"""
 
-    def build(self) -> BaseT:
+    def mix(self) -> BaseT:
         """Create a purely generic Base Mixin Class"""
 
     def inject[Target: type](self, cls: Target, **kwargs: Any) -> Target:
         """Inject mixins into an existing Class to form a new Subclass"""
 
     @overload
-    def mix[TargeT](self, cls: type, mixins: Mixins) -> TargeT: ...
+    def compose[TargeT](self, cls: type, mixins: Mixins) -> TargeT: ...
     @overload
-    def mix(self, mixins: Mixins) -> BaseT: ...
+    def compose(self, mixins: Mixins) -> BaseT: ...
 
-    def mix[TargeT](self, cls: type | None = None, **kwargs) -> BaseT | TargeT:
+    def compose[TargeT](
+        self, cls: type | None = None, **kwargs
+    ) -> BaseT | TargeT:
         """Build new Class from Mixins or Inject to Target for new Subclass"""
 
 
@@ -157,6 +159,7 @@ class Injector[BaseT: type](Protocol):  # NEXT: injector finish!
         """Inject Mixins to Target including changeable Presets"""
 
     def plus(self) -> Self:  # TODO: input space?
+        # IDEA: as well for builder? at least some?
         """Update existing Mixin selection"""
 
 
