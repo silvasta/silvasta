@@ -7,7 +7,6 @@ Assemble the File Registry.
 __all__: list[str] = [
     "RegistryBuilder",
     "SstFileRegistry",
-    # TODO:
 ]
 
 from dataclasses import dataclass
@@ -17,23 +16,16 @@ from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...port.builder import Builder, TypedBuilder
-from ...port.registry import ListingRegistry
-from ...utils.registry import ListRegistry
-from ...utils.view import Cli, Log, Repr, Rich, Str, ViewBuilder, view
+from ...brick.vault import ListRegistry
+from ...brick.views import Cli, Log, Repr, Rich, Str
+from ...forge.engine.compose.___typed_builder import _TestTypedBuilder
+from ...forge.view import ViewBuilder, view
+from ...port.shape import Builder
 from ._file import SstFile
-from .proto import (  # REMOVE:
-    FilePathOps,
-    FileQueryOps,
-    FileScanOps,
-    FileSyncOps,
-)
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Bases
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-# TODO: select 1, pydantic/else
 
 
 class _FilePathMixin[FilesT: SstFile]:
@@ -279,5 +271,5 @@ if TYPE_CHECKING:
     _instance_check: Builder = RegistryBuilder()
     _class_check: type[Builder] = RegistryBuilder
     #
-    _instance_check: TypedBuilder = RegistryBuilder()
-    _class_check: type[TypedBuilder] = RegistryBuilder
+    _instance_check: _TestTypedBuilder = RegistryBuilder()
+    _class_check: type[_TestTypedBuilder] = RegistryBuilder

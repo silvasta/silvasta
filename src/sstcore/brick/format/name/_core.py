@@ -30,8 +30,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
-from ...error import NotImplementedDispatchError  # WARN: dependency violation
-from ..none import Ghost
+from ....error import NotImplementedDispatchError  # WARN: dependency violation
+from ...none import Ghost
 from ._base import BaseName as _BaseName
 
 
@@ -173,6 +173,7 @@ class BidirectionalParser(_NormalizedName):
             case dict() | list() | tuple():
                 return self.format(target)
 
+        # FIX:
         raise NotImplementedDispatchError(target)
 
 

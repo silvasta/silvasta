@@ -8,16 +8,15 @@ __all__: list[str] = [
     "dict_to_str",
     "dict_to_list",
     "list_to_str",
-    "format_brackets",
+    "impossible_brackets",
     "format_kv",
 ]
 
-# TASK: proper assembly and selection
-# - group better by topic!
-
-# STRATEGY: Catalog->Functor->Rule
 
 from typing import Any
+
+# AI_QUESTION: this was the only module from format where I wasn't sure,
+# it a transfer from format into this module is absolutely justified...
 
 
 def dict_to_list(data: dict[str, Any], sep="=") -> list[str]:
@@ -39,11 +38,12 @@ def dict_to_str(data: dict[str, Any], inner="=", outer=", ") -> str:
     return list_to_str(strings, sep=outer)
 
 
-def format_brackets(key: str) -> str:  # INFO: don't loose this
+def impossible_brackets(key: str) -> str:  # INFO: don't loose this
     """Needed for proper {key}"""
     return f"{{{key}}}"
 
 
+# AI: this is already named format
 def format_kv(
     mapping: dict[str, Any],
     sep: str = "=",
@@ -51,8 +51,11 @@ def format_kv(
     quote_strings: bool = False,
 ) -> str:
     """Format dictionary into key=value pairs for clean str/repr outputs."""
+    # IDEA: parametrized and with heavy defaults into Functor-
     pairs = []
     for k, v in mapping.items():
+        # AI: here this part looks clearly like reflect/inspect
         val_str = f"'{v}'" if quote_strings and isinstance(v, str) else str(v)
         pairs.append(f"{k}{sep}{val_str}")
+    # AI: overall it is a combination of both
     return pair_sep.join(pairs)

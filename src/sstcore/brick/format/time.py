@@ -5,6 +5,8 @@ Collect helper for time related functions
                                                           PackageLevel[0]
 """
 
+# LATER: date range and more advanced time calculations will move
+
 __all__: list[str] = [
     "DateRange",
     "timer",

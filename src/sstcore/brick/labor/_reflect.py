@@ -4,11 +4,17 @@ Inspect arbitrary objects and safely pull out specific attributes
                                                            ModuleLevel[0]
 """
 
+# TASK: later on all of this assembled to Functor
+# - preinstalled with proper name and loggging
+# - ready for like any task selected from catalog
+
 __all__: list[str] = [
+    "just_return",
+    #
     "clsname",
     "data",
-    "pydantic",
-    "just_return",
+    "pydatic",
+    "_dict",  # AI: what happens when private modules are exposed in __all__?
     # find
     "name",
     "text",
@@ -30,11 +36,8 @@ from typing import Any
 from ...port.calling import PydanticModel
 
 
-def clsname(_target: Any) -> str:
-    """Extract name from instance or class"""
-    return getattr(_target, "__name__", type(_target).__name__)
-
-
+# MOVE: to single box (if it ever exists)
+# INFO: badly placed in reflect
 def just_return[Target](constant: Target) -> Callable[..., Target]:
     """Wrap _target in function that returns constant value"""
 
@@ -44,6 +47,18 @@ def just_return[Target](constant: Target) -> Callable[..., Target]:
     return constant_function  # MOVE: to sstcore.brick.format|func
 
 
+#  LINE: -- exploit -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# TODO: single? yes but as well in combo,
+# maybe with heavily improvements? check eg _mro
+def clsname(_target: Any) -> str:
+    # IDEA: reflect.cls then reflect.cls.ancestor|sort|...
+    """Extract name from instance or class"""
+    return getattr(_target, "__name__", type(_target).__name__)
+
+
+# TODO: public/privat, other param, small toolbox
 def data(_target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
     """Extract public attributes filtered by exclude"""
     return {
@@ -53,6 +68,7 @@ def data(_target: Any, exclude: set[str] | None = None) -> dict[str, Any]:
     }
 
 
+# TODO: extension of data
 def pydatic(
     _target: Any, *, exclude: set[str] | None = None
 ) -> dict[str, Any]:
@@ -66,20 +82,19 @@ def pydatic(
     return data(_target, exclude)
 
 
+# IDEA: acces by: reflect.cls.dict
 def _dict(_target: Any, *, key: str) -> Any:
+    # WARN: operates at heart of target
+    # - at least some (optional) get or error handling...
+    # IDEA: Yes that will the Functor do.
     """Direct __dict__ access"""
     return _target.__dict__[key]
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Find Attr
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-# TASK: later on all of this assembled to Functor
-# - preinstalled with proper name and loggging
-# - ready for like any task selected from catalog
+#  LINE: -- dig into the target object and find the objective -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+# IDEA: digattr? maybe dig.attr? then: dig.name etc make more sense
 def dig(_target: Any, attrs: list[str], default=None) -> Any | None:
     """Work trough the list with getattr and provide first hit or default"""
 
@@ -115,9 +130,11 @@ def func(_target: Any, attrs: list[str] | None = None, default="Func") -> str:
     return default
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Invoke
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- invoke -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# TASK: this looks like already using 1% of its potential
+# - find smart parametrization and distribute powerful setup
 
 
 def invoke(_target: Any, method_name: str, *, strict: bool = False) -> Any:

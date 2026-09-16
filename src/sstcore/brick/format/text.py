@@ -5,6 +5,7 @@ Provide basic Toolkit for Text formatting
 """
 
 __all__: list[str] = [
+    # ansi
     "strip_ansi",
     "visual_len",
     "truncate",
@@ -20,14 +21,7 @@ __all__: list[str] = [
 
 import re
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### ANSI
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-# TASK: proper assembly and selection
-# - group better by topic!
-
-# STRATEGY: Catalog->Functor->Rule
+#  LINE: -- ansi -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 _ANSI_RE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -56,9 +50,14 @@ def truncate(text: str, max_width: int, tail: str = "…") -> str:
     return text[: max_width - len(tail)] + tail
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Case
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- TextCase text_case textCase text-case -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# TODO: not only transform but as well split!
+# IDEA: use eg PathGuard -> Path is blue, Guard is green
+# - even better for Error in red or branding eg projects,
+# SachmisDataError visualizes project, domain, and danger
+# (check first in cli how it renders before too much effort)
 
 
 def to_snake(text: str) -> str:
@@ -79,9 +78,7 @@ def to_kebab(text: str) -> str:
     return to_snake(text).replace("_", "-")
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Align
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- alling -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def indent(
