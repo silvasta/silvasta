@@ -21,7 +21,7 @@ from ....port.color import (
     ColorManager,
     Painter,
 )
-from ...format import cls_name
+from ...format import clsname
 from .._mappings import SHORTCUTS
 
 # from .._stack import ColorStack
@@ -38,7 +38,7 @@ class Colors:
         self._hub: ColorManager = ColorHub.boot()
 
     def __str__(self) -> str:
-        return f"{cls_name(self)}[{self.active}]"
+        return f"{clsname(self)}[{self.active}]"
 
     def __getattr__(self, name) -> Painter | str:
         if color := SHORTCUTS.get(name):

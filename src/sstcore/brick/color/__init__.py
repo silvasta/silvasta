@@ -7,7 +7,7 @@ Provide Colors and Tools for Coloring
 
 """
 
-# TODO:
-# __all__: list[str] = [
-#     "colorize", ]
-# from . import _colorize as colorize
+__all__: list[str] = [
+    "colorize",
+]
+from . import _colorize as colorize

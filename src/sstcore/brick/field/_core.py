@@ -23,6 +23,8 @@ from ...port.attach import (
 from ..format import reflect
 from ._base import ReadField, TypedField, WriteField
 
+# TASK: try to condense, think again trough all combinations
+
 
 class Injected[T](ReadField[T], TypedField[T]):  # TODO: better name
     """

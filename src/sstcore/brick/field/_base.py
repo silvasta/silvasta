@@ -40,7 +40,7 @@ from ...port.attach import (
     WriteDescriptor,
 )
 from ...port.event.emit import Emit
-from ..format import cls_name, reflect
+from ..format import clsname, reflect
 
 
 class NamedField:
@@ -65,7 +65,7 @@ class NamedField:
 
     def _cls_attr_name(self, unit: object) -> str:
         """Simply rendered: Cls.attribute"""
-        return f"{cls_name(unit)}.{self.public_name}"
+        return f"{clsname(unit)}.{self.public_name}"
 
     def raise_on_missing(self, unit: object) -> NoReturn:
         raise AttributeError(f"{self._cls_attr_name(unit)} is Missing!")
@@ -131,7 +131,7 @@ class TypedField[T](ValidField[T]):
     def raise_on_typing(self, unit: object, value: T) -> T:
         cls_attr: str = self._cls_attr_name(unit)
         raise TypeError(
-            f"{cls_attr} expected {self.types!r}, got {cls_name(value)}"
+            f"{cls_attr} expected {self.types!r}, got {clsname(value)}"
         )
 
     def validate(self, unit: object, value: T) -> T:

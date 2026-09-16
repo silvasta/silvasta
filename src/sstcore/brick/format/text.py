@@ -24,6 +24,10 @@ import re
 ### ANSI
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
+# TASK: proper assembly and selection
+# - group better by topic!
+
+# STRATEGY: Catalog->Functor->Rule
 
 _ANSI_RE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -105,6 +109,7 @@ def pad(
         return text
 
     missing = width - vlen
+    # TODO: Enum, make machine out of this!
     if align == "left":
         return text + (fillchar * missing)
     elif align == "right":
