@@ -22,7 +22,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....brick.format import cls_name
+from ....brick.format import clsname
 from ....brick.func import SafeFunctor
 from ....error import PathGuardError, PathGuardReason
 from ....port.call import ErrorPolicy
@@ -207,7 +207,7 @@ class DeleteStrategy(SafeFunctor[[Path], bool]):
         return self.safe(target_ok) is not None  # TEST:
 
     def on_error(self, error: Exception, target: PathInput) -> bool:
-        logger.warning(f"{self.name}: {cls_name(error)}", error, target)
+        logger.warning(f"{self.name}: {clsname(error)}", error, target)
         return False
 
 

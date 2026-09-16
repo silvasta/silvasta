@@ -85,9 +85,9 @@ class PrintComposer[PrinT: PrintCore]:
         _prepend: bool = True,
     ) -> PrinT:
         """Assemble selected Mixins to ViewBase"""
-        cls_name: str = self.mix_name(name) if format_name else name or "View"
+        clsname: str = self.mix_name(name) if format_name else name or "View"
         bases: tuple[type, ...] = self.mixins() + mixins
-        new_cls: type = type(cls_name, bases, extras or {})
+        new_cls: type = type(clsname, bases, extras or {})
 
         return cast(typ=PrinT, val=new_cls)
 

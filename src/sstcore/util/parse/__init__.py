@@ -7,6 +7,7 @@ Decompose Strings with Regex
 """
 
 from ._match import LogMatcher, MatchRule, RegexMatch, RegexMatchBox
+from ._parsed import ParsedName
 from ._schema import SchemaName
 
 __all__: list[str] = [
@@ -17,4 +18,5 @@ __all__: list[str] = [
     "LogMatcher",
     #
     "SchemaName",
+    "ParsedName",
 ]

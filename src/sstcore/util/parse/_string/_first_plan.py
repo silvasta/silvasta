@@ -33,7 +33,7 @@ class LogSerializable(Protocol):
 
 
 @runtime_checkable
-class Reprable(Protocol):
+class LogStringable(Protocol):
     def __repr__(self) -> str: ...
 
 
@@ -51,7 +51,7 @@ class RichRenderable(Protocol):
 class FullView(
     CliRenderable,
     LogSerializable,
-    Reprable,
+    LogStringable,
     Stringable,
     RichRenderable,
     Protocol,

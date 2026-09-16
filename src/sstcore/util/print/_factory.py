@@ -15,7 +15,7 @@ from typing import Any
 
 from ...brick.color.box import Colors
 from ...brick.forge.blueprint import StaticFuncMeta, StaticFuncMetaData
-from ...brick.format import cls_name
+from ...brick.format import clsname
 from ...port.color import ColorBox
 from ...port.event.dto import (
     GroupDTO,
@@ -30,7 +30,7 @@ from ...port.view import Renderable
 colors: ColorBox = Colors()  # ty:ignore
 
 CliDtoFactoryMetaInput = StaticFuncMetaData(
-    name=lambda cls: f"󰕧 {cls_name(cls)} 󰕧",
+    name=lambda cls: f"󰕧 {clsname(cls)} 󰕧",
     rich=f"{colors.azure('CliDto')}{colors.teal('Factory')}",
     # TODO: attach CliDTO, I mean this is the CliFactory...
     cli="Standard factory for constructing normalized CliDTO renderables",
