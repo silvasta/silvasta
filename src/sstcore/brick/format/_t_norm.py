@@ -4,7 +4,7 @@ from string import Template
 from string.templatelib import Interpolation
 from typing import Any
 
-from ...port.view import Stringable
+from ...port.call import Stringable
 
 
 def render(template: Template) -> str:

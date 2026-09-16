@@ -47,39 +47,6 @@ class Functor[**ArgSpace, SubSetResult](Protocol):
         """Provide default message sending"""
 
 
-class BindFunctor[**FreeArgs, **BoundArgs, SubSetResult](
-    Functor[BoundArgs, SubSetResult], Protocol
-):
-    """Narrow the Input Space (LSP-unconform)"""
-
-    # FIX: separate input space, but how?
-    _func: Callable[[FreeArgs, BoundArgs], SubSetResult]
-
-    def __call__(
-        self, *args: BoundArgs.args, **kwargs: BoundArgs.kwargs
-    ) -> SubSetResult: ...
-
-
-class ExpandFunctor[**ArgSpace, SubSetResult, SuperSetResult](
-    Functor[ArgSpace, SuperSetResult], Protocol
-):
-    """Extend the output Space (LSP-unconform)"""
-
-    _func: Callable[ArgSpace, SubSetResult]
-
-    def __call__(
-        self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
-    ) -> SuperSetResult: ...
-
-
-# FIX: or later on just drop inheritance or even any declaration
-class TransformFunctor[**FreeArgs, **BoundArgs, SubSetResult, SuperSetResult](
-    BindFunctor[FreeArgs, BoundArgs, SubSetResult],
-    ExpandFunctor[BoundArgs, SubSetResult, SuperSetResult],
-    Protocol,
-): ...
-
-
 #  INFO:  Safe Extension - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
@@ -151,3 +118,39 @@ class HybridFunctorial[In, Out, **P](Protocol):
 # REMOVE: or find purpose
 class HybridPolicy(TypedDict, total=False):
     """Base policy to be extended by specific implementations."""
+
+
+#  INFO:  LSP acrobatic - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+class BindFunctor[**FreeArgs, **BoundArgs, SubSetResult](
+    Functor[BoundArgs, SubSetResult], Protocol
+):
+    """Narrow the Input Space (LSP-unconform)"""
+
+    # FIX: separate input space, but how?
+    _func: Callable[[FreeArgs, BoundArgs], SubSetResult]
+
+    def __call__(
+        self, *args: BoundArgs.args, **kwargs: BoundArgs.kwargs
+    ) -> SubSetResult: ...
+
+
+class ExpandFunctor[**ArgSpace, SubSetResult, SuperSetResult](
+    Functor[ArgSpace, SuperSetResult], Protocol
+):
+    """Extend the output Space (LSP-unconform)"""
+
+    _func: Callable[ArgSpace, SubSetResult]
+
+    def __call__(
+        self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
+    ) -> SuperSetResult: ...
+
+
+# FIX: or later on just drop inheritance or even any declaration
+class TransformFunctor[**FreeArgs, **BoundArgs, SubSetResult, SuperSetResult](
+    BindFunctor[FreeArgs, BoundArgs, SubSetResult],
+    ExpandFunctor[BoundArgs, SubSetResult, SuperSetResult],
+    Protocol,
+): ...

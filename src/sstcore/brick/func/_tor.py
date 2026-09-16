@@ -32,46 +32,49 @@ from ..none import Ghost
 FunctorInput = FunctorMetaData()
 
 
+# REMOVE: entire function after reflect.func resolved
+def _set_names(self, name: str):
+    if not name:  # IMPORTANT: where to apply reflect.func? probably Data
+        name = reflect.func(self._func, default=f"{cls_name(self)}Unit")
+    self.__name__ = name
+    self.__qualname__ = name
+
+
 class BaseFunctor[**Param, Result](metaclass=FunctorMeta, data=FunctorInput):
     """Ensure Requirements and close MRO forwarding"""
-
-    def emit(self, *args, **kwargs) -> None:  # LATER: override or inject?
-        logger.debug(*args, **kwargs)
-
-    def _set_names(self, name: str):  # TASK: this to Meta
-        if not name:
-            name = reflect.func(self._func, default=f"{cls_name(self)}Unit")
-        self.__name__: str = name
-        self.__qualname__: str = name
 
     def __init__(
         self,
         func: Callable[Param, Result] | None = None,
-        name: str = "",
+        name: str = "",  # WARN: when does this arrive?
         **kwargs,
     ):
-        self._func: Callable[Param, Result] | None = func
-        self._set_names(name)
-        kwargs and self.emit("Unconsumed kwargs at BaseFunctor!", **kwargs)
+        # IMPORTANT: ensure _func (or directly __call__)
+        # AI_TASK: where is the best point to load this?
+        # - why not just use it in __new__ and directly attach it as __call__?
+        # - the dto provides the proper __call__ and the constructor assembles it
+        # - with default_error for not injecting or overriding it
+        #   (still crirical with the hybrid)
+        self._func: Callable[Param, Result] = func
+
+        # WARN: when happens this:
+        # kwargs and self.emit("Unconsumed kwargs at BaseFunctor!", **kwargs)???
+        # - most likely SstMeta is the proper place
         super().__init__()
-
-        self.config = kwargs  # NEXT: why?
-
-    def apply(self, target: Any, *args, **kwargs) -> Any:
-        """Core logic to be overridden by subclasses."""
-        if not self._func:  # TODO: standardize, maybe FunctorMetaData
-            raise NotImplementedError(f"{cls_name(self)} missing logic.")
-        return self._func(target, *args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         """Instance-Level Execution & Delayed Binding"""
 
-        # NEXT: Phase 2 of CASE 3: We received @MyFunctor(kwargs), now we get the function
+        # NEXT: fix the different __call__
+        # AI_TASK: ensure that the hybrid workflow with _func still works
+
+        # Phase 2 of CASE 3: We received @MyFunctor(kwargs), now we get the function
         if getattr(self, "_func", None) is None:
             self._func = args[0]
             functools.update_wrapper(self, self._func)
             return self
 
+        # FIX: why apply? why here in BaseFunctor?
         return self.apply(args[0], *args[1:], **kwargs)
 
 
@@ -89,22 +92,22 @@ else:
 
 
 class SafeFunctorMixin[**Param, Result]:
+    # class SafeFunctorMixin[**Param, Result](_GhostFunctor):
     __call__: Callable  # NOTE: toggle this while implementing
+    """Protect the Execution, Hanldle Errors, everything able to customize"""
 
-    # IDEA: all relevant functions, inject in __init__ Or override, or defaults
-    # - here: catch
-
-    def __init__(
-        self,
-        catch: Callable[[Exception, Any], Result | None] | None = None,
-        error_policy: ErrorPolicy = ErrorPolicy.LOG_AND_CONTINUE,
-        exit_code: int = 1,
-        **kwargs,
-    ):
-        self.catch: Callable[[Exception, Any], Result | None] | None = catch
-        self.error_policy: ErrorPolicy = error_policy
-        self.exit_code: int = exit_code
-        super().__init__(**kwargs)
+    # WARN: the issue is somehow that 1 FunctorType may have multiple instances,
+    # - each with different requirements for policy or exit_code or catch
+    # def __init__(
+    #     self,
+    #     catch: Callable[[Exception, Any], Result | None] | None = None,
+    #     error_policy: ErrorPolicy = ErrorPolicy.LOG_AND_CONTINUE,
+    #     exit_code: int = 1,
+    #     **kwargs,):
+    #     self.catch: Callable[[Exception, Any], Result | None] | None = catch
+    #     self.error_policy: ErrorPolicy = error_policy
+    #     self.exit_code: int = exit_code
+    #     super().__init__(**kwargs)
 
     def safe(
         self, *args: Param.args, **kwargs: Param.kwargs
@@ -113,20 +116,29 @@ class SafeFunctorMixin[**Param, Result]:
         try:
             return self(*args, **kwargs)
         except Exception as error:
-            if self.catch:
-                return self.catch(error, *args, **kwargs)
+            # STRATEGY: either all to cls-dto, or directly to cls
+            if catch_func := self.__class__._data.catch:
+                return catch_func(self, error, *args, **kwargs)
             return self.on_error(error, *args, **kwargs)
 
-    def result(  # TODO: Needed? or just use __call__??
+    def result(
         self, *args: Param.args, **kwargs: Param.kwargs
     ) -> Result | NoReturn:
-        """Provide Result or Raise on None"""
+        # TODO: Needed? or just use __call__??
+        # - maybe some overload?
+        # - otherwise 1 small function here for more comfort is not bad
+        """Ensure Result or Raise"""
         if (result := self.safe(*args, **kwargs)) is None:
             raise RuntimeError("Nonething is impossible...")
         return result
 
     def on_error(self, error: Exception, *_, **__) -> Any | NoReturn:
         """Handle Function fail by Policy if Catch is not defined"""
+
+        # STRATEGY: either all to cls-dto, or directly to cls
+        policy = self.__class__._data.policy
+        exit_code = self.__class__._data.exit_code
+
         logger.critical(f"{self} failed: {error}")
 
         match self.error_policy:
@@ -146,11 +158,6 @@ if TYPE_CHECKING:
     _class: type[SafeFunctorial] = SafeFunctorMixin
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Extensions
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
 # MOVE: some assembly? (when everything is done...)
 class SafeFunctor[**P, R](SafeFunctorMixin[P, R], BaseFunctor[P, R]): ...
 
@@ -162,15 +169,12 @@ class Detect[In](Protocol):
     def __call__(self, target: object) -> TypeGuard[In]: ...
 
 
-class HybridFunctorMixin[In, Out, **P](_GhostFunctor):
+class HybridFunctorMixin[In, Out, **P]:
+    # class HybridFunctorMixin[In, Out, **P](_GhostFunctor):
+    _func: Callable[Concatenate[In, P], Out]  # NOTE: toggle if needed
+    emit: Callable
     """Dispatch only. Logic lives in _func / apply."""
 
-    # IDEA: all relevant functions, inject in __init__ Or override, or defaults
-    # - here:
-    #   - main: apply,wrap,delay
-    #   - why not: detect,reject
-
-    # _func: Callable[Concatenate[In, P], Out] # NOTE: toggle if needed
     detect: Detect[In]
 
     def detect(self, target: object) -> TypeGuard[In]:

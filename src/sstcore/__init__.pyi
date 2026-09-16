@@ -15,6 +15,7 @@ The Top Level Packages:
 - L4/󰉋 /system   # central of the sstcore
 - L3/󰉋 /util     # well organized helpers
 - L2/󰉋 /error    # exception and handlers
+  NEW  /forge    # compose and assemble
 - L1/󰉋 /brick    # universal building blocks
 - L0/󰉋 /port     # contracts and definitions
 

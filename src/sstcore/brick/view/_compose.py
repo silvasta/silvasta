@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Self, cast, overload
 
-from ...brick.forge.mix import combine_mixins
+from ...brick.forge.engine import combine_mixins
 from ...port.register import MixinRegister
 from ...port.shape import Composer
 from ._mixin import MixinSentinel
@@ -88,7 +88,8 @@ class ViewComposer[ViewBase: type]:
     ) -> Target:
         """Compose selected Mixins and Inject to new Subclass of Target"""
 
-        # AI: this method looks for example way to heavy for the registry,
+        # NEXT: functions like this could be placed in sstcore.forge._fragments
+        # TASK: this method looks for example way to heavy for the registry,
         # - maybe this method with others in a BuilderBox inside brick
         # - ViewComposer takes the functions from there and the mixins from registry
         if not (bases := combine_mixins(self.mixins, mixins, prepend=prepend)):
