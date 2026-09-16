@@ -16,15 +16,10 @@ __all__: list[str] = [
 
 from pathlib import Path
 
-from ...port.event.dto import (
-    LineDTO,
-    MarkdownDTO,
-    PanelDTO,
-    TableDTO,
-)
+from ...port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
 from ...port.view import Renderable
 from ..color import colorize
-from ..labor import convert, reflect
+from ..labor import reflect, transform
 
 
 class MarkdownMixin:
@@ -60,7 +55,7 @@ class PanelMixin:
     def _panel_data(self) -> Renderable | list[Renderable]:
         """Provide subhook for override custom panel data"""
         # FIX: Renderable
-        return convert.dict_to_list(data(self), sep=": ")
+        return transform.dict_to_list(data(self), sep=": ")
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(

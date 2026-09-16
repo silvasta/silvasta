@@ -17,6 +17,8 @@ ViewCatalog:
 - Rich : __rich__
 - Repr : __repr__
 - Log  : __log__
+                                                 DependencyLevel[4]
+                                                           labor(3)
 """
 
 __all__: list[str] = [
@@ -26,9 +28,8 @@ __all__: list[str] = [
     "Rich",
     "Repr",
     "Log",
-    # all enums
+    "catalog",  # TEST: which works better?
     #
-    # all mixins
     "ViewMixins",
     "cli",
     "str",
@@ -39,6 +40,8 @@ __all__: list[str] = [
 
 # TASK: dependency level, then check where to export in brick
 
+from types import SimpleNamespace
+
 from ._catalog import Cli, Log, Repr, Rich, Str, ViewMixins
 
 
@@ -48,3 +51,15 @@ class ViewCatalog:  # LATER: attach better
     Repr = Repr
     Rich = Rich
     Str = Str
+
+
+# TEST:
+catalog = SimpleNamespace(  # IMPORTANT: approach 2
+    # NOTE: first impression, typing completely gone...
+    # NamedTuple?
+    Cli=Cli,
+    Log=Log,
+    Repr=Repr,
+    Rich=Rich,
+    Str=Str,
+)

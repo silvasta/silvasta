@@ -1,7 +1,7 @@
 """
-Provide the Bricks for Descriptor Compositions
+Setup Minimal Components to Assemble individual Descriptors
 
--
+                                                 DependencyLevel[0]
 """
 
 __all__: list[str] = [
@@ -40,7 +40,9 @@ from ...port.attach import (
     WriteDescriptor,
 )
 from ...port.event.emit import Emit
-from ..format import clsname, reflect
+
+# IMPORTANT: cut???
+from ..labor import clsname, reflect
 
 
 class NamedField:

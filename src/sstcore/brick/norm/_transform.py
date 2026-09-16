@@ -15,8 +15,7 @@ __all__: list[str] = [
 
 from typing import Any
 
-# AI_QUESTION: this was the only module from format where I wasn't sure,
-# it a transfer from format into this module is absolutely justified...
+# NEXT: check -> Normalize
 
 
 def dict_to_list(data: dict[str, Any], sep="=") -> list[str]:
@@ -38,6 +37,7 @@ def dict_to_str(data: dict[str, Any], inner="=", outer=", ") -> str:
     return list_to_str(strings, sep=outer)
 
 
+# NOTE: Format?
 def impossible_brackets(key: str) -> str:  # INFO: don't loose this
     """Needed for proper {key}"""
     return f"{{{key}}}"

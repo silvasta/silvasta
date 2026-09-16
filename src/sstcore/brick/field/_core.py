@@ -1,7 +1,8 @@
 """
-Class attribute Fields
+Assemble the first level of composed Fields
 
-- Attach with Descriptor
+- Prepare for direct usage and be ready for further specicications
+                                                 DependencyLevel[1]
 """
 
 __all__: list[str] = [
@@ -20,10 +21,14 @@ from ...port.attach import (
     ValidDescriptor,
     WriteDescriptor,
 )
-from ..format import reflect
+
+# IMPORTANT: cut???
+from ..labor import reflect
 from ._base import ReadField, TypedField, WriteField
 
+# IMPORTANT: final split or changes?
 # TASK: try to condense, think again trough all combinations
+# - which of them are already redundant?
 
 
 class Injected[T](ReadField[T], TypedField[T]):  # TODO: better name
@@ -52,11 +57,13 @@ class Collected[T](WriteField, ReadField[T]):  # TODO: better name
     """
 
     def __init__(self, *args, loader: FieldLoader, **kwargs) -> None:
+        # FIX: FieldLoader
         self.loader: FieldLoader = loader
         super().__init__(*args, **kwargs)
 
     def read(self, unit: object) -> T:
         if not self._has_val(unit):
+            # FIX: loader
             self.write(unit, value=self.loader(unit))
         return super().read(unit)
 

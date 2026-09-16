@@ -32,7 +32,7 @@ from enum import Enum, auto
 from ...port.calling import LogStringable, Richable, Stringable
 from ...port.event import CliRenderable, LogSerializable
 from ...port.view import Renderable
-from ..format import clsname
+from ..labor import clsname
 from ..none import ViewSentinel
 from . import _cli as cli
 from . import _log as log

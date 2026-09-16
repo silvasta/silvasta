@@ -32,7 +32,7 @@ from ...port.register import (
     InsertPolicy,
 )
 from ..field._base import PolicyField
-from ..vault._base import BaseRegistry
+from ._base import BaseRegistry
 
 
 @dataclass

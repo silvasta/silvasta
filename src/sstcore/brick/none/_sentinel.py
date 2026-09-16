@@ -23,8 +23,6 @@ from ...port.event.dto import CliDTO, LogDTO
 class ViewSentinel:
     """Imitate ViewMixin to replace None in View selection pipeline"""
 
-    # NOTE: what about __str|repr__?
-
     def __cli__(self) -> CliDTO:
         raise NotImplementedError
 

@@ -2,8 +2,9 @@
 Provide the Bricks for Descriptor Compositions
 
 - Transition from State to State
-
+                                                 DependencyLevel[1]
 """
+
 # TASK: state for bisect transition? or something similar, at least with Enums
 
 __all__: list[str] = [

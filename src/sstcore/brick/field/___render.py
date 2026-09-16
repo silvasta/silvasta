@@ -1,7 +1,7 @@
 """
 EXAMPLE - with the idea to build the t-string or even printer machine
 
-...
+...                                                 ...
 """
 
 from enum import Enum

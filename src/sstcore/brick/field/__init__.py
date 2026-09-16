@@ -2,6 +2,8 @@
 Class attribute Fields
 
 - Attach with Descriptor
+                                                 DependencyLevel[1]
+                                                           labor(0)
 """
 
 __all__: list[str] = [

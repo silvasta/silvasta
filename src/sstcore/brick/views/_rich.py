@@ -12,20 +12,20 @@ __all__: list[str] = [
 ]
 
 
-from ...brick.color import colorize
-from ...brick.color.box import Colors
-from ...brick.format import reflect
 from ...port.color import ColorBox
 from ...port.view import Renderable
+from ..color import colorize
+from ..color.box import Colors
+from ..labor import reflect
 
-colors: ColorBox = Colors()  # ty:ignore
+colors: ColorBox = Colors()
 
 
 class SimpleRichNameMixin:
     """Show colorized class name"""
 
     def __rich__(self) -> Renderable:
-        return colors(reflect.clsname(self), 3)  # NEXT: color not hardcoded!!
+        return colors(reflect.clsname(self), 3)
 
 
 class RichNameMixin:
@@ -38,7 +38,7 @@ class RichNameMixin:
     """
 
     def __rich__(self) -> str:
-        return f"{reflect.clsname(self)}[{reflect.name(self)}]"  # NEXT: color MISSING!!
+        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
 
 
 class RichModuleNameMixin:

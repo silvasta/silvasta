@@ -11,7 +11,7 @@ __all__: list[str] = [
     "ModuleNameMixin",
 ]
 
-from ...brick.format import clsname, reflect
+from ..labor import clsname, reflect
 
 
 class SimpleNameMixin:

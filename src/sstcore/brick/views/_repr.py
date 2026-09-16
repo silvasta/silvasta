@@ -10,7 +10,7 @@ __all__: list[str] = [
     "FullReprMixin",
 ]
 
-from ..labor import clsname, convert, reflect
+from ..labor import clsname, reflect, transform
 
 
 class ReprMixin:
@@ -19,7 +19,7 @@ class ReprMixin:
     @property
     def _repr_box_text(self):
         """Provide subhook for override __repr__ [box text]"""
-        return convert.dict_to_str(reflect.pydatic(self))
+        return transform.dict_to_str(reflect.pydatic(self))
 
     def __repr__(self) -> str:
         return f"{clsname(self)}[{self._repr_box_text}]"
@@ -29,11 +29,13 @@ class ReprDataMixin:
     """Show all public attributes"""
 
     def __repr__(self) -> str:
-        return f"{clsname(self)}({convert.dict_to_str(reflect.pydatic(self))})"
+        return (
+            f"{clsname(self)}({transform.dict_to_str(reflect.pydatic(self))})"
+        )
 
 
 class FullReprMixin:
     """Show all attributes"""
 
     def __repr__(self) -> str:
-        return f"{clsname(self)}({convert.dict_to_str(vars(self))})"
+        return f"{clsname(self)}({transform.dict_to_str(vars(self))})"

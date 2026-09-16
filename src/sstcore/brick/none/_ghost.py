@@ -9,6 +9,18 @@ The Idea:
   - instead (hiddenly) replace the class by the Ghost
   -> enjoy full typing with zero runtime effect
 
+Current Experience:
+
+It can help quite well, instead of duck typing with protocols or
+annotations it just does everything desired. Still, the issue
+when the type checker gets scared due to a later on composition...
+
+It is still a Ghost, nice until it starts to do strange things..
+
+Recommendation, prepare it as toggle (# with comment) and overall,
+it will save time and it is harmless at runtime, but mocking the
+type checker to hard is not recommended.
+
 """
 
 __all__: list[str] = [
@@ -30,10 +42,14 @@ class _GhostBaseEradicator:
 Ghost = _GhostBaseEradicator()
 
 
+#  LINE: -- Example -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 def example_pipeline():
     """Show the type check mock workflow"""
 
     # LATER: inject printer and show colorized MRO tables
+    # NEXT: move to examples and use the printer there...
 
     class BaseClass:
         def base_method(self) -> None: ...

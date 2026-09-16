@@ -7,6 +7,8 @@ Implement the Variations and Extensions of the Core Registry
 Info:
   - Register: Protocol definition, check and fulfill the Shape
   - Registry: Implementation approaches -> derive further
+                                                 DependencyLevel[1]
+                                                           field(0)
 """
 
 __all__: list[str] = [
@@ -14,12 +16,11 @@ __all__: list[str] = [
     "FilterRegistry",
     "DictRegistry",
     "TupleRegistry",
+    "BisectRegistry",
 ]
 
-# NEXT: BisectRegistry
 
-# LATER: FunctorRegistry
-
+from ._bisect import BisectRegistry
 from ._dict import DictRegistry
 from ._extras import FilterRegistry
 from ._list import ListRegistry
