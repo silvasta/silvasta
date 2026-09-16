@@ -16,18 +16,18 @@ __all__: list[str] = [
 from collections.abc import Callable
 from typing import Any
 
-from ....port.call import ClassRendering
+from ....brick.color._arg import resolve_color
+from ....brick.color.box import Colors
+from ....brick.labor import clsname, just_return
+from ....port.calling import ClassRendering
 from ....port.color import Color, ColorIdentifier
 from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
-from ...color._arg import resolve_color
-from ...color.box import Colors
-from ...format import clsname, reflect
 
 colors = Colors()  # LATER: resolve this somehows
 
 
 class SstMetaData:
-    """Level 0 DTO"""
+    """Level 0 Mdto"""
 
     color: Color
 
@@ -86,14 +86,14 @@ class MetaViewData(SstMetaData):
         self.name: ClassRendering = (
             name
             if isinstance(name, ClassRendering)
-            else reflect.just_return(constant=name)
+            else just_return(constant=name)
             if name
             else self._default_name
         )
         self.rich: ClassRendering = (
             rich
             if isinstance(rich, ClassRendering)
-            else reflect.just_return(constant=rich)
+            else just_return(constant=rich)
             if rich
             else self._default_rich
         )
@@ -111,6 +111,8 @@ class MetaViewData(SstMetaData):
         return colors(cls, self.color)
 
     def _default_cli_loader(self, content: str) -> CliDtoCreator:
+        """Produce Views for the MetaVievBase"""
+
         def _default_cli(cls) -> CliDTO:
             return PanelDTO(
                 content=content or list(cls.toolkit()),
@@ -121,7 +123,7 @@ class MetaViewData(SstMetaData):
         return _default_cli
 
 
-class MetaViewBase(SstMeta):
+class MetaViewBase(SstMeta):  # WARN: base works now but don't overmix it...!
     """Provide all Views for Classes"""
 
     _data_class: type[MetaViewData] = MetaViewData
@@ -143,6 +145,12 @@ class MetaViewBase(SstMeta):
         cls._data = data or mcs._data_class()
 
         return cls
+
+    # AI:_QUESTION: why use _data after __new__ / during entire process?
+    # - not that it should be deleted, but what is the issue with attach?
+    # - meaning that the functions get transfered to the class in __new__
+    # what about some kind of descriptor? is that possible for (meta-)classees?
+    # -> that would allow same control as if one would modify _data
 
     def __cli__(cls) -> CliDTO:
         return cls._data.cli(cls)

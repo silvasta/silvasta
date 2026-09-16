@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, TypeGuard
 
 from loguru import logger
 
+from ....brick.format import clsname
 from ....port.functor import ErrorPolicy
 from ....port.shape import Meta, MetaData
-from ...format import clsname
 from ._base import MetaViewBase, MetaViewData
 
 

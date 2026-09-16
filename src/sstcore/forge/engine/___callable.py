@@ -11,6 +11,8 @@ FunctorMetaData
   - hybrid flag + overridable apply/wrap/delay/detect/reject/__call__
 """
 
+from sstcore.port.calling import Richable
+
 __all__: list[str] = [
     "FunctorMeta",
     "FunctorMetaData",
@@ -118,22 +120,22 @@ class FunctorMeta(type):
     def __cli__(cls) -> CliDTO:
         return cls._data.cli(cls)
 
-    def __str__(cls) -> str:
-        return cls._data.name(cls)
-
-    def __rich__(cls) -> str:
-        return cls._data.rich(cls)
-
-    def __repr__(cls) -> str:
-        kind = "Hybrid" if cls._data.hybrid else "Functor"
-        return f"{kind}[{cls.__name__}]"
-
     def __log__(cls) -> LogDTO:
         return LogDTO(
             message=str(cls),
             level="INFO",
             extra={"kind": "hybrid" if cls._data.hybrid else "simple"},
         )
+
+    def __repr__(cls) -> str:
+        kind = "Hybrid" if cls._data.hybrid else "Functor"
+        return f"{kind}[{cls.__name__}]"
+
+    def __str__(cls) -> str:
+        return cls._data.name(cls)
+
+    def __rich__(cls) -> Richable:
+        return cls._data.rich(cls)
 
 
 class FunctorMetaData:
