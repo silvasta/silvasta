@@ -1,7 +1,8 @@
 """
 print
 
-                                                 DependencyLevel[5]
+                                                 DependencyLevel[6]
+                                                            view(5)
 """
 
 __all__: list[str] = [
@@ -14,15 +15,18 @@ __all__: list[str] = [
 ]
 
 
+# TASK: finish printer
+
 from enum import Enum, auto
 from string import Template
 from typing import Any, Literal, Required, TypedDict, Unpack
 from typing import Protocol as Protocol
 
-from .call import RichRendering
+from .calling import Richable
 from .color import ColorBox, ColorIdentifier
 from .config import ProjectInformation
-from .event.dto import CliDTO, Renderable
+from .event.dto import CliDTO
+from .view import Renderable
 
 
 class PrintSpec(TypedDict, total=False):
@@ -116,8 +120,8 @@ class ColorPrint(Protocol):
 
 
 class CorePrint(Protocol):
-    def render(self, target: CliDTO, **kwargs) -> RichRendering: ...
-    def display(self, target: CliDTO, **kwargs) -> RichRendering: ...
+    def render(self, target: CliDTO, **kwargs) -> Richable: ...
+    def display(self, target: CliDTO, **kwargs) -> Richable: ...
 
 
 class LayoutPrint(Protocol):

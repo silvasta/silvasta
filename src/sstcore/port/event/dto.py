@@ -4,9 +4,12 @@ Define the Event DTOs for Log and Print
 - LogDTO  Intended for __log__ and processed by Loguru.logger
 - CliDTO: Intended for __cli__ and processed by printer
 
-                                                 DependencyLevel[2]
+Rendering Protocols with Runtime check
+- LogSerializable
+- CliRenderable
+                                                 DependencyLevel[0]
+                                                 (inside event)
 """
-# TASK: filter out the to much render information
 
 __all__: list[str] = [
     "CliDtoCreator",
@@ -18,87 +21,82 @@ __all__: list[str] = [
     "PanelDTO",
     "TableDTO",
     # views
-    "LogSerializable",  # __log__
-    "LogSerializable",  # __log__
-    "Renderable",
+    "LogSerializable",
+    "CliRenderable",
 ]
 
-from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol, runtime_checkable
+from dataclasses import dataclass as _dataclass
+from dataclasses import field as _field
+from typing import Any as _Any
+from typing import Literal as _Literal
+from typing import Protocol as _Protocol
+from typing import runtime_checkable as _runtime_checkable
 
-from ..call import RichRendering
-from ..color import Color, ColorIdentifier
+from ..calling import Richable as _Richable
+from ..color import Color as _Color
+from ..color import ColorIdentifier as _ColorIdentifier
 
-_AlignMethod = Literal["left", "center", "right"]
+type _Renderable = str | CliRenderable | _Richable
 
-type Renderable = str | CliRenderable | RichRendering
-
-
-@runtime_checkable
-class CliRenderable(Protocol):
-    def __cli__(self) -> CliDTO: ...
-
-
-@runtime_checkable
-class LogSerializable(Protocol):
-    def __log__(self) -> LogDTO: ...
+_AlignMethod = _Literal["left", "center", "right"]
 
 
-@dataclass
+@_dataclass
 class LogDTO:
     """Main (and only) Member of the Log Pipeline"""
 
     message: str
     level: str = "INFO"
-    metrics: dict[str, Any] = field(default_factory=dict)
-    extra: dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, _Any] = _field(default_factory=dict)
+    extra: dict[str, _Any] = _field(default_factory=dict)
 
 
-@runtime_checkable
-class CliDtoCreator(Protocol):
+@_runtime_checkable
+class CliDtoCreator(_Protocol):
     """Produce Views for the StaticFuncMeta"""
 
     def __call__(self, cls: type) -> CliDTO: ...
 
 
-@dataclass
-class CliDTO[ContenT: Renderable | list[Renderable]]:
+# TASK: filter out the to much render information
+@_dataclass
+class CliDTO[ContenT: _Renderable | list[_Renderable]]:
     """Root of the Cli Pipeline"""
 
     content: ContenT
-    color: ColorIdentifier = Color.AZURE
+    color: _ColorIdentifier = _Color.AZURE
     indent: int = 0
-    meta: dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, _Any] = _field(default_factory=dict)
 
 
-@dataclass(kw_only=True)
-class PanelDTO(CliDTO[Renderable | list[Renderable]]):
+@_dataclass(kw_only=True)
+class PanelDTO(CliDTO[_Renderable | list[_Renderable]]):
     # TODO: assemble stack with color+attribute
     color: str = "bold white"
-    frame: str = Color(value=2).name
+    frame: str = _Color(value=2).name
     title: str | None = None
     # TASK: filter out the to much render information
     title_align: _AlignMethod = "right"
     expand: bool = True
     padding: tuple = (0, 1)
-    metrics: dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, _Any] = _field(default_factory=dict)
 
 
-@dataclass(kw_only=True)
+@_dataclass(kw_only=True)
 class MarkdownDTO(CliDTO):
     header: int = 0
 
 
-@dataclass(kw_only=True)
+@_dataclass(kw_only=True)
 class LineDTO(CliDTO): ...
 
 
-@dataclass(kw_only=True)
-class GroupDTO(CliDTO[list[Renderable]]):
+@_dataclass(kw_only=True)
+class GroupDTO(CliDTO[list[_Renderable]]):
     """Stack multiple renderable Views"""
 
 
-@dataclass(kw_only=True)
+@_dataclass(kw_only=True)
 class TableDTO(CliDTO):
     """
     Store Table Data as List of Rows containing Lists of Values
@@ -110,7 +108,22 @@ class TableDTO(CliDTO):
 
     """
 
-    content: list[list[Any]]
-    col_names: list[str] = field(default_factory=list)
-    row_names: list[str] = field(default_factory=list)
+    # TASK: filter out the to much render information
+
+    content: list[list[_Any]]
+    col_names: list[str] = _field(default_factory=list)
+    row_names: list[str] = _field(default_factory=list)
     corner: str = ""
+
+
+#  LINE: -- RenderProtocols with Runtime check -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@_runtime_checkable
+class CliRenderable(_Protocol):
+    def __cli__(self) -> CliDTO: ...
+
+
+@_runtime_checkable
+class LogSerializable(_Protocol):
+    def __log__(self) -> LogDTO: ...

@@ -16,8 +16,7 @@ Extensions:
 - TODO: Hybrid
 
                                                  DependencyLevel[0]
-                                                 - NEW: (maybe)
-                                                   - .attach
+                                                   (soon) attach(1)
 """
 
 from collections.abc import Callable

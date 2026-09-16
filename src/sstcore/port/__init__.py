@@ -11,9 +11,8 @@ Purpose:
                                                  DependencyLevel[0]
 """  # TODO: doc
 
-# IMPORTANT: make this work again
-# __all__: list[str] = [
-#     "System",
-#     "SstSystem",
-#     "CliSystem", ]
-# from .system import CliSystem, SstSystem, System
+__all__: list[str] = [  # IMPORTANT: make this work again
+    "System",
+    "SstSystem",
+]
+from .system import SstSystem, System

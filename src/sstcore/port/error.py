@@ -14,7 +14,7 @@ __all__: list[str] = [
 ]
 
 # IMPORTANT::
-# STRATEGY: ideas
+# STRATEGY: prepare system that evolves from and after here
 # - subclass detection
 # - ghost color box
 # ...

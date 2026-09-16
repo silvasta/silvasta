@@ -1,10 +1,10 @@
 """
 Define the Shape of the Core Registry
 
-- 1 Interface for Any type of Items
- -> Make Data handling independant
+- 1 Interface for Any type of Vaults -> enable independent data handling
 
                                                  DependencyLevel[2]
+                                                        - filter(1)
 """
 
 __all__: list[str] = [
@@ -27,12 +27,24 @@ __all__: list[str] = [
 
 from collections.abc import Callable, Iterator
 from enum import Enum, auto
+
+# TODO:
 from typing import Any, NoReturn, Protocol, Self, overload
 
 from .attach import LazyDescriptor, PolicyEnum
 from .filter import Filter
 
 type Vaults = list | tuple | dict
+
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# TASK: finish this, especially mixin
+# - base
+# - dict
+# - tuple/list
+# - bisec
 
 
 class Registry[Vault: Vaults, Item, Key](Protocol):

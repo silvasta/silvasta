@@ -1,8 +1,7 @@
 """
-Define the Shape of Descripors
+Define the Descriptors Shape
 
 - Attach attributes to Classes
-
                                                  DependencyLevel[0]
 """
 
@@ -25,11 +24,14 @@ __all__: list[str] = [
     "ConfigDescriptor",
 ]
 
-from collections.abc import Callable
+from collections.abc import Callable as _Callable
+
+# TODO:
 from typing import Any, Protocol, Self, overload
 
+# REFACTOR: clean typing here...
 type Types[T] = type[T] | tuple[type, ...]
-type FieldLoader[T] = Callable[[], T]
+type FieldLoader[T] = _Callable[[], T]
 
 
 class DescriptorBase(Protocol):

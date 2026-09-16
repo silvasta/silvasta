@@ -16,6 +16,7 @@ Future Ideas:
 
 
                                                  DependencyLevel[3]
+                                                        register(2)
 """
 
 __all__: list[str] = [
@@ -39,7 +40,7 @@ __all__: list[str] = [
 from enum import auto
 from typing import NamedTuple, Protocol, Self, runtime_checkable
 
-from .call import Colorizing, Stringable
+from .calling import Colorizing, Stringable
 from .register import Index
 
 

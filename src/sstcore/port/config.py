@@ -23,7 +23,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Protocol, Self
 
-from .call import Stringable
+from .calling import Stringable
 
 
 class ProjectInformation(Protocol):

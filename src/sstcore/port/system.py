@@ -9,8 +9,8 @@ Combine Boot, Interface and Distribution:
 - Printer: Nice UX and DX
 
 System: The sst Director
-
-                                                 DependencyLevel[6]
+                                                 DependencyLevel[7]
+                                                         printer(6)
 """
 
 __all__: list[str] = [

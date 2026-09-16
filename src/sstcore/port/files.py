@@ -2,6 +2,9 @@
 How to track Files with composed Registries?
 
                                                  DependencyLevel[3]
+                                                         scanner(2)
+                                                        register(2)
+                                                          filter(1)
 """
 
 __all__: list[str] = [
