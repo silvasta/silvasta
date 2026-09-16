@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Self
 from dotenv import load_dotenv
 from loguru import logger
 
-from ...brick.format import cls_name
+from ...brick.format import clsname
 from ...brick.format.time import day_count
 from ...port.config import (
     Config,
@@ -113,11 +113,11 @@ class ConfigManager:
         raise ValueError(f"Missing {key=} in os.env despite loaded .env")
 
     def __str__(self) -> str:  # TODO: apply utils.view
-        return cls_name(self)
+        return clsname(self)
 
     def __repr__(self) -> str:  # TODO: apply utils.view
         members: list = [self.settings, self.paths, self.defaults, self.names]
-        return f"{self}[{', '.join(cls_name(m) for m in members)}]"
+        return f"{self}[{', '.join(clsname(m) for m in members)}]"
 
     @classmethod
     def bootstrap(

@@ -6,7 +6,7 @@ Build the Functor for the Exception handling
 
 from sstcore.port.functor import ErrorPolicy
 
-from ...bricks.format import cls_name
+from ...bricks.format import clsname
 
 __all__: list[str] = [
     "ErrorHandler",
@@ -31,7 +31,7 @@ class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
 
     @property
     def _inside_brackets(self) -> str:
-        return cls_name(target=self.exception_type)
+        return clsname(target=self.exception_type)
 
     @classmethod
     def from_func(

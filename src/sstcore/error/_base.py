@@ -82,7 +82,7 @@ class SstError(Error):  # IMPORTANT: check intermediate Error steps
         scroll_for_error_that_caused_this_error: list[Renderable] = []
         if reraised_error := (self.__cause__ or self.__context__):
             scroll_for_error_that_caused_this_error += [
-                f"{c.r('ReRaised')} {c.r(cls_name(reraised_error))}",
+                f"{c.r('ReRaised')} {c.r(clsname(reraised_error))}",
                 f"{reraised_error}",
             ]
         return scroll_for_error_that_caused_this_error

@@ -15,7 +15,7 @@ __all__: list[str] = [
 import fnmatch
 from functools import lru_cache
 
-from ...brick.format import cls_name
+from ...brick.format import clsname
 from ...port.event import BusRegistration, Event, EventHandler
 from ...port.event import EventBus as EventBus_
 from ...port.event.name import CoreEvent, EventName, EventPattern
@@ -57,7 +57,7 @@ class EventBus:
         return len(self._global_subscribers)
 
     def __str__(self) -> str:
-        return cls_name(self)
+        return clsname(self)
 
     def __repr__(self) -> str:
         return f"{self}(  {self.n_global_handler} 󰌌 {self.n_handler} 󰍹 )"
