@@ -51,13 +51,6 @@ class LogDTO:
     extra: dict[str, _Any] = _field(default_factory=dict)
 
 
-@_runtime_checkable
-class CliDtoCreator(_Protocol):
-    """Produce Views for the StaticFuncMeta"""
-
-    def __call__(self, cls: type) -> CliDTO: ...
-
-
 # TASK: filter out the to much render information
 @_dataclass
 class CliDTO[ContenT: _Renderable | list[_Renderable]]:
@@ -67,6 +60,14 @@ class CliDTO[ContenT: _Renderable | list[_Renderable]]:
     color: _ColorIdentifier = _Color.AZURE
     indent: int = 0
     meta: dict[str, _Any] = _field(default_factory=dict)
+
+
+@_runtime_checkable
+class CliDtoCreator(_Protocol):
+    """Annotate the ability to launch CliDTO units"""
+
+    def __call__(self, cls: type) -> CliDTO:
+        """Produce DTO for... only cls? or general? dispatch?"""
 
 
 @_dataclass(kw_only=True)

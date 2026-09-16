@@ -8,15 +8,20 @@ __all__: list[str] = [
     "ClassRendering",
     "Stacking",
     # views
-    "LogStringable",  # __repr__
-    "Stringable",  # __str__
+    "LogStringable",
+    "Stringable",
     # adapter
-    "Richable",  # str or __rich__ or __rich_console__
-    "RichView",  # __rich__
+    "Richable",
+    "RichView",
     "PydanticModel",
 ]
 
 from typing import Any, Protocol, runtime_checkable
+
+# IDEA: annotate, annotating, type, typing
+# - as soon as a split makes sense
+
+#  LINE: -- annotate custom -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @runtime_checkable
@@ -27,6 +32,7 @@ class ClassRendering(Protocol):
 
 @runtime_checkable
 class Stacking(Protocol):
+    # NEXT: colorbox and more
     def __getattr__(self, name: str) -> Stacking:
         """Stack Attributes on top of each other by attribute calls"""
 
@@ -37,12 +43,17 @@ class Colorizing(Protocol):
     # - Sanitizing:Stringable->str (Formatting)
     # - Sanitizing:Any->Stringable (Sanitizing)
     # - Sanitizing:Any->str (Stringing)
+    # NOTE: why not:
+    # - Colorize
+    # - Sanitize
+    # - Normalize
     def __call__(self, text: Stringable) -> str:
         """Forward text-like object after processing and ensuring string"""
 
 
 @runtime_checkable
 class Listening[T](Protocol):
+    # REMOVE: ?
     def __call__(self, target: T) -> T:
         """Forward target after routing and inspection"""
 

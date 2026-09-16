@@ -13,26 +13,27 @@ Meta - Home: brick.forge.blueprint
 - MetaData: InputSpace DTO (and Guard?)
   - MetaInput: name for class specific implementation
 - Local Module: _meta (if ever needed again, the dto collapsed everything)
+- Local Package: blueprint
 
 ---
 
 Class - Home: brick.forge.mix
 
-- Composer: Assemble the Mixins
+- Composer: Assemble the Mixins # NEXT: Builder???
 - Methods:
   - mix: dispatch composition
     - build: compose new class from mixins and bases
     - inject: compose and inject to existing class
 - Local Module: _compose
+- Local Package: build # IDEA: SWAP WITH COMPOSE????
 
 - Injector: Compose and sit on Functions and Classes
   Method: __call__,
   Module: _inject
 
-- Writer: read the manual and write the stub file
+- Typer: read the manual and write the stub file
 - Methods:
-  - draw|print: release the final stub file
-    maybe others, generate, display, validate,...
+  - sketch: draw, validate, display, write
 
 ---
 
@@ -81,7 +82,7 @@ __all__: list[str] = [
     "MetaData",
     "Composer",
     "Injector",
-    "StubWriter",  # TODO:
+    "Typer",  # TODO:
     "Factory",
 ]
 
@@ -159,7 +160,7 @@ class Injector[BaseT: type](Protocol):  # NEXT: injector finish!
         """Update existing Mixin selection"""
 
 
-class StubWriter(Protocol):  # IMPORTANT: generate stubs
+class Typer(Protocol):  # IMPORTANT: generate stubs
     # TASK: as soon as AST scanner ready:
     # - read and understand the composer process
     #   - the mixins that come in, especially the protocols!
@@ -169,7 +170,8 @@ class StubWriter(Protocol):  # IMPORTANT: generate stubs
     # - Validation?
     """Supply the Static Type Checker with Information"""
 
-    def draw(self):
+    def sketch(self):
+        # TODO: sketch: draw, validate, display, write
         """Write .pyi for selected Mixins"""
 
 
