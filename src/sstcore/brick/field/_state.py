@@ -8,17 +8,65 @@ Provide the Bricks for Descriptor Compositions
 # TASK: state for bisect transition? or something similar, at least with Enums
 
 __all__: list[str] = [
+    "PolicyField",
+    #
     "TransitionField",
     "StateField",
 ]
 
+from collections.abc import Callable
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from ...port.attach import Transition
-from ._base import ReadField, ResetField, TypedField
+from ...port import attach
+from ...port.attach import PolicyEnum, Transition
+from ._base import ReadField
+from ._specify import ResetField, TypedField
 
 type NodeIdentifier = TransitionGraph | str | int
+
+
+class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
+    """Implement Policy and Execution Logic"""
+
+    def __init__(
+        self,
+        enum_type: type[EnumT],
+        *args,
+        match_func: Callable | None = None,  # LATER: specify or sync with port
+        **kwargs,
+    ):
+        self.enum_type: type[EnumT] = enum_type
+        self.match_func: Callable | None = match_func
+        super().__init__(*args, **kwargs)
+
+    def validate(self, unit: object, value: EnumT) -> EnumT:
+        # IDEA: check if there is a valid match_func or override already here?
+        # -> otherwise, forward enum_type as types=enum_type in __init__
+        raise NotImplementedError
+
+    def match(self, policy: PolicyEnum, unit: object, *args, **kwargs):
+        """Inject or Override"""
+        # TODO: compare with execute, what is needed??
+        if self.match_func:
+            return self.match_func(policy, unit, *args, **kwargs)
+        raise NotImplementedError(f"No Match Policy defined: {self.enum_type}")
+
+    def execute(self, unit, *args, **kwargs):
+        # TODO: why not just self.read? or self._get_val?
+        # - if needed, mix ReadField again here
+        current_state = getattr(unit, self.private_name)
+        return self.match(current_state, unit, *args, **kwargs)
+
+
+class PolicyField[EnumT: PolicyEnum](PolicyFieldEngine, ReadField):
+    """Assemble PolicyEngine with Default Read"""
+
+
+if TYPE_CHECKING:
+    _policy: type[attach.PolicyDescriptor] = PolicyField
+
+#  LINE: -- State (UNCOMPLETED) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 # MOVE: ArgCast
@@ -34,6 +82,7 @@ def normalize(node_guess: NodeIdentifier | Any) -> TransitionGraph:
             raise ValueError(f"Unrecognized type: {type(node_guess)}")
 
 
+# MOVE: port, when actually implemented
 class TransitionGraph(Enum):
     def path_exisit(self, target: NodeIdentifier) -> bool:
         raise NotImplementedError(t"Path from self -> {target}")
@@ -49,14 +98,14 @@ def get_action[T](unit: object, current: T, next: T) -> Any:
     raise NotImplementedError
 
 
-# REMOVE: 1 class is enough
+# REMOVE: 1 class is probably enough, or make better split
 class TransitionField[T: Enum](TypedField[T], ResetField[T]):
     def __init__(self, *args, transfer: Transition[T], **kwargs) -> None:
         self.transfer: Transition[T] = transfer
         super().__init__(*args, **kwargs)
 
     def raise_on_transition(self, unit: object, current: T, next: T) -> T:
-        cls_attr: str = self._cls_attr_name(unit)
+        cls_attr: str = self.name(unit)
         states = f"({current},{next})"
         raise RuntimeError(f"Failed transfer for {cls_attr}: {states}")
 
@@ -65,6 +114,9 @@ class TransitionField[T: Enum](TypedField[T], ResetField[T]):
     ) -> Any:  # FIX: later
         """Implement rigid state-machine rules here"""
         return self.transfer(unit, current, next, action=action)
+
+
+# IMPORTANT: wire this again from scratch, but collect ideas here
 
 
 class StateField[T: TransitionGraph](TransitionField[T], ReadField):
@@ -97,3 +149,8 @@ class StateField[T: TransitionGraph](TransitionField[T], ReadField):
                 return
             case _:
                 self.raise_on_transition(unit, current, next)
+
+
+if TYPE_CHECKING:
+    _policy: type[attach.StateDescriptor] = StateField
+    _policy: type[attach.TransitionDescriptor] = TransitionField
