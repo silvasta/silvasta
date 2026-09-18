@@ -5,6 +5,7 @@ Funtcions, Callables and Checks
 """
 
 __all__: list[str] = [
+    "Calling",
     "ClassRendering",
     "Stacking",
     # views
@@ -16,12 +17,17 @@ __all__: list[str] = [
     "PydanticModel",
 ]
 
+from collections.abc import Callable as _Callable
 from typing import Any, Protocol, runtime_checkable
 
-# IDEA: annotate, annotating, type, typing
-# - as soon as a split makes sense
 
-#  LINE: -- annotate custom -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class Calling[**In, Out](Protocol):
+    @property
+    def __name__(self) -> str: ...
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out: ...
+
+
+_test: _Callable = Calling
 
 
 @runtime_checkable
@@ -31,8 +37,7 @@ class ClassRendering(Protocol):
 
 
 @runtime_checkable
-class Stacking(Protocol):
-    # NEXT: colorbox and more
+class Stacking(Protocol):  # NEXT: colorbox and more
     def __getattr__(self, name: str) -> Stacking:
         """Stack Attributes on top of each other by attribute calls"""
 
