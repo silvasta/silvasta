@@ -9,7 +9,7 @@ Provide Namespace for Exceptions before SstError is ready
 """
 
 __all__: list[str] = [
-    "SstError",
+    "SstCoreError",
     "FailedHackError",
 ]
 
@@ -20,8 +20,8 @@ __all__: list[str] = [
 # ...
 
 
-class SstError(Exception):
-    """Match and Catch all Level < 2 Errors"""
+class SstCoreError(Exception):
+    """Match and Catch all Errors on Global DependencyLevel[2]"""
 
     def __init__(self, *args) -> None:
         """Forward Args to Exception"""

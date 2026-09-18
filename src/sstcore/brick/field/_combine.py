@@ -78,6 +78,7 @@ class Forward[T](ReadField[T]):  # NOTE: this name is perfect
     """
 
     def __init__(self, target_attr: str, method_name: str):
+        # FIX:
         self.target_attr: str = target_attr
         self.method_name: str = method_name
         # AI: no forward by super here right?

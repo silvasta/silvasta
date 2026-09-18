@@ -22,6 +22,8 @@ from typing import Any, Protocol, runtime_checkable
 
 
 class Calling[**In, Out](Protocol):
+    __doc__: str | None  # CHECK: any value from that?
+
     @property
     def __name__(self) -> str: ...
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out: ...

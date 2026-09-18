@@ -13,8 +13,6 @@ Format and Parse Names in both directions
                                                        DependencyLevel[1]
 """
 
-from sstcore.util.print._mixins import NormalizeMixin
-
 __all__: list[str] = [
     "NamePattern",
     "FormatNormalizer",
@@ -31,13 +29,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
 from ....error import NotImplementedDispatchError  # WARN: dependency violation
+from ....port import process
 from ...none import Ghost
 from ._base import BaseName as _BaseName
 
 
 class NamePattern(_BaseName):
-    """Compile the Pattern, format and parse Keys and Names"""
-
     def __init__(
         self,
         pattern: str,
@@ -72,25 +69,21 @@ class NamePattern(_BaseName):
         return re.compile("".join(regex_parts)), tuple(keys)
 
     def update_pattern(self, pattern: str) -> None:
-        """Mutates state using the pure compiler."""
         self._regex, self.keys = self._compile_pattern(pattern)
         self.pattern = pattern
 
     def format(self, keys: dict[str, str]) -> str:
-        """Format string with keywords and pattern"""
         if missing := set(self.keys) - set(keys.keys()):
             raise ValueError(f"{self} Missing keys: {missing}")
         return self.pattern.format(**keys)
 
     def extract(self, name: str) -> dict[str, str]:
-        """Extract keywords from string or Raise"""  # LATER: safe mode with -> None
         if match := self._regex.match(name):
             return match.groupdict()
         raise ValueError(f"No match for {self}: {name}")
 
 
-#  MOVE: to normalize?
-class FormatNormalizer(NamePattern):
+class FormatNormalizer(NamePattern):  #  MOVE: to normalize?
     """Check keys and pre-format datetimes"""
 
     def normalize_keys(
@@ -113,18 +106,12 @@ class FormatNormalizer(NamePattern):
         }
 
     def format(self, keys: dict | list | tuple) -> str:
-        """Render normalized keywords"""
         keys: dict[str, str] = self.normalize_keys(keys)
         return super().format(keys)
 
 
-#  MOVE: to normalize?
-class ExtractNormalizer(NamePattern):
-    """Extract from String or Path"""
-
+class ExtractNormalizer(NamePattern):  #  MOVE: to normalize?
     def normalize_name(self, target: Path | str) -> str:
-        """Normalize type and strip PathGuard increments"""
-
         name: str = (  # resolve Path to string
             target
             if not isinstance(target, Path)
@@ -137,14 +124,13 @@ class ExtractNormalizer(NamePattern):
         )
 
     def extract(self, name: Path | str) -> dict[str, str]:
-        """Parse keywords from cleaned string"""
         clean_string: str = self.normalize_name(name)
         return super().extract(clean_string)
 
 
 if TYPE_CHECKING:
 
-    class _NormalizedName(NormalizeMixin, FormatNormalizer): ...
+    class _NormalizedName(ExtractNormalizer, FormatNormalizer): ...
 else:
     _NormalizedName = Ghost
 
@@ -152,20 +138,12 @@ else:
 class BidirectionalParser(_NormalizedName):
     """Route the Calls trough the right channel"""
 
-    # IDEA: 2 more overload, and then inherit from base???
     @overload
     def __call__(self, target: Path | str) -> dict[str, str]: ...
     @overload
     def __call__(self, target: dict | list | tuple) -> str: ...
 
     def __call__(self, target: Any):
-        """
-        Add the bidirectional dispatch
-
-        Send:
-        - Path and String to ExtractNormalizer
-        - Dict, List and Tuple to FormatNormalizer
-        """
         match target:
             case Path() | str():
                 return self.extract(target)
@@ -185,3 +163,11 @@ class NameParser(BidirectionalParser, FormatNormalizer, ExtractNormalizer):
     - Start as new Root for many Parsed Names
 
     """
+
+
+if TYPE_CHECKING:
+    _pattern: process.NamingPattern = NamePattern("hello {name}")
+    _format: process.FormatNormalizing = FormatNormalizer("hello {name}")
+    _extraat: process.ExtractNormalizing = ExtractNormalizer("hello {name}")
+    _call: process.Bidirect = BidirectionalParser("hello {name}")
+    _parser: process.NameParsing = NameParser("hello {name}")

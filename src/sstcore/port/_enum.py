@@ -24,6 +24,7 @@ Govern the Shape and Structure of the Strict and Reliable Container
 # STRATEGY: - Option: Implementation 2
 # - Policy:
 #   - PolicyDescriptor
+#   - Machine
 # - Select:
 #   - PrintOption
 # - int: default on 0
@@ -47,3 +48,13 @@ Govern the Shape and Structure of the Strict and Reliable Container
 
 
 # LATER: SstEnum - from scratch
+
+# IDEA: EnumRaiser: raise_on.X
+# def raise_on_unbound(self, unit: object) -> Never:
+#     raise RuntimeError(f"{self.name(unit)} Missing Function!")
+# def raise_on_signature(self, unit: object, bad_func: Any) -> Never:
+#     message: str = (
+#         f"{self.name(unit)} expected {self.signature!r}, got {bad_func}"
+#         if self.signature is not None
+#         else f"{self.name(unit)} Missing Signature! Call: {bad_func=}"  )
+#     raise TypeError(message)

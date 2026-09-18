@@ -19,62 +19,64 @@ from ...port import attach
 from ...port.calling import Calling
 from ._specify import DecoratedField, ResetField
 
-# INFO:
-# class Calling[**In, Out](Protocol):
-#     @property
-#     def __name__(self) -> str: ...
-#     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out: ...
 
-
-# MOVE: after impement finish, brick.labor.inspect
-def _check_sig_param_length(sig1, sig2) -> bool:
+def _check_sig_param_length(sig1, sig2) -> bool:  # MOVE: brick.labor._inspect
     return len(sig1.parameters) == len(sig2.parameters)
 
 
-# MOVE: after impement finish, brick.labor.inspect
-def _valid_sig(func: Callable, baseline: Signature) -> bool:
+def _valid_sig(func: Callable, baseline: Signature) -> bool:  # MOVE: labor
     new_sig: Signature = signature(func)
     checks_ok: list[bool] = [  # LATER: build check box
         _check_sig_param_length(new_sig, baseline),
     ]
-    # return new_sig if all(checks_ok) else None
     return all(checks_ok)
 
 
-# NEXT:
+class BoundStrategy[**In, Out]:
+    """Proxy object that acts as a bound method and provides swap mutations."""
+
+    def __init__(
+        self, engine: MethodFieldEngine, unit: object, func: Calling[In, Out]
+    ):
+        self.engine = engine
+        self.unit = unit
+        self.func = func
+
+    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
+        return self.func(self.unit, *args, **kwargs)
+
+    def switch(self, new_func: Calling[In, Out]) -> None:
+        """LSP-compliant function swap."""
+        self.engine.write(self.unit, new_func)
+
+    def morph(self, new_func: Callable) -> None:
+        """Unsafe/LSP-violating function swap."""
+        self.engine.write(self.unit, new_func)
+
+
+# NEXT: StrategyField
 class MethodFieldEngine[**In, Out](DecoratedField, ResetField):
     def __init__(self, default_func: Calling[In, Out], *args, **kwargs):
-        # REMOVE: needed with new FieldDecorator??
+        # FIX: needed with new FieldDecorator??
         self.default_func = default_func
         super().__init__(*args, default=default_func, **kwargs)
 
-    def read(self, unit: object) -> Any:
-        # TODO: check if parametrization here makes sense
-        # NOTE: maybe no param here for case: lsp violation
+    def read(self, unit: object) -> BoundStrategy[In, Out]:
         func: Calling = (
             self._get_val(unit) if self._has_val(unit) else self.default_func
-        )
-        return MethodType(func, unit)
-
-    def validate[T](self, unit: object, value: T) -> T:
-        """Finish the loop and return the value"""
-        if self.signature is None:
-            self.raise_on_signature(unit, bad_func=self.target_func)
-        if not _valid_sig(self.target_func, baseline=self.signature):
-            self.raise_on_signature(unit, bad_func=value)
-        return super().validate(unit, value)
+        )  # FIX:
+        # return MethodType(func, unit)
+        return BoundStrategy[In, Out](self, unit, func)
 
     def switch(self, func: Calling[In, Out]) -> Self:
         """Expose new strategy with matching signature"""
-        # IMPORTANT: how to get the unit=instance here?
-        # - load at init? but who inserts? get from super()?
-        # - safe to store an internal reference to the unit?
+        # FIX:
         self.write(unit=instance, value=func)
         return self.read(instance)  # NOTE: unsure how effective that is
 
 
-# NEXT:
-class DynamicStrategy(MethodFieldEngine):
+# NEXT: MorphingStrategy
+class DynamicStrategy(MethodFieldEngine):  # LATER: parametrization?
     """Allows swapping methods with arbitrary new signatures."""
 
     def morph(self, func: Calling) -> Self:
@@ -87,18 +89,15 @@ class DynamicStrategy(MethodFieldEngine):
         return super().validate(unit, value)
 
 
-# NEXT:
 class StrategyField[**P, R](MethodFieldEngine):
     """Forces the override to match the default function's signature."""
 
-    # AI_FOCUS: this is the main target
-
-    def __init__(self, default_func: Calling[P, R], *args, **kwargs):
-        # TODO: catch signature from original function
-        super().__init__(default_func, *args, **kwargs)
-
-    def validate(self, unit: object, value: Calling[P, R]) -> Calling[P, R]:
-        # TODO: check signature from original function
+    def validate[T](self, unit: object, value: T) -> T:
+        """Finish the loop and return the value"""
+        if self.signature is None:
+            self.raise_on_signature(unit, bad_func=self.target_func)
+        if not _valid_sig(self.target_func, baseline=self.signature):
+            self.raise_on_signature(unit, bad_func=value)
         return super().validate(unit, value)
 
 

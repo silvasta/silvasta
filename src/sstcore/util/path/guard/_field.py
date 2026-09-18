@@ -28,9 +28,10 @@ class DirField(DecoratedField[Path], OnlyReadField):
     ) -> None:
         # Pre-bake the directory logic into the args/kwargs
         self.logic: PathStrategy = _ensure._ensure_dir_logic
-        # IDEA: move logic to subhook with optional override?
-        # - maybe better than this entire additional __init__
         super().__init__(target, *args, **kwargs)
+
+    # IDEA: move logic to subhook with optional override?
+    # - maybe better than this entire additional __init__
 
     def read(self, unit: object) -> Path:
         base_path = super().read(unit)
