@@ -16,6 +16,7 @@ from ...port.color import Color
 
 
 def resolve_color(color_guess: Any, default: Color | None = None) -> Color:
+    # CHECK: port._enum
     """Map [int|str|Color] to Color or default or Raise"""
     try:
         match color_guess:

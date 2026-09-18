@@ -285,6 +285,7 @@ class Index(Enum):
     # AI_QUESTION: SstEnum(Index,_EnumView) or opposite?
 
     def __str__(self) -> str:
+        # TODO: keep for color
         return f"{self.name.capitalize()}"
 
     def __repr__(self) -> str:

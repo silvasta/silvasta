@@ -32,13 +32,16 @@ class SstCoreError(Exception):
         _vars = [f"{k}={v!r}" for k, v in vars(self).items()]
         return f"{type(self).__name__}[{', '.join(_vars)}]"
 
+    @classmethod
+    def panic(cls, reason): ...
+
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### As there is enough space here left...
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class FailedHackError(SstError):
+class FailedHackError(SstCoreError):
     """
     It was a nice try, but...
 
