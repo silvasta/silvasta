@@ -11,7 +11,7 @@ __all__: list[str] = [
     "pydatic",
     "_dict",
     #
-    "dig",
+    "dig",  # WARN: name overlap, use ._dig.dig as __call__??
     "name",
     "text",
     "func",
@@ -22,6 +22,7 @@ __all__: list[str] = [
     "log",
 ]
 
-from ._dig import dig, func, name, text
+from . import _dig as dig
+from ._dig import func, name, text
 from ._invoke import cli, invoke, log, rich
 from ._reflect import _dict, clsname, data, pydatic

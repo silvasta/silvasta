@@ -14,6 +14,7 @@ __all__: list[str] = [
 from typing import Any
 
 
+# IDEA: this as __call__??
 def dig(_target: Any, attrs: list[str], default=None) -> Any | None:
     """Work trough the list with getattr and provide first hit or default"""
 
@@ -40,6 +41,7 @@ def text(_target: Any, attrs: list[str] | None = None) -> str | None:
     return dig(_target, check_attrs)
 
 
+# TODO: check with ._reflect and clsname, maybe funcname?
 def func(_target: Any, attrs: list[str] | None = None, default="Func") -> str:
     """Check attribute list, provide match or default"""
     default_checks: list[str] = ["__qualname__", "__name__"]
