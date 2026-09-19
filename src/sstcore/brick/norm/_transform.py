@@ -43,7 +43,6 @@ def impossible_brackets(key: str) -> str:  # INFO: don't loose this
     return f"{{{key}}}"
 
 
-# AI: this is already named format
 def format_kv(
     mapping: dict[str, Any],
     sep: str = "=",
@@ -54,8 +53,6 @@ def format_kv(
     # IDEA: parametrized and with heavy defaults into Functor-
     pairs = []
     for k, v in mapping.items():
-        # AI: here this part looks clearly like reflect/inspect
         val_str = f"'{v}'" if quote_strings and isinstance(v, str) else str(v)
         pairs.append(f"{k}{sep}{val_str}")
-    # AI: overall it is a combination of both
     return pair_sep.join(pairs)

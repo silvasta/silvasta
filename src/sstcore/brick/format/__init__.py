@@ -1,6 +1,7 @@
 """
-Transform Raw Input into nice Output
+Transform Raw Input into Nice Output
 
+- ... -> str
                                                  DependencyLevel[0]
 """
 
