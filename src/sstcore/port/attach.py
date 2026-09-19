@@ -32,7 +32,6 @@ from typing import overload as _overload
 
 from .calling import Calling
 
-# AI_QUESTION: is the type[T] relevant? or is a tuple with length 1 the same?
 type Types[T] = type[T] | tuple[type, ...]
 
 

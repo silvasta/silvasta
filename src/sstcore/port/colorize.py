@@ -154,6 +154,12 @@ class ColorRegistry(Protocol):  # TODO: Registry type
 class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     """Global Orchestrator and Distributor of Colors"""
 
+    # IMPORTANT::
+    # STRATEGY: prepare system that evolves from and after here
+    # - subclass detection
+    # - ghost color box
+    # ...
+
     def get(self, color: ColorIdentifier): ...
 
     def stack(self, *_args, **_kwargs):  # TODO:

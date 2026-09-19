@@ -22,16 +22,14 @@ __all__: list[str] = [
     "MixinRegister",
     "FilterRegister",
     "FuncRegister",
-    "Index",
 ]
 
 from collections.abc import Callable, Iterator
-from enum import Enum, auto
-
-# TODO:
+from enum import auto
 from typing import Any, NoReturn, Protocol, Self, overload
 
 from .attach import LazyDescriptor, PolicyEnum
+from .define import Index
 from .filter import Filter
 
 type Vaults = list | tuple | dict
@@ -260,7 +258,7 @@ class FuncRegister[Item: Callable](Protocol):
 class FilterRegister[Item: Callable](Protocol):
     """Extend the Registry with Filtering"""
 
-    # LATER: this is 1:1 a descriptor mock...
+    # TASK: this is 1:1 a descriptor mock...
     # - find the proper descriptor for filters and remove this
 
     def filter(self, new_active_filter: Filter | None) -> list[Item]:
@@ -276,40 +274,15 @@ class FilterRegister[Item: Callable](Protocol):
     def active_filter(self) -> Filter:
         """Provide attached Filter, load default first if needed"""
 
-
-class Index(Enum):
-    # TASK: move to some data primitives, or to shape? port.base?
-    """Define enumerated Axis for {0..N} member with 1 purpose"""
-
-    # IDEA: split view! but how to mix it in then? left or right?
-    # AI_QUESTION: SstEnum(Index,_EnumView) or opposite?
-
-    def __str__(self) -> str:
-        # TODO: keep for color
-        return f"{self.name.capitalize()}"
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}[{self.value}]::{self}"
-
-    # IDEA: use the int|slice|str __getitem__?? somehow unify this!
-    # AI_QUESTION: the idea is to create an Enum with member=auto(),
-    # starting from index 0 to N_member-1 and a Enum.name.lower()
-    # then use 1 access for all, like a classmethod or even like Enum[MultiKey]
-    # something like the resolve_color in the file below, but like universal
-    # - defined once and proper in the port, use it everywhere out of the box
-    # AI_FOCUS: How to achieve this? 2-3 pieces could build the base of most Enums
-
-    @staticmethod
-    def _generate_next_value_(name, start, count, last_values) -> int:
-        """Return the index of the Color inside the Palette"""
-        return count
-
-
-class _IndexRegister[Item, IndexT: Index | tuple[Index, ...]](
-    Registry, Protocol
-):  # NOTE: not urgent
     """Establish the Registry with Enum and Tuple"""
 
-    items: tuple[Item, ...]  # LATER: define axes
+
+class _IndexRegister[Item, Axes: tuple[Index, ...]](Registry, Protocol):
     # LATER: Create Enum members dynamically -> index and length of registry fixed
-    index: IndexT | tuple[IndexT]
+    """Build the ultimate robust and stable container"""
+
+    items: tuple[Item, ...]
+    axes: Axes
+
+    @property
+    def n_axes(self) -> int: ...

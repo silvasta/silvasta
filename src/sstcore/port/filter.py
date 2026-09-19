@@ -26,7 +26,7 @@ from enum import IntEnum, auto
 from pathlib import Path
 from typing import Protocol, Self, overload
 
-from .error import FailedHackError
+from .raising import FailedHackError
 
 
 class FilterSpec[SetType](Protocol):

@@ -1,5 +1,5 @@
 """
-Experiment with new Raiser
+Adapt the SstCoreError to the Fields and implement Raiser
 
 - The Implementation
 
@@ -9,72 +9,52 @@ Experiment with new Raiser
 from enum import Enum, auto
 from typing import Any, Never, Unpack
 
-from sstcore.brick.field.___error import ErrorDTO, ErrorInput
-
 from ...port.attach import DescriptorBase
-from ...port.error import SstCoreError
+from ...port.raising import ErrorData, ErrorInput, SstCoreError
 from ..labor import clsname
-from . import ___error as error  # INFO: will be moved to port.error
 
 
-def get_format_pattern(reason: FieldRaiser) -> str:
-    match reason:
-        case FieldRaiser.RAW:
-            return ""
-        case FieldRaiser.WriteExists:
-            return ""
-        case FieldRaiser.ReadMissing:
-            return ""
-        case FieldRaiser.ReadOnly:
-            return ""
-        case FieldRaiser.Validation:
-            return ""
-        case FieldRaiser.Function:
-            return ""
-        case FieldRaiser.Signature:
-            return ""
-        case FieldRaiser.Transition:
-            return ""
+class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
+    """Define the Kwarg Space of the Error pipeline"""
+
+    # TODO: make them as well args from here?
+    # field: FieldT
+    # instance: UnitT | None
+    cls_attr_name: str
+    #
+    owner: type | None
+    value: UnitT | Any
+    #
+    expected: dict
+    received: dict
 
 
-def get_builtin_exception(reason: FieldRaiser) -> type[Exception] | None:
-    match reason:
-        case FieldRaiser.RAW:
-            return None
-        case FieldRaiser.WriteExists:
-            return None
-        case FieldRaiser.ReadMissing:
-            return None
-        case FieldRaiser.ReadOnly:
-            return None
-        case FieldRaiser.Validation:
-            return None
-        case FieldRaiser.Function:
-            return None
-        case FieldRaiser.Signature:
-            return None
-        case FieldRaiser.Transition:
-            return None
+class FieldErrorData[FieldT, UnitT](ErrorData):
+    """Define the Arg Space of the Internal Pipeline"""
+
+    field: FieldT
+    instance: UnitT | None = None
+    cls_attr_name: str = ""  # Cls.attr
+    #
+    owner: type | None = None
+    value: FieldT | Any = None
 
 
-def get_custom_exception(reason: FieldRaiser) -> type[SstCoreError]:
-    match reason:
-        case FieldRaiser.RAW:
-            return SstCoreError
-        case FieldRaiser.WriteExists:
-            raise NotImplementedError
-        case FieldRaiser.ReadMissing:
-            raise NotImplementedError
-        case FieldRaiser.ReadOnly:
-            raise NotImplementedError
-        case FieldRaiser.Validation:
-            raise NotImplementedError
-        case FieldRaiser.Function:
-            raise NotImplementedError
-        case FieldRaiser.Signature:
-            raise NotImplementedError
-        case FieldRaiser.Transition:
-            raise NotImplementedError
+class FieldError(SstCoreError):
+    # IDEA: use this FieldError and mix it with the errors above
+    def __init__(
+        self,
+        message: str,
+        field: object,
+        *args,
+        panic: FieldRaiser = FieldRaiser.RAW,
+        **kwargs: Any,
+    ):
+        self.message: str = message
+        self.field: object = field
+        self.kwargs: dict = kwargs
+        self.panic: FieldRaiser = panic
+        super().__init__(*args)
 
 
 class ErrorBuilder:
@@ -202,18 +182,61 @@ on_error = FieldRaiser
 on_error.ReadMissing(object, name="test").raiser()
 
 
-class FieldError(SstCoreError):
-    # IDEA: use this FieldError and mix it with the errors above
-    def __init__(
-        self,
-        message: str,
-        field: object,
-        *args,
-        panic: FieldRaiser = FieldRaiser.RAW,
-        **kwargs: Any,
-    ):
-        self.message: str = message
-        self.field: object = field
-        self.kwargs: dict = kwargs
-        self.panic: FieldRaiser = panic
-        super().__init__(*args)
+def get_format_pattern(reason: FieldRaiser) -> str:
+    match reason:
+        case FieldRaiser.RAW:
+            return ""
+        case FieldRaiser.WriteExists:
+            return ""
+        case FieldRaiser.ReadMissing:
+            return ""
+        case FieldRaiser.ReadOnly:
+            return ""
+        case FieldRaiser.Validation:
+            return ""
+        case FieldRaiser.Function:
+            return ""
+        case FieldRaiser.Signature:
+            return ""
+        case FieldRaiser.Transition:
+            return ""
+
+
+def get_builtin_exception(reason: FieldRaiser) -> type[Exception] | None:
+    match reason:
+        case FieldRaiser.RAW:
+            return None
+        case FieldRaiser.WriteExists:
+            return None
+        case FieldRaiser.ReadMissing:
+            return None
+        case FieldRaiser.ReadOnly:
+            return None
+        case FieldRaiser.Validation:
+            return None
+        case FieldRaiser.Function:
+            return None
+        case FieldRaiser.Signature:
+            return None
+        case FieldRaiser.Transition:
+            return None
+
+
+def get_custom_exception(reason: FieldRaiser) -> type[SstCoreError]:
+    match reason:
+        case FieldRaiser.RAW:
+            return SstCoreError
+        case FieldRaiser.WriteExists:
+            raise NotImplementedError
+        case FieldRaiser.ReadMissing:
+            raise NotImplementedError
+        case FieldRaiser.ReadOnly:
+            raise NotImplementedError
+        case FieldRaiser.Validation:
+            raise NotImplementedError
+        case FieldRaiser.Function:
+            raise NotImplementedError
+        case FieldRaiser.Signature:
+            raise NotImplementedError
+        case FieldRaiser.Transition:
+            raise NotImplementedError

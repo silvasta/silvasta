@@ -33,8 +33,8 @@ from typing import Protocol as _Protocol
 from typing import runtime_checkable as _runtime_checkable
 
 from ..calling import Richable as _Richable
-from ..color import Color as _Color
-from ..color import ColorIdentifier as _ColorIdentifier
+from ..colorize import Color as _Color
+from ..colorize import ColorIdentifier as _ColorIdentifier
 
 type _Renderable = str | CliRenderable | _Richable
 
