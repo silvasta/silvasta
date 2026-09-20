@@ -3,7 +3,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: '(^|/)____.*\.py$'
       - id: end-of-file-fixer
+        exclude: '(^|/)____.*\.py$'
       - id: check-yaml
       - id: check-toml
       - id: check-added-large-files
@@ -12,6 +14,25 @@ repos:
     rev: v0.15.12
     hooks:
       - id: ruff
-        # args: [--fix, --exit-non-zero-on-fix] # NOTE: default!
-        args: [--exit-zero] # WARN: Forces pass even if errors exist
+        args: [--fix, --exit-non-zero-on-fix] # NOTE: default!
+        # args: [--exit-zero] # WARN: Forces pass even if errors exist
+        exclude: '(^|/)____.*\.py$'
+
       - id: ruff-format
+        exclude: '(^|/)____.*\.py$'
+
+  - repo: local
+    hooks:
+      - id: ban-scratchpads-on-main
+        name: Ban ___ files on main branch
+        language: system
+        # Matches 3 or more underscores, banning both ___ and ____ on main
+        files: '(^|/)___.*\.py$'
+        entry: bash -c 'if [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]; then echo "Error! Scratchpad (___) files are forbidden on the main branch."; exit 1; fi'
+
+      - id: ban-experimental-on-core
+        name: Ban ____ files on core branch
+        language: system
+        # Matches exactly 4 or more underscores, allowing ___ on core but banning ____
+        files: '(^|/)____.*\.py$'
+        entry: bash -c 'if [ "$(git rev-parse --abbrev-ref HEAD)" = "core" ]; then echo "Error! Unchecked experimental (____) files are forbidden on the core branch."; exit 1; fi'
