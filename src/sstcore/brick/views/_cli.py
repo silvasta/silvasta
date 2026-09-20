@@ -3,6 +3,7 @@ Compose CliMixins
 
 - Atomize: 1 class with 1 method __cli__
 
+                             DependencyLevel.sstcore.brick.views[0]
 """
 
 __all__: list[str] = [
@@ -17,9 +18,9 @@ __all__: list[str] = [
 from pathlib import Path
 
 from ...port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
-from ...port.view import Renderable
 from ..color import colorize
-from ..labor import reflect, transform
+from ..labor import reflect
+from ..norm import transform
 
 
 class MarkdownMixin:
@@ -31,35 +32,35 @@ class MarkdownMixin:
             reflect.text(self, attrs=[content_field])
             or f"# {self}\n- Nothing defined in content field: '{content_field}'"
         )
-        return MarkdownDTO(text=content)
+        return MarkdownDTO(content)
 
 
 class LineMixin:
     """Show classname as single colored line"""
 
     def __cli__(self) -> LineDTO:
-        return LineDTO(text=str(self), style="cyan")
+        return LineDTO(str(self), style="cyan")
 
 
 class TableMixin:
     """Create table from public attributes"""
 
     def __cli__(self) -> TableDTO:
-        return TableDTO.from_row_dicts(data(self))
+        return TableDTO.from_row_dicts(reflect.data(self))
 
 
 class PanelMixin:
     """Show specific class attributes defined in _panel_data"""
 
     @property
-    def _panel_data(self) -> Renderable | list[Renderable]:
+    def _panel_data(self) -> str | list[str]:
         """Provide subhook for override custom panel data"""
         # FIX: Renderable
-        return transform.dict_to_list(data(self), sep=": ")
+        return transform.dict_to_list(reflect.data(self), sep=": ")
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
-            text=self._panel_data,
+            self._panel_data,
             title=reflect.rich(self),
             frame="cyan",  # NEXT: color not hardcoded!!
         )
@@ -70,8 +71,8 @@ class SlimPanelMixin:
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
-            text=colorize.modules(self),
-            title=rich(self),
+            colorize.modules(self),
+            title=reflect.rich(self),
             frame="cyan",  # NEXT: color not hardcoded!!
         )
 
@@ -82,8 +83,8 @@ class FullPanelMixin:
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
             # FIX: Renderable
-            text=dict_table(target=vars(self), show_type=True),
-            title=rich(self),
+            colorize.dict_table(target=vars(self), show_type=True),
+            title=reflect.rich(self),
             frame="cyan",  # NEXT: color not hardcoded!!
         )
 
@@ -98,7 +99,7 @@ class PathPanelMixin:
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
             # FIX: Renderable
-            text=path_exists_table(self._panel_paths),
-            title=rich(self),
+            colorize.path_exists_table(self._panel_paths),
+            title=reflect.rich(self),
             frame="cyan",  # NEXT: color not hardcoded!!
         )

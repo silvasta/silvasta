@@ -2,6 +2,8 @@
 Compose ReprMixins
 
 - Atomize: 1 class with 1 method __repr__
+
+                             DependencyLevel.sstcore.brick.views[0]
 """
 
 __all__: list[str] = [
@@ -10,7 +12,9 @@ __all__: list[str] = [
     "FullReprMixin",
 ]
 
-from ..labor import clsname, reflect, transform
+
+from ..labor import reflect
+from ..norm import transform
 
 
 class ReprMixin:
@@ -22,20 +26,18 @@ class ReprMixin:
         return transform.dict_to_str(reflect.pydatic(self))
 
     def __repr__(self) -> str:
-        return f"{clsname(self)}[{self._repr_box_text}]"
+        return f"{reflect.clsname(self)}[{self._repr_box_text}]"
 
 
 class ReprDataMixin:
     """Show all public attributes"""
 
     def __repr__(self) -> str:
-        return (
-            f"{clsname(self)}({transform.dict_to_str(reflect.pydatic(self))})"
-        )
+        return f"{reflect.clsname(self)}({transform.dict_to_str(reflect.pydatic(self))})"
 
 
 class FullReprMixin:
     """Show all attributes"""
 
     def __repr__(self) -> str:
-        return f"{clsname(self)}({transform.dict_to_str(vars(self))})"
+        return f"{reflect.clsname(self)}({transform.dict_to_str(vars(self))})"

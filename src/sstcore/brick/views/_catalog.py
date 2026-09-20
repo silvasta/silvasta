@@ -7,7 +7,7 @@ Store the Mixins in proper Container
   - Rich : __rich__
   - Repr : __repr__
   - Log  : __log__
-
+                             DependencyLevel.sstcore.brick.views[1]
 """
 
 __all__: list[str] = [
@@ -29,7 +29,7 @@ __all__: list[str] = [
 
 from enum import Enum, auto
 
-from ...port.calling import LogStringable, Richable, Stringable
+from ...port.calling import LogStringable, RichView, Stringable
 from ...port.event import CliRenderable, LogSerializable
 from ...port.view import Renderable
 from ..labor import clsname
@@ -137,7 +137,7 @@ class Rich(MixinCatalog):
     OFF = auto()
 
     @property
-    def mixin(self) -> type[Richable]:
+    def mixin(self) -> type[RichView]:
         match self:
             case self.SHORT:
                 return rich.SimpleRichNameMixin

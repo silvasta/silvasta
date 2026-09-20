@@ -17,8 +17,7 @@ ViewCatalog:
 - Rich : __rich__
 - Repr : __repr__
 - Log  : __log__
-                                                 DependencyLevel[4]
-                                                           labor(3)
+                                   DependencyLevel.sstcore.brick[4]
 """
 
 __all__: list[str] = [

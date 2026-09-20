@@ -3,6 +3,7 @@ Compose RichMixins
 
 - Atomize: 1 class with 1 method __rich__
 
+                             DependencyLevel.sstcore.brick.views[0]
 """
 
 __all__: list[str] = [

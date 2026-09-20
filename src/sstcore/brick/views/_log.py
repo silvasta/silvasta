@@ -2,6 +2,8 @@
 Compose LogMixins
 
 - Atomize: 1 class with 1 method __log__
+
+                             DependencyLevel.sstcore.brick.views[0]
 """
 
 __all__: list[str] = [
