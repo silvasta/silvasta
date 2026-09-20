@@ -15,9 +15,8 @@ __all__: list[str] = [
 
 from typing import Any, NamedTuple, Never, Protocol, TypedDict, Unpack
 
-from .attach import DescriptorBase
 from .calling import Stringable
-from .define import EnumZero, Machine
+from .govern import EnumZero, Machine
 
 
 class SstCoreError(Exception):
@@ -49,7 +48,7 @@ class ErrorInput(TypedDict, total=False):
     received: dict
 
 
-class ErrorData[FieldT, UnitT](NamedTuple):
+class ErrorData[TargeT, UnitT](NamedTuple):
     """Define the Arg Space of the Internal Pipeline"""
 
     raiser: ErrorRaiser
@@ -83,7 +82,7 @@ class ErrorFormating[ErrorT: SstCoreError](Protocol):
     def format(self, keys: dict[str, Stringable]) -> str:
         """Insert keys and get filled pattern"""
 
-    def __call__[FieldT](self, reason: Raiser, /, data: ErrorData) -> str:
+    def __call__[TargeT](self, reason: Raiser, /, data: ErrorData) -> str:
         """Process Reason, Field and Data to"""
 
 
@@ -152,17 +151,17 @@ class RaiserQuery[ErrorT: SstCoreError](Protocol):
         """Provide all builtin Exceptions, can be empty"""
 
 
-class Raiser[ErrorT: SstCoreError](RaiserQuery[ErrorT], Protocol):
+class Raising[ErrorT: SstCoreError](RaiserQuery[ErrorT], Protocol):
     """Core"""
 
     # TASK: routing, input parsing TypedDict->NamedTuple
 
-    def intact[FieldT: DescriptorBase, UnitT: Any](
-        self, field: FieldT, instance: UnitT, **kwargs: Unpack[ErrorInput]
+    def intact[TargeT, UnitT](
+        self, field: TargeT, instance: UnitT, **kwargs: Unpack[ErrorInput]
     ) -> ErrorT: ...
 
-    def __call__[FieldT: DescriptorBase, UnitT: Any](
-        self, field: FieldT, instance: UnitT, **kwargs: Unpack[ErrorInput]
+    def __call__[TargeT, UnitT](
+        self, field: TargeT, instance: UnitT, **kwargs: Unpack[ErrorInput]
     ) -> Never:
         """Take all relevant input, process, raise"""
 

@@ -29,8 +29,8 @@ from enum import auto
 from typing import Any, NoReturn, Protocol, Self, overload
 
 from .attach import LazyDescriptor, PolicyEnum
-from .define import Index
 from .filter import Filter
+from .govern import Index
 
 type Vaults = list | tuple | dict
 

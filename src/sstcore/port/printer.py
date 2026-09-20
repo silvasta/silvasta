@@ -23,7 +23,7 @@ from typing import Any, Literal, Required, TypedDict, Unpack
 from typing import Protocol as Protocol
 
 from .calling import Richable
-from .colorize import ColorBox, ColorIdentifier
+from .color import ColorBox, ColorIdentifier
 from .config import ProjectInformation
 from .event.dto import CliDTO
 from .view import Renderable

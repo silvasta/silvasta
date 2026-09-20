@@ -31,6 +31,21 @@ class Calling[**In, Out](Protocol):
 
 _test: _Callable = Calling
 
+#  LINE: -- builtin views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@runtime_checkable
+class Stringable(Protocol):
+    def __str__(self) -> str: ...
+
+
+@runtime_checkable
+class LogStringable(Protocol):
+    def __repr__(self) -> str: ...
+
+
+#  LINE: -- processing -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
 
 @runtime_checkable
 class ClassRendering(Protocol):
@@ -46,36 +61,35 @@ class Stacking(Protocol):  # NEXT: colorbox and more
 
 @runtime_checkable
 class Colorizing(Protocol):
-    # TODO: at least one of:
-    # - Sanitizing:Stringable->str (Formatting)
-    # - Sanitizing:Any->Stringable (Sanitizing)
-    # - Sanitizing:Any->str (Stringing)
-    # NOTE: why not:
-    # - Colorize
-    # - Sanitize
-    # - Normalize
     def __call__(self, text: Stringable) -> str:
+        # IDEA: def __call__(self, text: Stringable) -> Stringable:
+        # - or some other renderable type
         """Forward text-like object after processing and ensuring string"""
 
 
 @runtime_checkable
+class Normalizing(Protocol):
+    def __call__(self, text: Any) -> Stringable:
+        """Forward text-like object after processing and ensuring string"""
+
+
+@runtime_checkable
+class Sanitize[ExpectedT, UnexpectedT, TargeT](Protocol):
+    def __call__(self, target: ExpectedT | UnexpectedT) -> TargeT:
+        """Forward object after processing and ensuring types"""
+
+
+@runtime_checkable
+class NormalizingMaybe[ExpectedT: Stringable](
+    Sanitize[ExpectedT, Any, Stringable], Protocol
+):
+    """Forward text after processing and ensuring string(able)"""
+
+
+@runtime_checkable
 class Listening[T](Protocol):
-    # REMOVE: ?
     def __call__(self, target: T) -> T:
         """Forward target after routing and inspection"""
-
-
-#  LINE: -- builtin views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@runtime_checkable
-class Stringable(Protocol):
-    def __str__(self) -> str: ...
-
-
-@runtime_checkable
-class LogStringable(Protocol):
-    def __repr__(self) -> str: ...
 
 
 #  LINE: -- adapter -- -- - -- -- - -- -- - -- -- - -- -- - -- --
