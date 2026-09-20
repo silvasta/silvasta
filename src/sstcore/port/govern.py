@@ -1,5 +1,5 @@
 """
-Shape the Behaviour and Representation of the Global ...
+Define the Shape and Behaviour of the relibale and strict Dispatcher
 
 - First operational assembly of the definition and decision taker
 
@@ -66,6 +66,8 @@ class Policy(BaseEnum):
 
 
 class Option(BaseEnum):
+    # IDEA: parametrize value??
+    # IDEA: intercept class.__call__ for default zero??
     """Multiple Selections - Always 1 default (on zero)"""
 
 

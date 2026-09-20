@@ -52,6 +52,13 @@ type EnumSlice[EnumT] = EnumId[EnumT] | slice
 
 
 class Enum0(Enum):
+    # IDEA: one step more!
+    # ignore value=auto()
+    # -> directly attach (paramerized) target
+    # e.g. LAZY = LazyField
+    # for identification:
+    # - Enum0.key->str
+    # - Enum0.index->int
     """Set Count to Zero"""
 
     @staticmethod
