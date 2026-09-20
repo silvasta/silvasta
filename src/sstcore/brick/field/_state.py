@@ -2,7 +2,7 @@
 Provide the Bricks for Descriptor Compositions
 
 - Transition from State to State
-                                                 DependencyLevel[1]
+                                                 DependencyLevel[2]
 """
 
 # TASK: state for bisect transition? or something similar, at least with Enums
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from ...port import attach
 from ...port.attach import PolicyEnum, Transition
 from ._base import ReadField
-from ._specify import ResetField, TypedField
+from ._extend import ResetField, TypedField
 
 type NodeIdentifier = TransitionGraph | str | int
 

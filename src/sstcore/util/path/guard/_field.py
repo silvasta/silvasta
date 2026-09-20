@@ -8,16 +8,15 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ....brick.field import DecoratedField, DerivedField, OnlyReadField
+from ....brick.field import DecoratedField, DerivedField
 from ....port.attach import FieldLoader
 from . import _ensure
 
 type PathStrategy = Callable[..., Path]
 
 
-# NEXT: check if this new version is better, delete rest
-class DirField(DecoratedField[Path], OnlyReadField):
-    # TODO: check: class DirGuardField(DerivedField[Path]):
+# AI: this is the new version, later on as well for UniqueField and FileField
+class DirField(DecoratedField[Path]):  # IDEA: OnlyReadField?
     """Specialized decorator that locks in the PathGuard logic."""
 
     def __init__(
@@ -57,13 +56,13 @@ class PathGuardField(DerivedField[Path]):
     ) -> None:
         self.logic: PathStrategy = logic
         self.policy: dict[str, Any] = policy
-        super().__init__(*args, derived=derived)
+        super().__init__(*args, derived=derived)  # ty:ignore
 
     def read(self, unit: object) -> Path:
         base_path: Path = super().read(unit)
         return self.logic(base_path, **self.policy)
 
-    def __set__(self, unit: object, value: object) -> None:
+    def __set__(self, unit: object, _value: object) -> None:
         # EXTRACT: create: NoWriteField?
         _cls_attr = self.name(unit)
         raise AttributeError(f"{_cls_attr} Path is not Writable!")
@@ -96,7 +95,7 @@ def Val(logic: PathStrategy, /, **default_policy: Any):  # noqa: N802
     return factory
 
 
-# MOVE: ._assemble?
+# AI: this was how it before was assembled
 Dir = Val(_ensure._ensure_dir_logic)
 File = Val(_ensure._ensure_file_logic, raise_error=True, default_content=None)
 Unique = Val(_ensure._get_unique_candidate, ensure_parent=False)

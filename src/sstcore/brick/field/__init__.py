@@ -30,24 +30,23 @@ __all__: list[str] = [
     # connected
     "EmitField",
     "ConfigField",
+    # raise
+    "FieldError",
+    "FieldErrorInput",
+    "FieldRaiser",
 ]
 
 from ._base import (
     DeleteField,
-    FieldDecorator,
     NamedField,
     OnlyReadField,
     ReadField,
     WriteField,
 )
-from ._calling import DynamicStrategy, StrategyField
-from ._combine import DerivedField, Forward, LazyField
+from ._combine import DerivedField, Forward, LazyField, RequiredField
+from ._decorate import DecoratedField, FieldDecorator
+from ._extend import ResetField, TypedField, ValidField
 from ._interact import ConfigField, EmitField
-from ._specify import (
-    DecoratedField,
-    RequiredField,
-    ResetField,
-    TypedField,
-    ValidField,
-)
+from ._raise import FieldError, FieldErrorInput, FieldRaiser
 from ._state import PolicyField
+from ._strategy import DynamicStrategy, StrategyField

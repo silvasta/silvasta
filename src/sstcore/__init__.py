@@ -31,7 +31,6 @@ def __dir__():
 
 
 try:
-    __version__: str = version(distribution_name="sstcore-py")
-    # AI: fixed from sstcore, must be like toml right? not like package in src
+    __version__: str = version(distribution_name="sstcore-py")  # CHECK: name
 except PackageNotFoundError:
     __version__ = "unknown"

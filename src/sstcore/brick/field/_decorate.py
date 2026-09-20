@@ -1,8 +1,8 @@
 """
 Setup Minimal Components to Assemble individual Descriptors
 
-                                                 DependencyLevel[0]
-"""  # TODO: level
+                                                 DependencyLevel[2]
+"""
 
 __all__: list[str] = [
     "FieldDecorator",
@@ -16,10 +16,28 @@ from ...port import attach
 from ...port.calling import Calling
 from ..labor import reflect
 from ._base import ReadField
-from ._specify import ValidField
+from ._extend import ValidField
+
+# AI_TASK: separation between initial read/write and later usage
+# - define the mounting at the init for all cases:
+#   - decorator that acts on the method without changing it
+#   - decorator that manipulates the method on request
+# - handle the decorator execution in class body:
+#   - without args
+#   - with args
+# - what about a decorator that writes/manipulates the method and has rules for reading?
 
 
 class FieldDecorator[**In, Out](ValidField):
+    """
+    Decorate Method with or without Args
+
+    Important:
+    - Difference between acting on method and manipulating method!
+      - one is to modify the behaviour of the callable
+      - the other is to modify the callable itself (with/without decorator?)
+    """
+
     def __init__(
         self,
         no_arg_deco_func: Calling[In, Out] | None = None,
@@ -40,7 +58,7 @@ class FieldDecorator[**In, Out](ValidField):
     def __call__(self, with_arg_deco_func: Calling[In, Out]) -> Self:
         """Invoked only when used as @Field(args)"""
         self.deco_func: Calling = with_arg_deco_func  # PARAM: add generics
-        self.bind(arg_deco_func)
+        self.bind(with_arg_deco_func)
         return self
 
     def __str__(self):
@@ -60,10 +78,11 @@ class FieldDecorator[**In, Out](ValidField):
 
     def bind(self, func: Calling, override=False) -> None:
         # NEXT: which bind??
+        # Issue with initial write/set/attach and ongoing during progress...
         self.__doc__: str | None = func.__doc__  # EXTRACT: brick.labor
         self.public_name: str = reflect.dig.func(func)  # TODO: default value?
         self.signature = signature(func)
-        self.write(unit, func)
+        self.write(unit, func)  # FIX:
 
     def validate(
         self, unit: object, value: Calling[In, Out], reset=False
@@ -77,9 +96,14 @@ class FieldDecorator[**In, Out](ValidField):
         return super().validate(unit, value)
 
 
-# NEXT: most likely collapse??
 class DecoratedField[FieldT](ReadField[FieldT], FieldDecorator):
+    # NEXT: most likely collapse??
+    # Issue for whenever a different read field is desired...
+    # - decouple initial setup from read??
+    """FieldDecorator with default ReadField for direct usage"""
+
     # TASK: check if and what is needed at all
+
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
             if self.deco_func is None:
@@ -89,5 +113,6 @@ class DecoratedField[FieldT](ReadField[FieldT], FieldDecorator):
 
 
 if TYPE_CHECKING:
-    _deco: type[attach.DecoratingField] = DecoratedField
-    _deco: type[attach.DecoratingField] = FieldDecorator
+    _deco: type[attach.DecoDescriptor] = DecoratedField
+    _deco: type[attach.DecoDescriptor] = FieldDecorator
+    _deco: type[attach.DecoDescriptor] = FieldDecorator

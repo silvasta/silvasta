@@ -1,11 +1,18 @@
 """
 Assemble the first level of composed Fields
 
-- Prepare for direct usage and be ready for further specicications
-                                                 DependencyLevel[1]
+Prepare for direct Usage and as Base for further Specicications
+
+- RequiredField: placeholder for dynamic typed value attach
+- LazyField: placeholder with zero arg factory
+- DerivedField: calculate with dynamic attributes
+- Forward: direct access to inner attributes, Outer.access = Outer.Inner.access
+
+                                                 DependencyLevel[2]
 """
 
 __all__: list[str] = [
+    "RequiredField",
     "LazyField",
     "DerivedField",
     "Forward",
@@ -17,6 +24,22 @@ from ...port import attach
 from ...port.attach import FieldLoader
 from ..labor import reflect
 from ._base import ReadField, WriteField
+from ._extend import TypedField
+
+
+class RequiredField[FieldT](ReadField[FieldT], TypedField[FieldT]):
+    """
+    Annotate empty Field ready to fill before first access
+
+    Example:
+        class Renderer:
+            device = RequiredField(types=str)
+
+        r = Renderer()
+        r.device = "GPU"   # Valid
+        print(r.device)    # "GPU"
+        r.device = 123     # TypeError: expected str, got int
+    """
 
 
 class LazyField[T](WriteField, ReadField[T]):
@@ -78,10 +101,9 @@ class Forward[T](ReadField[T]):  # NOTE: this name is perfect
     """
 
     def __init__(self, target_attr: str, method_name: str):
-        # FIX:
         self.target_attr: str = target_attr
         self.method_name: str = method_name
-        # AI: no forward by super here right?
+        # WARN: forward by super here or not??
 
     def read(self, unit: object) -> T:
         target: object = getattr(unit, self.target_attr)
@@ -94,3 +116,5 @@ if TYPE_CHECKING:
     _collected: type[attach.WriteDescriptor] = LazyField
     _derived: type[attach.ReadDescriptor[Any]] = DerivedField
     _forwarded: type[attach.ReadDescriptor[Any]] = Forward
+    _injected: type[attach.WriteDescriptor] = RequiredField
+    _injected: type[attach.ValidDescriptor] = RequiredField

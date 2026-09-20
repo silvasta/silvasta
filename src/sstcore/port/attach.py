@@ -6,12 +6,12 @@ Define the Shape of the Field Descriptors
 """
 
 __all__: list[str] = [
-    "DescriptorBase",
+    "Descriptor",
     "ReadDescriptor",
     "WriteDescriptor",
     "DeleteDescriptor",
     "Descriptor",
-    "CompleteDescriptor",
+    "FullDescriptor",
     #
     "ValidDescriptor",
     "TypedDescriptor",
@@ -31,8 +31,9 @@ from typing import Self as _Self
 from typing import overload as _overload
 
 from .calling import Calling
+from .raising import Raiser
 
-type Types[T] = type[T] | tuple[type, ...]
+type Types[T] = type[T] | tuple[type, ...]  # TODO: tuple[T,???]
 
 
 class FieldLoader[T](_Callable, _Protocol):
@@ -40,7 +41,7 @@ class FieldLoader[T](_Callable, _Protocol):
         """Execute with exactly the attached Instance as Input"""
 
 
-class DescriptorBase(_Protocol):
+class NamedDescriptor(_Protocol):
     """Define the Base Contract: Ensure the Name"""
 
     public_name: str
@@ -49,36 +50,55 @@ class DescriptorBase(_Protocol):
     def __set_name__(self, owner: type, name: str) -> None: ...
 
 
+class _DescriptorAccess(_Protocol):
+    """IDEA: some querries... mixed into base"""
+
+
+class _RaisingDescriptor(_Protocol):
+    """IDEA: attach Raiser: mix into base"""
+
+    on_error: type[Raiser]
+
+
+class Descriptor[T](NamedDescriptor, _Protocol):
+    """
+    Mixed Base Descriptor Definition
+
+    IDEA: mix with query and error
+
+    """
+
+
 #  LINE: -- Level 1 -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class ReadDescriptor[T](DescriptorBase, _Protocol):
+class ReadDescriptor[T](Descriptor, _Protocol):
     """Define the Base Getter Non-Data Descriptor"""
 
     @_overload
     def __get__(self, unit: None, owner: type) -> _Self: ...
     @_overload
-    def __get__(self, unit: object, owner: type) -> T: ...
-    def __get__(self, unit: T | None, owner: type | None) -> T | _Self: ...
+    def __get__(self, unit: _Any, owner: type) -> T: ...
+    def __get__(self, unit: _Any | None, owner: type | None) -> T | _Self: ...
     def read(self, unit: object) -> T: ...
 
 
-class WriteDescriptor[T](DescriptorBase, _Protocol):
+class WriteDescriptor[T](Descriptor, _Protocol):
     """Define the Base Setter Data Descriptor"""
 
     def __set__(self, unit: _Any, value: T) -> None: ...
     def write(self, unit: object, value: T) -> None: ...
 
 
-class DeleteDescriptor(DescriptorBase, _Protocol):
+class DeleteDescriptor(Descriptor, _Protocol):
     """Define the Base Eraser Data Descriptor"""
 
     def __delete__(self, unit: _Any) -> None: ...
     def remove(self, unit: object) -> None: ...
 
 
-# NEXT:
-class DecoratingField(DescriptorBase, _Protocol):  # MOVE: upwards
+class DecoDescriptor(Descriptor, _Protocol):
+    # NEXT: check what and how to parametrize
     """Define the Descriptor that Decorates"""
 
     def __init__(
@@ -90,20 +110,13 @@ class DecoratingField(DescriptorBase, _Protocol):  # MOVE: upwards
         """Decorate Initial Strategy for Bound Decorator"""
 
 
-#  LINE: -- Level 2 -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-# REMOVE: ever needed? maybe to avoid multiple checks? runtime_checkable?
-class Descriptor[T](WriteDescriptor[T], ReadDescriptor[T], _Protocol):
-    """Standard with Setter and Getter"""
-
-
-# REMOVE: ever needed? maybe to avoid multiple checks? runtime_checkable?
-class CompleteDescriptor[T](Descriptor[T], DeleteDescriptor, _Protocol):
+class FullDescriptor[T](
+    WriteDescriptor[T], ReadDescriptor[T], DeleteDescriptor, _Protocol
+):
     """Define the Descriptor equipped with all methods"""
 
 
-#  LINE: -- Specification -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class ValidDescriptor[T](WriteDescriptor[T], _Protocol):
@@ -116,6 +129,9 @@ class TypedDescriptor[T](ValidDescriptor[T], _Protocol):
         """Confirm the Type while attaching"""
 
 
+#  LINE: -- Combinations -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 class LazyDescriptor[T](Descriptor[T], _Protocol):
     def __init__(self, loader: FieldLoader) -> None:
         """Prepare Attribute for load on first call"""
@@ -123,23 +139,31 @@ class LazyDescriptor[T](Descriptor[T], _Protocol):
     loader: FieldLoader
 
 
-# NEXT:
-class CallingDescriptor[**In, Out](  # IDEA: split T? In/Out?
-    DecoratingField,
+#  LINE: -- Strategy -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# NEXT: check what needed / required
+class CallingDescriptor[**In, Out](
+    DecoDescriptor,
     ValidDescriptor[Calling[In, Out]],
-    DeleteDescriptor,
+    ReadDescriptor[Calling[In, Out]],
+    DeleteDescriptor,  # TODO: needed/desired? del Cls.method -> default? why not?
     _Protocol,
 ):
+    """Switch Callable Attribute (Method) with enforced Rules"""
+
     def switch(self, func: Calling[In, Out]) -> _Self:
-        # TODO: check if Self actually helps for something or other options are more valuabl
-        """Install new Method LSP conform with Default"""
+        # TODO: check if Self useful or other returns are more valuable
+        """Install new LSP conform Method"""
 
 
-# NEXT:
+# NEXT: check what needed / required
 class MorphingDescriptor(CallingDescriptor, _Protocol):
+    """Switch Callable Attribute (Method) with less Rules"""
+
     def morph(self, func: Calling) -> _Self:
-        # TODO: check if Self actually helps for something or other options are more valuabl
-        """Change Method with possible LSP Violation"""
+        # TODO: check if Self useful or other returns are more valuable
+        """Install new Method with possible LSP Violation"""
 
 
 #  LINE: -- State and Transmission -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -172,9 +196,7 @@ class TransitionDescriptor[T: _Enum](TypedDescriptor[T], _Protocol):
         """Implement rigid state-machine rules here"""
 
 
-class StateDescriptor[T: _Enum](
-    TransitionDescriptor[T], CompleteDescriptor[T]
-):
+class StateDescriptor[T: _Enum](TransitionDescriptor[T], FullDescriptor[T]):
     """Govern the Lifecycle of the State"""
 
 
@@ -182,11 +204,11 @@ class StateDescriptor[T: _Enum](
 
 
 class _TempEmit[**P, R](_Protocol):
-    # TODO: at first usage, update emit with port.event
-    def __call__(self, args=P.args, kwargs=P.kwargs) -> None: ...
+    def __call__(self, args=P.args, kwargs=P.kwargs) -> None:
+        """# TODO: at first usage, update emit with port.event"""
 
 
-class EventDescriptor[T](CompleteDescriptor[T], _Protocol):
+class EventDescriptor[T](_Protocol):
     emit: _TempEmit
 
     def __init__(self, func: _TempEmit) -> None:

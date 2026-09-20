@@ -8,7 +8,7 @@ Define the Atomic Components of the Fields
 - ReadField: __get__
 - DeleteField: __del__
                                                  DependencyLevel[0]
-"""
+"""  # FIX: level: bump all or consider _raise as DependencyLevel[-1]?
 
 __all__: list[str] = [
     "NamedField",
@@ -21,20 +21,24 @@ __all__: list[str] = [
 from typing import TYPE_CHECKING, Any, Never, Self, overload
 
 from ...port import attach
+from ...port.raising import Raiser
 from ..labor import reflect
-from .___raise import FieldRaiser
+from ._raise import FieldRaiser
 
 
 class NamedField:
     """Provide Utils for all Fields"""
 
-    # raise_: type[Raiser] = FieldRaiser
-    raise_ = FieldRaiser
+    raiser: type[Raiser] = FieldRaiser
+    # TODO: select raiser/on_error
+    # IDEA: this as getter? (as well for others) with bad message on set?
+    on_error = FieldRaiser
 
     def __init__(self, *args, **kwargs):
         """Close the chain: super()"""
 
     def __set_name__(self, owner: type, name: str) -> None:
+        _owner = owner
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
@@ -54,9 +58,8 @@ class NamedField:
         return self.private_name in unit.__dict__
 
 
-# IDEA: access mixin
-#  self.is_writable, maybe as well is_readable?
 class _IdeaFieldAccess(NamedField):
+    # IDEA: access mixin -> class BaseField(NamedField,FieldAccess):...
     @property
     def can_reset(self) -> bool:
         return False
@@ -96,22 +99,23 @@ class ReadField[FieldT](NamedField):
     @overload
     def __get__(self, unit: object, owner: type | None) -> FieldT: ...
     def __get__(
-        self, unit: object | None, owner: type | None = None
+        self, unit: object | None, _owner: type | None = None
     ) -> FieldT | Self:
         """Dispatch by Caller: unit=instance or owner=type(instance)"""
 
         return self if unit is None else self.read(unit)
 
-    def raise_on_missing(self, unit: object) -> Never:
+    def on_erroron_missing(self, unit: object) -> Never:
+        # REMOVE: when on_error established
         raise AttributeError(f"{self.name(unit)} is Missing!")
+
+    def new_on_error(self, _unit: object, _todo: Any) -> Never:
+        raise self.on_error.ReadMissing(_todo)  # ty:ignore
 
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
-            self.raise_on_missing(unit)
+            self.on_erroron_missing(unit)
         return self._get_val(unit)
-
-    def t(self):
-        self.raise_.ReadMissing(object)
 
 
 class DeleteField(NamedField):
@@ -124,7 +128,7 @@ class DeleteField(NamedField):
 
 
 if TYPE_CHECKING:
-    _base: type[attach.DescriptorBase] = NamedField
+    _base: type[attach.Descriptor] = NamedField
     _read: type[attach.ReadDescriptor] = ReadField
     _delete: type[attach.WriteDescriptor] = WriteField
     _write: type[attach.DeleteDescriptor] = DeleteField

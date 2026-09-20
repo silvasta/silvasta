@@ -2,7 +2,7 @@
 Exchange Callables on Classes
 
 - StrategyField:
-                                                 DependencyLevel[1]
+                                                 DependencyLevel[3]
 """
 
 __all__: list[str] = [
@@ -12,12 +12,12 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 from inspect import Signature, signature
-from types import MethodType
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 
 from ...port import attach
 from ...port.calling import Calling
-from ._specify import DecoratedField, ResetField
+from ._decorate import DecoratedField
+from ._extend import ResetField
 
 
 def _check_sig_param_length(sig1, sig2) -> bool:  # MOVE: brick.labor._inspect

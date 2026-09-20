@@ -6,11 +6,18 @@ Adapt the SstCoreError to the Fields and implement Raiser
                                                  DependencyLevel[X]
 """
 
-from enum import Enum, auto
-from typing import Any, Never, Unpack
+import re
 
-from ...port.attach import DescriptorBase
-from ...port.raising import ErrorData, ErrorInput, SstCoreError
+from enum import auto
+from typing import Any, Literal, Never, Unpack, overload
+
+from ...port.raising import (
+    ErrorData,
+    ErrorDTO,
+    ErrorInput,
+    Raiser,
+    SstCoreError,
+)
 from ..labor import clsname
 
 
@@ -34,73 +41,63 @@ class FieldErrorData[FieldT, UnitT](ErrorData):
 
     field: FieldT
     instance: UnitT | None = None
-    cls_attr_name: str = ""  # Cls.attr
+    cls_attr_name: str = ""  # "Cls.attr"
     #
     owner: type | None = None
     value: FieldT | Any = None
 
 
-class FieldError(SstCoreError):
-    # IDEA: use this FieldError and mix it with the errors above
-    def __init__(
-        self,
-        message: str,
-        field: object,
-        *args,
-        panic: FieldRaiser = FieldRaiser.RAW,
-        **kwargs: Any,
-    ):
-        self.message: str = message
-        self.field: object = field
-        self.kwargs: dict = kwargs
-        self.panic: FieldRaiser = panic
-        super().__init__(*args)
-
-
 class ErrorBuilder:
+    # EXTRACT: generic/field_specific
     def custom(
-        self, reason: FieldRaiser, /, data: error.ErrorData
-    ) -> error.ErrorDTO:
-        """Get registred custom Exception that maps to current Raiser"""
-        raise NotImplementedError
+        self, reason: FieldRaiser, /, data: ErrorData
+    ) -> type[SstCoreError]:
+        """Get Custom Exception registred in Raiser"""
+        raise NotImplementedError(reason, data)
 
+    # EXTRACT: generic/field_specific
     def builtin(
-        self, reason: FieldRaiser, /, data: error.ErrorData
-    ) -> error.ErrorDTO:
-        """Find registred builtin Exception if registred"""
-        raise NotImplementedError
+        self, reason: FieldRaiser, /, data: ErrorData
+    ) -> type[Exception] | None:
+        """Find Builtin Exception if registred in Raiser"""
+        raise NotImplementedError(reason, data)
 
+    # EXTRACT: generic/field_specific
+    def bases(
+        self, reason: FieldRaiser, /, data: ErrorData
+    ) -> tuple[type[Exception], ...]:
+        """Gather the registed Error classes"""
+        sst_error: type[SstCoreError] = self.custom(reason, data)
+        exception: type[Exception] | None = self.builtin(reason, data)
+        return (sst_error,) if exception is None else (sst_error, exception)
+
+    # EXTRACT: generic/field_specific
+    def error_name(
+        self, reason: FieldRaiser, bases: tuple[type[Exception], ...]
+    ) -> str:  # TODO: try less hardcoded
+        """Format new Error class name"""
+        error: str = bases[-1].__name__
+        prefix: str = bases[0].__name__.rstrip("Error")  # FIX:
+        return f"{reason.name}{prefix}{error}"  # CHECK: output
+
+    # EXTRACT: generic/field_specific
     def compose(
-        self, reason: FieldRaiser, /, data: error.ErrorData
+        self, reason: FieldRaiser, /, data: ErrorData
     ) -> type[SstCoreError]:
         """Mix builtin Exception into the custom Error"""
 
-        def _name(data) -> str:
-            # TODO:
-            raise NotImplementedError
+        bases: tuple[type[Exception], ...] = self.bases(reason, data)
+        name: str = self.error_name(reason, bases)
 
-        sst_error = self.custom(reason, data)
-        # FIX:
-        exception = self.builtin(reason, data)
-        bases: tuple[type[Exception], ...] = (
-            # FIX:
-            (sst_error, builtin)
-            if (exception := self.builtin(reason, data))
-            # FIX:
-            else (sst_error := self.custom(reason, data))
-        )
+        return type(name, bases, {})
 
-        new_cls: type = type(_name(data), bases, {})
-        return new_cls
-
-    def __call__(
-        self, reason: error.Raiser, /, data: error.ErrorData
-    ) -> error.ErrorDTO:
+    # EXTRACT: generic/field_specific
+    def __call__(self, reason: Raiser, /, data: ErrorData) -> ErrorDTO:
         """Mix builtin Exception into the custom Error"""
-        raise NotImplementedError
+        raise NotImplementedError(reason, data)
 
 
-class FieldRaiser(Enum):
+class FieldRaiser(Raiser):
     RAW = auto()  # IDEA: this as index 0? (later)
 
     WriteExists = auto()
@@ -114,27 +111,34 @@ class FieldRaiser(Enum):
     def __str__(self):
         return self.name
 
-    def __call__(self, **kwargs: Unpack[error.ErrorInput]) -> Never:
+    @overload  # EXTRACT: generic/field_specific
+    def __call__(
+        self, direct=Literal[True], **kwargs: Unpack[ErrorInput]
+    ) -> Never: ...
+    @overload  # EXTRACT: generic/field_specific
+    def __call__(
+        self, direct=Literal[False], **kwargs: Unpack[ErrorInput]
+    ) -> ErrorDTO: ...
+    def __call__(  # EXTRACT: generic/field_specific
+        self, direct: bool = False, **kwargs: Unpack[ErrorInput]
+    ) -> Never | ErrorDTO:
         """Collect the needed input, format and fire the Exception"""
 
-        _field: DescriptorBase
+        # EXTRACT: generic/field_specific
+        def _sanitize(**kwargs: Unpack[ErrorInput]) -> ErrorData:
+            raise NotImplementedError(kwargs)
 
-        def _sanitize(**kwargs) -> error.ErrorInput:
-            raise NotImplementedError
+        input_data: ErrorData = _sanitize(**kwargs)
+        error_dto: ErrorDTO = ErrorBuilder()(self, input_data)
 
-        input_dto: ErrorInput = _sanitize(**kwargs)
-        output_dto: ErrorDTO = ErrorBuilder()(self, input_dto)
+        return error_dto if not direct else self.launch(error_dto)
 
-        self.launch(output_dto)
-
-    def launch(self, data: error.ErrorDTO, *args) -> Never:
+    def launch(self, data: ErrorDTO, *args) -> Never:
         raise data.fire(data.message, *data.args, *args)
 
     def map(self, name, field, value):
         # NEXT:
-        # NEXT:
-        # NEXT:
-        # REFACTOR: complete split
+        # REFACTOR: complete split, fill the get_* matches
         match self:
             case FieldRaiser.WriteExists:
                 f"{name}: {self} already Exists! {field}"
@@ -175,13 +179,6 @@ class FieldRaiser(Enum):
                 RuntimeError()
 
 
-# NOTE: grammar and text and everything for sure needs improvement
-on_error = FieldRaiser
-
-# IMPORTANT: finally that is executed in field
-on_error.ReadMissing(object, name="test").raiser()
-
-
 def get_format_pattern(reason: FieldRaiser) -> str:
     match reason:
         case FieldRaiser.RAW:
@@ -200,6 +197,7 @@ def get_format_pattern(reason: FieldRaiser) -> str:
             return ""
         case FieldRaiser.Transition:
             return ""
+    raise NotImplementedError(reason)
 
 
 def get_builtin_exception(reason: FieldRaiser) -> type[Exception] | None:
@@ -220,6 +218,7 @@ def get_builtin_exception(reason: FieldRaiser) -> type[Exception] | None:
             return None
         case FieldRaiser.Transition:
             return None
+    raise NotImplementedError(reason)
 
 
 def get_custom_exception(reason: FieldRaiser) -> type[SstCoreError]:
@@ -240,3 +239,43 @@ def get_custom_exception(reason: FieldRaiser) -> type[SstCoreError]:
             raise NotImplementedError
         case FieldRaiser.Transition:
             raise NotImplementedError
+    raise NotImplementedError(reason)
+
+
+class FieldError(SstCoreError):
+    # IDEA: use this FieldError and mix it with the errors above
+    def __init__(
+        self,
+        message: str,
+        field: object,
+        *args,
+        panic: FieldRaiser | None = None,
+        **kwargs: Any,
+    ):
+        self.message: str = message
+        self.field: object = field
+        self.kwargs: dict = kwargs
+        self.panic: FieldRaiser = panic or FieldRaiser.RAW
+        super().__init__(*args)
+
+
+#  LINE: -- USAGE -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+on_error = FieldRaiser
+
+
+def how_to_use1() -> Never:
+    raise on_error.ReadMissing(name="test", direct=False)
+
+
+def how_to_use2() -> ErrorDTO:
+    return on_error.ReadMissing(direct=False)
+
+
+def how_to_use3() -> Never:
+    assembled: ErrorDTO = on_error.ReadMissing(name="test")
+    return assembled.fire()
+
+
+def how_to_use4() -> Never:
+    on_error.ReadMissing(name="test", direct=True)

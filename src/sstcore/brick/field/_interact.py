@@ -1,7 +1,7 @@
 """
 Setup Minimal Components to Assemble individual Descriptors
 
-                                                 DependencyLevel[0]
+                                                 DependencyLevel[1]
 """
 
 __all__: list[str] = [
