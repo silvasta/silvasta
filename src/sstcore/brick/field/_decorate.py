@@ -10,6 +10,7 @@ __all__: list[str] = [
 ]
 
 from inspect import Signature, signature
+from types import MethodType
 from typing import TYPE_CHECKING, Any, Never, Self
 
 from ...port import attach
@@ -46,23 +47,21 @@ class FieldDecorator[**In, Out](ValidField):
     ) -> None:
         """Check if Decorator has Input -> Bind or Attach"""
 
-        if no_arg_deco_func is None:
+        if no_arg_deco_func is None:  # CHECK: simply: target_func??
             raise NotImplementedError("Bind! Outer func", args, kwargs)
         else:
-            self.bind(no_arg_deco_func)  # NEXT: write?
-
-        self.signature: Signature | None = None  # CHECK: with bind
+            self.bind(no_arg_deco_func)
 
         super().__init__(*args, **kwargs)
+        # NEXT: ensure write here!
 
     def __call__(self, with_arg_deco_func: Calling[In, Out]) -> Self:
         """Invoked only when used as @Field(args)"""
-        self.deco_func: Calling = with_arg_deco_func  # PARAM: add generics
         self.bind(with_arg_deco_func)
         return self
 
     def __str__(self):
-        return f"{self.deco_func}[{self.signature}]"
+        return f"{self.target_func}[{self.signature}]"
 
     def raise_on_unbound(self, unit: object) -> Never:
         # LATER: combine with raise_on_missing?
@@ -77,12 +76,10 @@ class FieldDecorator[**In, Out](ValidField):
         raise TypeError(message)
 
     def bind(self, func: Calling, override=False) -> None:
-        # NEXT: which bind??
-        # Issue with initial write/set/attach and ongoing during progress...
+        self.target_func = func
         self.__doc__: str | None = func.__doc__  # EXTRACT: brick.labor
         self.public_name: str = reflect.dig.func(func)  # TODO: default value?
-        self.signature = signature(func)
-        self.write(unit, func)  # FIX:
+        self.signature: Signature = signature(func)
 
     def validate(
         self, unit: object, value: Calling[In, Out], reset=False
@@ -97,19 +94,20 @@ class FieldDecorator[**In, Out](ValidField):
 
 
 class DecoratedField[FieldT](ReadField[FieldT], FieldDecorator):
-    # NEXT: most likely collapse??
-    # Issue for whenever a different read field is desired...
-    # - decouple initial setup from read??
     """FieldDecorator with default ReadField for direct usage"""
 
-    # TASK: check if and what is needed at all
-
     def read(self, unit: object) -> FieldT:
-        if not self._has_val(unit):
-            if self.deco_func is None:
-                self.raise_on_unbound(unit)
-            self.write(unit, self.deco_func)  # materialize default
-        return self._get_val(unit)
+        if self._has_val(unit):
+            return self._get_val(unit)
+
+        # TASK: do at most  dispatch here!
+        # - create write in FieldDecorator!
+        # - trigger preferably in FieldDecorator!
+        if self.target_func is None:
+            self.raise_on_unbound(unit)
+        bound_method = MethodType(self.target_func, unit)
+        self.write(unit, bound_method)
+        return bound_method
 
 
 if TYPE_CHECKING:
