@@ -2,6 +2,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol, Self, cast
 
+from .___data import ANSI_COLORS, ANSI_MODIFIERS, ATTR1, ATTR2, ATTR3
+
 
 class Applicator[InputT, OutputT](Protocol):
     """Final logic: takes accumulated state + input → result."""
@@ -12,14 +14,14 @@ class Applicator[InputT, OutputT](Protocol):
 
 
 @dataclass
-class AttrGroup:
+class AttrGroup[T]:
     """One dimension of configuration (e.g. colors, modifiers, pipeline steps)."""
 
-    mapping: dict[str, Any]
-    default: Any = None
+    mapping: dict[str, T]
+    default: T | None = None
     strategy: str = "set"  # "set" | "append" | "extend"
     # Optional dynamic resolver (e.g. lookup in ColorBox)
-    resolver: Callable[[str, dict[str, Any]], Any] | None = None
+    resolver: Callable[[str, dict[str, T]], Any] | None = None
 
 
 class StackingCore[InputT, OutputT]:
@@ -121,26 +123,6 @@ class StackingCore[InputT, OutputT]:
 #  LINE: -- DTO -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-type AttrType[Value] = dict[str, Value]
-
-ATTR1: AttrType[int] = {
-    "key11": 2,
-    "key12": 3,
-    "key13": 5,
-}
-
-ATTR2: AttrType[str] = {
-    "key21": "hello",
-    "key22": "bye",
-}
-
-ATTR3: AttrType[Callable[[str], str]] = {
-    "key31": str.lower,
-    "key32": str.capitalize,
-    "key33": str.upper,
-}
-
-
 def dto_applicator(
     state: dict[str, Any], target: str, context: Any = None
 ) -> str:
@@ -170,13 +152,17 @@ z = handler.stack.key13.key33("Charlie")
 
 def color_applicator(state: dict, text: str, context: Any = None) -> str:
     # Reuse your existing ANSI / Rich logic here, reading state["color"], state.get("modifiers", ())
+    formatted_text = "" or text
     ...
+    if not formatted_text:
+        raise NotImplementedError
     return formatted_text
 
 
 color_groups = {
     "color": AttrGroup(
-        ANSI_COLORS, resolver=lambda n, s: context.get(n) if context else None
+        ANSI_COLORS,
+        resolver=lambda n, context: context.get(n) if context else None,
     ),
     "modifiers": AttrGroup(ANSI_MODIFIERS, default=(), strategy="append"),
 }

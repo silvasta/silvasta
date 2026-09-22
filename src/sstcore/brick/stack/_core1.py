@@ -17,6 +17,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Self
 
+from .___data import ANSI_COLORS, ANSI_MODIFIERS, ANSI_RESET
+
 WRITE_STUB = True
 WRITE_STUB = False
 stem = f"{Path(__file__).stem}_stub"
@@ -73,24 +75,13 @@ class StackingCore[R]:
 #  LINE: -- terminal -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-ANSI_COLORS = {
-    "red": "\033[31m",
-    "green": "\033[32m",
-    "blue": "\033[34m",
-}
-ANSI_MODIFIERS = {
-    "bold": "\033[1m",
-    "underline": "\033[4m",
-}
-
-
 def terminal_executor(
     state: StateDict, args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> str:
 
     color: str = state.get("colors", "")
     modifier: str = state.get("modifiers", "")
-    reset: str = "\033[0m" if color or modifier else ""
+    reset: str = ANSI_RESET if color or modifier else ""
 
     target: str = args[0] if args else kwargs.get("text", "")
 
@@ -219,7 +210,7 @@ def write_stub():
 
 
 if TYPE_CHECKING:
-    from ._core1_stub import PrinterEmpty
+    from ._core1_stub1 import PrinterEmpty
 
 
 printer: PrinterEmpty = StackingCore.build(  # ty:ignore

@@ -31,6 +31,15 @@ class Calling[**In, Out](Protocol):
 
 _test: _Callable = Calling
 
+
+@runtime_checkable
+class Stacking(Protocol):
+    # NEXT: replace by new setup
+    # TASK: colorbox and more
+    def __getattr__(self, name: str) -> Stacking:
+        """Stack Attributes on top of each other by attribute calls"""
+
+
 #  LINE: -- builtin views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
@@ -44,27 +53,7 @@ class LogStringable(Protocol):
     def __repr__(self) -> str: ...
 
 
-#  LINE: -- processing -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@runtime_checkable
-class ClassRendering(Protocol):
-    def __call__(self, cls: type) -> str:
-        """Process Classes like if they where Instances (e.g StaticFuncMeta)"""
-
-
-@runtime_checkable
-class Stacking(Protocol):  # NEXT: colorbox and more
-    def __getattr__(self, name: str) -> Stacking:
-        """Stack Attributes on top of each other by attribute calls"""
-
-
-@runtime_checkable
-class Colorizing(Protocol):
-    def __call__(self, text: Stringable) -> str:
-        # IDEA: def __call__(self, text: Stringable) -> Stringable:
-        # - or some other renderable type
-        """Forward text-like object after processing and ensuring string"""
+#  TASK: -- find proper separation/pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @runtime_checkable
@@ -87,9 +76,26 @@ class NormalizingMaybe[ExpectedT: Stringable](
 
 
 @runtime_checkable
+class Colorizing(Protocol):
+    def __call__(self, text: Stringable) -> str:
+        # IDEA: def __call__(self, text: Stringable) -> Stringable:
+        # - or some other renderable type
+        """Forward text-like object after processing and ensuring string"""
+
+
+#  LINE: -- processing -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@runtime_checkable
 class Listening[T](Protocol):
     def __call__(self, target: T) -> T:
         """Forward target after routing and inspection"""
+
+
+@runtime_checkable
+class ClassRendering(Protocol):
+    def __call__(self, cls: type) -> str:
+        """Process Classes like if they where Instances (e.g StaticFuncMeta)"""
 
 
 #  LINE: -- adapter -- -- - -- -- - -- -- - -- -- - -- -- - -- --

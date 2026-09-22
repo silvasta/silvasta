@@ -9,7 +9,7 @@ Colors in Action
 
 __all__: list[str] = [
     "ColorStack",
-    "TerminalFormatter",
+    "TerminalFormatter",  # NOTE: unsure if this will be completed/refactored
 ]
 
 from typing import Any, Self

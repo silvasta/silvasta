@@ -1,14 +1,15 @@
-from __future__ import annotations
-
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Self
 
+from .___data import ANSI_COLORS, ANSI_MODIFIERS
+
 
 class LayerMode(Enum):
     """How selections from this layer should be merged."""
 
+    # EXTRACT:
     REPLACE = auto()  # Last selection wins
     ACCUMULATE = auto()  # Collect into a tuple (order of selection preserved)
     CUSTOM = auto()  # Use provided merge function
@@ -18,6 +19,7 @@ class LayerMode(Enum):
 class Layer:
     """Definition of one stacking layer."""
 
+    # EXTRACT:
     mapping: Mapping[str, Any]
     mode: LayerMode = LayerMode.REPLACE
     name: str = ""
@@ -157,6 +159,7 @@ ColorStack = StackingCore(
 
 
 class StackedMethod[InputT, ResultT]:
+    # EXTRACT:
     """Wraps a StackingCore and optionally a base callable."""
 
     def __init__(

@@ -8,28 +8,43 @@ sstcore - Generalize Project Patterns and Bootstrap with Batteries
 - SafeTyper: CLI Pipeline with defaults
 - PathGuard: Fail and File system safety
 
-The Top Level Packages:
 
-- L5/󰉋 /console  # current main interface
-- L4/󰉋 /data     # intermediate support layer
-- L4/󰉋 /system   # central of the sstcore
-- L3/󰉋 /util     # well organized helpers
-- L2/󰉋 /error    # exception and handlers
-  NEW  /forge    # compose and assemble
+Top Level Packages:
+
+- L6/󰉋 /console  # main interface and execution
+- L5/󰉋 /data     # intermediate support layer
+- L5/󰉋 /system   # command and control central
+- L4/󰉋 /util     # structured helper and tools
+- L3/󰉋 /error    # exceptions and handlers
+- L2/󰉋 /forge    # shape compose and assemble
 - L1/󰉋 /brick    # universal building blocks
 - L0/󰉋 /port     # contracts and definitions
 
 
-Package and Subpackages are considered like one Module for Imports and Exports.
+Rules:
 
-- From an outside perspective all of them have the same dependency level
-- Internally everything starts again at 0, every import bumps to +1 from import
+Package and Subpackages are considered as one Module for Imports and Exports.
+
+- From the outside perspective they share the same dependency level
+- The Relative DependencyLevel starts internally again at 0
+- Every import bumps the level to +1 of the level of the import
+  - Consistently, the level of all export locations bumps as well
 - The __init__ has always the highest level inside its package
   - its DependencyLevel[X] counts for the entire package like a module outside
 
-Despite that dependency conflicts are heavily relaxed with the port:
+Despite that dependency conflicts are already heavily relaxed due to the port:
   - Strict application is desired without any violation
 
+
+Scratchpad and Experimental:
+
+- '___{..}' Test/Idea/Todo Scratchpad: temporary storage with ruff verification
+  - allowed in 'core' branch to collect history and ideas and outer branches
+  - forbidden in 'main' branch
+
+- '____{..}' Experimental or Out of Service: temporary storage
+  - allowed in outer branches to keep ideas close or commit unsafe state
+  - forbidden in 'core' and 'main' branch
 """
 
 __all__: list[str] = [
