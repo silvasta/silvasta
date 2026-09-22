@@ -5,25 +5,25 @@ Provide Test Stacking Data
 
 """
 
+import string
 from collections.abc import Callable
 
-type AttrType[Value] = dict[str, Value]
-
+from . import ___define as port
 
 #  LINE: -- Random Tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-ATTR1: AttrType[int] = {
+ATTR1: port.AttrType[int] = {
     "key11": 2,
     "key12": 3,
     "key13": 5,
 }
 
-ATTR2: AttrType[str] = {
+ATTR2: port.AttrType[str] = {
     "key21": "hello",
     "key22": "bye",
 }
 
-ATTR3: AttrType[Callable[[str], str]] = {  # TODO: CallingType
+ATTR3: port.AttrType[Callable[[str], str]] = {  # TODO: CallingType
     "key31": str.lower,
     "key32": str.capitalize,
     "key33": str.upper,
@@ -42,3 +42,18 @@ ANSI_MODIFIERS: dict[str, str] = {  # TODO: MappingType
     "underline": "\033[4m",
 }
 ANSI_RESET: str = "\033[0m"
+
+
+#  LINE: -- String -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+STRING_NORMALIZERS = {
+    "lower": str.lower,
+    "upper": str.upper,
+}
+STRING_SANITIZERS = {
+    "strip_punct": lambda s: s.translate(
+        str.maketrans("", "", string.punctuation)
+    ),
+    "trim": str.strip,
+}
