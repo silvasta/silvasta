@@ -5,8 +5,6 @@ Detect (and future) Analyze MRO Inheritance
 """
 
 __all__: list[str] = [
-    "mro"
-    #
     "sort_cls_by_name",  # RENAME: (probably all)
     "all_common_ancestors",
     "closest_common_ancestor",
@@ -19,4 +17,3 @@ from ._mro import (
     get_all_descendants,
     sort_cls_by_name,
 )
-from . import _mro as mro

@@ -77,8 +77,9 @@ class FieldDecorator[**In, Out](ValidField):
 
     def bind(self, func: Calling, override=False) -> None:
         self.target_func = func
-        self.__doc__: str | None = func.__doc__  # EXTRACT: brick.labor
-        self.public_name: str = reflect.dig.func(func)  # TODO: default value?
+        default_doc = f"Bound Function by {self}"
+        self.__doc__: str = reflect.doc(func, default=default_doc)
+        self.public_name: str = reflect.funcname(func)  # TODO: default value?
         self.signature: Signature = signature(func)
 
     def validate(
