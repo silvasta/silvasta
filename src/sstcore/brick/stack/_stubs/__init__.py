@@ -1,5 +1,0 @@
-"""
-Generated Stub Files
-
-.
-"""
