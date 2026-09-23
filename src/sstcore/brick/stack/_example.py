@@ -52,11 +52,16 @@ def dto_applicator(
     state: dict[str, Any],
     target: str,
 ) -> str:
-    string = f"{target} says {state.get('greeting')} to Peter"
-    for _ in range(state.get("repeats", 1)):
+    greeting = state.get("greeting", [""])[0]
+    repeats = state.get("repeats", [1])[0]
+
+    string = f"{target} says {greeting} to Peter"
+    for _ in range(repeats):
         print(string)
-    if state.get("formatter"):
-        string = state["formatter"](string)
+
+    if formatter_list := state.get("formatter"):
+        string = formatter_list[0](string)
+
     return string
 
 

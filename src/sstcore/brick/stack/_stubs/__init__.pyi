@@ -8,5 +8,4 @@ __all__: list[str] = [
     "GreeterEmpty",
 ]
 
-
 from ._random import GreeterEmpty

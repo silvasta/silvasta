@@ -1,7 +1,7 @@
 """
-IMPLEMENT STUB FILE WRITER HERE
+Launch the StubFile Writer and Type the Stackings
 
-- Temporary until ready to move to proper place
+uv run -m sstcore.brick.stack._write
 
 """
 
@@ -27,7 +27,8 @@ class Config:
 
 def main():
     # write_stub_for_colors()
-    write_stub_for_random()
+    # write_stub_for_random()
+    pass
 
 
 #  LINE: -- Writer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -135,7 +136,7 @@ def generate_fluent_stubs(  # LATER: use Machine
 #  LINE: -- Paths -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def stub_dir(dir: str = "_stub") -> Path:
+def stub_dir(dir: str = "_stubs") -> Path:
     path: Path = Path(__file__).parent / dir
     path.mkdir(parents=True, exist_ok=True)
     return path
