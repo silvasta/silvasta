@@ -1,5 +1,0 @@
-"""
-Idea: write stubs
-
--
-"""
