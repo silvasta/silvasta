@@ -29,4 +29,3 @@ class PrinterModifiers:
 
 class PrinterColorsModifiers:
     def __call__(self, text: str) -> str: ...
-    pass

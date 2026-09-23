@@ -22,36 +22,41 @@ from ...port.stacking import StackingCore
 
 
 class Config:
-    # DRYRUN = True  # toggle by comment
+    DRYRUN = True  # toggle by comment
 
     @staticmethod
     def dry_run():
         return hasattr(Config, "DRYRUN")
 
     @staticmethod
-    def target_file() -> Path:  # LATER: PathGuard
-        # NEXT: generate path to proper location
-        target: Path = Path(__file__).parent / "_generated_stubs.pyi"
-        return target
+    def target_file(name: str) -> Path:  # LATER: PathGuard
+        dir: Path = Path.home() / "sstcore/src/sstcore/brick/stack"
+        return dir / "_stubs" / f"_{name.lower()}.pyi"
+
+
+# writes: list[str] = [
+#     StubTyper.draw(name="Random", core=DTO_STACK),
+#     StubTyper.draw(name="Ansi", core=ANSI_STACK),
+#     StubTyper.draw(name="Text", core=STRING_STACK),
+# ]
 
 
 def main():
     """Launch full Pipeline for all 3 Examples"""
-
-    writes: list[str] = [
-        StubTyper.draw(name="Greeter", core=DTO_STACK),
-        StubTyper.draw(name="Printer", core=ANSI_STACK),
-        StubTyper.draw(name="Text", core=STRING_STACK),
+    pairs: list[tuple[str, StackingCore]] = [
+        ("Random", DTO_STACK),
+        ("Ansi", ANSI_STACK),
+        ("Text", STRING_STACK),
     ]
-    merged_stub_file: str = "\n".join(writes)
-    target: Path = Config.target_file()
-    if Config.dry_run():
-        target.write_text(data=merged_stub_file)
-        # LATER: relative to project root in print (PathGuard)
-        print(f"Successfully generated stubs at {target}")
-    else:
-        print(merged_stub_file)
-        print(f"Successfully generated stub, No write to:\n{target}")
+    for name, core in pairs:
+        stub_file: str = StubTyper.draw(name, core)
+        target: Path = Config.target_file(name)
+        if Config.dry_run():
+            target.write_text(data=stub_file)
+            print(f"Successfully generated stubs at {target}")
+        else:
+            print(stub_file)
+            print(f"Successfully generated stub, No write to:\n{target}")
 
 
 class StubTyper:
@@ -132,7 +137,7 @@ class StubTyper:
     def _render_param(param: inspect.Parameter) -> str:
         param_def = f"{param.name}"
         if (annot := param.annotation) != inspect.Parameter.empty:
-            # AI_QUESTION: funcname checks the following:
+            # WARN: funcname checks the following:
             # attrs: Sequence[str] = ("__name__", "__qualname__")
             # - no issue because of __qualname__?
             param_def += f": {(funcname(annot, default=str(annot)))}"

@@ -1,33 +1,34 @@
 """
-Collect Stubs for Stacking
+Produce the Components for the Dot-Accessed Typed Stacking
 
--
+                                   DependencyLevel.sstcore.brick[1]
 """
 
-from ...port.stacking import (
-    RunningStack,
-    StackingCore,
-    StackingLayer,
-    StackingState,
-)
-from ._stubs._format import FormatEmpty
-from ._stubs._printer import PrinterEmpty
-from ._stubs._random import GreeterEmpty
+__all__: list[str] = [
+    "StackBase",
+    "StackLayer",
+    "StackCore",
+    "StackState",
+    "StackRunner",
+    # examples
+    "ANSI_STACK",
+    "DTO_STACK",
+    "STRING_STACK",
+]
 
-StackLayer: StackingLayer
-StackCore: StackingCore
-StackRunner: RunningStack
-StackState: StackingState
+from ._core import StackBase as StackBase
+from ._core import StackCore as StackCore
+from ._core import StackLayer as StackLayer
+from ._core import StackRunner as StackRunner
+from ._core import StackState as StackState
+from ._stubs._ansi import AnsiEmpty as AnsiStack
+from ._stubs._random import RandomEmpty as RandomStack
+from ._stubs._text import TextEmpty as TextStack
 
-DTO_STACK: GreeterEmpty
-ANSI_STACK: PrinterEmpty
-STRING_STACK: FormatEmpty
+DTO_STACK: RandomStack
+ANSI_STACK: AnsiStack
+STRING_STACK: TextStack
 
-# NOTE: The __getattr__ Escape Hatch:
-# To prevent accidental strict shadowing of untyped
-# dynamic utilities within the same module, include:
-#   def __getattr__(name: str) -> Any: ...
-# at the bottom of your generated __init__.pyi.
-# This explicitly tells the type checker to allow dynamic
-# lookups for anything not explicitly defined in the stub,
-# preventing false-positive errors across the library.
+# INFO: use this for more dynamic escape hatch
+# from typing import Any as _Any
+# def __getattr__(name: str) -> _Any:

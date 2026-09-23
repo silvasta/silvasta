@@ -16,7 +16,7 @@ from typing import Any
 
 from ...port.stacking import LayerMode, StackingCore, StackingLayer
 from . import _test_data as data
-from ._stack import StackCore, StackLayer
+from ._core import StackCore, StackLayer
 
 
 def color_executor(text: str, color: Any) -> str:
