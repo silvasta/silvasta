@@ -10,6 +10,13 @@ FunctorMetaData
   - views, color
   - hybrid flag + overridable apply/wrap/delay/detect/reject/__call__
 """
+# WARN: is this outdated???
+# WARN: is this outdated???
+# WARN: is this outdated???
+# WARN: is this outdated???
+# WARN: is this outdated???
+# WARN: is this outdated???
+# WARN: is this outdated???
 
 from sstcore.port.calling import Richable
 
