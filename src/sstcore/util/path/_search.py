@@ -3,7 +3,7 @@ Find objective in file system.
 
 - get_* ensures Path or Raises
 - find_* returns None on Fail
-                                                       DependencyLevel[0]
+                               DependencyLevel.sstcore.util.path[0]
 """
 
 __all__: list[str] = [

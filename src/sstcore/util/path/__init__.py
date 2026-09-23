@@ -1,7 +1,7 @@
 """
 Handle basic File System Operations, find and extract from Paths
 
-                                                       DependencyLevel[X]
+                                    DependencyLevel.sstcore.util[X]
 """
 
 __all__: list[str] = [
@@ -21,9 +21,15 @@ __all__: list[str] = [
     "XdgDefaults",
     "XdgHomes",
     "HomeDirs",
+    # modules
+    "package_dir",
+    "module_name",
+    "public_package",
+    "get_stub_dir",
 ]
 
 from . import _toml as pytoml
+from ._module import get_stub_dir, module_name, package_dir, public_package
 from ._search import (
     any_root,
     find_project_root,

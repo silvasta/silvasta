@@ -1,4 +1,8 @@
-"""Unite all Path Tools under PathGuard"""
+"""
+Assemble all Tools to PathGuard
+
+                         DependencyLevel.sstcore.util.path.guard[4]
+"""
 
 __all__: list[str] = [
     "PathGuard",
@@ -9,9 +13,9 @@ __all__: list[str] = [
 from collections.abc import Callable
 
 from ....brick.color.box import Colors
-from ....brick.forge.blueprint import StaticFuncMeta, StaticFuncMetaData
-from ....brick.format import clsname
+from ....brick.labor import clsname
 from ....error import PathGuardError, PathGuardReason
+from ....forge.engine.blueprint import StaticFuncMeta, StaticFuncMetaData
 from ....port.color import ColorBox
 from ....port.files import SyncMode
 from . import _ensure, _field, _operate, _relative

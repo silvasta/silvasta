@@ -1,4 +1,8 @@
-"""Define the Public Interface of PathGuard"""
+"""
+Unite all Path Tools under  PathGuard 
+
+                               DependencyLevel.sstcore.util.path[0]
+"""
 
 __all__: list[str] = [
     "PathGuard",
@@ -69,6 +73,8 @@ class PathGuard:
     Spec: type[PathSpec]
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
+
+    # EXTRACT: for StaticMeta
 
     def __init__(self) -> NoReturn: ...
     @classmethod

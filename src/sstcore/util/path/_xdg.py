@@ -1,7 +1,7 @@
 """
 Provide defaults and basic access for XDG Homes in system environment
 
-                                                       DependencyLevel[0]
+                               DependencyLevel.sstcore.util.path[0]
 """
 
 from typing import TYPE_CHECKING, Self

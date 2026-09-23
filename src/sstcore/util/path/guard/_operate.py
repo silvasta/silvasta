@@ -3,6 +3,7 @@ File System Operations
 
 - Transfer
 - Delete
+                         DependencyLevel.sstcore.util.path.guard[3]
 """
 
 __all__: list[str] = [  # TODO:
@@ -22,10 +23,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....brick.format import clsname
-from ....brick.func import SafeFunctor
+from ....brick.labor import clsname
 from ....error import PathGuardError, PathGuardReason
-from ....port.call import ErrorPolicy
+from ....forge.func import SafeFunctor
+from ....port.attach import ErrorPolicy  # NEXT:
 from ....port.files import SyncMode
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec

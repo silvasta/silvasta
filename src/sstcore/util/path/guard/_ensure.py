@@ -1,3 +1,9 @@
+"""
+Ensure Dir or File, exists or not
+
+                         DependencyLevel.sstcore.util.path.guard[1]
+"""
+
 import functools
 import re
 from collections.abc import Callable

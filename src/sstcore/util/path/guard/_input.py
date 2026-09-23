@@ -1,3 +1,9 @@
+"""
+Input Normalization
+
+                         DependencyLevel.sstcore.util.path.guard[0]
+"""
+
 __all__: list[str] = [
     "PathSpec",
     "PathInput",

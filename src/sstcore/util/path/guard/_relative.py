@@ -1,3 +1,9 @@
+"""
+Calculate Relative Paths and produce renderable Strings
+
+                         DependencyLevel.sstcore.util.path.guard[2]
+"""
+
 import functools
 from pathlib import Path
 
