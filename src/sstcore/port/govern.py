@@ -55,6 +55,7 @@ class Index(BaseEnum):
 
 
 class Machine(EnumView):
+    # TASK: check class StubMachine(Machine):... here, for unique root
     """Task Executor"""
 
 

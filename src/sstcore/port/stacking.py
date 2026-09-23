@@ -82,12 +82,8 @@ class StackingCore[**In, ValueT, Out](StackingLayer[ValueT], Protocol):
     def layers(self) -> Map[StackingLayer[ValueT]]:  # LATER: field
         """Store Mapping with Source Layer"""
 
-    def schema(self) -> Accumulated[str]:  # TODO: Accumulated??
-        """Generate Mapping of Layer Name: Keys"""  # TODO: better text
-        return {
-            layer_name: list(layer.keys())
-            for layer_name, layer in self.layers.items()
-        }
+    def schema(self) -> dict[str, list[str]]:
+        """Generate Layer Mapping as SSoT for Stub typing"""
 
     @property
     def source_map(self) -> Map[str]:  # LATER: field
