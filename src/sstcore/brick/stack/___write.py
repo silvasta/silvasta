@@ -5,8 +5,8 @@ IMPLEMENT STUB FILE WRITER HERE
 
 """
 
-# NEXT: implement
-
+import dataclasses
+import inspect
 import itertools
 from collections.abc import Mapping
 from inspect import Signature
@@ -87,7 +87,7 @@ def generate_flat_stub(
         f.write("\n")
 
 
-def generate_fluent_stubs(
+def generate_fluent_stubs(  # AI: so far the best result
     class_prefix: str,
     group_mappings: Mapping[str, list[str]],
     call_signature: str = "def __call__(self, text: str) -> str: ...",
@@ -140,3 +140,39 @@ def generate_fluent_stubs(
         stub_lines.append("")
 
     return "\n".join(stub_lines)
+
+
+#  LINE: -- example classmethod -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@dataclasses.dataclass(frozen=True)
+class StackingCore:
+    """Immutable fluent accumulator. Subclass, declare layer fields, implement apply."""
+
+    _stack_index: Any
+
+    @classmethod
+    def generate_stub(cls) -> str:
+        """Stub pyi body: explicit properties so the IDE can autocomplete keys."""
+
+        # EXTRACT:
+        cls_name = cls.__name__
+        lines = [f"class {cls_name}:"]
+        if dataclasses.is_dataclass(cls):
+            for f in dataclasses.fields(cls):
+                if f.name.startswith("_"):
+                    continue
+                anno = getattr(f.type, "__name__", repr(f.type))
+                lines.append(f"    {f.name}: {anno}")
+        if callable(cls):
+            try:
+                sig = inspect.signature(cls.__call__)
+                lines.append(f"    def __call__{sig}: ...")
+            except TypeError, ValueError:
+                lines.append("    def __call__(self, *args, **kwargs): ...")
+        for key in sorted(cls._stack_index):
+            lines.append("    @property")
+            lines.append(f"    def {key}(self) -> {cls_name}: ...")
+        if len(lines) == 1:
+            lines.append("    ...")
+        return "\n".join(lines) + "\n"
