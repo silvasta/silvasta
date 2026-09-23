@@ -132,7 +132,7 @@ class StackCore[**In, ValueT, Out](StackLayer[ValueT]):
 
     def schema(self) -> dict[str, list[str]]:
         return {
-            layer_name: list(layer.keys())
+            layer_name: sorted(layer.keys())
             for layer_name, layer in self.layers.items()
         }
 
