@@ -12,8 +12,8 @@ __all__: list[str] = [
     "find_project_root",
     "get_project_root",
     # pyproject.toml
-    "ProjectInfo",
     "pytoml",
+    "ProjectInfo",
     "pyproject_path",
     "pyproject_name",
     "pyproject_sns",
