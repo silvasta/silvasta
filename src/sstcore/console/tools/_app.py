@@ -17,12 +17,14 @@ from ...util.filter import ProjectFilter
 from ...util.path import any_root
 from ...util.print import printer
 from ...util.scan import SummaryFileMachine
+from ...util.write._engine import StubFileMachine
 from .. import _args as args
 from .._engine import SafeTyper
 from ..select import TreeSelectorApp
 from ..tui import LogMonitorApp
 from ._monitor import log_monitor
 from ._scanner import folder_scanner
+from ._writer import stub_typer
 
 
 def main() -> None:
@@ -30,6 +32,20 @@ def main() -> None:
 
 
 app = SafeTyper(name="tools", help="Basic Equipment for Development")
+
+
+@app.command("writer")
+def launch_stub_engine(
+    ctx: Context,
+    _output_file: args.OutputFile = None,
+    _file_type: StubFileMachine = StubFileMachine.MD,
+    _reset: args.CleanState = False,
+    _select: bool = False,
+):
+    """StubFile Writer for fast an efficient Typing!"""
+    system: System = ctx.obj["system"]
+    _paths: Paths = system.config.paths
+    stub_typer(Path())
 
 
 _filter_arg = args.enum_opt(FilterArgs, "Select preset", "--filter")

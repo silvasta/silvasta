@@ -10,8 +10,9 @@ from pathlib import Path
 
 from ...brick.color import colorize
 from ...system.globals import config
-from ...util import PathGuard, printer
 from ...util.parse import LogMatcher
+from ...util.path.guard import PathGuard
+from ...util.print import printer
 
 
 def log_monitor(log_path: Path | None = None, sleep=0.1):
