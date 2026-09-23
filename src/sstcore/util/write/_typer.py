@@ -18,6 +18,10 @@ from ._engine import StubFileMachine
 class StubTyper[**P]:
     """Spin up the universal typed writing Framework"""
 
+    def schema(self) -> dict[str, list[str]]:
+        """Generate Layer Mapping as SSoT for Stub typing"""
+        raise NotImplementedError
+
     def draw(self, *args: P.args, **kwargs: P.kwargs): ...
     def start(self) -> list[str]:
         ...

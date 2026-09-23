@@ -12,51 +12,33 @@ __all__: list[str] = [
 import inspect
 import itertools
 from collections.abc import Callable, Mapping
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ...brick.labor import funcname
-from ...brick.stack._example import ANSI_STACK, DTO_STACK, STRING_STACK
 from ...port.shape import Typer
 from ...port.stacking import StackingCore
 
-
-class Config:
-    DRYRUN = True  # toggle by comment
-
-    @staticmethod
-    def dry_run():
-        return hasattr(Config, "DRYRUN")
-
-    @staticmethod
-    def target_file(name: str) -> Path:  # LATER: PathGuard
-        dir: Path = Path.home() / "sstcore/src/sstcore/brick/stack"
-        return dir / "_stubs" / f"_{name.lower()}.pyi"
-
-
-# writes: list[str] = [
-#     StubTyper.draw(name="Random", core=DTO_STACK),
-#     StubTyper.draw(name="Ansi", core=ANSI_STACK),
-#     StubTyper.draw(name="Text", core=STRING_STACK),
-# ]
-
-
-def main():
-    """Launch full Pipeline for all 3 Examples"""
-    pairs: list[tuple[str, StackingCore]] = [
-        ("Random", DTO_STACK),
-        ("Ansi", ANSI_STACK),
-        ("Text", STRING_STACK),
-    ]
-    for name, core in pairs:
-        stub_file: str = StubTyper.draw(name, core)
-        target: Path = Config.target_file(name)
-        if Config.dry_run():
-            target.write_text(data=stub_file)
-            print(f"Successfully generated stubs at {target}")
-        else:
-            print(stub_file)
-            print(f"Successfully generated stub, No write to:\n{target}")
+# def main():
+# TASK:
+# - paths by Stuby
+# - stack by typer
+# - launch from module?
+# -> cli
+#     """Launch full Pipeline for all 3 Examples"""
+#     pairs: list[tuple[str, StackingCore]] = [
+#         ("Random", DTO_STACK),
+#         ("Ansi", ANSI_STACK),
+#         ("Text", STRING_STACK),
+#     ]
+#     for name, core in pairs:
+#         stub_file: str = StubTyper.draw(name, core)
+#         target: Path = Config.target_file(name)
+#         if Config.dry_run():
+#             target.write_text(data=stub_file)
+#             print(f"Successfully generated stubs at {target}")
+#         else:
+#             print(stub_file)
+#             print(f"Successfully generated stub, No write to:\n{target}")
 
 
 class StubTyper:
@@ -166,5 +148,5 @@ if TYPE_CHECKING:
     _unit: Typer = StubTyper()
     _cls: type[Typer] = StubTyper
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

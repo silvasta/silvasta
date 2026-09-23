@@ -89,6 +89,19 @@ class DtoStack(StackCore):
 
 DTO_STACK: StackingCore = DtoStack(*layers, name="random", call=dto_applicator)
 
+# NOTE:
+# TASKS = [ {
+#         "typer": StackTyper(DTO_STACK, class_name="Greeter"),
+#         "target_module": "sstcore.brick.stack",
+#         "file_name": "_stubs/_random.pyi", },
+#     # Future typers go here ]
+# def sync_stubs():
+#     for task in TASKS:
+#         _content = task["typer"].draw()
+#         # target_dir = resolve_package_path(task["target_module"])
+#         # file_path = target_dir / task["file_name"]
+#         # Use your PathGuard here to handle the file write
+
 
 def pipeline_applicator(state: dict, text: str) -> str:
     result = text
@@ -110,3 +123,9 @@ STRING_STACK: StackingCore = StackCore(
     name="string_pipeline",
     call=pipeline_applicator,
 )
+
+# CHECK:
+# JOBS = [ StackTyper(DTO_STACK, StubJob("DTO_STACK", "Greeter")),
+#     StackTyper(ANSI_STACK, StubJob("ANSI_STACK", "Printer")),
+#     StackTyper(STRING_STACK, StubJob("STRING_STACK", "Text")),
+#     # later: StackTyper(COLOR_BOX, StubJob("box", "Color", package="sstcore.brick.color")), ]
