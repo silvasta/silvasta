@@ -12,10 +12,12 @@ Define the Atomic Components of the Fields
 
 __all__: list[str] = [
     "NamedField",
+    "BaseField",
     "WriteField",
     "OnlyReadField",
     "ReadField",
     "DeleteField",
+    "MetaBaseField",
 ]
 
 from typing import TYPE_CHECKING, Any, Never, Self, overload
@@ -30,8 +32,6 @@ class NamedField:
     """Provide Utils for all Fields"""
 
     raiser: type[Raiser] = FieldRaiser
-    # TODO: select raiser/on_error
-    # IDEA: this as getter? (as well for others) with bad message on set?
     on_error = FieldRaiser
 
     def __init__(self, *args, **kwargs):
@@ -44,6 +44,10 @@ class NamedField:
 
     def name(self, unit: object) -> str:
         return f"{reflect.clsname(unit)}.{self.public_name}"
+
+
+class BaseField(NamedField):
+    """Provide Utils for all Fields"""
 
     def _get_val(self, unit: object) -> Any:  # NEXT: FieldT???
         return unit.__dict__[self.private_name]
@@ -58,24 +62,7 @@ class NamedField:
         return self.private_name in unit.__dict__
 
 
-class _IdeaFieldAccess(NamedField):
-    # IDEA: access mixin -> class BaseField(NamedField,FieldAccess):...
-    @property
-    def can_reset(self) -> bool:
-        return False
-
-    @property
-    def can_load(self) -> bool:  # CHECK: if not redundant
-        return False
-
-    def is_readable(self, unit) -> bool:
-        return self.can_load or self._has_val(unit)
-
-    def is_writable(self, unit) -> bool:
-        return self.can_load or not self._has_val(unit)
-
-
-class WriteField[FieldT](NamedField):
+class WriteField[FieldT](BaseField):
     def __set__(self, unit: object, value: FieldT) -> None:
         self.write(unit, value)
 
@@ -83,17 +70,12 @@ class WriteField[FieldT](NamedField):
         self._set_val(unit, value)
 
 
-class OnlyReadField(NamedField):
-    # IDEA: replace by attribute and error option
-    # if self._has_val(unit) and not reset:
-    #     raise RuntimeError(
-    #         f"Alredy exists! {self.default_func}[{self.signature}]"
-    #     )
+class OnlyReadField(BaseField):
     def __set__(self, unit: object, reject: object) -> Never:
         raise AttributeError(f"{self.name(unit)} is not Writable! {reject=}")
 
 
-class ReadField[FieldT](NamedField):
+class ReadField[FieldT](BaseField):
     @overload
     def __get__(self, unit: None, owner: type | None) -> Self: ...
     @overload
@@ -110,7 +92,7 @@ class ReadField[FieldT](NamedField):
         raise AttributeError(f"{self.name(unit)} is Missing!")
 
     def new_on_error(self, _unit: object, _todo: Any) -> Never:
-        raise self.on_error.ReadMissing(_todo)  # ty:ignore
+        raise self.on_error.ReadMissing(_todo)
 
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
@@ -118,13 +100,46 @@ class ReadField[FieldT](NamedField):
         return self._get_val(unit)
 
 
-class DeleteField(NamedField):
+class DeleteField(BaseField):
     def __delete__(self, unit: object) -> None:
         self.remove(unit)
 
     def remove(self, unit: object) -> None:
         if self._has_val(unit):
             self._del_val(unit)
+
+
+class _IdeaFieldAccess(BaseField):
+    # IDEA: access mixin -> class BaseField(NamedField,FieldAccess):...
+    @property
+    def can_reset(self) -> bool:
+        return False
+
+    @property
+    def can_load(self) -> bool:  # CHECK: if not redundant
+        return False
+
+    def is_readable(self, unit) -> bool:
+        return self.can_load or self._has_val(unit)
+
+    def is_writable(self, unit) -> bool:
+        return self.can_load or not self._has_val(unit)
+
+
+class MetaBaseField(NamedField):
+    """Bypass mappingproxy to allow Fields to mutate class state"""
+
+    def _get_val(self, unit: type) -> Any:
+        return getattr(unit, self.private_name)
+
+    def _set_val(self, unit: type, value: Any) -> None:
+        setattr(unit, self.private_name, value)
+
+    def _del_val(self, unit: type) -> None:
+        delattr(unit, self.private_name)
+
+    def _has_val(self, unit: type) -> bool:
+        return hasattr(unit, self.private_name)
 
 
 if TYPE_CHECKING:

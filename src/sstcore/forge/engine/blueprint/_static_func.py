@@ -17,9 +17,9 @@ import inspect
 from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
+from ....brick.color.box import Colors
 from ....port.color import ColorBox
 from ....port.shape import Meta, MetaData
-from ...color.box import Colors
 from ._base import MetaViewBase, MetaViewData
 
 colors: ColorBox = Colors()  # ty:ignore
@@ -58,11 +58,10 @@ class StaticFuncMeta(MetaViewBase):
         # TASK: how to handle this: cls._data = data or StaticFuncMetaData()
         return super().__new__(mcls, name, bases, namespace, data=data)
 
-    def __call__(cls, *_, **__) -> Any:  # LATER: candidate for StaticMetaBase
-        # TODO: route the SstError here, inject somehow?
+    def __call__(cls, *_, **__) -> Any:  # noqa:N805
         raise TypeError(f"StaticFunc[{cls}] is Not available as Instance!")
 
-    def toolkit(cls, sort: bool = True) -> list[str]:
+    def toolkit(cls, sort: bool = True) -> list[str]:  # noqa:N805
         """Provide names of all public staticmethods"""
 
         # TODO: candidate for format.reflect

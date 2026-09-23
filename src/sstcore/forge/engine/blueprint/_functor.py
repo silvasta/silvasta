@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, TypeGuard
 
 from loguru import logger
 
-from ....brick.format import clsname
+from ....brick.labor import clsname
 from ....port.functor import ErrorPolicy
 from ....port.shape import Meta, MetaData
 from ._base import MetaViewBase, MetaViewData
@@ -86,7 +86,7 @@ class FunctorMeta[MaybeUsefulT](MetaViewBase):
         return cls
 
     def __init__(
-        cls,
+        cls,  # noqa:N805
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
@@ -106,7 +106,7 @@ class FunctorMeta[MaybeUsefulT](MetaViewBase):
         cls.__name__ = clsname(cls)  # LATER: format.inject?
         cls.__qualname__ = cls.__qualname__ or cls.__name__
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args, **kwargs):  # noqa:N805
         """The Hybrid Triple Dispatch (Class-Level)"""
 
         # IDEA: replace below by ..func._hybrid?
