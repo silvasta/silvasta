@@ -21,7 +21,14 @@ __all__: list[str] = [
 ]
 
 # LATER: make all imports _private
-from collections.abc import Callable, Mapping
+from collections.abc import (
+    Callable,
+    ItemsView,
+    Iterator,
+    KeysView,
+    Mapping,
+    ValuesView,
+)
 from enum import Enum, auto
 from typing import Any, Protocol, Self, runtime_checkable
 
@@ -30,6 +37,10 @@ type StackData[ValueT] = ValueT | Callable[..., ValueT]
 type LayerData[ValueT] = Map[StackData[ValueT]]
 
 type Accumulated[ValueT] = dict[str, list[ValueT]]
+
+
+def test() -> Map:
+    raise NotImplementedError
 
 
 class LayerMode(Enum):
@@ -52,14 +63,31 @@ class StackingLayer[ValueT](Protocol):
         self, target: ValueT, /
     ) -> bool: ...  # LATER: use registry
     def __getitem__(self, key: str) -> ValueT: ...  # LATER: use registry
+    # EXTRACT: for registry
+    def __len__(self) -> int: ...
+    # EXTRACT: for registry
+    def __iter__(self) -> Iterator[str]: ...
+    # EXTRACT: for registry
+    def keys(self) -> KeysView[str]: ...
+    # EXTRACT: for registry
+    def values(self) -> ValuesView[ValueT]: ...
+    # EXTRACT: for registry
+    def items(self) -> ItemsView[str, ValueT]: ...
 
 
-class StackingCore[**In, ValueT, Out](StackingLayer, Protocol):
+class StackingCore[**In, ValueT, Out](StackingLayer[ValueT], Protocol):
     """The Executing Core - Connect Layers and Runtime State"""
 
     @property
-    def layers(self) -> Map[StackingLayer]:  # LATER: field
+    def layers(self) -> Map[StackingLayer[ValueT]]:  # LATER: field
         """Store Mapping with Source Layer"""
+
+    def schema(self) -> Accumulated[str]:  # TODO: Accumulated??
+        """Generate Mapping of Layer Name: Keys"""  # TODO: better text
+        return {
+            layer_name: list(layer.keys())
+            for layer_name, layer in self.layers.items()
+        }
 
     @property
     def source_map(self) -> Map[str]:  # LATER: field

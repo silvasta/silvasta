@@ -17,18 +17,19 @@ Built on top of these major external dependencies:
 """
 
 __all__: list = [
-    "FolderScanner",
-    "PathGuard",
-    "Printer",
-    "PrinterFactory",
-    "printer",
-    "SchemaName",
-    "SimpleTreeNode",
+    # TASK: getattr lazy load
+    # "FolderScanner",
+    # "PathGuard",
+    # "Printer",
+    # "PrinterFactory",
+    # "printer",
+    # "SchemaName",
+    # "SimpleTreeNode",
 ]
 
 
-from .parse import SchemaName
-from .path.guard import PathGuard
-from .print import Printer, PrinterFactory, printer
-from .scan import FolderScanner
-from .tree import SimpleTreeNode
+# from .parse import SchemaName
+# from .path.guard import PathGuard
+# from .print import Printer, PrinterFactory, printer
+# from .scan import FolderScanner
+# from .tree import SimpleTreeNode

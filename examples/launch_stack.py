@@ -5,7 +5,7 @@ uv run ~/sstcore/examples/launch_stack.py
 
 """
 
-from sstcore.brick.stack import dto_stack as dto1
+from sstcore.brick.stack import DTO_STACK as dto1  # noqa:N811
 
 x = dto1.key11("hello")
 

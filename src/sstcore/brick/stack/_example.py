@@ -6,7 +6,9 @@ DERIVE EXAMPLE USAGE HERE
 """
 
 __all__: list[str] = [
-    "dto_stack",
+    "ANSI_STACK",
+    "DTO_STACK",
+    "STRING_STACK",
 ]
 
 
@@ -32,7 +34,7 @@ def color_executor(text: str, color: Any) -> str:
     return f"{prefix}{text}\033[0m"
 
 
-ansi_stack: StackCore = StackCore(
+ANSI_STACK: StackCore = StackCore(
     StackLayer(
         data.ANSI_COLORS,
         mode=LayerMode.SINGLE,
@@ -85,24 +87,22 @@ class DtoStack(StackCore):
     #     return string
 
 
-dto_stack: StackingCore = DtoStack(*layers, name="dto", call=dto_applicator)
+DTO_STACK: StackingCore = DtoStack(*layers, name="random", call=dto_applicator)
 
 
-def pipeline_applicator(state: dict, text: str, context: Any = None) -> str:
+def pipeline_applicator(state: dict, text: str) -> str:
     result = text
     for transform in state.get("transforms", ()):
         result = transform(result)
     return result
 
 
-type Stack = StackingLayer[str]
-
 sanitizers: StackingLayer = StackLayer(data.SANITIZERS, "sanitize")
 normalizers: StackingLayer = StackLayer(data.NORMALIZERS, "normalize")
 formatters: StackingLayer = StackLayer(data.FORMATTERS, "format")
 colorizers: StackingLayer = StackLayer(data.ANSI_COLORS, "color")
 
-string_pipeline: StackingCore = StackCore(
+STRING_STACK: StackingCore = StackCore(
     sanitizers,
     normalizers,
     formatters,

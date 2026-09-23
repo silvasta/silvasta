@@ -163,7 +163,7 @@ class Injector[BaseT: type](Protocol):  # NEXT: injector finish!
         """Update existing Mixin selection"""
 
 
-class Typer(Protocol):  # IMPORTANT: generate stubs
+class Typer[**P](Protocol):  # IMPORTANT: generate stubs
     # TASK: as soon as AST scanner ready:
     # - read and understand the composer process
     #   - the mixins that come in, especially the protocols!
@@ -173,7 +173,7 @@ class Typer(Protocol):  # IMPORTANT: generate stubs
     # - Validation?
     """Supply the Static Type Checker with Information"""
 
-    def sketch(self):
+    def draw(self, *args: P.args, **kwargs: P.kwargs):
         # TODO: sketch: draw, validate, display, write
         """Write .pyi for selected Mixins"""
 

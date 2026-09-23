@@ -68,7 +68,7 @@ class StackBase[ValueT](Mapping):
         return f"{self}[{self.mode}](map={self._data}, call={self.call})"
 
 
-class StackLayer[**In, ValueT, Out](StackBase[ValueT]):
+class StackLayer[ValueT](StackBase[ValueT]):
     def __init__(
         self,
         data: LayerData[ValueT],
@@ -99,15 +99,17 @@ if TYPE_CHECKING:
     _cls: type[StackingLayer] = StackLayer
 
 
-class StackCore[**In, ValueT, Out](StackLayer[In, ValueT, Out]):
+class StackCore[**In, ValueT, Out](StackLayer[ValueT]):
     def __init__(
         self,
-        *layers: StackLayer,
+        *layers: StackingLayer[ValueT],
         name: str = "",
         call: StackApplicator[In, ValueT, Out],
     ):
         name: str = name or str(self)
-        self.layers: Map[StackLayer] = {layer.name: layer for layer in layers}
+        self.layers: Map[StackingLayer[ValueT]] = {
+            layer.name: layer for layer in layers
+        }
         combined_data: LayerData[ValueT] = self.merge_layer()
         super().__init__(combined_data, name, LayerMode.COMBO)
         self.call: StackApplicator[In, ValueT, Out] = call
@@ -127,6 +129,12 @@ class StackCore[**In, ValueT, Out](StackLayer[In, ValueT, Out]):
                 self.source_map[key] = layer.name
 
         return combined_data
+
+    def schema(self) -> dict[str, list[str]]:
+        return {
+            layer_name: list(layer.keys())
+            for layer_name, layer in self.layers.items()
+        }
 
     def __getattr__(self, name: str) -> StackRunner[In, ValueT, Out]:
         if scan.is_dunder(name):
