@@ -1,21 +1,42 @@
 """
-Run Quick Tests
+Temporary Storage - until next improvisation
 
--
+                              DependencyLevel.sstcore.brick.none[0]
 """
 
 from collections.abc import Generator as _Generator
 from collections.abc import Iterable as _Iterable
 from contextlib import contextmanager
+from pathlib import Path
 
-from colorprint.helper import full_repr
-from colorprint.port.collections import Stringable
 from rich.console import Console
+
+
+class Config:
+    DRYRUN = True  # toggle by comment
+
+    @staticmethod
+    def dry_run():
+        return hasattr(Config, "DRYRUN")
+
+    @staticmethod
+    def target_file(name: str) -> Path:  # LATER: PathGuard
+        dir: Path = Path.home() / "sstcore/src/sstcore/brick/stack"
+        return dir / "_stubs" / f"_{name.lower()}.pyi"
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+"""
+Run Quick Tests
+
+-
+"""
 
 _console = Console()
 
 
-def rich_markup(text: Stringable, style: Stringable = "bold"):
+def rich_markup(text: str, style: str = "bold"):
     return f"[{style}]{text}[/]" if style else text
 
 
@@ -63,11 +84,3 @@ def console(_target, *args, **kwargs):
 def double_print(_target, *args, **kwargs):
     _console.print(_target, *args, **kwargs)
     print(_target, *args, **kwargs)
-
-
-def print_full_repr(_target, *args, **kwargs):
-    print(full_repr(_target, *args, **kwargs))
-
-
-def console_full_repr(_target, *args, **kwargs):
-    _console.print(full_repr(_target, *args, **kwargs))
