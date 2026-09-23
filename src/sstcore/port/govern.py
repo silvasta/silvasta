@@ -58,7 +58,7 @@ class Machine(EnumView):
     """Task Executor"""
 
 
-class Policy(BaseEnum):
+class Policy(BaseEnum):  # IDEA: Mode??
     """Task Toggle"""
 
 

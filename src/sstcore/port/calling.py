@@ -7,7 +7,6 @@ Funtcions, Callables and Checks
 __all__: list[str] = [
     "Calling",
     "ClassRendering",
-    "Stacking",
     # views
     "LogStringable",
     "Stringable",
@@ -22,7 +21,7 @@ from typing import Any, Protocol, runtime_checkable
 
 
 class Calling[**In, Out](Protocol):
-    __doc__: str | None  # CHECK: any value from that?
+    """Define the Shape of a Callable with Name"""
 
     @property
     def __name__(self) -> str: ...
@@ -30,14 +29,6 @@ class Calling[**In, Out](Protocol):
 
 
 _test: _Callable = Calling
-
-
-@runtime_checkable
-class Stacking(Protocol):
-    # NEXT: replace by new setup
-    # TASK: colorbox and more
-    def __getattr__(self, name: str) -> Stacking:
-        """Stack Attributes on top of each other by attribute calls"""
 
 
 #  LINE: -- builtin views -- -- - -- -- - -- -- - -- -- - -- -- - -- --

@@ -11,6 +11,7 @@ __all__: list[str] = [
     "DateRange",
     "timer",
     "day_count",
+    "day_count_plus",
     "nice_duration",
 ]
 
@@ -71,6 +72,13 @@ def day_count(day: date | None = None) -> int:
     day: date = day or date.today()
     delta: timedelta = day - date(2000, 1, 1)
     return delta.days
+
+
+def day_count_plus(day: date | None = None) -> str:
+    """DoM plus the hours interpolated to 1 decimal"""
+    day: date = day or date.today()
+    delta: timedelta = day - date(2000, 1, 1)
+    return f"{delta.days}{int(delta.seconds / 144)}"
 
 
 def nice_duration(start: datetime, end: datetime) -> str:

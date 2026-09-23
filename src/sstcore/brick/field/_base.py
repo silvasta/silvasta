@@ -46,7 +46,7 @@ class NamedField:
         return f"{reflect.clsname(unit)}.{self.public_name}"
 
     def _get_val(self, unit: object) -> Any:  # NEXT: FieldT???
-        return reflect._dict(unit, key=self.private_name)
+        return unit.__dict__[self.private_name]
 
     def _set_val(self, unit: object, value: Any) -> None:
         unit.__dict__[self.private_name] = value
