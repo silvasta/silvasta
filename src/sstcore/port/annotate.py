@@ -88,3 +88,21 @@ class _StubJob:
             raise ValueError("public must not be empty")
         if not self.prefix:
             raise ValueError("prefix must not be empty")
+
+
+@_dataclass(frozen=True, slots=True)
+class StubJob:
+    """Transport container for a single stub-writing task."""
+
+    public: str  # binding name in __init__.py, e.g. "DTO_STACK"
+    prefix: str  # e.g. "Greeter", "Printer"
+    package: str | None = None  # override; else inferred at write time
+    content: str = ""  # rendered stub text (filled by Typer)
+    target_file: str = ""  # relative path: "_stubs/_random.pyi"
+    overlay: str = ""  # __init__.pyi overlay line, if needed
+
+    def __post_init__(self) -> None:
+        if not self.public:
+            raise ValueError("public must not be empty")
+        if not self.prefix:
+            raise ValueError("prefix must not be empty")

@@ -9,11 +9,14 @@ __all__: list[str] = [
     "PathSpec",
     "PathInput",
     "PathGuardField",
+    #
+    "StubFileGuard",
 ]
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
 from typing import Any, NoReturn, Self, overload
 
 from ....error import PathGuardReason
@@ -64,6 +67,24 @@ class PathGuardField[T]:
     def __get__(self, unit: T, objtype: type[T] | None = None) -> Path: ...
     def __set__(self, unit: T, value: object) -> NoReturn: ...
     def __set_name__(self, owner: type, name: str) -> None: ...
+
+# ---------------------------------------------------------------------------
+# Mini
+# ---------------------------------------------------------------------------
+
+class StubFileGuard:
+    @staticmethod
+    def module_name(obj: Any) -> str: ...
+    @staticmethod
+    def public_package(module_name: str) -> str: ...
+    @staticmethod
+    def package_dir(dot_path: str) -> Path: ...
+    @staticmethod
+    def stub_root(obj: Any, package: str | None = None) -> Path: ...
+    @staticmethod
+    def get_stub_dir(
+        target: str | ModuleType | Path, subdir: str = "_stubs"
+    ) -> Path: ...
 
 # ---------------------------------------------------------------------------
 # Facade

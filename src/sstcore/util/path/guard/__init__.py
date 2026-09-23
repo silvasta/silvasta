@@ -9,8 +9,11 @@ __all__: list[str] = [
     "PathSpec",
     "PathInput",
     "PathGuardField",
+    #
+    "StubFileGuard",
 ]
 
 from ._assemble import PathGuard
 from ._field import PathGuardField
 from ._input import PathInput, PathSpec
+from ._stub_guard import StubFileGuard
