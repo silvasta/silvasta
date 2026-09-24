@@ -6,15 +6,14 @@ Adapt the SstCoreError to the Fields and implement Raiser
                                                  DependencyLevel[X]
 """
 
-import re
-
 from enum import auto
-from typing import Any, Literal, Never, Unpack, overload
+from typing import Any, Never, Protocol, Unpack, cast
 
 from ...port.raising import (
-    ErrorData,
     ErrorDTO,
     ErrorInput,
+    ErrorMachine,
+    ErrorSpec,
     Raiser,
     SstCoreError,
 )
@@ -36,65 +35,38 @@ class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
     received: dict
 
 
-class FieldErrorData[FieldT, UnitT](ErrorData):
+class FieldErrorSpec[FieldT, UnitT](ErrorSpec):
     """Define the Arg Space of the Internal Pipeline"""
 
     field: FieldT
     instance: UnitT | None = None
     cls_attr_name: str = ""  # "Cls.attr"
-    #
+
     owner: type | None = None
     value: FieldT | Any = None
 
 
-class ErrorBuilder:
-    # EXTRACT: generic/field_specific
-    def custom(
-        self, reason: FieldRaiser, /, data: ErrorData
-    ) -> type[SstCoreError]:
+class ErrorBuilder(ErrorMachine):
+    def custom(self, reason: Raiser, **kwargs) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
-        raise NotImplementedError(reason, data)
+        return get_custom_exception(cast(FieldRaiser, reason))
 
-    # EXTRACT: generic/field_specific
-    def builtin(
-        self, reason: FieldRaiser, /, data: ErrorData
-    ) -> type[Exception] | None:
+    def builtin(self, reason: Raiser, **kwargs) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
-        raise NotImplementedError(reason, data)
+        return get_builtin_exception(cast(FieldRaiser, reason))
 
-    # EXTRACT: generic/field_specific
-    def bases(
-        self, reason: FieldRaiser, /, data: ErrorData
-    ) -> tuple[type[Exception], ...]:
-        """Gather the registed Error classes"""
-        sst_error: type[SstCoreError] = self.custom(reason, data)
-        exception: type[Exception] | None = self.builtin(reason, data)
-        return (sst_error,) if exception is None else (sst_error, exception)
+    def message(self, reason: Raiser, **kwargs) -> str:
+        """Find Builtin Exception if registred in Raiser"""
+        return f"{reason}: {kwargs!r}"
 
-    # EXTRACT: generic/field_specific
-    def error_name(
-        self, reason: FieldRaiser, bases: tuple[type[Exception], ...]
-    ) -> str:  # TODO: try less hardcoded
-        """Format new Error class name"""
-        error: str = bases[-1].__name__
-        prefix: str = bases[0].__name__.rstrip("Error")  # FIX:
-        return f"{reason.name}{prefix}{error}"  # CHECK: output
 
-    # EXTRACT: generic/field_specific
-    def compose(
-        self, reason: FieldRaiser, /, data: ErrorData
-    ) -> type[SstCoreError]:
-        """Mix builtin Exception into the custom Error"""
-
-        bases: tuple[type[Exception], ...] = self.bases(reason, data)
-        name: str = self.error_name(reason, bases)
-
-        return type(name, bases, {})
-
-    # EXTRACT: generic/field_specific
-    def __call__(self, reason: Raiser, /, data: ErrorData) -> ErrorDTO:
-        """Mix builtin Exception into the custom Error"""
-        raise NotImplementedError(reason, data)
+class FieldRaiseCall(Protocol):
+    def __call__(
+        self,
+        field: Any,
+        instance: type | None = None,
+        **kwargs: Unpack[ErrorInput],
+    ) -> ErrorDTO: ...
 
 
 class FieldRaiser(Raiser):
@@ -108,33 +80,13 @@ class FieldRaiser(Raiser):
     Signature = auto()
     Transition = auto()
 
+    __call__: FieldRaiseCall
+
+    def order(self, data: ErrorSpec) -> ErrorDTO:
+        return ErrorBuilder.run(reason=self, data=data)
+
     def __str__(self):
         return self.name
-
-    @overload  # EXTRACT: generic/field_specific
-    def __call__(
-        self, direct=Literal[True], **kwargs: Unpack[ErrorInput]
-    ) -> Never: ...
-    @overload  # EXTRACT: generic/field_specific
-    def __call__(
-        self, direct=Literal[False], **kwargs: Unpack[ErrorInput]
-    ) -> ErrorDTO: ...
-    def __call__(  # EXTRACT: generic/field_specific
-        self, direct: bool = False, **kwargs: Unpack[ErrorInput]
-    ) -> Never | ErrorDTO:
-        """Collect the needed input, format and fire the Exception"""
-
-        # EXTRACT: generic/field_specific
-        def _sanitize(**kwargs: Unpack[ErrorInput]) -> ErrorData:
-            raise NotImplementedError(kwargs)
-
-        input_data: ErrorData = _sanitize(**kwargs)
-        error_dto: ErrorDTO = ErrorBuilder()(self, input_data)
-
-        return error_dto if not direct else self.launch(error_dto)
-
-    def launch(self, data: ErrorDTO, *args) -> Never:
-        raise data.fire(data.message, *data.args, *args)
 
     def map(self, name, field, value):
         # NEXT:
@@ -262,14 +214,19 @@ class FieldError(SstCoreError):
 #  LINE: -- USAGE -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 on_error = FieldRaiser
+on_error.ReadOnly("blau", test=3)
 
 
 def how_to_use1() -> Never:
-    raise on_error.ReadMissing(name="test", direct=False)
+    raise on_error.ReadMissing()()
+
+
+def how_to_use0() -> ErrorDTO:
+    return on_error.ReadMissing()()
 
 
 def how_to_use2() -> ErrorDTO:
-    return on_error.ReadMissing(direct=False)
+    return on_error.ReadMissing()
 
 
 def how_to_use3() -> Never:
@@ -278,4 +235,4 @@ def how_to_use3() -> Never:
 
 
 def how_to_use4() -> Never:
-    on_error.ReadMissing(name="test", direct=True)
+    on_error.ReadMissing("", value="test")()

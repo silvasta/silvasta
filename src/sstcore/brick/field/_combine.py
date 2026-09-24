@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 from ...port import attach
 from ...port.attach import FieldLoader
-from ..labor import reflect
+from ..labor import funcname
 from ._base import ReadField, WriteField
 from ._extend import TypedField
 
@@ -62,9 +62,7 @@ class LazyField[T](WriteField, ReadField[T]):
         return super().read(unit)
 
 
-# NEXT:
 class DerivedField[T](ReadField[T]):
-    # IDEA:: derive or combine with DecoratedField??
     """
     Calculate view on every access without maintaining state
 
@@ -80,7 +78,7 @@ class DerivedField[T](ReadField[T]):
     def __init__(self, *args, calc: FieldLoader, **kwargs) -> None:
         self.derived: FieldLoader = calc
         self.__doc__: str | None = calc.__doc__
-        self.public_name: str = reflect.func(calc)
+        self.public_name: str = funcname(calc)
         super().__init__(*args, **kwargs)
 
     def read(self, unit: object) -> T:
