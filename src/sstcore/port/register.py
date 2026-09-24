@@ -23,44 +23,61 @@ __all__: list[str] = [
     "FuncRegister",
 ]
 
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Hashable, Iterator, Mapping, Sequence
 from enum import auto
-from typing import Any, NoReturn, Protocol, Self, overload
+from typing import Any, Protocol, Self
 
-from .attach import LazyDescriptor, PolicyEnum
+from .attach import LazyDescriptor, PolicyDescriptor
 from .filter import Filter
-from .govern import Index
-
-# NEXT:
-type _Vaults = list | tuple | dict
-type Vaults = Sequence | Mapping
+from .govern import EnumIndex, PolicyEnum
 
 
-class Registry[Item, Vault: Vaults, U, A: Any](Protocol):
+class VaultPolicy(PolicyEnum):
+    """On Conflic Strategy - Index and Default start on Zero"""
+
+    RAISE = auto()
+    SKIP = auto()
+    MERGE = auto()
+
+
+type List[T] = list[T]
+type Tuple[T] = tuple[T, ...]
+type Dict[K, T] = dict[K, T]
+
+type Vault1 = Sequence | Mapping
+type Vault2[T] = List[T] | Tuple[T] | Dict[Any, T]
+
+type Key = str
+type Index = int | slice
+type Predicate[T] = Callable[[T], bool]
+type Selector[T] = Key | Index | Predicate[T] | tuple[Any, ...]
+
+
+class Registry[Item, Vault: Vault1](Protocol):
     """Define the Shape of the General Registry"""
 
     vault: Vault
 
-    def add(self, items: Vault, override: bool = False) -> Vault:
+    on_conflict: PolicyDescriptor[VaultPolicy]
+    _ident: Callable[[Item], Hashable] | None
+
+    def add(self, data: Item | Vault) -> Vault:
         """Extend vault by Items, get removed files back"""
 
-    def clear(self, id: A | None = None) -> Vault:
+    def clear(self, query: Selector[Item] | None = None) -> Vault:
         """Remove all Items or remove filtered  by identifier"""
 
-    def find(self, id: A) -> Vault:
+    def find(self, query: Selector[Item]) -> Vault:
         """Provide 0..N items that match the item identifier"""
 
-    def count(self, key: A) -> int:
+    def count(self, query: Selector[Item]) -> int:
         """How many items match the item identifier?"""
 
-    @overload
-    def __getitem__(self, index: A) -> list[Item]: ...
-    @overload
-    def __getitem__(self, index: U) -> Item: ...
-    def __getitem__(
-        self, index: int | slice | str | tuple | Callable
-    ) -> Item | list[Item] | NoReturn:
-        """Get the value or slice of the Item at the index position"""
+    def __getitem__(self, query: Selector[Item]) -> Item | Vault:
+        """Insert Selector and Extract Values from Vault"""
+
+    def __setitem__(self, query: Selector[Item], value: Any):
+        """Insert Selector and Value to Update the Vault"""
 
     def __len__(self) -> int:
         """How many items are in the vault?"""
@@ -71,33 +88,25 @@ class Registry[Item, Vault: Vaults, U, A: Any](Protocol):
     def __contains__(self, target: Item) -> bool:
         """Is the target item already member?"""
 
-    @classmethod
-    def as_field(cls, *args, **kwargs) -> RegistryDescriptor: ...
-
-
-class RegistryDescriptor(LazyDescriptor, Protocol):
-    @classmethod
-    def as_field(cls, *args, **kwargs) -> Self:
-        """Mount the vault keeper proper to the classes"""
-
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Level 1 Mixins
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class ListRegister[Item, A](Registry[Item, list, int, A], Protocol):
+class ListRegister[Item](Registry[Item, List[Item]], Protocol):
     """Establish the Registry with a List of Items"""
 
 
-class TupleRegister[Item, A](Registry[Item, list, int, A], Protocol):
+class TupleRegister[Item](Registry[Item, Tuple[Item]], Protocol):
     """Establish the Registry with Tuples"""
 
 
-class DictRegister[Item, K, A](Registry[Item, dict, K, A], Protocol):
+class DictRegister[Item, K](Registry[Item, Dict[K, Item]], Protocol):
     """Establish the Registry with a Dict of Items"""
 
-    vault: dict[K, Item]
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class BisectRegister[Item, DTO: BisectData](
@@ -174,6 +183,12 @@ class MixinRegister[S: Slot](TupleRegister[Mixin, None], Protocol):
     def mixins(self) -> tuple[S, ...]: ...
 
 
+class RegistryDescriptor(LazyDescriptor, Protocol):
+    @classmethod
+    def as_field(cls, *args, **kwargs) -> Self:
+        """Mount the vault keeper proper to the classes"""
+
+
 class FuncRegister[Item: Callable](Protocol):
     """Extend the Registry for Functions (LATER: and Functors)"""
 
@@ -182,9 +197,8 @@ class FuncRegister[Item: Callable](Protocol):
         """Register new member by Decorator"""
 
 
-class _IndexRegister[Item, Axes: tuple[Index, ...]](
-    Registry[Item, tuple, Axes, None], Protocol
-):  # TODO: find proper setup
+class _IndexRegister[Item, Axes: tuple[EnumIndex, ...]](Protocol):
+    # TASK: colorgrid!!
     """Build the ultimate robust and stable container"""
 
     axes: Axes

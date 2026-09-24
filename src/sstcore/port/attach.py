@@ -31,6 +31,7 @@ from typing import Self as _Self
 from typing import overload as _overload
 
 from .calling import Calling
+from .govern import PolicyEnum
 from .raising import Raiser
 
 type Types[T] = type[T] | tuple[type, ...]  # TODO: tuple[T,???]
@@ -169,17 +170,13 @@ class MorphingDescriptor(CallingDescriptor, _Protocol):
 #  LINE: -- State and Transmission -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class PolicyEnum(_Enum):  # LATER: improve together with other enums
-    """Base for all policy enums, ensuring shared namespace and branding views."""
-
-
-class PolicyDescriptor[EnumT: PolicyEnum, ResulT: _Any](_Protocol):
+class PolicyDescriptor[EnumT: PolicyEnum](_Protocol):
     """Govern the Enum including match and dispatch"""
 
-    def match(self, state: EnumT, unit: object) -> ResulT:  # LATER: specify
+    def match(self, state: EnumT, unit: object):  # LATER: specify
         """Launch match_func, get override or Raise"""
 
-    def execute(self, unit: object) -> ResulT:  # LATER: specify
+    def execute(self, unit: object):  # LATER: specify
         """Apply the injected or overridden Matching-Function"""
 
 

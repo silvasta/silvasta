@@ -19,7 +19,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from ...port import attach
-from ...port.attach import PolicyEnum, Transition
+from ...port.attach import Transition
+from ...port.govern import PolicyEnum
 from ._base import ReadField
 from ._extend import ResetField, TypedField
 

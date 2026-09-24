@@ -29,7 +29,7 @@ Strategy:
 # - govern
 
 __all__: list[str] = [
-    "Index",
+    "EnumIndex",
     "EnumId",
     # base
     "BaseEnum",
@@ -53,16 +53,16 @@ class BaseEnum(EnumZero, EnumView):
     """Provide Base with Simple View and Modified Access"""
 
 
-class Index(BaseEnum):
+class EnumIndex(BaseEnum):
     """Define the Axis for the {0..N} Members"""
 
 
-class Machine(EnumView):
+class EnumMachine(EnumView):
     # TASK: check class StubMachine(Machine):... here, for unique root
     """Task Executor"""
 
 
-class Policy(BaseEnum):
+class PolicyEnum(BaseEnum):
     # TODO: PolicyDescriptor
     """Task Toggle"""
 
@@ -74,22 +74,22 @@ class Policy(BaseEnum):
 # - both still possible, keep it flexibel and don't get locked somewhere
 
 
-class Mode(BaseEnum):
+class EnumMode(BaseEnum):
     """Task Toggle"""
 
 
-class Option(BaseEnum):
+class EnumOption(BaseEnum):
     """Multiple Selections - Always 1 default (on zero)"""
 
 
-class PrintOption(Option):
+class PrintOption(EnumOption):
     """(Randomly) toggle views until it looks nice"""
 
 
-# TODO: ViewOption? ViewCatalog already exists (inirect)
+# TODO: ViewOption? ViewEnumCatalog already exists (inirect)
 
 
-class Catalog(BaseEnum):
+class EnumCatalog(BaseEnum):
     """Foolproof Selection"""
 
 
