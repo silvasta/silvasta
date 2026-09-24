@@ -20,11 +20,10 @@ __all__: list[str] = [
     "BisectRegister",
     # extenstions
     "MixinRegister",
-    "FilterRegister",
     "FuncRegister",
 ]
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from enum import auto
 from typing import Any, NoReturn, Protocol, Self, overload
 
@@ -32,154 +31,81 @@ from .attach import LazyDescriptor, PolicyEnum
 from .filter import Filter
 from .govern import Index
 
-type Vaults = list | tuple | dict
-
 # NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# TASK: finish this, especially mixin
-# - base
-# - dict
-# - tuple/list
-# - bisec
+type _Vaults = list | tuple | dict
+type Vaults = Sequence | Mapping
 
 
-class Registry[Vault: Vaults, Item, Key](Protocol):
+class Registry[Item, Vault: Vaults, U, A: Any](Protocol):
     """Define the Shape of the General Registry"""
 
     vault: Vault
 
-    def add(self, *items: Item, override: bool = False) -> Vault | Self:
-        # TODO: expand for dict to kwargs?
-        # TODO: Self?
+    def add(self, items: Vault, override: bool = False) -> Vault:
         """Extend vault by Items, get removed files back"""
 
-    def clear(self, *keys: Key) -> Vault | Self:
-        # TODO: Self?
-        """Remove all Items or filter removed by Keys"""
+    def clear(self, id: A | None = None) -> Vault:
+        """Remove all Items or remove filtered  by identifier"""
 
-    def find(self, *key: Key) -> list[Item]:
+    def find(self, id: A) -> Vault:
         """Provide 0..N items that match the item identifier"""
 
-    def get(self, key: Key) -> Item | NoReturn:
-        # TODO: None?
-        """Find precisely the unique Item to the Key"""
-
-    def count(self, *key: Key) -> int:
+    def count(self, key: A) -> int:
         """How many items match the item identifier?"""
 
-    @classmethod
-    def as_field(cls, *args, **kwargs) -> RegistryDescriptor: ...
-
     @overload
-    def __getitem__(self, index: slice) -> list[Item]: ...
+    def __getitem__(self, index: A) -> list[Item]: ...
     @overload
-    def __getitem__(self, index: int) -> Item: ...
-    def __getitem__(self, index: int | slice) -> Item | list[Item]:
-        # TODO: NoReturn?
-        # TODO: index: str|Key? Any? (then reduce Any in derived?)
+    def __getitem__(self, index: U) -> Item: ...
+    def __getitem__(
+        self, index: int | slice | str | tuple | Callable
+    ) -> Item | list[Item] | NoReturn:
         """Get the value or slice of the Item at the index position"""
 
     def __len__(self) -> int:
         """How many items are in the vault?"""
 
-    def __iter__(self) -> Iterator[Any]:  # here probably special case for dict
+    def __iter__(self) -> Iterator[Any]:
         """Provide value of all items"""
 
     def __contains__(self, target: Item) -> bool:
         """Is the target item already member?"""
 
+    @classmethod
+    def as_field(cls, *args, **kwargs) -> RegistryDescriptor: ...
+
 
 class RegistryDescriptor(LazyDescriptor, Protocol):
-    """Mount the vault keeper proper to the classes"""
-
     @classmethod
-    # TODO: where to define? how to use best?
-    def as_field(cls, *args, **kwargs) -> Self: ...
+    def as_field(cls, *args, **kwargs) -> Self:
+        """Mount the vault keeper proper to the classes"""
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Level 1 Mixins
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-### -- Start of potential SequenceRegistry -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-# IDEA: don't create SequenceRegister here as Protocol,
-# but SequenceRegistry as implementation base in brick?
-
-
-class ListRegister[Item, Key](Registry[list, Item, Key], Protocol):
+class ListRegister[Item, A](Registry[Item, list, int, A], Protocol):
     """Establish the Registry with a List of Items"""
 
-    # TASK: check how much to get parametrized from the base class
-    vault: list[Item]
 
-    def add(self, *items: Item, override: bool = False) -> list[Item]: ...
-    def clear(self, *keys: Key) -> list[Item]: ...
-    def find(self, *key: Key) -> list[Item]: ...
-
-    @overload
-    def __getitem__(self, index: slice) -> list[Item]: ...
-    @overload
-    def __getitem__(self, index: int) -> Item: ...
-    # IMPORTANT: same as base class? remove here?
-    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
-    def __iter__(self) -> Iterator[Item]: ...
-
-
-# INFO: overload will later on be removed, just to silence ty now,
-# - and to show that the index and slices reg[1:2] hold everywhere
-
-
-class TupleRegister[Item, Key](Registry[tuple, Item, Key], Protocol):
+class TupleRegister[Item, A](Registry[Item, list, int, A], Protocol):
     """Establish the Registry with Tuples"""
 
-    # TASK: check how much to get parametrized from the base class
-    vault: tuple[Item, ...]
 
-    def add(self, *items: Item, override: bool = False) -> Self: ...
-    # NEXT: return just tuple? why Self?
-    def clear(self, *keys: Key) -> tuple | Self: ...
-    def find(self, *key: Key) -> list[Item]: ...
+class DictRegister[Item, K, A](Registry[Item, dict, K, A], Protocol):
+    """Establish the Registry with a Dict of Items"""
 
-    @overload
-    def __getitem__(self, index: slice) -> list[Item]: ...
-    @overload
-    def __getitem__(self, index: int) -> Item: ...
-    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
+    vault: dict[K, Item]
 
 
-class BisectPolicyBase(PolicyEnum):
-    """Build Namespace for PolicyDescriptor"""
+class BisectRegister[Item, DTO: BisectData](
+    Registry[Item, list, int, None]  # CHECK: value for A??
+):
+    """Define the Registry with sort-and-read bisect access"""
 
-
-class InsertPolicy(BisectPolicyBase):
-    """
-    Dictate behavior for inserting threshold that already exists
-
-    - ALLOW_LEFT: Place new duplicate BEFORE existing ones
-    - ALLOW_RIGHT: Place new duplicate AFTER existing ones
-    - OVERWRITE: Replace the existing data at the threshold (left)
-    - RAISE: Throw ValueError on duplicated insertion
-    """  # TODO: explain maybe in implementation
-
-    OVERRIDE = auto()
-    RAISE = auto()
-    ALLOW_LEFT = auto()  # WARN: check again how to keep this safe
-    ALLOW_RIGHT = auto()  # WARN: check again how to keep this safe
-
-
-class BoundaryPolicy(BisectPolicyBase):
-    """
-    Dictate mathematical boundaries during lookup
-
-    - INCLUSIVE (>=) bisect_right: Evaluate to its own tier for exact match
-    - EXCLUSIVE (>) bisect_left: Fall back to the previous tier for exact match
-    """  # TODO: explain maybe in implementation
-
-    INCLUSIVE = auto()
-    EXCLUSIVE = auto()
+    dto: DTO  # CHECK:
 
 
 class BisectData[ThreshT: int | float](Protocol):
@@ -197,67 +123,80 @@ class BisectData[ThreshT: int | float](Protocol):
         """Extract the sorting value from the Self-DTO"""
 
 
-class BisectRegister[Item, Key, DTO](Registry[list, Item, Key]):
-    # TASK: check how much to get parametrized from the base class
-    """Define the Registry with sort-and-read bisect access"""
-
-    vault: list[Item]
-    dto: BisectData
-
-    # TASK: define PolicyField here?
-    # TODO: insert_policy: InsertPolicy = InsertPolicy.RAISE,
-    # TODO: boundary_policy: BoundaryPolicy = BoundaryPolicy.INCLUSIVE,
-    # AI_QUESTION: how to announce a descriptor here?
+class BisectPolicyBase(PolicyEnum):
+    """Build Namespace for PolicyDescriptor"""
 
 
-### -- END of potential SequenceRegistry -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+class InsertPolicy(BisectPolicyBase):
+    # TODO: explain maybe in implementation
+    """
+    Dictate behavior for inserting threshold that already exists
+
+    - ALLOW_LEFT: Place new duplicate BEFORE existing ones
+    - ALLOW_RIGHT: Place new duplicate AFTER existing ones
+    - OVERWRITE: Replace the existing data at the threshold (left)
+    - RAISE: Throw ValueError on duplicated insertion
+    """
+
+    OVERRIDE = auto()
+    RAISE = auto()
+    ALLOW_LEFT = auto()
+    # WARN: check again how to keep this safe
+    ALLOW_RIGHT = auto()
 
 
-class DictRegister[Item, Key](Registry[dict, Item, Key], Protocol):
-    """Establish the Registry with a Dict of Items"""
+class BoundaryPolicy(BisectPolicyBase):
+    # TODO: explain maybe in implementation
+    """
+    Dictate mathematical boundaries during lookup
 
-    # TASK: check how much to get parametrized from the base class
-    vault: dict[Key, Item]
+    - INCLUSIVE (>=) bisect_right: Evaluate to its own tier for exact match
+    - EXCLUSIVE (>) bisect_left: Fall back to the previous tier for exact match
+    """
 
-    def add(self, *_, override: bool = False, **kwargs) -> dict[Key, Item]: ...
-    def clear(self, *keys: Key) -> dict[Key, Item]: ...
-    def find(self, *key: Key) -> list[Item]: ...
-
-    @overload
-    def __getitem__(self, index: slice) -> list[Item]: ...
-    @overload
-    def __getitem__(self, index: int) -> Item: ...
-    # IMPORTANT: same as base class? remove here?
-    def __getitem__(self, index: int | slice) -> Item | list[Item]: ...
-    def __iter__(self) -> Iterator[tuple[Key, Item]]: ...
+    INCLUSIVE = auto()
+    EXCLUSIVE = auto()
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Mixin Extensions
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Mixin Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+type Proto = type
+type Mixin = type
+
+type Slot = tuple[Mixin, Proto] | Mixin | Proto
 
 
-class MixinRegister[Mixin: type, Key](TupleRegister[Mixin, Key], Protocol):
+class MixinRegister[S: Slot](TupleRegister[Mixin, None], Protocol):
+    # TODO: check in forge.compose.SLOT
     """Provide a stable Container for Compositiions"""
 
     @property
-    # IMPORTANT: sorting mechanism
-    # TODO: type for return? like the mixed mixin protocols??
-    def mixins(self) -> tuple[Mixin, ...]: ...
+    def mixins(self) -> tuple[S, ...]: ...
 
 
 class FuncRegister[Item: Callable](Protocol):
-    # TODO: Functor? (FunctorDecorator?)
     """Extend the Registry for Functions (LATER: and Functors)"""
 
-    def attach(self) -> Callable[[Item], Item]:
-        # RENAME: sync with bisect
+    # NEXT: check with fields/attach
+    def attach(self) -> Callable[[Item], Item]:  # RENAME: sync with bisect
         """Register new member by Decorator"""
 
 
-class FilterRegister[Item: Callable](Protocol):
+class _IndexRegister[Item, Axes: tuple[Index, ...]](
+    Registry[Item, tuple, Axes, None], Protocol
+):  # TODO: find proper setup
+    """Build the ultimate robust and stable container"""
+
+    axes: Axes
+
+    @property
+    def n_axes(self) -> int: ...
+
+
+class _FilterRegister[Item: Callable](Protocol):
     """Extend the Registry with Filtering"""
 
+    # TODO: build FilterField
     # TASK: this is 1:1 a descriptor mock...
     # - find the proper descriptor for filters and remove this
 
@@ -275,14 +214,3 @@ class FilterRegister[Item: Callable](Protocol):
         """Provide attached Filter, load default first if needed"""
 
     """Establish the Registry with Enum and Tuple"""
-
-
-class _IndexRegister[Item, Axes: tuple[Index, ...]](Registry, Protocol):
-    # LATER: Create Enum members dynamically -> index and length of registry fixed
-    """Build the ultimate robust and stable container"""
-
-    items: tuple[Item, ...]
-    axes: Axes
-
-    @property
-    def n_axes(self) -> int: ...

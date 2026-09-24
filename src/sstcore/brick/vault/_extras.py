@@ -13,11 +13,11 @@ __all__: list[str] = [
     "FunctorRegistry",  # TODO: check with realisations, e.g. with Handler
 ]
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 
 from ...port.filter import Filter
-from ...port.register import FilterRegister, Registry, RegistryDescriptor
-from ..field import Collected, ValidField
+from ...port.register import Registry, RegistryDescriptor
+from ..field import LazyField, ValidField
 
 
 class FunctorRegistry:
@@ -27,7 +27,7 @@ class FunctorRegistry:
 type RegistryLoader = Callable[[], Registry]
 
 
-class RegistryField(Collected, ValidField):
+class RegistryField(LazyField, ValidField):
     """Provide access on demand"""
 
     @classmethod
@@ -78,5 +78,3 @@ class FilterRegistry[FilterT: Filter, ItemT]:
 
 if TYPE_CHECKING:
     _reg: type[RegistryDescriptor] = RegistryField
-    _registry: FilterRegister = FilterRegistry()
-    _registry: type[FilterRegister[Filter]] = FilterRegistry[Filter, Any]

@@ -11,8 +11,8 @@ __all__: list[str] = [
 
 from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
+from ....brick.vault import TupleRegistry
 from ....port.register import MixinRegister
-from ...vault import TupleRegistry
 
 
 class MixinRegistry[MixinT: type](TupleRegistry[MixinT]):

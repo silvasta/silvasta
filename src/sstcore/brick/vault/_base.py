@@ -8,92 +8,157 @@ __all__: list[str] = [
     "BaseRegistry",
 ]
 
-from collections.abc import Iterator
-from typing import TYPE_CHECKING, assert_never, overload
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NoReturn,
+    overload,
+)
 
-from ...port.error import SstError
-from ...port.register import Registry
+from ...port.raising import SstCoreError
+from ...port.register import Registry, RegistryDescriptor
+from ._extras import RegistryField
+
+# type Vaults = list | tuple | dict
+type Vaults = Sequence | Mapping
 
 
-class RegistryError(SstError): ...  # TODO:
+class RegistryError(SstCoreError): ...
 
 
-# NEXT:
-
-type Basic = list | tuple | dict
+# raise RegistryError(f"Registry Index[{index}] failed!", index)
 
 
-class BaseRegistry[B: list, I, K]:  # FIX:
-    """Implement the Shape of the Registry with List"""
+class BaseVault[Item, Vault: Vaults, U, A: Any]:
+    vault: Vault
 
-    vault: list[I]  # NEXT: compare with bisect
+    def __init__(self, initial: Vault) -> None:
+        self.vault: Vault = initial
 
-    def clear(self, *keys: K) -> B:
-        if not keys:
-            items: B = self.vault  # TODO: slice all)
-            self._clear_all()
-        else:
-            keep: list[I] = []
-            clear: list[I] = []
-            for key in keys:
-                for entry in self:
-                    return self._clear_by_key(key)
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def _clear_all(self) -> B:
-        # NOTE: maybe with descriptors?
-        items: B = [*self.vault]
-        self.vault.clear()
-        return items
-
-    def _clear_by_key(self, key: K) -> B:
-        keep: list[I] = []
-        clear: list[I] = []
-        for entry in self:
-            if self.match(entry, key):
-                clear.append(entry)
-            else:
-                keep.append(entry)
-        return clear
-
-    def match(self, entry: I | C, key: K) -> bool:
+    def _clear_all(self) -> None:
         raise NotImplementedError
 
-    def find(self, key: K) -> list[I]:
-        return [item for item in self if self.match(item, key)]
+    def _slice_action(self, s: slice) -> Any:
+        raise NotImplementedError
 
-    def count(self, key: K) -> int:
-        return len(self.find(key))
+    def _str_action(self, k: str) -> Any:
+        raise NotImplementedError
+
+    def _item_action(self, target: Item) -> Any:
+        raise NotImplementedError
+
+    def _int_action(self, i: int) -> Item | None:
+        raise NotImplementedError
+
+    def _sanitize(self, result: Vault | Item | None) -> Vault:
+        raise NotImplementedError
+
+    def _remove(self, targets: Vault) -> Vault:
+        """Return all removed"""
+        raise NotImplementedError
+
+    def _append(self, items: Vault) -> Vault:
+        """Return all duplicated"""
+        raise NotImplementedError
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     @overload
-    def __getitem__(self, index: slice) -> B: ...
+    def __getitem__(self, index: A) -> Vault: ...
     @overload
-    def __getitem__(self, index: int) -> I: ...
-    def __getitem__(self, index: int | slice) -> B | I:
+    def __getitem__(self, index: U) -> Item: ...
+    def __getitem__(self, index: str | int | slice) -> Item | Vault:
+
         match index:
-            # FIX:
-            # FIX:
-            # FIX:
-            # FIX:
             case slice():
-                return self.vault[index]
+                return self._slice_action(index)
             case int():
-                return self.vault[index]
-            case _ as unreachable:
-                # AI: new
-                assert_never(unreachable)
-        # AI: before
+                return self._int_action(index)
+            case str():
+                return self._str_action(index)
+
         raise RegistryError(f"Registry Index[{index}] failed!", index)
 
     def __len__(self) -> int:
         return len(self.vault)
 
-    def __iter__(self) -> Iterator[I]:
+    def __iter__(self) -> Iterator[Item]:
         yield from self.vault
 
-    # def __contains__(self, target: I | K) -> bool:
-    #     return target in self.vault
+    @classmethod
+    def as_field(cls, **kwargs) -> RegistryDescriptor:
+        return RegistryField(loader=cls, **kwargs)
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+class BaseRegistry[Item, Vault: Vaults, U, A: int | str](
+    BaseVault[Item, Vault, U, A]
+):
+    _prefered: Literal["str", "int"]
+
+    @property
+    def _preference(self) -> Callable:
+        id: str | int = "" if self._prefered == "str" else 1
+        return self._match(id)
+
+    def _release(self, id: int | str) -> Vault | Item | None:
+        return self._match(id)(id)
+
+    def _match(self, id: str | int | None, fire=False) -> Callable:
+        match id:
+            case str():
+                return self._str_action
+            case int():
+                return self._int_action
+        raise TypeError(f"Invalid type of {id=}: {type(id)}")
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def add(self, items: Vault, override: bool = False) -> Vault:
+        if override:
+            for item in items:
+                if (_result := self._item_action(item)) is None:
+                    _x = self._remove(item)
+            return self._append(items)
+
+    def _add(self, items: Vault, override: bool = False) -> Vault:
+        # AI: I would have been surprised if this trick worked... but no
+        # - any better ideas how to wire everything better throug add?
+        # if override:
+        #     type(self.vault)(
+        #         self._remove(item)
+        #         for item in items
+        #         if self._item_action(item) is None
+        #     )
+        self._append(items)
+
+    def clear(self, id: A | None = None) -> Vault:  # TODO: multiple ids?
+        if not id:
+            values: Vault = self.vault
+            self._clear_all()
+            return values
+        to_remove: Vault = self.find(id)
+        # AI: here preferably as well without multiple checks...
+        self._remove(to_remove)
+        return to_remove
+
+    def find(self, id: A) -> Vault:  # TODO: multiple ids?
+        result: Vault | Item | None = self._release(id)
+        return self._sanitize(result)
+
+    def count(self, id: A) -> int:
+        return len(self.find(id))
+
+    def get(self, uid: U) -> Item | NoReturn:
+        if (item := self._preference(uid)) is None:
+            raise TypeError(f"Invalid Key of Index: {id}")
+        return item
+
+    def __contains__(self, target: Item) -> bool:
+        return target in self.vault  # FAIL:
 
 
 if TYPE_CHECKING:

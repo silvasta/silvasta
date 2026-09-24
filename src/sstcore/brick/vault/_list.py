@@ -8,86 +8,66 @@ __all__: list[str] = [
     "ListRegistry",
 ]
 
-from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Literal
 
 from ...port.register import ListRegister
-from ._base import RegistryError
+from ._base import BaseRegistry
 
 
-class ListRegistry[ItemT, KeyT]:
+class ListRegistry[Item](BaseRegistry[Item, list, int, Any]):
     """Implement the Shape of the Registry with List"""
 
-    vault: list[ItemT]  # NEXT: compare with bisect
+    _prefered: Literal["str", "int"] = "int"
 
-    def __init__(self, *items: ItemT) -> None:
-        self.vault: list[ItemT] = [*items]
-
-    def add(self, *items: ItemT, override: bool = False) -> list[ItemT]:
-        cleared: list[ItemT] = []
+    def add(self, items: list[Item], override: bool = False) -> list[Item]:
+        # INFO: outdated
+        cleared: list[Item] = []
         for item in items:
             if override:
                 cleared.extend(self.clear(self._item_identifier(item)))
             self.vault.append(item)
         return cleared
 
-    def clear(self, key: KeyT | None = None) -> list[ItemT]:
-        if key is None:
-            return self._clear_all()
-        else:
-            return self._clear_by_key(key)
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def find(self, key: KeyT) -> list[ItemT]:
-        return [item for item in self if self._item_identifier(item) == key]
-
-    def count(self, key: KeyT) -> int:
-        return len(self.find(key))  # LATER: optimise
-
-    @overload
-    def __getitem__(self, index: slice) -> list[ItemT]: ...
-    @overload
-    def __getitem__(self, index: int) -> ItemT: ...
-    def __getitem__(self, index: int | slice) -> list[ItemT]:
-        if TYPE_CHECKING:  # LATER: remove when work mainly finished
-            index: Any = Any  # Avoid grey shadowed text for ty warning for code not reachable
-        match index:
-            case slice():  # LATER: return maybe sliced registry?
-                return self.vault[index]
-            case int():
-                return self.vault[index]
-        raise RegistryError(f"Registry Index[{index}] failed!", index)
-
-    def __len__(self) -> int:
-        return len(self.vault)
-
-    def __iter__(self) -> Iterator[ItemT]:
-        yield from self.vault
-
-    def __contains__(self, target: ItemT) -> bool:
-        return target in self.vault
-
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def _clear_all(self) -> list[ItemT]:
-        items: list[ItemT] = [*self.vault]
+    def _clear_all(self):
         self.vault.clear()
-        return items
 
-    def _clear_by_key(self, key: KeyT) -> list[ItemT]:
-        keep: list[ItemT] = []
-        clear: list[ItemT] = []
-        # AI: something like this possible: clear.append(item) for item in self if ( self._item_identifier(item) == key ) else keep.append(item) ?
-        for item in self:
-            if self._item_identifier(item) == key:
-                clear.append(item)
-            else:
-                keep.append(item)
-        self.vault: list[ItemT] = keep
-        return clear
+    def _slice_action(self, s: slice) -> list[Item]:
+        return self.vault[s]
 
-    def _item_identifier(self, item: ItemT) -> KeyT:
-        """Select and set the most important attribute of the Item"""
-        raise NotImplementedError(item)  # LATER: this with some setter?
+    def _str_action(self, k: str) -> list[Item]:
+        """Implement Filter for string attributes etc later here!"""
+        return []
+
+    def _item_action(self, target: Item) -> list[Item]:
+        """Implement Filter for class attributes etc later here!"""
+        return []
+
+    def _int_action(self, i: int) -> Item | None:
+        return self.vault[i]
+
+    def _sanitize(self, result: list[Item] | Item | None) -> list[Item]:
+        match result:
+            case None:
+                return []
+            case list():
+                return result
+            case _:
+                return [result]
+
+    def _remove(self, targets: list[Item]) -> list[Item]:
+        """Return all removed"""
+        raise NotImplementedError
+
+    def _append(self, items: list[Item]) -> list[Item]:
+        """Return all duplicated"""
+        self.vault.extend(items)
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def __contains__(self, target: Item) -> bool:
+        return target in self.vault  # Works
 
 
 if TYPE_CHECKING:

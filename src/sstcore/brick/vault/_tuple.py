@@ -10,28 +10,19 @@ __all__: list[str] = [
     "TupleRegistry",
 ]
 
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, NoReturn, Self, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from ...port.register import TupleRegister
+from ._base import BaseRegistry
 
 
-class TupleRegistry[ItemT]:
+class TupleRegistry[Item](BaseRegistry[Item, tuple, int, Any]):
     """Implement the Shape of the Registry with Tuples"""
 
-    def __init__(self, items: tuple[ItemT, ...], **_kwargs):
-        for item in items:
-            # IDEA: this for all sequence registry? or even all?
-            self._guard_input(item)
-        self.vault: tuple[ItemT, ...] = tuple(items)
-
-    def _guard_input(self, item) -> None | NoReturn:
-        # IDEA: this for all sequence registry? or even all?
-        """LATER: define Error Handling, on which level?"""
-
-    def add(self, items: tuple[tuple[ItemT, int]], **_kwargs) -> Self:
+    def add(self, items: tuple[tuple[Item, int]], **_kwargs):
+        # AI: outdated
         """Extend Items directly or with processing"""
-        modified_data: list[ItemT] = list(self.vault)
+        modified_data: list[Item] = list(self.vault)
         for item, index in items:
             if index in self:
                 # TASK: insertion order
@@ -39,18 +30,14 @@ class TupleRegistry[ItemT]:
                 modified_data.insert(index, item)
         return type(self)(items=tuple(modified_data))
 
-    def get(self, key: int) -> ItemT | None:
-        if key in self:
-            return self.vault[key]
-        return None
-
     @overload
-    def clear(self, key: None) -> tuple[ItemT, ...]: ...
+    def clear(self, key: None) -> tuple[Item, ...]: ...
     @overload
-    def clear(self, key: int) -> ItemT: ...
-    def clear(self, key: int | None = None) -> tuple[ItemT, ...] | ItemT:
+    def clear(self, key: int) -> Item: ...
+    def clear(self, key: int | None = None) -> tuple[Item, ...] | Item:
         """Delete and return full registry or return selected element"""
-        old_data: tuple[ItemT, ...] | ItemT = (
+        # AI: outdated
+        old_data: tuple[Item, ...] | Item = (
             self.vault[key]
             if key is not None and key in self
             else tuple(*self.vault)
@@ -58,14 +45,54 @@ class TupleRegistry[ItemT]:
         self.vault = ()
         return old_data
 
-    def __iter__(self) -> Iterable[ItemT]:
-        return iter(self.vault)
-
-    def __len__(self) -> int:
-        return len(self.vault)
-
     def __contains__(self, target) -> bool:
         return (target is None) or (0 <= target < len(self))
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def _clear_all(self) -> None:
+        self.vault = ()
+
+    def _slice_action(self, s: slice) -> Any:
+        return tuple(self[s])
+
+    def _str_action(self, k: str) -> Any:
+        return ()
+
+    def _item_action(self, target: Item) -> Any:
+        return ()
+
+    def _int_action(self, i: int) -> Item | None:
+        if 0 < i < len(self):
+            return self.vault[i]
+
+    def _sanitize(self, result: tuple[Item] | Item | None) -> tuple:
+        match result:
+            case None:
+                return ()
+            case dict():
+                return result
+            case _:
+                return (result,)
+
+    def _remove(self, targets: tuple[Item]) -> tuple[Item]:
+        """Return all removed"""
+        keep = []
+        remove = []
+        for item in self:
+            if item in targets:
+                remove.append(item)
+            else:
+                keep.append(item)
+        self.vault = tuple(keep)
+        return tuple(remove)
+
+    def _append(self, items: tuple[Item]):
+        """Return all duplicated"""
+        new: tuple[Item] = self.vault + items
+        self.vault = new
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 if TYPE_CHECKING:
