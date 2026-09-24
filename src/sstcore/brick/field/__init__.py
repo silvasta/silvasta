@@ -25,6 +25,7 @@ __all__: list[str] = [
     "DerivedField",
     "Forward",
     "PolicyField",
+    "MatchPolicyField",
     "StrategyField",
     "DynamicStrategy",
     # connected
@@ -47,6 +48,6 @@ from ._combine import DerivedField, Forward, LazyField, RequiredField
 from ._decorate import DecoratedField, FieldDecorator
 from ._extend import ResetField, TypedField, ValidField
 from ._interact import ConfigField, EmitField
+from ._policy import MatchPolicyField, PolicyField
 from ._raise import FieldError, FieldErrorInput, FieldRaiser
-from ._state import PolicyField
 from ._strategy import DynamicStrategy, StrategyField

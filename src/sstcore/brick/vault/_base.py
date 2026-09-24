@@ -9,16 +9,11 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    NoReturn,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 from ...port.raising import SstCoreError
-from ...port.register import Registry, RegistryDescriptor
+from ...port.register import Registry, RegistryDescriptor, VaultPolicy
+from ..field import PolicyField
 from ._extras import RegistryField
 
 # type Vaults = list | tuple | dict
@@ -28,11 +23,15 @@ type Vaults = Sequence | Mapping
 class RegistryError(SstCoreError): ...
 
 
-# raise RegistryError(f"Registry Index[{index}] failed!", index)
+_conflict = PolicyField(VaultPolicy, default=VaultPolicy.RAISE)
 
 
 class BaseVault[Item, Vault: Vaults, U, A: Any]:
+    """Provide initial Setup"""
+
     vault: Vault
+
+    on_conflict = PolicyField(VaultPolicy, default=VaultPolicy.RAISE)
 
     def __init__(self, initial: Vault) -> None:
         self.vault: Vault = initial

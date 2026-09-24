@@ -5,67 +5,21 @@ Provide the Bricks for Descriptor Compositions
                                                  DependencyLevel[2]
 """
 
-# TASK: state for bisect transition? or something similar, at least with Enums
-
 __all__: list[str] = [
-    "PolicyField",
-    #
     "TransitionField",
     "StateField",
 ]
 
-from collections.abc import Callable
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from ...port import attach
 from ...port.attach import Transition
-from ...port.govern import PolicyEnum
 from ._base import ReadField
 from ._extend import ResetField, TypedField
 
 type NodeIdentifier = TransitionGraph | str | int
 
-
-class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
-    """Implement Policy and Execution Logic"""
-
-    def __init__(
-        self,
-        enum_type: type[EnumT],
-        *args,
-        match_func: Callable | None = None,  # LATER: specify or sync with port
-        **kwargs,
-    ):
-        self.enum_type: type[EnumT] = enum_type
-        self.match_func: Callable | None = match_func
-        super().__init__(*args, **kwargs)
-
-    def validate(self, unit: object, value: EnumT) -> EnumT:
-        # IDEA: check if there is a valid match_func or override already here?
-        # -> otherwise, forward enum_type as types=enum_type in __init__
-        raise NotImplementedError
-
-    def match(self, policy: PolicyEnum, unit: object, *args, **kwargs):
-        """Inject or Override"""
-        # TODO: compare with execute, what is needed??
-        if self.match_func:
-            return self.match_func(policy, unit, *args, **kwargs)
-        raise NotImplementedError(f"No Match Policy defined: {self.enum_type}")
-
-    def execute(self, unit, *args, **kwargs):
-        # TODO: why not just self.read? or self._get_val?
-        # - if needed, mix ReadField again here
-        current_state = getattr(unit, self.private_name)
-        return self.match(current_state, unit, *args, **kwargs)
-
-
-class PolicyField[EnumT: PolicyEnum](PolicyFieldEngine, ReadField):
-    """Assemble PolicyEngine with Default Read"""
-
-
-if TYPE_CHECKING:
-    _policy: type[attach.PolicyDescriptor] = PolicyField
 
 #  LINE: -- State (UNCOMPLETED) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

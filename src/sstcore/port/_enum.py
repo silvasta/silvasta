@@ -76,9 +76,7 @@ class SlicingEnum(Enum):
 class ResolvingEnum(Enum):
     """Match by Int, Str and Slice"""
 
-    def resolve(
-        self, identifier: EnumId[Self], default: Self | None = None
-    ) -> Self:
+    def resolve(self, identifier: str | int | Self, default=None):
         # TASK: ok that with the slice is not even so easy...
         """Map [int|str|EnumT] to EnumT, Default or Raise"""
         enum = type(self)

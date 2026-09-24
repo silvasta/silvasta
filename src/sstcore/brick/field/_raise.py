@@ -63,9 +63,9 @@ class ErrorBuilder(ErrorMachine):
 class FieldRaiseCall(Protocol):
     def __call__(
         self,
-        field: Any,
-        instance: type | None = None,
-        **kwargs: Unpack[ErrorInput],
+        _field: Any,
+        _unit: Any | None = None,
+        **kwargs: Unpack[FieldErrorInput],
     ) -> ErrorDTO: ...
 
 

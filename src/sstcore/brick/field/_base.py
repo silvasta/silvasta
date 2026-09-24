@@ -85,16 +85,9 @@ class ReadField[FieldT](BaseField):
 
         return self if unit is None else self.read(unit)
 
-    def on_erroron_missing(self, unit: object) -> Never:
-        # REMOVE: when on_error established
-        raise AttributeError(f"{self.name(unit)} is Missing!")
-
-    def new_on_error(self, _unit: object, _todo: Any) -> Never:
-        raise self.on_error.ReadMissing(_todo)()
-
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
-            self.on_erroron_missing(unit)
+            raise self.on_error.ReadMissing(self, unit)()
         return self._get_val(unit)
 
 

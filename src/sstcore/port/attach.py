@@ -176,9 +176,6 @@ class PolicyDescriptor[EnumT: PolicyEnum](_Protocol):
     def match(self, state: EnumT, unit: object):  # LATER: specify
         """Launch match_func, get override or Raise"""
 
-    def execute(self, unit: object):  # LATER: specify
-        """Apply the injected or overridden Matching-Function"""
-
 
 class Transition[T](_Protocol):  # LATER: move to state transition
     def __call__(self, unit: object, current: T, next: T, **kwargs) -> _Any:
