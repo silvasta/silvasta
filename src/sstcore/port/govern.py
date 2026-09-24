@@ -16,6 +16,9 @@ Strategy:
   - SstEnum(Enum)
   Finally
     SstEnum
+
+  - Overall: not to fast and not to deeply nested, step by step
+
 """
 
 # TODO: module name
@@ -59,21 +62,31 @@ class Machine(EnumView):
     """Task Executor"""
 
 
-class Policy(BaseEnum):  # IDEA: Mode??
+class Policy(BaseEnum):
+    # TODO: PolicyDescriptor
     """Task Toggle"""
 
 
-# TODO: PolicyDescriptor
+# IMPORTANT: MODE???
+# IDEA: Mode??
+# NOTE: Policy and Option, same or not?
+# - mode inbetween or both together?
+# - both still possible, keep it flexibel and don't get locked somewhere
+
+
+class Mode(BaseEnum):
+    """Task Toggle"""
 
 
 class Option(BaseEnum):
-    # IDEA: parametrize value??
-    # IDEA: intercept class.__call__ for default zero??
     """Multiple Selections - Always 1 default (on zero)"""
 
 
 class PrintOption(Option):
     """(Randomly) toggle views until it looks nice"""
+
+
+# TODO: ViewOption? ViewCatalog already exists (inirect)
 
 
 class Catalog(BaseEnum):
@@ -82,9 +95,6 @@ class Catalog(BaseEnum):
 
 class MixinCatalog(BaseEnum):
     """Select without Surprise"""
-
-
-# TODO: ViewOption?
 
 
 class StateGraph(EnumView):

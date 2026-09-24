@@ -13,9 +13,8 @@ __all__: list[str] = [
     "FailedHackError",
 ]
 
-from typing import Any, NamedTuple, Never, Protocol, TypedDict, Unpack
+from typing import Any, NamedTuple, Never, TypedDict, Unpack
 
-from .calling import Stringable
 from .govern import EnumZero, Machine
 
 
@@ -48,10 +47,10 @@ class ErrorInput(TypedDict, total=False):
     received: dict
 
 
-class ErrorData[TargeT, UnitT](NamedTuple):
+class ErrorSpec[TargeT, UnitT](NamedTuple):
     """Define the Arg Space of the Internal Pipeline"""
 
-    raiser: ErrorRaiser
+    raiser: Raiser
     #
     expected: tuple[tuple[str, Any], ...] = ()
     received: tuple[tuple[str, Any], ...] = ()
@@ -73,118 +72,68 @@ class ErrorDTO[ErrorT: Exception](NamedTuple):
         raise self(self.message, *self.args, *args)
 
 
-class ErrorFormating[ErrorT: SstCoreError](Protocol):
-    """Hold templates and fill values"""
-
-    def template(self, reason: Raiser, /) -> str:
-        """Store one template for each raising reason"""
-
-    def format(self, keys: dict[str, Stringable]) -> str:
-        """Insert keys and get filled pattern"""
-
-    def __call__[TargeT](self, reason: Raiser, /, data: ErrorData) -> str:
-        """Process Reason, Field and Data to"""
-
-
-class ErrorProducing[ErrorT: SstCoreError](Protocol):
-    """Order the Components, Build the Errors and provide DTOs"""
-
-    def compose(self, reason: ErrorRaiser, /, data: ErrorData) -> ErrorT:
-        """Mix builtin Exception into the custom Error"""
-
-    def run(self, reason: ErrorRaiser, /, data: ErrorData) -> ErrorDTO:
-        """Connect Raiser, Assemble and Format to build the Error"""
-
-    def build(self, reason: ErrorRaiser, /, data: ErrorData) -> ErrorT: ...
-
-    def __call__(
-        self, reason: ErrorRaiser, /, data: ErrorData
-    ) -> ErrorDTO[ErrorT]:
-        """Collect Format and Compose Exception -> Build DTO"""
+type Errors = tuple[type[Exception], ...]
 
 
 class ErrorMachine(Machine):
     """Start the Heavy Engine and Produce the Exceptions"""
 
-    def sst_errors[ErrorT: SstCoreError](
-        self, reason: Raiser, /, data: ErrorData
-    ) -> ErrorDTO[ErrorT]:
-        """Show all N SstCoreErrors"""
-        raise NotImplementedError
+    def message(self, reason: Raiser, **kwargs) -> str:
+        """Find Builtin Exception if registred in Raiser"""
+        return f"{reason}: {kwargs!r}"
 
-    def exceptions(self, reason: ErrorRaiser, /, data: ErrorData) -> ErrorDTO:
-        """Show all 0..N Builtin Exceptions"""
-        raise NotImplementedError
+    def custom(self, reason: Raiser, **kwargs) -> type[SstCoreError]:
+        """Get Custom Exception registred in Raiser"""
+        return SstCoreError
 
-    def build[ErrorT](self, reason: ErrorRaiser, /, data: ErrorData) -> ErrorT:
-        raise NotImplementedError
+    def builtin(self, reason: Raiser, **kwargs) -> type[Exception] | None:
+        """Find Builtin Exception if registred in Raiser"""
+        return Exception
 
-    @classmethod
-    def run[ErrorT: SstCoreError](
-        cls, reason: ErrorRaiser, /, data: ErrorData
-    ) -> ErrorDTO:
-        raise NotImplementedError
+    #  LINE: -- override the above methods -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def __call__[ErrorT: SstCoreError](
-        self, reason: ErrorRaiser, /, data: ErrorData
-    ) -> ErrorDTO[ErrorT]:
-        raise NotImplementedError
+    def bases(self, reason: Raiser, **kwargs) -> Errors:
+        """Gather the registed Error classes"""
+        sst_error: type[SstCoreError] = self.custom(reason, **kwargs)
+        exception: type[Exception] | None = self.builtin(reason, **kwargs)
+        return (sst_error,) if exception is None else (sst_error, exception)
 
+    def error_name(self, reason: Raiser, bases: Errors) -> str:
+        error: str = bases[-1].__name__
+        prefix: str = bases[0].__name__[0:-5]  # CHECK: idea is, cut: Error
+        return f"{reason.name}{prefix}{error}"
 
-class ErrorRaiser(Protocol):
-    def __call__(self, **kwargs: Unpack[ErrorInput]) -> Exception: ...
-    def sanitize(**kwargs: Unpack[ErrorInput]) -> ErrorData: ...
-    def launch(self, data: ErrorDTO, *args) -> Never: ...
+    def compose(self, reason: Raiser, **kwargs) -> type[SstCoreError]:
+        """Mix builtin Exception into the custom Error"""
+        bases: Errors = self.bases(reason, **kwargs)
+        name: str = self.error_name(reason, bases)
+        return type(name, bases, {})
 
-
-class RaiserQuery[ErrorT: SstCoreError](Protocol):
-    def __iter__(self) -> tuple[Single[ErrorT] | ErrorPair[ErrorT], ...]:
-        """Yield all pairs of Error/Exception"""
-
-    def __contains__(self, target: ErrorT | Exception) -> bool:
-        """Is the target Exception already member?"""
-
-    def errors(self) -> tuple[SstCoreError, ...]:
-        """Provide all custom Errors, full mapping"""
-
-    def exceptions(self) -> tuple[Exception, ...]:
-        """Provide all builtin Exceptions, can be empty"""
-
-
-class Raising[ErrorT: SstCoreError](RaiserQuery[ErrorT], Protocol):
-    """Core"""
-
-    # TASK: routing, input parsing TypedDict->NamedTuple
-
-    def intact[TargeT, UnitT](
-        self, field: TargeT, instance: UnitT, **kwargs: Unpack[ErrorInput]
-    ) -> ErrorT: ...
-
-    def __call__[TargeT, UnitT](
-        self, field: TargeT, instance: UnitT, **kwargs: Unpack[ErrorInput]
-    ) -> Never:
-        """Take all relevant input, process, raise"""
+    @staticmethod
+    def run(reason: Raiser, **kwargs) -> ErrorDTO:
+        return ErrorDTO(
+            error=ErrorMachine.compose(reason=reason, **kwargs),
+            message=ErrorMachine.message(reason=reason, **kwargs),
+        )
 
 
 class Raiser(EnumZero):
-    def __call__(self, **kwargs: Unpack[ErrorInput]) -> Never:
+    def __call__(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
         """Collect the needed input, format and fire the Exception"""
 
-        # NEXT: catch and handler
+        input_dto: ErrorSpec = self.sanitize(*args, **kwargs)
+        output_dto: ErrorDTO = self.order(input_dto)
 
-        def _sanitize(**kwargs: Unpack[ErrorInput]) -> ErrorData:
-            raise NotImplementedError
-
-        input_dto: ErrorData = _sanitize(**kwargs)
-        output_dto: ErrorDTO = ErrorMachine.run(self, data=input_dto)()
-
-        self.launch(output_dto)
-
-    def sanitize(**kwargs: Unpack[ErrorInput]) -> ErrorData:
-        raise NotImplementedError
+        return output_dto
 
     def launch(self, data: ErrorDTO, *args) -> Never:
         raise data.fire(data.message, *data.args, *args)
+
+    def order(self, data: ErrorSpec) -> ErrorDTO:
+        return ErrorMachine.run(reason=self, data=data)
+
+    def sanitize(self, *args, **kwargs) -> ErrorSpec:
+        return ErrorSpec(self, *args, **kwargs)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
