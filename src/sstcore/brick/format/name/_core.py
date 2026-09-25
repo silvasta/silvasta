@@ -92,35 +92,17 @@ class CheckIfTypeCheckingBadTyping:
     def state(self) -> Any:
         raise NotImplementedError
 
-    def handle(self, order: int) -> list[str]:
+    def handle(self, _order: int) -> list[str]:
         """Transform internal state to text depending on order"""
         raise NotImplementedError
 
 
 if TYPE_CHECKING:
-    # INFO: the ty warning for the pure classes without decorator:
-    # - flagging Good as fine, the others as issues
-    # └╴󰌠  _core.py  5
-    #   ├╴  Object of type `CheckIfTypeCheckingMissingSignature` is not assignable to `OnlyForCheck`: Incompatible value of type `CheckIfTypeCheckingMissingSignature`
-    #   │
-    #   │    info: type `CheckIfTypeCheckingMissingSignature` is not assignable to protocol `OnlyForCheck`
-    #   │    info: └── protocol member `handle` is incompatible
-    #   │    info:     └── parameter `order` is missing ty (invalid-assignment) [102, 40]
-    #   ├╴  Object of type `CheckIfTypeCheckingBadTyping` is not assignable to `OnlyForCheck`: Incompatible value of type `CheckIfTypeCheckingBadTyping`
-    #   │
-    #   │    info: type `CheckIfTypeCheckingBadTyping` is not assignable to protocol `OnlyForCheck`
-    #   │    info: └── protocol member `handle` is incompatible
-    #   │    info:     └── incompatible return types: `list[str]` is not assignable to `str` ty (invalid-assignment) [103, 40]
-    #   ├╴  `order` is unused ty  [95, 22]
-    #   ├╴  Code is always unreachable ty  [213, 5]
-    #   └╴  Code is always unreachable ty  [242, 5]
     _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingGood()
     _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingMissingSignature()
     _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingBadTyping()
 
 #  LINE: -- From Here: Official Implementation -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-#  AI: everything below belongs to the before and finale module
 
 
 @implements(protocol=NameParsing)
