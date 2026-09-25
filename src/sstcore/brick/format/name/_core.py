@@ -8,7 +8,7 @@ Format and Parse Names in both directions
 
 - BidirectionalParser: Dispatch input as unified External Access Point 󰣏
 
-- NameParser: Final Assembly and Facade
+- NameParser: Facade and Final Assembly 󰣏
 
                                                        DependencyLevel[1]
 """
@@ -29,11 +29,101 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
 from ....error import NotImplementedDispatchError  # WARN: dependency violation
+
+# LATER: decide for: import module or from module import ...
 from ....port import normalize
+from ....port._link import implements, portlink
+from ....port.normalize import (
+    Bidirect,
+    ExtractNormalizing,
+    FormatNormalizing,
+    NameParsing,
+    NamingPattern,
+    OnlyForCheck,
+)
 from ...none import Ghost
 from ._base import BaseName as _BaseName
 
 
+@portlink(protocol=OnlyForCheck)
+class CheckIfTypeCheckingGood:
+    def __init__(self):
+        self.side_info: dict[str, Any] = {}
+        self.other = ...
+
+    @property
+    def state(self) -> Any:
+        _important = self.side_info.get("whatever", None)
+        return self._some_process(_important, self.other)
+
+    def _some_process(self, *args, **kwargs):
+        raise NotImplementedError(args, kwargs)
+
+    def handle(self, order: int) -> str:
+        """Transform internal state to text depending on order"""
+        match order:
+            # ... fill here
+            case _:
+                return str(self.state)
+
+
+@portlink(protocol=OnlyForCheck)
+class CheckIfTypeCheckingMissingSignature:
+    def __init__(self):
+        self.side_info: dict[str, Any] = {}
+        self.other = ...
+
+    @property
+    def state(self) -> Any:
+        raise NotImplementedError
+
+    def handle(self) -> str:
+        """Transform internal state to text depending on order"""
+        raise NotImplementedError
+
+
+@portlink(protocol=OnlyForCheck)
+class CheckIfTypeCheckingBadTyping:
+    def __init__(self):
+        self.side_info: dict[str, Any] = {}
+        self.other = ...
+
+    @property
+    def state(self) -> Any:
+        raise NotImplementedError
+
+    def handle(self, order: int) -> list[str]:
+        """Transform internal state to text depending on order"""
+        raise NotImplementedError
+
+
+if TYPE_CHECKING:
+    # INFO: the ty warning for the pure classes without decorator:
+    # - flagging Good as fine, the others as issues
+    # └╴󰌠  _core.py  5
+    #   ├╴  Object of type `CheckIfTypeCheckingMissingSignature` is not assignable to `OnlyForCheck`: Incompatible value of type `CheckIfTypeCheckingMissingSignature`
+    #   │
+    #   │    info: type `CheckIfTypeCheckingMissingSignature` is not assignable to protocol `OnlyForCheck`
+    #   │    info: └── protocol member `handle` is incompatible
+    #   │    info:     └── parameter `order` is missing ty (invalid-assignment) [102, 40]
+    #   ├╴  Object of type `CheckIfTypeCheckingBadTyping` is not assignable to `OnlyForCheck`: Incompatible value of type `CheckIfTypeCheckingBadTyping`
+    #   │
+    #   │    info: type `CheckIfTypeCheckingBadTyping` is not assignable to protocol `OnlyForCheck`
+    #   │    info: └── protocol member `handle` is incompatible
+    #   │    info:     └── incompatible return types: `list[str]` is not assignable to `str` ty (invalid-assignment) [103, 40]
+    #   ├╴  `order` is unused ty  [95, 22]
+    #   ├╴  Code is always unreachable ty  [213, 5]
+    #   └╴  Code is always unreachable ty  [242, 5]
+    _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingGood()
+    _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingMissingSignature()
+    _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingBadTyping()
+
+#  LINE: -- From Here: Official Implementation -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+#  AI: everything below belongs to the before and finale module
+
+
+@implements(protocol=NameParsing)
 class NamePattern(_BaseName):
     def __init__(
         self,
@@ -83,10 +173,11 @@ class NamePattern(_BaseName):
         raise ValueError(f"No match for {self}: {name}")
 
 
-class FormatNormalizer(NamePattern):  #  MOVE: to normalize?
+@implements(protocol=FormatNormalizing)
+class FormatNormalizer(NamePattern):
     """Check keys and pre-format datetimes"""
 
-    def normalize_keys(
+    def normalize_keys(  #  MOVE: to normalize?
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
     ) -> dict[str, str]:
         """Convert datetimes and ensure all keys are present"""
@@ -110,8 +201,11 @@ class FormatNormalizer(NamePattern):  #  MOVE: to normalize?
         return super().format(keys)
 
 
-class ExtractNormalizer(NamePattern):  #  MOVE: to normalize?
-    def normalize_name(self, target: Path | str) -> str:
+@implements(protocol=ExtractNormalizing)
+class ExtractNormalizer(NamePattern):
+    def normalize_name(  #  MOVE: to normalize?
+        self, target: Path | str
+    ) -> str:
         name: str = (  # resolve Path to string
             target
             if not isinstance(target, Path)
@@ -135,6 +229,7 @@ else:
     _NormalizedName = Ghost
 
 
+@implements(protocol=Bidirect)
 class BidirectionalParser(_NormalizedName):
     """Route the Calls trough the right channel"""
 
@@ -165,6 +260,7 @@ else:
     ): ...
 
 
+@implements(protocol=NamingPattern)
 class NameParser(_BidirectionalName):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
@@ -176,6 +272,7 @@ class NameParser(_BidirectionalName):
 
 
 if TYPE_CHECKING:
+    # AI: this is the unchanged usage as before, probably I just keep this at EoF
     _pattern: normalize.NamingPattern = NamePattern("hello {name}")
     _format: normalize.FormatNormalizing = FormatNormalizer("hello {name}")
     _extraat: normalize.ExtractNormalizing = ExtractNormalizer("hello {name}")
