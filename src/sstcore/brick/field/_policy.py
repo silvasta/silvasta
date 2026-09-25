@@ -19,7 +19,7 @@ from ._base import ReadField
 from ._extend import TypedField
 
 # INFO: type EnumId[EnumT] = EnumT | str | int
-type Identifier = EnumId[PolicyEnum]
+# CHECK: for typing: type Identifier = EnumId[PolicyEnum]
 
 
 class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
@@ -33,11 +33,11 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         **kwargs,
     ):
         self.enum_type: type[EnumT] = enum_type
-        self.frozen: bool = frozen
+        self.frozen: bool = frozen  # MOVE: FrozenFieldMixin?
         super().__init__(*args, **kwargs)
 
     def validate(self, unit: object, value: EnumId[EnumT]) -> EnumT:
-        if self.frozen and self._has_val(unit):
+        if self.frozen and self._has_val(unit):  # MOVE: FrozenFieldMixin?
             raise self.on_error.ReadOnly(self, unit)()
 
         value: EnumT = self.enum_type.resolve(value)  # ty:ignore
@@ -96,4 +96,5 @@ class MatchPolicyField[EnumT: PolicyEnum](PolicyFieldEngine, PolicyMatchMixin):
 
 
 if TYPE_CHECKING:
+    _policy: type[attach.PolicyDescriptor] = PolicyField
     _policy: type[attach.PolicyDescriptor] = MatchPolicyField

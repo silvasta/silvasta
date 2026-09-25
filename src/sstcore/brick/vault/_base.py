@@ -25,6 +25,19 @@ class RegistryError(SstCoreError): ...
 
 _conflict = PolicyField(VaultPolicy, default=VaultPolicy.RAISE)
 
+# IMPORTANT: the manual
+# class BaseVault[Item, Vault: Vaults, U, A: Any]:
+#     # Set default to a specific Enum member, not the class
+#     on_conflict = MatchPolicyField(
+#         VaultPolicy,
+#         default=VaultPolicy.RAISE,
+#         enum_match=default_conflict_handler)
+#     def add(self, data: Item) -> Vault:
+#         if self._is_conflict(data):
+#             # Access the descriptor from the class to call match()
+#             return type(self).on_conflict.match(unit=self, data=data)
+#         # ... normal add logic ...
+
 
 class BaseVault[Item, Vault: Vaults, U, A: Any]:
     """Provide initial Setup"""
