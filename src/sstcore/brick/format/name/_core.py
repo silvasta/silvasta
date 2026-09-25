@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
 from ....error import NotImplementedDispatchError  # WARN: dependency violation
-from ....port import process
+from ....port import normalize
 from ...none import Ghost
 from ._base import BaseName as _BaseName
 
@@ -151,11 +151,21 @@ class BidirectionalParser(_NormalizedName):
             case dict() | list() | tuple():
                 return self.format(target)
 
-        # FIX:
+        # IMPORTANT: replace by FormatError (as soon as this exists) or Raiser!
         raise NotImplementedDispatchError(target)
 
 
-class NameParser(BidirectionalParser, FormatNormalizer, ExtractNormalizer):
+if TYPE_CHECKING:
+
+    class _BidirectionalName(BidirectionalParser): ...
+else:
+    # INFO: Re-Ghosting? otherwise ty complains about unstable MRO...
+    class _BidirectionalName(
+        BidirectionalParser, FormatNormalizer, ExtractNormalizer
+    ): ...
+
+
+class NameParser(_BidirectionalName):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
 
@@ -166,8 +176,8 @@ class NameParser(BidirectionalParser, FormatNormalizer, ExtractNormalizer):
 
 
 if TYPE_CHECKING:
-    _pattern: process.NamingPattern = NamePattern("hello {name}")
-    _format: process.FormatNormalizing = FormatNormalizer("hello {name}")
-    _extraat: process.ExtractNormalizing = ExtractNormalizer("hello {name}")
-    _call: process.Bidirect = BidirectionalParser("hello {name}")
-    _parser: process.NameParsing = NameParser("hello {name}")
+    _pattern: normalize.NamingPattern = NamePattern("hello {name}")
+    _format: normalize.FormatNormalizing = FormatNormalizer("hello {name}")
+    _extraat: normalize.ExtractNormalizing = ExtractNormalizer("hello {name}")
+    _call: normalize.Bidirect = BidirectionalParser("hello {name}")
+    _parser: normalize.NameParsing = NameParser("hello {name}")
