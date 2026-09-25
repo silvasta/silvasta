@@ -85,6 +85,18 @@ class StubFileGuard:
     def get_stub_dir(
         target: str | ModuleType | Path, subdir: str = "_stubs"
     ) -> Path: ...
+    @staticmethod
+    def stub_file_init(
+        obj: Any, *, package: str | None = None, backup: bool = True
+    ) -> Path: ...
+    @staticmethod
+    def single_stub_file(
+        obj: Any,
+        *,
+        prefix: str,
+        package: str | None = None,
+        backup: bool = True,
+    ) -> Path: ...
 
 # ---------------------------------------------------------------------------
 # Facade

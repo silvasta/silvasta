@@ -18,13 +18,12 @@ from ....port.color import (
     Color,
     ColorBox,
     ColorIdentifier,
-    ColorManager,
     Painter,
 )
-from ...labor.reflect import clsname
+from ...labor import clsname
 from .._mappings import SHORTCUTS
-from .._stack import ColorStack
-from ._manager import ColorHub
+
+# from .._stack import ColorStack
 
 
 class Colors:
@@ -34,7 +33,8 @@ class Colors:
     # - maybe provide adapter specific variations to simplify/allow strong typing
 
     def __init__(self, *_args, **_kwargs) -> None:
-        self._hub: ColorManager = ColorHub.boot()
+        # self._hub: ColorManager = ColorHub.boot()
+        pass
 
     def __str__(self) -> str:
         return f"{clsname(self)}[{self.active}]"
@@ -57,8 +57,8 @@ class Colors:
     def __call__(self, text: Stringable, color: ColorIdentifier) -> str:
         raise NotImplementedError
 
-    def stack(self, *_args, **_kwargs) -> ColorStack:
-        raise NotImplementedError
+    # def stack(self, *_args, **_kwargs) -> ColorStack:
+    #     raise NotImplementedError
 
     @classmethod
     def set_active(cls, box: ColorBox) -> None:

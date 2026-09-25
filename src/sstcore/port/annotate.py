@@ -142,7 +142,7 @@ class StubJob3:
     class_name: str  # GreeterEmpty
     package: str  # sstcore.brick.stack
     stub_file: str  # _stubs/_greeter.pyi
-    payload: Mapping[str, Any]
+    payload: Mapping[str, Any]  # INFO: bus
     overlay: bool = True
 
 

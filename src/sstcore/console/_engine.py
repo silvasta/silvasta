@@ -11,8 +11,8 @@ from typing import Unpack
 import typer
 from loguru import logger
 
-from ..brick.view import view
 from ..error.catch import ErrorRegistry
+from ..forge.view import view
 from ..port.system import SstSystem, SystemCliArgs
 from ..system.boot import System, SystemLoader, sst_system_loader
 from ..system.config import HomeSetup
