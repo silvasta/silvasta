@@ -21,23 +21,6 @@ from pathlib import Path
 from typing import Any, Protocol, overload
 
 
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-class OnlyForCheck(Protocol):
-    """REMOVE: after implementing: @implements decorator"""
-
-    @property
-    def side_info(self) -> dict[str, Any]: ...
-    @property
-    def state(self) -> Any:
-        """Task relevant data"""
-
-    def handle(self, order: int) -> str:
-        """Transform internal state to text depending on order"""
-
-
 class NamingPattern(Protocol):
     """Compile the Pattern, format and parse Keys and Names"""
 

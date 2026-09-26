@@ -10,6 +10,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 _LAZY_IMPORTS = {
     "SafeTyper": ".console",
+    "portlink": ".port.link",
     "System": ".system",
     "ConfigManager": ".system.config",
     "Emitter": ".system.event",

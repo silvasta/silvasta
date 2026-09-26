@@ -54,9 +54,11 @@ __all__: list[str] = [
     "ConfigManager",
     "SafeTyper",
     "PathGuard",
+    "portlink",
 ]
 
 from .console import SafeTyper
+from .port.link import portlink
 from .system import System
 from .system.config import ConfigManager
 from .system.event import Emitter

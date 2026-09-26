@@ -29,83 +29,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
 from ....error import NotImplementedDispatchError  # WARN: dependency violation
-
-# LATER: decide for: import module or from module import ...
 from ....port import normalize
-from ....port._link import implements, portlink
-from ....port.normalize import (
-    Bidirect,
-    ExtractNormalizing,
-    FormatNormalizing,
-    NameParsing,
-    NamingPattern,
-    OnlyForCheck,
-)
+from ....port.link import portlink
 from ...none import Ghost
 from ._base import BaseName as _BaseName
 
 
-@portlink(protocol=OnlyForCheck)
-class CheckIfTypeCheckingGood:
-    def __init__(self):
-        self.side_info: dict[str, Any] = {}
-        self.other = ...
-
-    @property
-    def state(self) -> Any:
-        _important = self.side_info.get("whatever", None)
-        return self._some_process(_important, self.other)
-
-    def _some_process(self, *args, **kwargs):
-        raise NotImplementedError(args, kwargs)
-
-    def handle(self, order: int) -> str:
-        """Transform internal state to text depending on order"""
-        match order:
-            # ... fill here
-            case _:
-                return str(self.state)
-
-
-@portlink(protocol=OnlyForCheck)
-class CheckIfTypeCheckingMissingSignature:
-    def __init__(self):
-        self.side_info: dict[str, Any] = {}
-        self.other = ...
-
-    @property
-    def state(self) -> Any:
-        raise NotImplementedError
-
-    def handle(self) -> str:
-        """Transform internal state to text depending on order"""
-        raise NotImplementedError
-
-
-@portlink(protocol=OnlyForCheck)
-class CheckIfTypeCheckingBadTyping:
-    def __init__(self):
-        self.side_info: dict[str, Any] = {}
-        self.other = ...
-
-    @property
-    def state(self) -> Any:
-        raise NotImplementedError
-
-    def handle(self, _order: int) -> list[str]:
-        """Transform internal state to text depending on order"""
-        raise NotImplementedError
-
-
-if TYPE_CHECKING:
-    _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingGood()
-    _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingMissingSignature()
-    _pattern: normalize.OnlyForCheck = CheckIfTypeCheckingBadTyping()
-
-#  LINE: -- From Here: Official Implementation -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@implements(protocol=NameParsing)
+@portlink(normalize.NamingPattern)
 class NamePattern(_BaseName):
     def __init__(
         self,
@@ -123,13 +53,13 @@ class NamePattern(_BaseName):
         self.datetime_format: str = datetime_format  # FormatNormalizer
 
     def _compile_pattern(
-        self, pattern: str
+        self, format_string: str, /
     ) -> tuple[re.Pattern, tuple[str, ...]]:
-        """Pure function: Parses Pattern, extracts Keys, returns regex and keys."""
+
         keys: list[str] = []
         regex_parts: list[str] = ["^"]
+        parsed: Iterable = string.Formatter().parse(format_string)
 
-        parsed: Iterable = string.Formatter().parse(pattern)
         for literal_text, field_name, _format_spec, _conversion in parsed:
             if literal_text:
                 regex_parts.append(re.escape(literal_text))
@@ -155,7 +85,7 @@ class NamePattern(_BaseName):
         raise ValueError(f"No match for {self}: {name}")
 
 
-@implements(protocol=FormatNormalizing)
+@portlink(normalize.FormatNormalizing)
 class FormatNormalizer(NamePattern):
     """Check keys and pre-format datetimes"""
 
@@ -183,7 +113,7 @@ class FormatNormalizer(NamePattern):
         return super().format(keys)
 
 
-@implements(protocol=ExtractNormalizing)
+@portlink(normalize.ExtractNormalizing)
 class ExtractNormalizer(NamePattern):
     def normalize_name(  #  MOVE: to normalize?
         self, target: Path | str
@@ -211,7 +141,7 @@ else:
     _NormalizedName = Ghost
 
 
-@implements(protocol=Bidirect)
+@portlink(normalize.Bidirect)
 class BidirectionalParser(_NormalizedName):
     """Route the Calls trough the right channel"""
 
@@ -236,13 +166,13 @@ if TYPE_CHECKING:
 
     class _BidirectionalName(BidirectionalParser): ...
 else:
-    # INFO: Re-Ghosting? otherwise ty complains about unstable MRO...
+    # CHECK: Re-Ghosting? otherwise ty complains about unstable MRO...
     class _BidirectionalName(
         BidirectionalParser, FormatNormalizer, ExtractNormalizer
     ): ...
 
 
-@implements(protocol=NamingPattern)
+@portlink(normalize.NameParsing)
 class NameParser(_BidirectionalName):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
@@ -254,7 +184,6 @@ class NameParser(_BidirectionalName):
 
 
 if TYPE_CHECKING:
-    # AI: this is the unchanged usage as before, probably I just keep this at EoF
     _pattern: normalize.NamingPattern = NamePattern("hello {name}")
     _format: normalize.FormatNormalizing = FormatNormalizer("hello {name}")
     _extraat: normalize.ExtractNormalizing = ExtractNormalizer("hello {name}")
