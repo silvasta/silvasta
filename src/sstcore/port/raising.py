@@ -50,7 +50,7 @@ class ErrorInput(TypedDict, total=False):
 class ErrorSpec[TargeT, UnitT](NamedTuple):
     """Define the Arg Space of the Internal Pipeline"""
 
-    raiser: Raiser
+    reason: Raiser
     #
     expected: tuple[tuple[str, Any], ...] = ()
     received: tuple[tuple[str, Any], ...] = ()
@@ -69,71 +69,80 @@ class ErrorDTO[ErrorT: Exception](NamedTuple):
         return self.error(self.message, *self.args, *args)
 
     def fire(self, *args) -> Never:
-        raise self(self.message, *self.args, *args)
+        raise self(*args)
 
 
 type Errors = tuple[type[Exception], ...]
 
 
-class ErrorEnumMachine(EnumMachine):
+class ErrorMachine(EnumMachine):
     """Start the Heavy Engine and Produce the Exceptions"""
 
-    def message(self, reason: Raiser, **kwargs) -> str:
-        """Find Builtin Exception if registred in Raiser"""
-        return f"{reason}: {kwargs!r}"
-
-    def custom(self, reason: Raiser, **kwargs) -> type[SstCoreError]:
+    @classmethod
+    def custom(cls, spec: ErrorSpec) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
         return SstCoreError
 
-    def builtin(self, reason: Raiser, **kwargs) -> type[Exception] | None:
+    @classmethod
+    def builtin(cls, spec: ErrorSpec) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
         return Exception
 
+    @classmethod
+    def message(cls, spec: ErrorSpec) -> str:
+        """Find Builtin Exception if registred in Raiser"""
+        _reason, *_rest = spec
+        return f"{_reason}: {_rest!r}"
+
     #  LINE: -- override the above methods -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def bases(self, reason: Raiser, **kwargs) -> Errors:
+    @classmethod
+    def bases(cls, spec: ErrorSpec) -> Errors:
         """Gather the registed Error classes"""
-        sst_error: type[SstCoreError] = self.custom(reason, **kwargs)
-        exception: type[Exception] | None = self.builtin(reason, **kwargs)
+        sst_error: type[SstCoreError] = cls.custom(spec)
+        exception: type[Exception] | None = cls.builtin(spec)
         return (sst_error,) if exception is None else (sst_error, exception)
 
-    def error_name(self, reason: Raiser, bases: Errors) -> str:
+    @classmethod
+    def error_name(cls, reason: Raiser, bases: Errors) -> str:
         error: str = bases[-1].__name__
         prefix: str = bases[0].__name__[0:-5]  # CHECK: idea is, cut: Error
         return f"{reason.name}{prefix}{error}"
 
-    def compose(self, reason: Raiser, **kwargs) -> type[SstCoreError]:
+    @classmethod
+    def compose(cls, spec: ErrorSpec) -> type[SstCoreError]:
         """Mix builtin Exception into the custom Error"""
-        bases: Errors = self.bases(reason, **kwargs)
-        name: str = self.error_name(reason, bases)
+        bases: Errors = cls.bases(spec)
+        name: str = cls.error_name(spec.reason, bases)
         return type(name, bases, {})
 
-    @staticmethod
-    def run(reason: Raiser, **kwargs) -> ErrorDTO:
+    @classmethod
+    def run(cls, spec: ErrorSpec) -> ErrorDTO:
         return ErrorDTO(
-            error=ErrorEnumMachine.compose(reason=reason, **kwargs),
-            message=ErrorEnumMachine.message(reason=reason, **kwargs),
+            error=cls.compose(spec),
+            message=cls.message(spec),
         )
 
 
 class Raiser(EnumZero):
-    def __call__(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
-        """Collect the needed input, format and fire the Exception"""
+    def __call__(self, *args, **kwargs: Unpack[ErrorInput]) -> Exception:
+        """Generate the DTO and immediately instantiate the Exception"""
 
+        return self.dto(*args, **kwargs)(*args)
+
+    def dto(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
+        """Fallback for deferred execution or message inspection"""
         input_dto: ErrorSpec = self.sanitize(*args, **kwargs)
-        output_dto: ErrorDTO = self.order(input_dto)
+        return self.order(input_dto)
 
-        return output_dto
-
-    def launch(self, data: ErrorDTO, *args) -> Never:
-        raise data.fire(data.message, *data.args, *args)
-
-    def order(self, data: ErrorSpec) -> ErrorDTO:
-        return ErrorEnumMachine.run(reason=self, data=data)
+    def order(self, spec: ErrorSpec) -> ErrorDTO:
+        return ErrorMachine.run(spec)
 
     def sanitize(self, *args, **kwargs) -> ErrorSpec:
         return ErrorSpec(self, *args, **kwargs)
+
+    def launch(self, data: ErrorDTO, *args) -> Never:
+        raise data.fire(data.message, *data.args, *args)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --

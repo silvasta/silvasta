@@ -47,17 +47,20 @@ class FieldErrorSpec[FieldT, UnitT](ErrorSpec):
 
 
 class ErrorBuilder(ErrorMachine):
-    def custom(self, reason: Raiser, **kwargs) -> type[SstCoreError]:
+    @classmethod
+    def custom(cls, spec: ErrorSpec) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
-        return get_custom_exception(cast(FieldRaiser, reason))
+        return get_custom_exception(cast(FieldRaiser, spec.reason))
 
-    def builtin(self, reason: Raiser, **kwargs) -> type[Exception] | None:
+    @classmethod
+    def builtin(cls, spec: ErrorSpec) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
-        return get_builtin_exception(cast(FieldRaiser, reason))
+        return get_builtin_exception(cast(FieldRaiser, spec.reason))
 
-    def message(self, reason: Raiser, **kwargs) -> str:
+    @classmethod
+    def message(cls, spec: ErrorSpec) -> str:
         """Find Builtin Exception if registred in Raiser"""
-        return f"{reason}: {kwargs!r}"
+        return super().message(spec)
 
 
 class FieldRaiseCall(Protocol):
@@ -82,8 +85,8 @@ class FieldRaiser(Raiser):
 
     __call__: FieldRaiseCall
 
-    def order(self, data: ErrorSpec) -> ErrorDTO:
-        return ErrorBuilder.run(reason=self, data=data)
+    def order(self, spec: ErrorSpec) -> ErrorDTO:
+        return ErrorBuilder.run(spec)
 
     def __str__(self):
         return self.name
@@ -218,15 +221,15 @@ on_error.ReadOnly("blau", test=3)
 
 
 def how_to_use1() -> Never:
-    raise on_error.ReadMissing()()
+    raise on_error.ReadMissing("")()
 
 
 def how_to_use0() -> ErrorDTO:
-    return on_error.ReadMissing()()
+    return on_error.ReadMissing("")()
 
 
 def how_to_use2() -> ErrorDTO:
-    return on_error.ReadMissing()
+    return on_error.ReadMissing("")
 
 
 def how_to_use3() -> Never:

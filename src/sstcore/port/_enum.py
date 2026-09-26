@@ -39,6 +39,16 @@ class EnumRepr1(Enum):
         return f"{type(self).__name__}[{self.value}]::{self}"
 
 
+class _EnumRepr2(Enum):
+    def __repr__(self) -> str:
+        # WARN: check how that works for Enum
+        attributes = vars(self)
+        if attributes:
+            _vars = [f"{k}={v!r}" for k, v in attributes.items()]
+            return f"{type(self).__name__}[{', '.join(_vars)}]"
+        return f"{type(self).__name__}{self.args}"
+
+
 EnumStr = EnumStr2
 EnumRepr = EnumRepr1
 
