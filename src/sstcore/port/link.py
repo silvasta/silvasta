@@ -83,7 +83,6 @@ class PortLink:
                         if not (target_doc := _detect(target_attr))
                         else self.merge(proto_doc, target_doc)
                     )
-                    # NEXT: if source in target??
                     _inject(target_attr, resulting_doc)
 
             return cls
@@ -97,7 +96,14 @@ portlink = PortLink()  # TARGET: the main object
 #  LINE: -- Internal Logic -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# REMOVE: before finishing
+def _extract(cls: type, name: str) -> _t.Any | None:
+    """Safely extract attribute without invoking __get__"""
+    try:
+        return _getattr_static(cls, name)
+    except AttributeError:
+        return None
+
+
 def _extract1(cls: type, name: str, /) -> _t.Any | None:
     for base in cls.__mro__:
         if name in base.__dict__:
@@ -105,17 +111,8 @@ def _extract1(cls: type, name: str, /) -> _t.Any | None:
     return None
 
 
-# REMOVE: before finishing
 def _extract2(cls: type, name: str) -> _t.Any | None:
     return getattr(cls, name, None)
-
-
-def _extract(cls: type, name: str) -> _t.Any | None:
-    """Safely extract attribute without invoking __get__"""
-    try:
-        return _getattr_static(cls, name)
-    except AttributeError:
-        return None
 
 
 def _reflect(cls: type, name: str, /) -> _t.Any | None:
@@ -128,7 +125,7 @@ def _reflect(cls: type, name: str, /) -> _t.Any | None:
     return None
 
 
-def _detect(target: _t.Any, /) -> str:
+def _detect(target: _t.Any, /) -> str:  #
     doc: str | None = getattr(target, "__doc__", None)
     return _cleandoc(doc) if doc else ""
 
@@ -144,7 +141,6 @@ def _inject(target: _t.Any, doc: str, /) -> None:
 #  LINE: -- Possible Improvements -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# IMPORTANT:
 def _find_defining_class(cls: type, name: str) -> type | None:
     for base in cls.__mro__:
         if name in base.__dict__:
@@ -152,6 +148,7 @@ def _find_defining_class(cls: type, name: str) -> type | None:
     return None
 
 
+# AI: this is minimal, maybe extend, but overall looks fine
 class Origin(_t.NamedTuple):
     side: _t.Literal["proto", "impl"]
     owner: type
@@ -199,63 +196,42 @@ def fold(
     return blob
 
 
-# INFO:
-# attr = _defined(cls, name) or _extract(cls, name)
-# if attr is not None:
-#     _inject(attr, rendered)
-
-
-def ___inject(cls: type, target: _t.Any, attr_name: str, doc: str, /) -> None:
-    """Safely attach the doc only if defined on the target class."""
-    # Prevent modifying inherited attributes from base classes
-    # NOTE: inherited attibutes might be wanted to override!
-    if attr_name not in cls.__dict__:
-        return
-    try:
-        target.__doc__ = doc
-    except AttributeError, TypeError:
-        return
-
-
-#  LINE: -- Future Ideas -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
 @_dataclass
-class ___DocContext:
+class _DocContext:
     defining_class: type
     docstring: str
 
 
-def ___harvest_docs(cls: type, attr_name: str) -> _t.Iterator[___DocContext]:
+# AI:: this and PortLink.merge accepting a list -> manage order
+def _harvest_docs(cls: type, attr_name: str) -> _t.Iterator[_DocContext]:
     """Yield docstrings for an attribute from the MRO hierarchy."""
-    # NOTE: this and PortLink.merge accepting a list -> manage order
     for base in cls.__mro__:
         if attr_name in base.__dict__:
             attr = base.__dict__[attr_name]
             if doc := getattr(attr, "__doc__", None):
-                yield ___DocContext(defining_class=base, docstring=doc.strip())
+                yield _DocContext(defining_class=base, docstring=doc.strip())
 
 
 @_dataclass(frozen=True, slots=True)
-class ___DocFragment:
+class _DocFragment:
     source: type  # the class/protocol where it was defined
     attr: str  # the attribute name
     doc: str
     origin: str  # "protocol" | "implementation"
 
 
-def ___collect_fragments(
+def _collect_fragments(
     protocol: type, impl: type, attr_name: str
-) -> list[___DocFragment]:
+) -> list[_DocFragment]:
     """Walk both MROs and collect docstrings for this attribute."""
-    fragments: list[___DocFragment] = []
+    fragments: list[_DocFragment] = []
 
     # Protocol side (source of truth)
     for base in protocol.__mro__:
         if attr := _reflect(base, attr_name):
             if doc := _detect(attr):
                 fragments.append(
-                    ___DocFragment(base, attr_name, doc, "protocol")
+                    _DocFragment(base, attr_name, doc, "protocol")
                 )
 
     # Implementation side
@@ -264,7 +240,7 @@ def ___collect_fragments(
             # Only record if defined directly on this base (avoid duplicates)
             if attr_name in base.__dict__ and (doc := _detect(attr)):
                 fragments.append(
-                    ___DocFragment(base, attr_name, doc, "implementation")
+                    _DocFragment(base, attr_name, doc, "implementation")
                 )
 
     return fragments
@@ -285,7 +261,7 @@ if _t.TYPE_CHECKING:
             self.seen: set[str] = set()
             self.last_event: Event | None = None
 
-        def add(self, fragment: ___DocFragment, event: Event) -> None:
+        def add(self, fragment: _DocFragment, event: Event) -> None:
             if fragment.doc in self.seen:
                 return
             # rules based on event sequence

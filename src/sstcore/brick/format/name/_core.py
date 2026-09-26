@@ -28,9 +28,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
-from ....error import NotImplementedDispatchError  # WARN: dependency violation
 from ....port import normalize
 from ....port.link import portlink
+from ....port.raising import FailedDispatchError
 from ...none import Ghost
 from ._base import BaseName as _BaseName
 
@@ -157,8 +157,7 @@ class BidirectionalParser(_NormalizedName):
             case dict() | list() | tuple():
                 return self.format(target)
 
-        # IMPORTANT: replace by FormatError (as soon as this exists) or Raiser!
-        raise NotImplementedDispatchError(target)
+        raise FailedDispatchError(target)
 
 
 if TYPE_CHECKING:
