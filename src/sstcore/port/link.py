@@ -37,7 +37,7 @@ def portlink[C, P](protocol: type[P], /) -> PortLinker[C, P]:
                 and (proto_doc := _inspect(proto_attr))
                 and (cls_attr := _reflect(cls, attr_name))
             ):
-                cls_attr.__doc__ = (
+                cls_attr.__doc__ = (  # WARN: danger for @classmethod and descriptors!
                     proto_doc
                     if not (cls_doc := _inspect(cls_attr))
                     else _merge(proto_doc, cls_doc)
@@ -74,6 +74,7 @@ def _reflect(target: type, /, attr_name: str) -> _t.Any | None:
     return (
         attr  #
         if callable(attr := getattr(target, attr_name, None))
+        # LATER: @property is ignored now... might rarely be needed
         else None
     )
 
@@ -93,3 +94,50 @@ class _Merger(_t.Protocol):
 
 def _merger(source: str, target: str) -> str:  # LATER: make this customizable
     return f"""{source}\n\n[Implementation Notes]\n{target}"""
+
+
+# LINE: -- To be Considered! -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# TODO: better replace manual protocol scan
+def _scan_attrs_use_builtin(target: type, /) -> frozenset[str]:
+    return _t.get_protocol_members(target)
+
+
+# TODO: consider special cases
+# TASK: what about descriptors??
+def _defined(cls: type, name: str, /) -> _t.Any | None:
+    attr = cls.__dict__.get(name)  # no parent mutation
+    if isinstance(attr, (classmethod, staticmethod)):
+        attr = attr.__func__
+    if callable(attr) or isinstance(attr, property):
+        return attr
+    return None
+
+
+# TODO: safety! better no doc sync than errors...
+def _write(attr: _t.Any, doc: str, /) -> None:
+    try:
+        attr.__doc__ = doc
+    except AttributeError, TypeError:
+        return
+
+
+# TODO: configuration, bind portlink with different merge format
+class _Setup:
+    """
+    Idea:
+
+    # later, without touching portlink's signature
+    @portlink.using(join=my_join)(SomeProtocol)
+    class Impl: ...
+
+    link = portlink.using(join=my_join)
+    @link(SomeProtocol)
+    class Impl: ...
+    """
+
+    notes = "[Implementation Notes]"
+    join: _Merger = staticmethod(
+        lambda src, dst: f"{src}\n\n{_Setup.notes}\n{dst}"
+    )
