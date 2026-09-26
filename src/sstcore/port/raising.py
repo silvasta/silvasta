@@ -15,7 +15,7 @@ __all__: list[str] = [
 
 from typing import Any, NamedTuple, Never, TypedDict, Unpack
 
-from .govern import EnumZero, Machine
+from .govern import EnumMachine, EnumZero
 
 
 class SstCoreError(Exception):
@@ -75,7 +75,7 @@ class ErrorDTO[ErrorT: Exception](NamedTuple):
 type Errors = tuple[type[Exception], ...]
 
 
-class ErrorMachine(Machine):
+class ErrorEnumMachine(EnumMachine):
     """Start the Heavy Engine and Produce the Exceptions"""
 
     def message(self, reason: Raiser, **kwargs) -> str:
@@ -112,8 +112,8 @@ class ErrorMachine(Machine):
     @staticmethod
     def run(reason: Raiser, **kwargs) -> ErrorDTO:
         return ErrorDTO(
-            error=ErrorMachine.compose(reason=reason, **kwargs),
-            message=ErrorMachine.message(reason=reason, **kwargs),
+            error=ErrorEnumMachine.compose(reason=reason, **kwargs),
+            message=ErrorEnumMachine.message(reason=reason, **kwargs),
         )
 
 
@@ -130,13 +130,24 @@ class Raiser(EnumZero):
         raise data.fire(data.message, *data.args, *args)
 
     def order(self, data: ErrorSpec) -> ErrorDTO:
-        return ErrorMachine.run(reason=self, data=data)
+        return ErrorEnumMachine.run(reason=self, data=data)
 
     def sanitize(self, *args, **kwargs) -> ErrorSpec:
         return ErrorSpec(self, *args, **kwargs)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# MOVE: to ._error?
+class FailedDispatchError(SstCoreError, NotImplementedError):
+    # TASK: sync with NotImplementedDispatchError
+    """Raise on missing TargetType for singledispatch(method)"""
+
+    def __init__(self, first: Any, *args: Any, **kwargs):
+        self.first = first
+        msg = f"Missing dispatch target for {type(first).__name__}"
+        super().__init__(msg, *(first, *args), **kwargs)
 
 
 class FailedHackError(SstCoreError):
