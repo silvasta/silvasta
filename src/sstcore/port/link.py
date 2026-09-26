@@ -31,17 +31,20 @@ def portlink[C, P](protocol: type[P], /) -> PortLinker[C, P]:
     def wrapper(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
         """Merge docstrings and enforce static type check"""
 
-        for attr_name in _scan_attrs(protocol):
+        # IMPORTANT: what about the cls.__doc__? from protocol.__doc__??
+
+        for attr_name in _t.get_protocol_members(protocol):
             if (
                 (proto_attr := _reflect(protocol, attr_name))
-                and (proto_doc := _inspect(proto_attr))
+                and (proto_doc := _extract_doc(proto_attr))
                 and (cls_attr := _reflect(cls, attr_name))
             ):
-                cls_attr.__doc__ = (  # WARN: danger for @classmethod and descriptors!
+                combined_doc: str = (
                     proto_doc
-                    if not (cls_doc := _inspect(cls_attr))
+                    if not (cls_doc := _extract_doc(cls_attr))
                     else _merge(proto_doc, cls_doc)
                 )
+                _update_doc(cls_attr, combined_doc)
 
         return cls
 
@@ -51,18 +54,7 @@ def portlink[C, P](protocol: type[P], /) -> PortLinker[C, P]:
 #  LINE: -- Internal Processing -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def _scan_attrs(target: type, /, ignore: tuple | None = None) -> set[str]:
-    if ignore is None:  # LATER: make this customizable at caller
-        ignore: tuple = (object, _t.Protocol, _t.Generic)
-    return {
-        proto_attr_name
-        for base in target.__mro__
-        if base not in ignore
-        for proto_attr_name in base.__dict__.keys()
-    }
-
-
-def _inspect(target: _t.Any, /) -> str:
+def _extract_doc(target: _t.Any, /) -> str:
     return (
         _cleandoc(doc)  #
         if (doc := getattr(target, "__doc__", None))
@@ -70,21 +62,35 @@ def _inspect(target: _t.Any, /) -> str:
     )
 
 
-def _reflect(target: type, /, attr_name: str) -> _t.Any | None:
+# REMOVE: before finish
+def _outdated_reflect(target: type, /, attr_name: str) -> _t.Any | None:
     return (
         attr  #
         if callable(attr := getattr(target, attr_name, None))
-        # LATER: @property is ignored now... might rarely be needed
         else None
     )
 
 
-def _merge(proto_doc: str, cls_doc: str, merge: _Merger | None = None) -> str:
+# AI_QUESTION: what about descriptors?
+def _reflect(cls: type, name: str, /) -> _t.Any | None:
+    """Extract attribute and handle special cases"""
     return (
-        cls_doc
-        if proto_doc in cls_doc
-        else (merge or _merger)(proto_doc, cls_doc)
+        attr.__func__
+        if isinstance((attr := _get(cls, name)), (classmethod, staticmethod))
+        else attr
+        if callable(attr) or isinstance(attr, property)
+        else None
     )
+
+
+# REMOVE: before finish
+def _rejected_get(cls: type, name: str) -> _t.Any | None:
+    """The MRO pipeline upwards is essential for Proto and Cls!"""
+    return cls.__dict__.get(name)
+
+
+def _get(cls: type, name: str) -> _t.Any | None:
+    return getattr(cls, name, None)
 
 
 class _Merger(_t.Protocol):
@@ -92,38 +98,31 @@ class _Merger(_t.Protocol):
         """Define format rule that concatenates two docstrings"""
 
 
-def _merger(source: str, target: str) -> str:  # LATER: make this customizable
+# AI_TASK: make this customizable
+def _default_merge(source: str, target: str) -> str:
     return f"""{source}\n\n[Implementation Notes]\n{target}"""
 
 
-# LINE: -- To be Considered! -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+def _merge(proto_doc: str, cls_doc: str, merge: _Merger | None = None) -> str:
+    return (
+        cls_doc
+        if proto_doc in cls_doc
+        else (merge or _default_merge)(proto_doc, cls_doc)
+    )
 
 
-# TODO: better replace manual protocol scan
-def _scan_attrs_use_builtin(target: type, /) -> frozenset[str]:
-    return _t.get_protocol_members(target)
-
-
-# TODO: consider special cases
-# TASK: what about descriptors??
-def _defined(cls: type, name: str, /) -> _t.Any | None:
-    attr = cls.__dict__.get(name)  # no parent mutation
-    if isinstance(attr, (classmethod, staticmethod)):
-        attr = attr.__func__
-    if callable(attr) or isinstance(attr, property):
-        return attr
-    return None
-
-
-# TODO: safety! better no doc sync than errors...
-def _write(attr: _t.Any, doc: str, /) -> None:
+def _update_doc(attr: _t.Any, doc: str, /) -> None:
+    """Safely inject the doc"""
     try:
         attr.__doc__ = doc
     except AttributeError, TypeError:
         return
 
 
-# TODO: configuration, bind portlink with different merge format
+# LINE: -- To be Considered! -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# NEXT: configuration, bind portlink with different merge format
 class _Setup:
     """
     Idea:
