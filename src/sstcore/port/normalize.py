@@ -38,7 +38,7 @@ class FormatNormalizing(NamingPattern, Protocol):
     def normalize_keys(
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
     ) -> dict[str, str]:
-        """Convert datetimes and ensure all keys are present"""
+        """Ensure all keys are present and stringable"""
 
     def format(self, keys: dict | list | tuple) -> str:
         """Render normalized keywords"""
@@ -46,7 +46,7 @@ class FormatNormalizing(NamingPattern, Protocol):
 
 class ExtractNormalizing(NamingPattern, Protocol):
     def normalize_name(self, target: Path | str) -> str:
-        """Normalize type and strip PathGuard increments"""
+        """Ensure stringable name and sanitizing"""
 
     def extract(self, name: Path | str) -> dict[str, str]:
         """Parse keywords from cleaned string"""

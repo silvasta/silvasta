@@ -13,11 +13,17 @@ Reference the Implementations back to their Definitions in the port
 
 __all__: list[str] = [
     "portlink",
+    "PortLink",
     "PortLinker",
+    "DocMerger",
 ]
 
 import typing as _t
+from dataclasses import dataclass as _dataclass
+from dataclasses import replace as _replace
+from functools import cached_property as _cached_property
 from inspect import cleandoc as _cleandoc
+from inspect import getattr_static as _getattr_static
 
 
 class PortLinker[C, P](_t.Protocol):
@@ -25,118 +31,270 @@ class PortLinker[C, P](_t.Protocol):
         """Accept class C iff C implements P and return C unchanged"""
 
 
-def portlink[C, P](protocol: type[P], /) -> PortLinker[C, P]:
+class DocMerger(_t.Protocol):
+    def __call__(self, source: str, target: str, /, joint: str = "") -> str:
+        """Concatenate Protocol and Implementation docstring"""
+
+
+def default_merge(source: str, target: str, /, joint: str = "") -> str:
+    return f"""{source}{joint}{target}"""
+
+
+@_dataclass(frozen=True, slots=True)
+class PortLink:
     """Anchor an Implementation to its Protocol"""
 
-    def wrapper(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
+    joint: str = "\n\n[Implementation Notes]\n"
+    _merge: DocMerger = default_merge
+
+    def merge(self, source: str, target: str, /) -> str:
+        return self._merge(source, target, joint=self.joint)
+
+    def create(
+        self, *, merge: DocMerger | None = None, joint: str | None = None
+    ) -> _t.Self:
+        return _replace(
+            self,
+            joint=self.joint if joint is None else joint,
+            _merge=self._merge if merge is None else merge,
+        )
+
+    def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
         """Merge docstrings and enforce static type check"""
 
-        # IMPORTANT: what about the cls.__doc__? from protocol.__doc__??
+        def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
 
-        for attr_name in _t.get_protocol_members(protocol):
-            if (
-                (proto_attr := _reflect(protocol, attr_name))
-                and (proto_doc := _extract_doc(proto_attr))
-                and (cls_attr := _reflect(cls, attr_name))
-            ):
-                combined_doc: str = (
+            if proto_doc := _detect(protocol):
+                top_level_doc: str = (
                     proto_doc
-                    if not (cls_doc := _extract_doc(cls_attr))
-                    else _merge(proto_doc, cls_doc)
+                    if not (cls_doc := _detect(cls))
+                    else self.merge(proto_doc, cls_doc)
                 )
-                _update_doc(cls_attr, combined_doc)
+                _inject(cls, top_level_doc)
 
-        return cls
+            for attr_name in _t.get_protocol_members(protocol):
+                if (
+                    (proto_attr := _reflect(protocol, attr_name))
+                    and (proto_doc := _detect(proto_attr))
+                    and (target_attr := _reflect(cls, attr_name))
+                ):
+                    resulting_doc: str = (
+                        proto_doc
+                        if not (target_doc := _detect(target_attr))
+                        else self.merge(proto_doc, target_doc)
+                    )
+                    # NEXT: if source in target??
+                    _inject(target_attr, resulting_doc)
 
-    return wrapper
+            return cls
 
-
-#  LINE: -- Internal Processing -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def _extract_doc(target: _t.Any, /) -> str:
-    return (
-        _cleandoc(doc)  #
-        if (doc := getattr(target, "__doc__", None))
-        else ""
-    )
-
-
-# REMOVE: before finish
-def _outdated_reflect(target: type, /, attr_name: str) -> _t.Any | None:
-    return (
-        attr  #
-        if callable(attr := getattr(target, attr_name, None))
-        else None
-    )
+        return portlinker
 
 
-# AI_QUESTION: what about descriptors?
-def _reflect(cls: type, name: str, /) -> _t.Any | None:
-    """Extract attribute and handle special cases"""
-    return (
-        attr.__func__
-        if isinstance((attr := _get(cls, name)), (classmethod, staticmethod))
-        else attr
-        if callable(attr) or isinstance(attr, property)
-        else None
-    )
+portlink = PortLink()  # TARGET: the main object
 
 
-# REMOVE: before finish
-def _rejected_get(cls: type, name: str) -> _t.Any | None:
-    """The MRO pipeline upwards is essential for Proto and Cls!"""
-    return cls.__dict__.get(name)
+#  LINE: -- Internal Logic -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def _get(cls: type, name: str) -> _t.Any | None:
+# REMOVE: before finishing
+def _extract1(cls: type, name: str, /) -> _t.Any | None:
+    for base in cls.__mro__:
+        if name in base.__dict__:
+            return base.__dict__[name]
+    return None
+
+
+# REMOVE: before finishing
+def _extract2(cls: type, name: str) -> _t.Any | None:
     return getattr(cls, name, None)
 
 
-class _Merger(_t.Protocol):
-    def __call__(self, source: str, target: str, /) -> str:
-        """Define format rule that concatenates two docstrings"""
-
-
-# AI_TASK: make this customizable
-def _default_merge(source: str, target: str) -> str:
-    return f"""{source}\n\n[Implementation Notes]\n{target}"""
-
-
-def _merge(proto_doc: str, cls_doc: str, merge: _Merger | None = None) -> str:
-    return (
-        cls_doc
-        if proto_doc in cls_doc
-        else (merge or _default_merge)(proto_doc, cls_doc)
-    )
-
-
-def _update_doc(attr: _t.Any, doc: str, /) -> None:
-    """Safely inject the doc"""
+def _extract(cls: type, name: str) -> _t.Any | None:
+    """Safely extract attribute without invoking __get__"""
     try:
-        attr.__doc__ = doc
+        return _getattr_static(cls, name)
+    except AttributeError:
+        return None
+
+
+def _reflect(cls: type, name: str, /) -> _t.Any | None:
+    """Extract attribute and manage special forms"""
+    attr: _t.Any | None = _extract(cls, name)
+    if isinstance(attr, (classmethod, staticmethod)):
+        return attr.__func__
+    if callable(attr) or isinstance(attr, (property, _cached_property)):
+        return attr
+    return None
+
+
+def _detect(target: _t.Any, /) -> str:
+    doc: str | None = getattr(target, "__doc__", None)
+    return _cleandoc(doc) if doc else ""
+
+
+def _inject(target: _t.Any, doc: str, /) -> None:
+    """Safely attach the doc to the target attr or cls"""
+    try:
+        target.__doc__ = doc
     except AttributeError, TypeError:
         return
 
 
-# LINE: -- To be Considered! -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Possible Improvements -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# NEXT: configuration, bind portlink with different merge format
-class _Setup:
-    """
-    Idea:
+# IMPORTANT:
+def _find_defining_class(cls: type, name: str) -> type | None:
+    for base in cls.__mro__:
+        if name in base.__dict__:
+            return base
+    return None
 
-    # later, without touching portlink's signature
-    @portlink.using(join=my_join)(SomeProtocol)
-    class Impl: ...
 
-    link = portlink.using(join=my_join)
-    @link(SomeProtocol)
-    class Impl: ...
-    """
+class Origin(_t.NamedTuple):
+    side: _t.Literal["proto", "impl"]
+    owner: type
+    text: str
 
-    notes = "[Implementation Notes]"
-    join: _Merger = staticmethod(
-        lambda src, dst: f"{src}\n\n{_Setup.notes}\n{dst}"
-    )
+
+def _defined(cls: type, name: str, /) -> _t.Any | None:
+    """This class's dict only — never inherited."""
+    # return _reflect_raw(cls.__dict__.get(name))
+    return cls.__dict__.get(name)
+
+
+def _fragments(cls: type, name: str, side: str, /) -> list[Origin]:
+    out: list[Origin] = []
+    seen: set[str] = set()
+    for base in cls.__mro__:
+        if base in (object, _t.Protocol, _t.Generic):
+            continue
+        attr = _defined(base, name)
+        if not attr:
+            continue
+        text = _detect(attr)
+        if text and text not in seen:
+            seen.add(text)
+            out.append(Origin(side, base, text))  # type: ignore[arg-type]
+    return out
+
+
+def fold(
+    parts: list[Origin], /, *, joint: str, proto_joint: str = "\n\n"
+) -> str:
+    buf: list[str] = []
+    blob = ""
+    impl_opened = False
+    for part in parts:
+        if part.text in blob:
+            continue
+        if part.side == "impl" and not impl_opened:
+            buf.append(joint)
+            impl_opened = True
+        elif buf:
+            buf.append(proto_joint if part.side == "proto" else "\n\n")
+        buf.append(part.text)
+        blob = "".join(buf)
+    return blob
+
+
+# INFO:
+# attr = _defined(cls, name) or _extract(cls, name)
+# if attr is not None:
+#     _inject(attr, rendered)
+
+
+def ___inject(cls: type, target: _t.Any, attr_name: str, doc: str, /) -> None:
+    """Safely attach the doc only if defined on the target class."""
+    # Prevent modifying inherited attributes from base classes
+    # NOTE: inherited attibutes might be wanted to override!
+    if attr_name not in cls.__dict__:
+        return
+    try:
+        target.__doc__ = doc
+    except AttributeError, TypeError:
+        return
+
+
+#  LINE: -- Future Ideas -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@_dataclass
+class ___DocContext:
+    defining_class: type
+    docstring: str
+
+
+def ___harvest_docs(cls: type, attr_name: str) -> _t.Iterator[___DocContext]:
+    """Yield docstrings for an attribute from the MRO hierarchy."""
+    # NOTE: this and PortLink.merge accepting a list -> manage order
+    for base in cls.__mro__:
+        if attr_name in base.__dict__:
+            attr = base.__dict__[attr_name]
+            if doc := getattr(attr, "__doc__", None):
+                yield ___DocContext(defining_class=base, docstring=doc.strip())
+
+
+@_dataclass(frozen=True, slots=True)
+class ___DocFragment:
+    source: type  # the class/protocol where it was defined
+    attr: str  # the attribute name
+    doc: str
+    origin: str  # "protocol" | "implementation"
+
+
+def ___collect_fragments(
+    protocol: type, impl: type, attr_name: str
+) -> list[___DocFragment]:
+    """Walk both MROs and collect docstrings for this attribute."""
+    fragments: list[___DocFragment] = []
+
+    # Protocol side (source of truth)
+    for base in protocol.__mro__:
+        if attr := _reflect(base, attr_name):
+            if doc := _detect(attr):
+                fragments.append(
+                    ___DocFragment(base, attr_name, doc, "protocol")
+                )
+
+    # Implementation side
+    for base in impl.__mro__:
+        if attr := _reflect(base, attr_name):
+            # Only record if defined directly on this base (avoid duplicates)
+            if attr_name in base.__dict__ and (doc := _detect(attr)):
+                fragments.append(
+                    ___DocFragment(base, attr_name, doc, "implementation")
+                )
+
+    return fragments
+
+
+if _t.TYPE_CHECKING:
+    import enum as _e
+
+    class Event(_e.Enum):
+        PROTO_DIRECT = _e.auto()
+        PROTO_BASE = _e.auto()
+        IMPL_DIRECT = _e.auto()
+        IMPL_BASE = _e.auto()
+
+    class DocBuilder:
+        def __init__(self):
+            self.parts: list[str] = []
+            self.seen: set[str] = set()
+            self.last_event: Event | None = None
+
+        def add(self, fragment: ___DocFragment, event: Event) -> None:
+            if fragment.doc in self.seen:
+                return
+            # rules based on event sequence
+            if (
+                event is Event.PROTO_BASE
+                and self.last_event is Event.PROTO_DIRECT
+            ):
+                # protocol overrode its own base — maybe skip or mark
+                pass
+            self.parts.append(fragment.doc)
+            self.seen.add(fragment.doc)
+            self.last_event = event

@@ -87,12 +87,10 @@ class NamePattern(_BaseName):
 
 @portlink(normalize.FormatNormalizing)
 class FormatNormalizer(NamePattern):
-    """Check keys and pre-format datetimes"""
-
     def normalize_keys(  #  MOVE: to normalize?
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
     ) -> dict[str, str]:
-        """Convert datetimes and ensure all keys are present"""
+        """Convert datetimes with predefined format"""
 
         keys: dict[str, str | datetime] = (
             target
@@ -118,6 +116,7 @@ class ExtractNormalizer(NamePattern):
     def normalize_name(  #  MOVE: to normalize?
         self, target: Path | str
     ) -> str:
+        """Normalize type and strip PathGuard increments"""
         name: str = (  # resolve Path to string
             target
             if not isinstance(target, Path)
