@@ -110,7 +110,7 @@ class DictRegister[Item, K](Registry[Item, Dict[K, Item]], Protocol):
 
 
 class BisectRegister[Item, DTO: BisectData](
-    Registry[Item, list, int, None]  # CHECK: value for A??
+    Registry[Item, List[Item]], Protocol
 ):
     """Define the Registry with sort-and-read bisect access"""
 
