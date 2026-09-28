@@ -11,7 +11,6 @@ from ._base import InjectorBase
 from .data import Doc
 
 # TODO:
-ORIG_DOC = "__portlink_orig_doc__"
 
 
 class Injecting(_t.Protocol):
@@ -32,12 +31,12 @@ class Inject(InjectorBase):
     __call__: Injecting
     mode: _t.Literal["soft", "hard"] = "soft"
 
-    def core(self, target: _t.Any, value: _t.Any, attr: str):
+    def __core__(self, target: _t.Any, value: _t.Any, attr: str):
         _target = self.resolve(target, attr)
         self.strategy(_target, value, attr)
 
     @property
-    def strategy(self):
+    def strategy(self) -> Injecting:
         match self.mode:
             case "soft":
                 return self.polite
@@ -45,11 +44,11 @@ class Inject(InjectorBase):
                 return self.direct
 
     def direct(self, target: _t.Any, value: _t.Any, attr: str):
-        with self:
+        with self:  # MOVE: to EasyCatchL2??
             object.__setattr__(target, attr, value)
 
     def polite(self, target: _t.Any, value: _t.Any, attr: str):
-        with self:
+        with self:  # MOVE: to EasyCatchL2??
             setattr(target, attr, value)
 
     def resolve(self, target: _t.Any, attr: str) -> _t.Any:
@@ -69,6 +68,9 @@ class Inject(InjectorBase):
 
 _injector = Inject()
 _injector(_injector, "", "")
+
+
+ORIG_DOC = "__portlink_orig_doc__"
 
 
 def _idea_set_new_original_doc(target: _t.Any, new_doc: str):
