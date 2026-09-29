@@ -14,8 +14,9 @@ Reference the Implementations back to their Definitions in the port
 __all__: list[str] = [
     "portlink",
     "PortLink",
-    # "PortLinker",
-    # "DocMerger",
+    "LinkSpec",
+    "PortLinker",
+    "DocMerger",
 ]
 
 import typing as _t
@@ -24,11 +25,10 @@ from dataclasses import replace as _replace
 
 from .config import LinkSpec, spec
 from .data import (
-    Docs,
     PortLinkDocs,
     PortLinks,
 )
-from .define import PortLinker
+from .define import DocMerger, PortLinker
 from .operator import PortOperator
 
 
@@ -38,11 +38,11 @@ class PortLink:
 
     spec: LinkSpec = spec
 
-    def merge(self, docs: Docs) -> str:
-        return self.spec.merge(docs)
+    def create(self, spec: LinkSpec) -> _t.Self:
+        return _replace(self, spec=spec)
 
-    def new(self, **spec_overrides) -> _t.Self:
-        return _replace(self, spec=_replace(self.spec, **spec_overrides))
+    def evolve(self, **spec_overrides) -> _t.Self:
+        return _replace(self, spec=self.spec.derive(**spec_overrides))
 
     def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
         """Merge docstrings and enforce static type check"""
@@ -57,15 +57,16 @@ class PortLink:
                     return cls
 
                 task_data: PortLinks = local_data.edit()
-                targets: set[str] = {"", *_t.get_protocol_members(protocol)}
 
-                for attr in targets:
+                for attr in spec.surface(protocol):
                     with operator.spawn.collect() as _collector:
                         attr_data: PortLinks = _collector(protocol, cls, attr)
-                        if (target := _collector.nearest_target) is None:
-                            continue
-                        if not (attr_doc := self.merge(attr_data[attr])):
-                            continue
+                        target: type | None = _collector.nearest_target
+
+                    attr_doc: str = self.spec.merge(docs=attr_data[attr])
+
+                    if target is None or not attr_doc:
+                        continue
 
                     with operator.spawn.inject(mode="soft") as _injector:
                         _injector.doc(target, attr_doc)
