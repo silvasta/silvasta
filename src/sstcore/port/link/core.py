@@ -28,38 +28,28 @@ from .data import (
     PortLinkDocs,
     PortLinks,
 )
-from .define import DocMerger, PortLinker
+from .define import PortLinker
 from .operator import PortOperator
-from .process import merger
 
 
 @_dataclass(frozen=True, slots=True)
 class PortLink:
     """Anchor an Implementation to its Protocol"""
 
-    joint: str = "{Implementations}"  # TODO: render config?
-    _merge: DocMerger = merger
-    spec: LinkSpec = spec  # this as collector for all?
+    spec: LinkSpec = spec
 
     def merge(self, docs: Docs) -> str:
-        return self._merge(docs)
+        return self.spec.merge(docs)
 
-    def new(
-        self, *, merge: DocMerger | None = None, joint: str | None = None
-    ) -> _t.Self:
-        return _replace(
-            self,  # TODO:
-            joint=self.joint if joint is None else joint,
-            _merge=self._merge if merge is None else merge,
-        )
+    def new(self, **spec_overrides) -> _t.Self:
+        return _replace(self, spec=_replace(self.spec, **spec_overrides))
 
     def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
         """Merge docstrings and enforce static type check"""
 
         def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
 
-            with PortOperator() as operator:
-                # with PortOperator(# IDEA: self.spec) as operator:
+            with PortOperator(spec=self.spec) as operator:
                 with operator.spawn.reflect(mode="hard") as _reflector:
                     local_data: PortLinkDocs = _reflector.portlinkdocs(cls)
 
@@ -79,7 +69,7 @@ class PortLink:
 
                     with operator.spawn.inject(mode="soft") as _injector:
                         _injector.doc(target, attr_doc)
-                        task_data.absorb(attr_data)
+                        task_data.absorb(attr_data)  # absorb on inject success
 
                 with operator.spawn.inject(mode="hard") as _injector:
                     final_data: PortLinkDocs = task_data.save()
