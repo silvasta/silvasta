@@ -8,7 +8,7 @@ import typing as _t
 
 from ._error import LinkRaiser
 from .base import EasyAccessL1, EasyBase, EasyCatchL1, EasyCoreL1
-from .define import Injecting, Reflecting
+from .define import Collecting, Injecting, Reflecting
 
 
 class Easy[Core: _t.Callable](  # IMPORTANT: order!!
@@ -76,5 +76,5 @@ class InjectorBase(PortOperator[Injecting]):
     """Collect the Modificating Methods with Safety"""
 
 
-class CollectorBase[Core: _t.Callable](PortOperator[Core]):
+class CollectorBase(PortOperator[Collecting]):
     """Run the MRO pipelines and Reflect and Inject data"""

@@ -34,6 +34,20 @@ class EasyBase(SimpleNamespace):  # CHECK: __init_subclass__ still from here?
         return f"{type(self).__name__}[{todo}]"
 
 
+class EasyCoreL1[Core: _t.Callable]:
+    """Stable Core for all Easy Member"""
+
+    core: Core
+    __core__: Core
+
+    def __call__(self, *args, **kwargs):
+        return (
+            self.core(*args, **kwargs)
+            if hasattr(self, "core")
+            else self.__core__(*args, **kwargs)
+        )
+
+
 class EasyCatchL1:
     emit: PortEmit
 
@@ -64,22 +78,6 @@ class EasyCatchL1:
             return True
 
         return True  # LATER: configured handling
-
-
-class EasyCoreL1[Core: _t.Callable]:
-    """Stable Core for all Easy Member"""
-
-    # TASK: absorb strategy!
-    core: Core
-    # TODO:
-    __core__: Core
-
-    def __call__(self, *args, **kwargs):
-        return (
-            self.core(*args, **kwargs)
-            if hasattr(self, "core")
-            else self.__core__(*args, **kwargs)
-        )
 
 
 class EasyAccessL1:

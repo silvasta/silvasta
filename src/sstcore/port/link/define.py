@@ -6,7 +6,7 @@ Definitions
 
 import typing as _t
 
-from .data import Docs
+from .data import Docs, PortLinks
 
 
 class PortEmit[**P](_t.Protocol):
@@ -37,5 +37,5 @@ class Injecting(_t.Protocol):
 
 
 class Collecting(_t.Protocol):
-    def __call__(self, port: type, plug: type, attr: str, /) -> _t.Any:
+    def __call__(self, port: type, plug: type, attr: str, /) -> PortLinks:
         """Harvest data in both sides MRO pipeline"""

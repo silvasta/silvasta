@@ -48,6 +48,7 @@ class SidePolicy(_e.StrEnum):
                     return False
                 return not issubclass(data.source, _t.Protocol)
 
+    @property
     def retrieve(self) -> type[PortDoc | PlugDoc]:
         """Get the corresponding Doc type"""
         match self:
@@ -162,6 +163,7 @@ class PortLinks(PortLinkData):
 
     def fill(self, data: Doc | Docs | DocMap, /):
         """Add new Doc Mapping entires if they are not already covered"""
+        # IDEA: return True, or 1 for addad
         match data:
             case Doc() as doc:
                 self[doc.key] = doc
@@ -173,7 +175,10 @@ class PortLinks(PortLinkData):
                     self[doc.key] = doc
 
     def __setitem__(self, access: DocKey, value: Doc):
+        # IDEA: return True, or 1 for addad
         """Simple Error free write access"""
+        if not value.text:
+            print("EMpty")
         if access not in self.data:
             self.data[access] = value
 
