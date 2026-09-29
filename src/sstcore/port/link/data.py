@@ -10,6 +10,7 @@ from collections.abc import Mapping as _Mapping
 from collections.abc import Sequence as _Sequence
 from types import MappingProxyType as _FixMap
 
+from .___tree import MroTreeNode2
 from ._printer import printer
 
 type Docs = _Sequence[Doc]
@@ -23,7 +24,8 @@ type DocKey = tuple[str, type]
 
 
 def main():
-    _edit_and_save()
+    # _edit_and_save()
+    mro_chain(PortLinks)
 
 
 class SidePolicy(_e.StrEnum):
@@ -115,14 +117,11 @@ class PortLinkData:
             case str() as attr:
                 return [doc for doc in self if doc.attr == attr]
             case type() as source:
-                _v1 = [doc for doc in self if doc.source is source]
-                # AI: which one is better, == or is?
-                _v2 = [doc for doc in self if doc.source == source]
-                return _v1
+                return [doc for doc in self if doc.source is source]
             case (str() as attr, type() as source):
-                return [self.data[(attr, source)]]
+                return [doc] if (doc := self.data.get((attr, source))) else []
             case _:
-                raise TypeError(access)
+                return []
 
     def __str__(self) -> str:
         return f"{type(self).__name__}[{len(self)}]"
@@ -142,7 +141,7 @@ class PortLinkData:
 
 
 class PortLinkDocs(PortLinkData):
-    __slots__ = ()  # CHECK:Inherits 'data' slot from base
+    __slots__ = ()
 
     def __init__(self, data: Docs | DocMap = ()):
         match data:
@@ -159,7 +158,7 @@ class PortLinkDocs(PortLinkData):
 
 
 class PortLinks(PortLinkData):
-    __slots__ = ()  # CHECK: Inherits 'data' slot from base
+    __slots__ = ()
 
     def __init__(self, data: Docs | DocMap = ()):
         self.data: dict[DocKey, Doc] = {}
@@ -169,21 +168,13 @@ class PortLinks(PortLinkData):
         """Add new Doc Mapping entires if they are not already covered"""
         match data:
             case Doc() as doc:
-                # self._add(doc.key, doc)
                 self[doc.key] = doc
             case _Mapping():
                 for key, value in data.items():
-                    # self._add(key, value)
-                    self[key] = value  # AI: like this?
+                    self[key] = value
             case _Sequence():
                 for doc in data:
-                    # self._add(doc.key, doc)
-                    self[doc.key] = doc  # AI: like this?
-
-    # def _add(self, key: DocKey, value: Doc, /):
-    #     # IDEA: this as __setitem__??
-    #     if key not in self.data:
-    #         self.data[key] = value
+                    self[doc.key] = doc
 
     def __setitem__(self, access: DocKey, value: Doc):
         """Simple Error free write access"""
@@ -228,6 +219,31 @@ def _edit_and_save():
 
         for doc, policy in list(product(docs, SidePolicy)):
             printer(f"{doc} -> {policy.name}: {policy.valid(doc)}")
+
+
+def mro_chain(
+    cls: type,
+    links: PortLinkData | None = None,
+    *,
+    skip: frozenset[type] = frozenset({object}),
+) -> MroTreeNode2:
+    rows = [
+        (index, base)
+        for index, base in enumerate(cls.__mro__)
+        if base not in skip
+    ]
+    node: MroTreeNode2 | None = None
+    for index, base in reversed(rows):
+        node = MroTreeNode2(
+            cls=base, mro_index=index, branches=(node,) if node else ()
+        )
+        if links is not None and base in links:
+            # display only; merge still uses __mro__ order, not this tree
+            _ = links[base]
+    if node is None:
+        raise ValueError(cls)
+    printer(node)
+    return node
 
 
 if __name__ == "__main__":

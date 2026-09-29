@@ -7,11 +7,15 @@ inject
 import typing as _t
 from inspect import cleandoc as _cleandoc
 
+from .___tree import SubclassTreeNode
+from ._printer import printer
 from .data import Doc
 from .define import Injecting
-from .operator import InjectorBase
+from .operator import InjectorBase, PortOperator
 
-# TODO:
+
+def main():
+    test8_subclass()
 
 
 def _inject_doc_raw(target: _t.Any, value: str):
@@ -134,3 +138,23 @@ def _inject_links(target: object, doc: str, data: _t.Sequence[Doc], /) -> None:
         with Inject(mode="hard") as injector3:
             injector3.link(target, links)
         injector2.link(target, links)
+
+
+class InjectSoft(Inject, id="injector_soft"): ...
+
+
+class InjectPrecise(InjectSoft, id="injector_precise"): ...
+
+
+class InjectHard(InjectorBase, id="injector_hard"): ...
+
+
+def test8_subclass():
+    operator_tree = SubclassTreeNode.create(PortOperator)
+
+    with printer.topic("PortOperator Subclass Hierarchy"):
+        printer.tree_graph(operator_tree)
+
+
+if __name__ == "__main__":
+    main()
