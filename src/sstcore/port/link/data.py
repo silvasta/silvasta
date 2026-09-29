@@ -164,6 +164,10 @@ class PortLinks(PortLinkData):
         self.data: dict[DocKey, Doc] = {}
         self.fill(data)
 
+    def absorb(self, data: PortLinkData, /):
+        for doc in data:
+            self.fill(doc)
+
     def fill(self, data: Doc | Docs | DocMap, /):
         """Add new Doc Mapping entires if they are not already covered"""
         match data:

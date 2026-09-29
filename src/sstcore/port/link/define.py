@@ -6,7 +6,7 @@ Definitions
 
 import typing as _t
 
-from .data import PlugDocs, PortDocs
+from .data import Docs
 
 
 class PortEmit[**P](_t.Protocol):
@@ -19,7 +19,7 @@ class PortLinker[C, P](_t.Protocol):
 
 
 class DocMerger(_t.Protocol):  # IDEA: Merging? only if as well operator
-    def __call__(self, ports: PortDocs, plugs: PlugDocs) -> str:
+    def __call__(self, docs: Docs) -> str:
         """Format and Render Protocol and Implementation docstrings"""
 
 

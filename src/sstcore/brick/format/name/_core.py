@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, overload
 
 from ....port import normalize
-from ....port.link import portlink
+from ....port.link.core import portlink
 from ....port.raising import FailedDispatchError
 from ...none import Ghost
 from ._base import BaseName as _BaseName

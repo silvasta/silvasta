@@ -22,19 +22,15 @@ import typing as _t
 from dataclasses import dataclass as _dataclass
 from dataclasses import replace as _replace
 
+from .config import LinkSpec, spec
 from .data import (
-    Doc,
-    LinkSpec,
-    PlugDoc,
-    PlugDocs,
-    PortDoc,
-    PortDocs,
+    Docs,
     PortLinkDocs,
-    spec,
+    PortLinks,
 )
 from .define import DocMerger, PortLinker
 from .operator import PortOperator
-from .process import concat_merger as merger
+from .process import merger
 
 
 @_dataclass(frozen=True, slots=True)
@@ -45,8 +41,8 @@ class PortLink:
     _merge: DocMerger = merger
     spec: LinkSpec = spec  # this as collector for all?
 
-    def merge(self, ports: PortDocs, plugs: PlugDocs, /) -> str:
-        return self._merge(ports, plugs)
+    def merge(self, docs: Docs) -> str:
+        return self._merge(docs)
 
     def new(
         self, *, merge: DocMerger | None = None, joint: str | None = None
@@ -63,37 +59,31 @@ class PortLink:
         def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
 
             with PortOperator() as operator:
+                # with PortOperator(# IDEA: self.spec) as operator:
                 with operator.spawn.reflect(mode="hard") as _reflector:
                     local_data: PortLinkDocs = _reflector.portlinkdocs(cls)
 
                 if protocol in local_data:
                     return cls
 
-                update_data: list[Doc] = local_data.as_list
+                task_data: PortLinks = local_data.edit()
+                targets: set[str] = {"", *_t.get_protocol_members(protocol)}
 
-                port_docs: list[PortDoc] = _detect(protocol, "")
-                plug_docs: list[PlugDoc] = _detect(cls, "")
+                for attr in targets:
+                    with operator.spawn.collect() as _collector:
+                        attr_data: PortLinks = _collector(protocol, cls, attr)
+                        if (target := _collector.nearest_target) is None:
+                            continue
+                        if not (attr_doc := self.merge(attr_data[attr])):
+                            continue
 
-                update_data.extend(port_docs + plug_docs)
-                class_doc: str = self.merge(port_docs, plug_docs)
-
-                with operator.spawn.inject(mode="soft") as _injector:
-                    _injector.doc(cls, class_doc)
-
-                for attr in _t.get_protocol_members(protocol):
-                    target: _t.Any = _find_attr_value(cls, attr)
-                    port_docs: list[PortDoc] = _detect(protocol, attr)
-                    plug_docs: list[PlugDoc] = _detect(cls, attr)
-                    update_data.extend(port_docs + plug_docs)
-                    # TASK: better routing/injection:
-                    # - first collect all, then merge and find target
-                    # -> insert at first occurence of mro-upwards.__dict__[attr]
-                    # - insert __doc__ for sure, __portlinkdocs__ as well, skip them here
-                    attr_doc: str = self.merge(port_docs, plug_docs)
-                    _inject(target, attr_doc)
+                    with operator.spawn.inject(mode="soft") as _injector:
+                        _injector.doc(target, attr_doc)
+                        task_data.absorb(attr_data)
 
                 with operator.spawn.inject(mode="hard") as _injector:
-                    _injector.portlinkdocs(cls, PortLinkDocs(update_data))
+                    final_data: PortLinkDocs = task_data.save()
+                    _injector.portlinkdocs(cls, final_data)
 
             return cls
 
@@ -101,27 +91,3 @@ class PortLink:
 
 
 portlink = PortLink()  # TARGET: the main object
-
-# AI: Info: the following functions are placeholder
-# - most of single parts are already implemented in the PortOperator family
-# - as soon as the core structure in PortLink.__call__ stands, they will be assembled
-
-
-def _extract(*args, **kwargs):
-    raise NotImplementedError
-
-
-def _inject(*args, **kwargs):
-    raise NotImplementedError
-
-
-def _find_attr_value(*args, **kwargs):
-    raise NotImplementedError
-
-
-def _reflect(*args, **kwargs):
-    raise NotImplementedError
-
-
-def _detect(*args, **kwargs):
-    raise NotImplementedError
