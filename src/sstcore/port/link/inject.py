@@ -7,15 +7,11 @@ inject
 import typing as _t
 from inspect import cleandoc as _cleandoc
 
-from ._base import InjectorBase
 from .data import Doc
+from .define import Injecting
+from .operator import InjectorBase
 
 # TODO:
-
-
-class Injecting(_t.Protocol):
-    def __call__(self, target: _t.Any, value: _t.Any, /, attr: str) -> str:
-        """Set the new Value for the attribute into the target"""
 
 
 def _inject_doc_raw(target: _t.Any, value: str):
@@ -27,7 +23,7 @@ def _inject_safe_example(target: _t.Any, value: str, /, attr: str):
         injector(target, attr, value)
 
 
-class Inject(InjectorBase):
+class Inject(InjectorBase, id="injector"):
     __call__: Injecting
     mode: _t.Literal["soft", "hard"] = "soft"
 
@@ -73,6 +69,17 @@ _injector(_injector, "", "")
 ORIG_DOC = "__portlink_orig_doc__"
 
 
+def _record_links(self, cls: type, protocol: type) -> None:
+    """Lightweight history on the class."""
+    links = getattr(cls, "__port_links__", set())
+    links.add(protocol)
+    # Use object.__setattr__ in case someone makes the class frozen later
+    try:
+        cls.__port_links__ = links
+    except AttributeError, TypeError:
+        pass
+
+
 def _idea_set_new_original_doc(target: _t.Any, new_doc: str):
     _original_doc = getattr(target, "__doc__", None)
     if not _original_doc or hasattr(target, ORIG_DOC):
@@ -90,6 +97,18 @@ def _idea_set_new_original_doc(target: _t.Any, new_doc: str):  # CHECK:
         with Inject(mode="soft") as injector:
             target.__portlink_orig_doc__ = _cleandoc(original_doc)
             injector.doc(target, new_doc)  # NOTE: maybe in new context?
+
+    @staticmethod
+    def _attach_history(target: object, fragments: list[Doc]) -> None:
+        """Attach contributor info directly on the function/object."""
+        if not hasattr(target, "__portlink_sources__"):
+            try:
+                target.__portlink_sources__ = set()
+            except AttributeError, TypeError:
+                return
+
+        for f in fragments:
+            target.__portlink_sources__.add(f.key)
 
 
 def _inject_links(target: object, doc: str, data: _t.Sequence[Doc], /) -> None:

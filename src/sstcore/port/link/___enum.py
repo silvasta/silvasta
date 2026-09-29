@@ -26,7 +26,7 @@ class DocBuilder:
     def add(self, fragment: _Doc, event: Event) -> None:
         if fragment.doc in self.seen:
             return
-        # rules based on event sequence
+        # rules based on event  sequence
         if event is Event.PROTO_BASE and self.last_event is Event.PROTO_DIRECT:
             # protocol overrode its own base — maybe skip or mark
             pass

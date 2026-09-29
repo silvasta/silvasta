@@ -104,17 +104,6 @@ def _extract(cls: type, name: str) -> _t.Any | None:
         return None
 
 
-def _extract1(cls: type, name: str, /) -> _t.Any | None:
-    for base in cls.__mro__:
-        if name in base.__dict__:
-            return base.__dict__[name]
-    return None
-
-
-def _extract2(cls: type, name: str) -> _t.Any | None:
-    return getattr(cls, name, None)
-
-
 def _reflect(cls: type, name: str, /) -> _t.Any | None:
     """Extract attribute and manage special forms"""
     attr: _t.Any | None = _extract(cls, name)
@@ -148,60 +137,6 @@ def _find_defining_class(cls: type, name: str) -> type | None:
     return None
 
 
-# AI: this is minimal, maybe extend, but overall looks fine
-class Origin(_t.NamedTuple):
-    side: _t.Literal["proto", "impl"]
-    owner: type
-    text: str
-
-
-def _defined(cls: type, name: str, /) -> _t.Any | None:
-    """This class's dict only — never inherited."""
-    # return _reflect_raw(cls.__dict__.get(name))
-    return cls.__dict__.get(name)
-
-
-def _fragments(cls: type, name: str, side: str, /) -> list[Origin]:
-    out: list[Origin] = []
-    seen: set[str] = set()
-    for base in cls.__mro__:
-        if base in (object, _t.Protocol, _t.Generic):
-            continue
-        attr = _defined(base, name)
-        if not attr:
-            continue
-        text = _detect(attr)
-        if text and text not in seen:
-            seen.add(text)
-            out.append(Origin(side, base, text))  # type: ignore[arg-type]
-    return out
-
-
-def fold(
-    parts: list[Origin], /, *, joint: str, proto_joint: str = "\n\n"
-) -> str:
-    buf: list[str] = []
-    blob = ""
-    impl_opened = False
-    for part in parts:
-        if part.text in blob:
-            continue
-        if part.side == "impl" and not impl_opened:
-            buf.append(joint)
-            impl_opened = True
-        elif buf:
-            buf.append(proto_joint if part.side == "proto" else "\n\n")
-        buf.append(part.text)
-        blob = "".join(buf)
-    return blob
-
-
-@_dataclass
-class _DocContext:
-    defining_class: type
-    docstring: str
-
-
 # AI:: this and PortLink.merge accepting a list -> manage order
 def _harvest_docs(cls: type, attr_name: str) -> _t.Iterator[_DocContext]:
     """Yield docstrings for an attribute from the MRO hierarchy."""
@@ -210,14 +145,6 @@ def _harvest_docs(cls: type, attr_name: str) -> _t.Iterator[_DocContext]:
             attr = base.__dict__[attr_name]
             if doc := getattr(attr, "__doc__", None):
                 yield _DocContext(defining_class=base, docstring=doc.strip())
-
-
-@_dataclass(frozen=True, slots=True)
-class _DocFragment:
-    source: type  # the class/protocol where it was defined
-    attr: str  # the attribute name
-    doc: str
-    origin: str  # "protocol" | "implementation"
 
 
 def _collect_fragments(
@@ -244,33 +171,3 @@ def _collect_fragments(
                 )
 
     return fragments
-
-
-if _t.TYPE_CHECKING:
-    import enum as _e
-
-    class Event(_e.Enum):
-        PROTO_DIRECT = _e.auto()
-        PROTO_BASE = _e.auto()
-        IMPL_DIRECT = _e.auto()
-        IMPL_BASE = _e.auto()
-
-    class DocBuilder:
-        def __init__(self):
-            self.parts: list[str] = []
-            self.seen: set[str] = set()
-            self.last_event: Event | None = None
-
-        def add(self, fragment: _DocFragment, event: Event) -> None:
-            if fragment.doc in self.seen:
-                return
-            # rules based on event sequence
-            if (
-                event is Event.PROTO_BASE
-                and self.last_event is Event.PROTO_DIRECT
-            ):
-                # protocol overrode its own base — maybe skip or mark
-                pass
-            self.parts.append(fragment.doc)
-            self.seen.add(fragment.doc)
-            self.last_event = event

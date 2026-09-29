@@ -7,7 +7,12 @@ collect
 import typing as _t
 from inspect import cleandoc as _cleandoc
 
-from .data import Doc, _Side, spec
+from .data import Doc, PlugDoc, PortDoc, Side, spec
+
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
 
 
 def _harvest(protocol: type, cls: type, attr_name: str) -> list[Doc]:
@@ -29,7 +34,7 @@ def _detect(
     name: str = "",
     /,
     *,
-    side: _Side,
+    side: Side,
     reverse: bool,
 ) -> list[Doc]:
     """Collect original Doc along one MRO. ``reverse=True`` → earliest first."""
@@ -149,6 +154,68 @@ def _collect_attr_docs(
                 impls.append(Doc(side="impl", owner=base, text=text))
 
     return protos, impls
+
+
+def _collect_class_docs(protocol: type, impl: type) -> list[Doc]:
+    docs: list[Doc] = []
+    seen: set[tuple] = set()
+
+    # Protocols first (latest protocol doc first, as requested)
+    for base in protocol.__mro__:
+        if base in (object, _t.Protocol, _t.Generic):
+            continue
+        text = _detect(base)  # class doc
+        if text:
+            dd = ___Doc("proto", base, "", text)
+            # EXTRACT:
+            if dd.key() not in seen:
+                seen.add(dd.key())
+                docs.append(dd)
+
+    # Implementations
+    for base in impl.__mro__:
+        if base in (object, _t.Protocol, _t.Generic):
+            continue
+        # Only consider classes that actually define a docstring
+        if "__doc__" in base.__dict__ or base is impl:
+            text = _detect(base)
+            if text:
+                dd = Doc("impl", base, "", text)
+                if dd.key() not in seen:
+                    seen.add(dd.key())
+                    docs.append(dd)
+
+    return docs
+
+
+def _collect_attr_docs(protocol: type, impl: type, attr: str) -> list[Doc]:
+    # EXTRACT:
+    docs: list[Doc] = []
+    seen: set[tuple] = set()
+
+    # Protocol side (earliest protocol first for attributes)
+    for base in reversed(protocol.__mro__):  # reversed = earliest first
+        if base in (object, _t.Protocol, _t.Generic):
+            continue
+        if _attr := _reflect(base, attr):
+            if text := _detect(_attr):
+                dd = PortDoc(text, attr, base)
+                if dd.key() not in seen:
+                    seen.add(dd.key())
+                    docs.append(dd)
+
+    # Implementation side (definition order in MRO)
+    for base in impl.__mro__:
+        if base in (object, _t.Protocol, _t.Generic):
+            continue
+        if _attr := _reflect(base, attr):
+            if text := _detect(_attr):
+                dd = PlugDoc(text, attr, base)
+                if dd.key() not in seen:
+                    seen.add(dd.key())
+                    docs.append(dd)
+
+    return docs
 
 
 def _collect_fragments(

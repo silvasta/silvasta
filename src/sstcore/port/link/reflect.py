@@ -8,25 +8,21 @@ import typing as _t
 from functools import cached_property as _cached_property
 from inspect import cleandoc as _cleandoc
 
-from ._base import ReflectorBase
-from .data import Doc, _Side, spec
+from .data import Doc, spec
+from .define import Reflecting
+from .operator import ReflectorBase
 
 
-class Reflecting(_t.Protocol):
-    def __call__(self, target: _t.Any, attr: str, /) -> _t.Any:
-        """Set the new Value for the attribute into the target"""
-
-
-class Reflect(ReflectorBase):
+class Reflect(ReflectorBase, id="reflector"):
     __call__: Reflecting
-    mode: _t.Literal["soft", "hard"] = "soft"
+    mode: _t.Literal["soft", "hard"] = "soft"  # IDEA: combine with inject?
 
     def __core__(self, target: type, attr: str, /):
         _target = self.resolve(target, attr)
         self.strategy(target, attr)
 
     @property
-    def strategy(self) -> Reflecting:
+    def strategy(self) -> Reflecting:  # IDEA: combine with inject? in EasyCore
         match self.mode:
             case "soft":
                 return self.polite
@@ -56,6 +52,7 @@ class Reflect(ReflectorBase):
 
     def doc(self, target: _t.Any, name: str, /) -> str:
         # REMOVE: when EasyAccess works
+        # IMPORTANT: check dispatch: easy/soft?
         raw: _t.Any | None = (
             self.polite(target, "__doc__")
             if name

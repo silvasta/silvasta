@@ -6,9 +6,12 @@ process
 
 from inspect import cleandoc as _cleandoc
 
-from .data import Doc, DocMerger, _Docs
+from .data import Doc
+from .define import DocMerger
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+# TODO: machine
 
 
 def concat_merger(ports: list[Doc], plugs: list[Doc], is_class: bool) -> str:
