@@ -4,143 +4,91 @@ process
 .
 """
 
-from inspect import cleandoc as _cleandoc
+import enum as _e
 
-from .data import Doc
-from .define import DocMerger
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-# TODO: machine
+from ..govern import EnumMachine
+from ._printer import printer
+from .config import LinkSpec
+from .data import Doc, Docs, PlugDoc, PortDoc, SidePolicy
 
 
-def concat_merger(ports: list[Doc], plugs: list[Doc], is_class: bool) -> str:
-    """Naive 'Concat All' approach with visual headers."""
-    seen_texts: set[str] = set()
-    lines: list[str] = []
+class MergeMachine(EnumMachine):
+    Schema1 = _e.auto()
 
-    def _add_fragments(fragments: list[Doc], section_title: str):
-        section_added = False
-        for frag in fragments:
-            if frag.text in seen_texts:
-                continue
+    def __call__(self, docs: Docs, spec: LinkSpec | None = None) -> str:
+        _spec_to_emit_and_format: LinkSpec = spec or LinkSpec()
+        port: list[Doc] = []
+        plug: list[Doc] = []
+        fail: list[Doc] = []
+        for doc in docs:
+            printer.line(color="cyan")
+            match doc:
+                case PortDoc():
+                    self.sort_for_port(doc, port, fail)
+                case PlugDoc():
+                    self.sort_for_plug(doc, plug, fail)
+        self.handle_sort(port, plug, fail)
+        match self:
+            case self.Schema1:
+                lines: list[str] = self.schema1(port, plug)
+                return "\n".join(lines)
 
-            if not section_added:
-                lines.extend(["", f"{{{section_title}}}", ""])
-                section_added = True
+    def schema1(self, port: list[Doc], plug: list[Doc]) -> list[str]:
+        lines: list[str] = []
+        if port:
+            first, *remaining = port
+            self.format_port_header(first, lines)
+            self.format_port_body(remaining, lines)
+        if plug:
+            self.format_separator(lines)
+            self.format_plug_body(plug, lines)
+        printer.header(f"Statsistic: Total (multi) lines: {len(lines)}")
+        return lines
 
-            lines.extend([f"[{frag.owner.__name__}]", frag.text, ""])  # ty:ignore
-            seen_texts.add(frag.text)
+    def format_port_header(self, first: Doc, lines: list[str]):
+        lines.append(first.text.strip("\n"))
+        printer(f"Attached Port header: {first.key}")
 
-    # Sorting logic based on scope
-    ordered_ports = ports if is_class else list(reversed(ports))
-    ordered_plugs = plugs if is_class else list(reversed(plugs))
+    def format_port_body(self, remaining: list[Doc], lines: list[str]):
+        for doc in remaining:
+            lines.append("\n")
+            attr_draw: str = f".{doc.attr}" if doc.attr else ""
+            lines.append(f"[{doc.source.__name__}{attr_draw}]")
+            lines.append(doc.text.strip("\n"))
 
-    _add_fragments(ordered_ports, "Definitions from the Port")
-    _add_fragments(ordered_plugs, "Implementations")
+    def format_separator(self, lines):
+        lines.append("\n\n", "--- -- ---" * 8, "\n\n", "Implementation", "\n")
 
-    return "\n".join(lines).strip()
+    def format_plug_body(self, plug: list[Doc], lines: list[str]):
+        for doc in plug[::-1]:  # CHECK: reverse
+            lines.append("\n")
+            attr_draw: str = f".{doc.attr}" if doc.attr else ""
+            lines.append(f"[{{{doc.source.__name__}}}{attr_draw}]")
+            lines.append(doc.text.strip("\n"))
 
+    def handle_sort(self, port: list[Doc], plug: list[Doc], fail: list[Doc]):
+        printer.header(
+            f"Stats: port: {len(port)}, plug: {len(plug)}, fail: {len(fail)} "
+        )
+        if not plug:
+            printer.panel("Implementation", frame="yellow", title="Missing")
+        if not port:
+            printer.panel("Definitions", frame="orange", title="Missing")
+        if fail:
+            printer.panel(*fail, frame="red", title="Failed")
 
-x: DocMerger = concat_merger
+    def sort_for_port(self, doc: Doc, port: list, fail: list) -> None:
+        if SidePolicy.PORT.validate(doc):
+            port.append(doc)
+            printer(f"Accepted: {doc.key}")
+        else:
+            fail.append(doc)
+            printer(f"Rejected: {doc.key}")
 
-
-def default_merge(
-    ports: list[Doc],
-    plugs: list[Doc],
-    /,
-    *,
-    title: str | None = None,
-) -> str:
-    sections: list[str] = []
-    seen_texts: set[str] = set()
-
-    if title:
-        cleaned_title = _cleandoc(title).strip()
-        sections.append(cleaned_title)
-        seen_texts.add(cleaned_title)
-
-    filtered_ports: list[Doc] = [
-        p
-        for p in ports
-        if p.text not in seen_texts and not seen_texts.add(p.text)
-    ]
-    if filtered_ports:
-        p_lines: list[str] = ["{Definitions from the Port}"]
-        for p in filtered_ports:
-            p_lines.append(f"[{p.owner.__name__}]\n{p.text}")
-        sections.append("\n\n".join(p_lines))
-
-    filtered_plugs: list[Doc] = [
-        i
-        for i in plugs
-        if i.text not in seen_texts and not seen_texts.add(i.text)
-    ]
-    if filtered_plugs:
-        i_lines: list[str] = ["{Implementations}"]
-        for i in filtered_plugs:
-            i_lines.append(f"[{i.owner.__name__}]\n{i.text}")
-        sections.append("\n\n".join(i_lines))
-
-    return "\n\n".join(sections).strip()
-
-
-def _default_merge(fragments: _Docs) -> str:
-    """Exactly the temporary debug-friendly format you asked for."""
-    if not fragments:
-        return ""
-
-    parts: list[str] = ["{Definitions from the Port}"]
-    impl_header_shown = False
-
-    for f in fragments:
-        if not f.is_protocol and not impl_header_shown:
-            parts.append("\n{Implementations}")
-            impl_header_shown = True
-
-        title = f"[{f.owner.__name__}]"
-        parts.append(f"{title}\n{f.text.strip()}")
-
-    return "\n\n".join(parts)
-
-
-def __default_merge(ports: _Docs, plugs: _Docs, /, joint: str = "") -> str:
-    """Naive renderer: Group by side, stamp the owner."""
-
-    seen: set[str] = set()
-    chunks: list[str] = []
-
-    def take(parts: _Docs, /, *, titled: bool) -> list[str]:
-        out: list[str] = []
-        for part in parts:
-            if not part.text or part.text in seen:
-                continue
-            seen.add(part.text)
-            out.append(
-                f"[{part.owner.__name__}]\n{part.text}"
-                if titled
-                else part.text
-            )
-        return out
-
-    _lead_source: _Docs
-    rest_proto: _Docs
-    rest_impl: _Docs = plugs
-
-    if ports:
-        _lead_source, rest_proto = ports[:1], ports[1:]
-    else:
-        _lead_source, rest_proto = plugs[:1], ()
-        rest_impl = plugs[1:]
-
-    titled_proto: list[str] = take(rest_proto, titled=True)
-    if titled_proto:
-        chunks.append("{Definitions from the Port}")
-        chunks.extend(titled_proto)
-
-    titled_impl: list[str] = take(rest_impl, titled=True)
-    if titled_impl:
-        chunks.append(joint.strip() or "{Implementations}")
-        chunks.extend(titled_impl)
-
-    return "\n\n".join(chunks)
+    def sort_for_plug(self, doc: Doc, plug: list, fail: list) -> None:
+        if SidePolicy.PLUG.validate(doc):
+            plug.append(doc)
+            printer(f"Accepted: {doc.key}")
+        else:
+            fail.append(doc)
+            printer(f"Rejected: {doc.key}")

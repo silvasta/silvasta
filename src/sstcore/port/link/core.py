@@ -11,6 +11,8 @@ Reference the Implementations back to their Definitions in the port
 
 """
 
+from sstcore.port.link.process import MergeMachine
+
 __all__: list[str] = [
     "portlink",
     "PortLink",
@@ -23,13 +25,17 @@ import typing as _t
 from dataclasses import dataclass as _dataclass
 from dataclasses import replace as _replace
 
-from .config import LinkSpec, spec
+from .config import LinkSpec
 from .data import (
     PortLinkDocs,
     PortLinks,
 )
 from .define import DocMerger, PortLinker
 from .operator import PortOperator
+
+_x: DocMerger = MergeMachine.Schema1
+
+spec = LinkSpec(merge=MergeMachine.Schema1)
 
 
 @_dataclass(frozen=True, slots=True)

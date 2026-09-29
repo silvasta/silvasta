@@ -9,7 +9,6 @@ from dataclasses import dataclass as _dataclass
 from dataclasses import replace as _replace
 
 from .define import DocMerger, PortEmit
-from .process import merger
 
 
 class LinkEvent(_t.NamedTuple):
@@ -17,6 +16,10 @@ class LinkEvent(_t.NamedTuple):
     protocol: type
     cls: type
     attr: str = ""
+
+
+def merger(docs) -> str:
+    raise NotImplementedError("Override in PortLink.core")
 
 
 @_dataclass(frozen=True, slots=True)
@@ -39,6 +42,3 @@ class LinkSpec:
     def surface(self, protocol: type) -> list[str]:
         cls_as_attribute: list[str] = [""]
         return cls_as_attribute + list(_t.get_protocol_members(protocol))
-
-
-spec = LinkSpec()

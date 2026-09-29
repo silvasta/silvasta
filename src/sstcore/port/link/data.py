@@ -10,9 +10,6 @@ from collections.abc import Mapping as _Mapping
 from collections.abc import Sequence as _Sequence
 from types import MappingProxyType as _FixMap
 
-from .___tree import MroTreeNode2
-from ._printer import printer
-
 type Docs = _Sequence[Doc]
 type DocMap = _Mapping[DocKey, Doc]
 
@@ -21,11 +18,6 @@ type PlugDocs = _Sequence[PlugDoc]
 
 
 type DocKey = tuple[str, type]
-
-
-def main():
-    # _edit_and_save()
-    mro_chain(PortLinks)
 
 
 class SidePolicy(_e.StrEnum):
@@ -44,7 +36,7 @@ class SidePolicy(_e.StrEnum):
                 return cls.PLUG
         raise ValueError(f"{cls} got invalid side: {data}")
 
-    def valid(self, data: Doc) -> bool:
+    def validate(self, data: Doc, /) -> bool:
         """Check if Doc is valid for selected Policy"""
         match self:
             case self.PORT:
@@ -182,73 +174,9 @@ class PortLinks(PortLinkData):
 
     def __setitem__(self, access: DocKey, value: Doc):
         """Simple Error free write access"""
-        printer.panel(f"__setitem__: {access}: {value}")
         if access not in self.data:
             self.data[access] = value
 
     def save(self) -> PortLinkDocs:
         """Freeze the current state and return the read-only BaseLinkDocs"""
         return PortLinkDocs(self.data)
-
-
-def _edit_and_save():
-    class _Merging(_t.Protocol): ...
-
-    Merge = type("Merge", (object,), {})  # noqa:N806
-    docs: Docs = (
-        PortDoc("proto desc", "extract", source=_Merging),
-        PortDoc("proto", "format", source=_Merging),
-        PlugDoc("impl", "format", source=Merge),
-    )
-
-    with printer.topic("Transfom PortLinkData"):
-        docs_frozen = PortLinkDocs(docs)
-        printer.repr(docs_frozen)
-        printer.line()
-
-        docs_active: PortLinks = docs_frozen.edit()
-        printer.repr(docs_active)
-        docs_active.fill(PortDoc("test", "attr1", _Merging))
-        docs_active.fill(PlugDoc("test2", "attr2", Merge))
-        printer.repr(docs_active)
-        printer.line()
-
-        final_docs: PortLinkDocs = docs_active.save()
-        printer.repr(final_docs)
-        printer(f"{final_docs.attrs=}")
-        printer(f"{final_docs.sources=}")
-
-    with printer.topic("Policy"):
-        from itertools import product
-
-        for doc, policy in list(product(docs, SidePolicy)):
-            printer(f"{doc} -> {policy.name}: {policy.valid(doc)}")
-
-
-def mro_chain(
-    cls: type,
-    links: PortLinkData | None = None,
-    *,
-    skip: frozenset[type] = frozenset({object}),
-) -> MroTreeNode2:
-    rows = [
-        (index, base)
-        for index, base in enumerate(cls.__mro__)
-        if base not in skip
-    ]
-    node: MroTreeNode2 | None = None
-    for index, base in reversed(rows):
-        node = MroTreeNode2(
-            cls=base, mro_index=index, branches=(node,) if node else ()
-        )
-        if links is not None and base in links:
-            # display only; merge still uses __mro__ order, not this tree
-            _ = links[base]
-    if node is None:
-        raise ValueError(cls)
-    printer(node)
-    return node
-
-
-if __name__ == "__main__":
-    main()
