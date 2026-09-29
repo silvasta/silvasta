@@ -8,6 +8,7 @@ import re
 import typing as _t
 
 from .___tree import MroTreeNode1, SubclassTreeNode, TypeTreeNode
+from ._error import LinkRaiser
 from ._printer import printer
 from .base import EasyAccessL1, EasyBase, EasyCatchL1, EasyCoreL1
 from .data import mro_chain
@@ -112,7 +113,10 @@ class _PortOperator[Core: _t.Callable](  # IMPORTANT: order!!
         if not id:
             cls.port_emit(f"{cls.__name__}: Ignored...")
         elif id in cls._registry:
-            raise RuntimeError(f"Duplicated {cls}! [{id}]({cls._registry=})")
+            raise LinkRaiser.PipeLine(
+                f"Duplicated {cls}[{id}]", id=id, state=cls._registry
+            )
+
         else:
             cls._registry[id] = cls
             cls.port_emit(f"{cls.__name__}: Registered: {id}")

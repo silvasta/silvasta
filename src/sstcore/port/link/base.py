@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 from ..raising import SstCoreError
 from ._dunder import DunderSet, DunderStore
+from ._error import LinkRaiser
 from ._printer import printer
 from .define import PortEmit
 
@@ -106,7 +107,7 @@ class EasyAccessL1:
         self.emit(f"[{self}].__getattr__: {name}")  # REMOVE: after debug
         if method := self._methods.get(name):
             return _f.partial(self.invoke, attribute=method)
-        raise AttributeError(f"Fail in __getattr__: {name}", self._methods)
+        raise LinkRaiser.PipeLine(f"__getattr__: {name}", state=self._methods)
 
 
 #  LINE: -- Testing -- -- - -- -- - -- -- - -- -- - -- -- - -- --

@@ -31,8 +31,9 @@ class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
     owner: type | None
     value: UnitT | Any
     #
-    expected: dict
-    received: dict
+    # CHECK: from base??
+    # expected: dict
+    # received: dict
 
 
 class FieldErrorSpec[FieldT, UnitT](ErrorSpec):
@@ -66,8 +67,8 @@ class ErrorBuilder(ErrorMachine):
 class FieldRaiseCall(Protocol):
     def __call__(
         self,
-        _field: Any,
-        _unit: Any | None = None,
+        field: Any,
+        unit: Any | None = None,
         **kwargs: Unpack[FieldErrorInput],
     ) -> ErrorDTO: ...
 
