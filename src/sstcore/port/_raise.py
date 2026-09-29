@@ -1,6 +1,9 @@
 """
 Adapt the SstCoreError to PortLink
 
+- This is intendes as the one and only Raiser Implementation in the port
+- Still experimental, like the setups outside the port
+
                                                  DependencyLevel[X]
 """
 
@@ -10,7 +13,7 @@ from dataclasses import dataclass
 from enum import auto
 from typing import Any, Never, Protocol, Unpack
 
-from ..raising import (
+from .raising import (
     ErrorData,
     ErrorInput,
     ErrorMachine,

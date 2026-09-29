@@ -1,8 +1,24 @@
 """
-Operators - the Base
+SimpleNamespace Easy Operators
 
-- temporary module
+- The massively over engineered backbone of the execution pipeline
+- As well a collection of interesting ideas and sharp programming
+
 """
+
+__all__: list[str] = [
+    "EasyNote",
+    "EasyCore",
+    "EasyBase",
+    "EasyCatch",
+    "PortOperator",
+    "Spawner",
+    "EasyAccess",
+    "Inject",
+    "Reflect",
+    "Collect",
+]
+
 
 import functools as _f
 import typing as _t
@@ -10,18 +26,18 @@ from functools import cached_property as _cached_property
 from inspect import cleandoc as _cleandoc
 from types import SimpleNamespace
 
+from .._dunder import DunderSet, DunderStore
+from .._raise import LinkRaiser
 from ..raising import SstCoreError
-from ._dunder import DunderSet, DunderStore
-from ._error import LinkRaiser
-from .define import (
+from ._define import (
     Collecting,
     Injecting,
     LinkSpec,
     PortEmit,
     PortLinks,
     Reflecting,
-    SidePolicy,
 )
+from ._model import SidePolicy
 
 
 class EasyNote(SimpleNamespace):

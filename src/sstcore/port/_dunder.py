@@ -6,7 +6,7 @@ Helper for Operators
 
 import typing as _t
 
-from ..calling import Stringable
+from .calling import Stringable
 
 
 class DunderStore(_t.Protocol):
