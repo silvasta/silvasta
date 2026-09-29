@@ -19,12 +19,13 @@ class EasyBase(SimpleNamespace):  # CHECK: __init_subclass__ still from here?
 
     _emit: _t.Callable | None = None
 
-    def emit(self, *args, **kwargs):
-        (self._emit or self._emit_default)(*args, **kwargs)
+    def emit(self, *args, **kwargs):  # TODO: check wiring
+        (self._emit or self.port_emit)(*args, sender=self, **kwargs)
 
     @staticmethod
-    def _emit_default(*args, **kwargs):
-        print(*args, **kwargs)  # PARAM: debug toggle
+    def port_emit(*args, **kwargs):  # TODO: simple logger
+        _sender = kwargs.pop("sender", None)
+        print(f"{_sender=}", *args, **kwargs)  # PARAM: debug toggle
         pass
 
     def __str__(self):

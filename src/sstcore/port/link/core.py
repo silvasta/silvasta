@@ -34,10 +34,7 @@ from .data import (
 )
 from .define import DocMerger, PortLinker
 from .operator import PortOperator
-
-
-def merger(source: str, target: str, /, joint: str = "") -> str:  # TODO: adapt
-    return f"""{source}{joint}{target}"""
+from .process import concat_merger as merger
 
 
 @_dataclass(frozen=True, slots=True)
@@ -45,8 +42,8 @@ class PortLink:
     """Anchor an Implementation to its Protocol"""
 
     joint: str = "{Implementations}"  # TODO: render config?
-    _merge: DocMerger = merger  # CHECK: where, when and how to inject
-    spec: LinkSpec = spec
+    _merge: DocMerger = merger
+    spec: LinkSpec = spec  # this as collector for all?
 
     def merge(self, ports: PortDocs, plugs: PlugDocs, /) -> str:
         return self._merge(ports, plugs)
@@ -66,35 +63,37 @@ class PortLink:
         def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
 
             with PortOperator() as operator:
-                with operator.spawn("reflector")(mode="hard") as _reflect:
-                    local_data: PortLinkDocs = _reflect.portlinkdocs(cls)
-                # TEST: remove later on
-                with operator.spown.reflector(mode="hard") as _reflect:
-                    local_data: PortLinkDocs = _reflect.portlinkdocs(cls)
+                with operator.spawn.reflect(mode="hard") as _reflector:
+                    local_data: PortLinkDocs = _reflector.portlinkdocs(cls)
 
                 if protocol in local_data:
                     return cls
 
                 update_data: list[Doc] = local_data.as_list
+
                 port_docs: list[PortDoc] = _detect(protocol, "")
                 plug_docs: list[PlugDoc] = _detect(cls, "")
-                class_doc: str = self.merge(port_docs, plug_docs)
-
-                with operator.spawn("injector")(mode="hard") as _inject:
-                    _inject.portlinkdocs(cls, class_doc)
 
                 update_data.extend(port_docs + plug_docs)
+                class_doc: str = self.merge(port_docs, plug_docs)
+
+                with operator.spawn.inject(mode="soft") as _injector:
+                    _injector.doc(cls, class_doc)
 
                 for attr in _t.get_protocol_members(protocol):
                     target: _t.Any = _find_attr_value(cls, attr)
                     port_docs: list[PortDoc] = _detect(protocol, attr)
                     plug_docs: list[PlugDoc] = _detect(cls, attr)
+                    update_data.extend(port_docs + plug_docs)
+                    # TASK: better routing/injection:
+                    # - first collect all, then merge and find target
+                    # -> insert at first occurence of mro-upwards.__dict__[attr]
+                    # - insert __doc__ for sure, __portlinkdocs__ as well, skip them here
                     attr_doc: str = self.merge(port_docs, plug_docs)
                     _inject(target, attr_doc)
-                    doc_links |= set(port_docs + plug_docs)  # WARN: order!
 
-                with operator.spawn("injector")(mode="hard") as _inject:
-                    injector.portlinkdocs(cls, update_data)
+                with operator.spawn.inject(mode="hard") as _injector:
+                    _injector.portlinkdocs(cls, PortLinkDocs(update_data))
 
             return cls
 
