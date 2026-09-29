@@ -9,15 +9,18 @@ __all__: list[str] = [
     "SimpleTreeNode",
 ]
 
+
+# TODO: check MroTree in brick.labor.mro
+
+
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Self
 
+# NEXT: view
+# NEXT: generate SimpleTree
 
-# NEXT: view
-# NEXT: view
-# NEXT: view
-# NEXT: view
+
 @dataclass(frozen=True)
 class SimpleTreeNode:
     """Build Node with 0..N subnodes each with own subnodes"""
@@ -35,8 +38,3 @@ class SimpleTreeNode:
     def identifier(self):
         """Provide value that allows identification (No test for uniqness here!)"""
         return self.id
-
-
-# NEXT: generate SimpleTree
-# NEXT: generate SimpleTree
-# NEXT: generate SimpleTree

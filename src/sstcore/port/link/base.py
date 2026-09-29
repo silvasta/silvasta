@@ -121,7 +121,7 @@ def test_access():
         printer(vars(access2))
         updates: set[str] = {"__port_doc__", "__rich__", "__portlinkdocs__"}
         access2.dunders = updates
-        printer.header("Easy2 modified")
+        printer.panel("Easy2 modified")
         printer(vars(access2))
 
 
