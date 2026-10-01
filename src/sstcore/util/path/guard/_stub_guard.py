@@ -77,7 +77,7 @@ def single_stub_file(  # IDEAS: make_stub_file,get_stub_file, else?
 
 StubGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {clsname(cls)} ",
-    rich=f"{colors.azure('StubPath')}{colors.teal('Guard')}",
+    # FIX: rich=f"{colors.azure('StubPath')}{colors.teal('Guard')}",
     cli="Resolution, safety, and backups for Python AST Stub generation",
     color=3,
 )

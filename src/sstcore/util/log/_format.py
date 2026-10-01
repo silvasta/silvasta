@@ -14,8 +14,7 @@ __all__: list[str] = [
 import json
 from typing import Any
 
-from ...port.event.dto import LogDTO
-from ...port.view import LogSerializable
+from ...port.event.dto import LogDTO, LogSerializable
 
 
 def log_dto_to_dict(dto: LogDTO) -> dict[str, Any]:

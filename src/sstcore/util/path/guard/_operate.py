@@ -26,8 +26,8 @@ from loguru import logger
 from ....brick.labor import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
-from ....port.attach import ErrorPolicy  # NEXT:
 from ....port.files import SyncMode
+from ....port.functor import ErrorPolicy
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec
 
@@ -208,7 +208,8 @@ class DeleteStrategy(SafeFunctor[[Path], bool]):
         return self.safe(target_ok) is not None  # TEST:
 
     def on_error(self, error: Exception, target: PathInput) -> bool:
-        logger.warning(f"{self.name}: {clsname(error)}", error, target)
+        # LATER: funcname(self)??
+        logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
         return False
 
 
@@ -235,7 +236,6 @@ Trash = DeleteStrategy(
     name="PathGuard - Trash",
     func=_trash,
 )
-d = Remove.name
 
 
 def remove(target: PathInput) -> bool:

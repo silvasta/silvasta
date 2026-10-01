@@ -26,7 +26,7 @@ colors: ColorBox = Colors()  # ty:ignore
 
 PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {clsname(cls)} ",
-    rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
+    # FIX: rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
     cli="Safety and Comfort for Path and File System operations",
     # LATER: split by CamelCase (and then colorize)
     color=2,  # colors, names and even Enums change, but the registry index?
