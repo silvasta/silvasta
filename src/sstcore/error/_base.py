@@ -12,18 +12,16 @@ __all__: list[str] = [
 from typing import Any
 
 from ..brick.color.box import Colors
-from ..brick.view._raise import ViewError as _ViewError
+from ..brick.labor import clsname
 from ..port.color import ColorBox
-from ..port.error import Error
 from ..port.event.dto import LogDTO, PanelDTO
+from ..port.raising import SstCoreError
 from ..port.view import Renderable
 
 c: ColorBox = Colors()
 
-_composed = _ViewError
 
-
-class SstError(Error):  # IMPORTANT: check intermediate Error steps
+class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

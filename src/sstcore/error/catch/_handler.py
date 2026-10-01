@@ -4,10 +4,6 @@ Build the Functor for the Exception handling
                                                        DependencyLevel[0]
 """
 
-from sstcore.port.functor import ErrorPolicy
-
-from ...bricks.format import clsname
-
 __all__: list[str] = [
     "ErrorHandler",
 ]
@@ -17,7 +13,9 @@ import sys
 from collections.abc import Callable
 from typing import NoReturn, Self
 
-from ...bricks.func import SafeFunctor
+from ...brick.labor import clsname
+from ...forge.func import SafeFunctor
+from ...port.functor import ErrorPolicy
 
 
 class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
@@ -31,7 +29,7 @@ class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
 
     @property
     def _inside_brackets(self) -> str:
-        return clsname(target=self.exception_type)
+        return clsname(self.exception_type)
 
     @classmethod
     def from_func(

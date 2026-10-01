@@ -13,11 +13,11 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ..format.color import ColorBox  # WARN: ColorBox???
-from ..port.event.dto import Renderable
+from ..brick.color.box import Colors  # WARN: Colors???
+from ..port.view import Renderable
 from ._base import SstError
 
-c = ColorBox()
+c = Colors()
 
 
 class TuiSelectorError(SstError):  # LATER: move to .ui|tui|interface?

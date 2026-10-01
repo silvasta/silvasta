@@ -21,7 +21,7 @@ type HandlerFunc = Callable[[BaseException], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
 
-class ErrorRegistry(DictRegistry[ErrorHandler, type[BaseException]]):
+class ErrorRegistry(DictRegistry[ErrorHandler]):
     """
     Collect and Provide the ErrorHandler
 
