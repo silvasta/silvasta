@@ -16,11 +16,11 @@ __all__: list[str] = [
     "FilterRegistry",
     "DictRegistry",
     "TupleRegistry",
-    "BisectRegistry",
+    # "BisectRegistry",
 ]
 
 
-from ._bisect import BisectRegistry
+# from ._bisect import BisectRegistry
 from ._dict import DictRegistry
 from ._extras import FilterRegistry
 from ._list import ListRegistry
