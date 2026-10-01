@@ -65,26 +65,28 @@ def path(target: Path) -> str:
 
 
 FILE_COLORS: dict[str, Callable[[str], str]] = {
-    # Code
-    ".py": c.white,
-    ".rs": c.white,
-    # Configs
-    ".json": c.white,
-    ".log": c.white,
-    #
-    ".yaml": c.yellow,
-    ".yml": c.yellow,
-    ".md": c.cyan,
-    # Images / Media
-    ".png": c.magenta,
-    ".jpg": c.magenta,
-    ".jpeg": c.magenta,
-    ".gif": c.magenta,
+    # # TODO:
+    # # Code
+    # ".py": c.white,
+    # ".rs": c.white,
+    # # Configs
+    # ".json": c.white,
+    # ".log": c.white,
+    # #
+    # ".yaml": c.yellow,
+    # ".yml": c.yellow,
+    # ".md": c.cyan,
+    # # Images / Media
+    # ".png": c.magenta,
+    # ".jpg": c.magenta,
+    # ".jpeg": c.magenta,
+    # ".gif": c.magenta,
 }
 
 
 def _color_file_by_type(file_path: Path) -> str:
     """Colors the filename based on its suffix, defaulting to white."""
     suffix = file_path.suffix.lower()
-    color_func = FILE_COLORS.get(suffix, c.white)
-    return color_func(file_path.name)
+    if color_func := FILE_COLORS.get(suffix):  # TODO: c.white)
+        return color_func(file_path.name)
+    return file_path.name

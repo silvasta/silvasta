@@ -14,13 +14,7 @@ from typing import TYPE_CHECKING
 from loguru import logger
 
 from ....port.calling import Stringable
-from ....port.color import (
-    Color,
-    ColorBox,
-    ColorIdentifier,
-    Painter,
-)
-from ...labor import clsname
+from ....port.color import Color, ColorBox, ColorIdentifier, Painter
 from .._mappings import SHORTCUTS
 
 # from .._stack import ColorStack
@@ -37,7 +31,7 @@ class Colors:
         pass
 
     def __str__(self) -> str:
-        return f"{clsname(self)}[{self.active}]"
+        return "ColorBox==Colors"
 
     def __getattr__(self, name) -> Painter | str:
         if color := SHORTCUTS.get(name):
@@ -45,7 +39,6 @@ class Colors:
 
         if name in Color:
             return self.paint(name)
-
         raise AttributeError(f"{self} Missing Attribute: '{name}'!")
 
     def paint(self, color: ColorIdentifier) -> Painter:
