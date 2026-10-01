@@ -25,8 +25,8 @@ from typing import TYPE_CHECKING, Self
 from dotenv import load_dotenv
 from loguru import logger
 
-from ...brick.format import clsname
-from ...brick.format.time import day_count
+from ...brick.labor import clsname
+from ...brick.time import day_count
 from ...port.config import (
     Config,
     Defaults,

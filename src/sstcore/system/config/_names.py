@@ -19,7 +19,7 @@ from functools import cached_property
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
-from ...brick.name import ParsedName
+from ...brick.format.name import NameParser
 from ...brick.time import day_count
 from ...port.config import Names as Names_
 from ...port.view import Stringable
@@ -38,8 +38,8 @@ class SstNames(BaseSettings):
     scanner_cache_file: str = ".sst_scanner_cache.json"
 
     @cached_property
-    def _summary_file(self) -> ParsedName:
-        return ParsedName(pattern="{day}_summary.{suffix}")
+    def _summary_file(self) -> NameParser:
+        return NameParser(pattern="{day}_summary.{suffix}")
 
     def summary_file(self, day: Stringable = "", suffix: str = "md") -> str:
         return self._summary_file(
@@ -48,5 +48,6 @@ class SstNames(BaseSettings):
 
 
 if TYPE_CHECKING:
+    # IDEA: Remove Names_??!!
     _instance_check: Names_ = SstNames()
     _class_check: type[Names_] = SstNames

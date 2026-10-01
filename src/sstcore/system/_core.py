@@ -23,10 +23,18 @@ from ..port.system import (
     BusLoader,
     ConfigLoader,
     SstSystem,
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
     SystemCliArgs,
     SystemCliInput,
 )
-from ..port.system import System as System_
 from ..util.log import setup_minimal_logging
 from ..util.print import printer as global_printer
 from .config import ConfigManager
@@ -88,8 +96,8 @@ class System:
 
 if TYPE_CHECKING:
     # base protocol
-    _instance_check: System_ = System.boot()
-    _class_check: type[System_] = System
+    _instance_check: SstSystem = System.boot()
+    _class_check: type[SstSystem] = System
     # only internals
     _instance_check: SstSystem = System.boot()
     _class_check: type[SstSystem] = System
