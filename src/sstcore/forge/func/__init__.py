@@ -5,10 +5,8 @@ The Functor - Easy and Safe Binding!
 
 """
 
-# NEXT:
-# __all__: list[str] = [
-#     "SafeFunctor",
-#     "_DecoFunctor",
-#     "SafeFuncCore",
-#     "FunctorBase", ]
-# from ._tor import FunctorBase, SafeFuncCore, SafeFunctor, _DecoFunctor
+# TODO:
+__all__: list[str] = [
+    "SafeFunctor",
+]
+from ._tor import SafeFunctor

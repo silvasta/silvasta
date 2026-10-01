@@ -15,7 +15,8 @@ __all__: list[str] = [
 
 from ...brick.views import Cli, Log, Repr, Rich, Str
 from ._compose import ViewBuilder
-from ._inject import ViewInjector
+
+# from ._inject import ViewInjector
 
 # NEXT:
 # NEXT:
@@ -24,8 +25,8 @@ from ._inject import ViewInjector
 
 
 class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
-    pydantic = ViewInjector(
-        # FIX:
+    pydantic = ViewBuilder(
+        # FIX: ViewInjector??
         cli=Cli.TABLE,
         string=Str.NAME,
         rich=Rich.MODULE,
