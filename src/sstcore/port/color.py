@@ -41,14 +41,11 @@ from enum import auto
 from typing import NamedTuple, Protocol, Self, runtime_checkable
 
 from .calling import Colorizing, Stringable
-from .register import Index
+from .govern import EnumIndex
 
 
-class GridIndex(Index):
+class GridIndex(EnumIndex):
     """Provide unique Base for Grid-Axes and Grid-Registries"""
-
-
-type ColorIdentifier = int | str | Color
 
 
 class Color(GridIndex):
@@ -68,6 +65,9 @@ class Color(GridIndex):
     TEAL = auto()
     ORANGE = auto()
     PURPLE = auto()
+
+
+type ColorIdentifier = int | str | Color
 
 
 class Adapter(GridIndex):

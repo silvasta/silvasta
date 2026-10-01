@@ -175,7 +175,7 @@ type Mixin = type
 type Slot = tuple[Mixin, Proto] | Mixin | Proto
 
 
-class MixinRegister[S: Slot](TupleRegister[Mixin, None], Protocol):
+class MixinRegister[S: Slot](TupleRegister[Mixin], Protocol):
     # TODO: check in forge.compose.SLOT
     """Provide a stable Container for Compositiions"""
 

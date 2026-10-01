@@ -180,7 +180,7 @@ class ScanFiles[FileT: File](
     FilterRegister,
     QueryRegister,
     FileRegister,
-    ListRegister[File, str],
+    ListRegister[File],
     Protocol,
 ): ...
 
@@ -191,6 +191,6 @@ class Files(
     FilterRegister,
     QueryRegister,
     FileRegister,
-    ListRegister[File, str],
+    ListRegister[File],
     Protocol,
 ): ...

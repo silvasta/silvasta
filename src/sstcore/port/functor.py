@@ -36,7 +36,7 @@ class Functor[**ArgSpace, SubSetResult](Protocol):
     __name__: str
     __qualname__: str
     # IDEA: make _func public! why not? or descriptor? or from meta?
-    _func: Callable[ArgSpace, SubSetResult]
+    _func: Callable[ArgSpace, SubSetResult]  # IDEA: __func__??
 
     def __call__(  # TODO:
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs

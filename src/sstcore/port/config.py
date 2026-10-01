@@ -56,12 +56,20 @@ class Names(Protocol):
 
 
 class LogData(Protocol):  # MOVE: maybe, but where?
-    log_dir: Path  # TASK: sync with Homes,utils.log,etc
+    # TASK: sync with Homes,utils.log,etc
+    log_dir: Path
+    log_to_console: bool
+    log_to_file: bool
+    log_to_json: bool
+    log_level: str
+    retention: str
+    rotation: str
 
     @property
     def log_file(self) -> Path: ...
     @property
     def struct_log_file(self) -> Path: ...
+    # REMOVE:?
     def with_overrides(self, verbose: bool, quiet: bool) -> LogData: ...
 
 

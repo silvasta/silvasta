@@ -7,7 +7,7 @@ Define the Shape of Views and what they Represent.
 """
 
 # NEXT: LEVEL
-#
+
 __all__: list[str] = [
     "LogSerializable",
     "CliRenderable",

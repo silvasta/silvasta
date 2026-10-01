@@ -86,6 +86,7 @@ class PortLinkData:
                 return False
 
     def __getitem__(self, access: str | type | DocKey) -> list[Doc]:
+        # IDEA: Iterator? yield the items?
         """Centralized and Error free access to key collumns"""
         match access:
             case str() as attr:
@@ -159,7 +160,7 @@ class PortLinks(PortLinkData):
         # IDEA: return True, or 1 for addad
         """Simple Error free write access"""
         if not value.text:
-            print("EMpty")
+            print("EMpty")  # LATER: proper logging of (imposible?) not adds?
         if access not in self.data:
             self.data[access] = value
 
@@ -183,6 +184,8 @@ class SidePolicy(_e.StrEnum):
             case PlugDoc():
                 return cls.PLUG
         raise ValueError(f"{cls} got invalid side: {data}")
+
+    # IDEA: both steps together: if SidePolicy.confirm(d:Doc):...
 
     def validate(self, data: Doc, /) -> bool:
         """Check if Doc is valid for selected Policy"""

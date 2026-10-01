@@ -26,9 +26,9 @@ from functools import cached_property as _cached_property
 from inspect import cleandoc as _cleandoc
 from types import SimpleNamespace
 
-from .._dunder import DunderSet, DunderStore
 from .._raise import LinkRaiser
 from ..raising import SstCoreError
+from .___dunder import DunderSet, DunderStore
 from ._define import (
     Collecting,
     Injecting,
@@ -60,6 +60,7 @@ class EasyNote(SimpleNamespace):
 
 
 class EasyCore[Core: _t.Callable](SimpleNamespace):
+    # TODO: resolve wiring
     """Stable Core for all Easy Member"""
 
     core: Core

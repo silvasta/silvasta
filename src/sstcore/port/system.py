@@ -12,10 +12,11 @@ System: The sst Director
                                                  DependencyLevel[7]
                                                          printer(6)
 """
+# - IMPORTANT: naming check Spec,Data,Inputs,... globally!!
 
 __all__: list[str] = [
-    "System",
     "SstSystem",
+    "CliSystem",
     # Loader
     "SystemLoader",
     "ConfigLoader",
@@ -32,30 +33,37 @@ from .event import EventBus
 from .event.emit import Emitter
 from .printer import Printer
 
+
+class SystemLoader[SysT: SstSystem](Protocol):
+    def __call__(self, **cli_args: Unpack[CliSystemInput]) -> SysT:
+        """Boot the System with the provided (optional?) args"""
+
+
+class SystemLoading[SysT: CliSystem](Protocol):
+    def __call__(
+        self, **tool_spec: Unpack[CliSystemToolSpec]
+    ) -> SystemLoader[SysT]:
+        """Bind the tools to the system and make it ready to boot"""
+
+
+# TASK: Protocol with TypedDict args?
 type ConfigLoader = Callable[..., Config]
-# LATER: Protocol with TypedDict args?
 type BusLoader = Callable[..., EventBus]
 
 
-class SystemLoader(Protocol):
-    # AI: Input spectrum must be No DTO!
-    def __call__(self, **cli_args: Unpack[SystemCliArgs]) -> SstSystem:
-        """Check if the Callable (object) provides a System"""
-
-
-class System(Protocol):
+class SstSystem(Protocol):
     """Any System must fulfill: ..."""
 
     @property
     def bus(self) -> EventBus:
-        """... Provide Global Wiring"""
+        """- Provide Global Wiring"""
 
     @classmethod
     def boot(cls) -> Self:
-        """... Boot without Input"""
+        """- Boot without Input"""
 
 
-class SstSystem(System, Protocol):
+class CliSystem(SstSystem, Protocol):
     """The SstSystem provides ..."""
 
     @property
@@ -67,58 +75,46 @@ class SstSystem(System, Protocol):
 
     @classmethod
     def boot(
-        cls,
-        *,
         # TASK: second TypedDict for loader?
         # - maybe with concat?
+        cls,
+        *,
         config_loader: ConfigLoader | None = None,
         bus_loader: BusLoader | None = None,
         printer: Printer | None = None,
-        **cli_args: Unpack[SystemCliArgs],
+        # **tool_spec: Unpack[CliSystemToolSpec],
+        **cli_args: Unpack[CliSystemInput],
     ) -> Self:
         """Accept Changes and Provide the full Infrastructure"""
 
 
-# IDEA: for collecting the loaders
-class _SystemPreparing(Protocol):
-    def __call__(self, **components: Unpack[_SystemLoaders]) -> SstSystem:
-        """Check if the Callable (object) provides a System"""
-
-
-# IDEA: for collecting the loaders
-class _SystemLoaders(TypedDict, total=False):
+class CliSystemToolSpec(TypedDict, total=False):  # CHECK: total=True??
     config_loader: ConfigLoader
     bus_loader: BusLoader
     printer: Printer
 
 
-# IDEA: for collecting the loaders
+class CliSystemInput(TypedDict, total=False):
+    """Provide Typed Args for the System CLI Setup"""
+
+    # CHECK: was needed for _attach_internal_callback...
+    verbose: bool
+    quiet: bool
+    # settings: NotRequired[Path | None]  # CHECK:
+    # settings: Path  # CHECK:
+    settings: NotRequired[Path]  # CHECK:
+    home: HomeSetup
+
+
 @dataclass
-class _SystemComponents:
+class CliSystemTools:
     config_loader: ConfigLoader | None = None
     bus_loader: BusLoader | None = None
     printer: Printer | None = None
 
 
-def _test_sync_loader_components(
-    **components: Unpack[_SystemLoaders],
-) -> _SystemComponents:
-    return _SystemComponents(**components)
-
-
-class SystemCliArgs(TypedDict, total=False):
-    """Provide Typed Args for the System CLI Setup"""
-
-    verbose: bool
-    quiet: bool
-    settings: NotRequired[
-        Path | None
-    ]  # was needed for _attach_internal_callback...
-    home: HomeSetup
-
-
 @dataclass
-class SystemCliInput:  # TODO: or SystemCliData? (pattern like StaticMetaData)
+class CliSystemData:
     """Transfer validated System Input including Defaults"""
 
     verbose: bool = False
@@ -126,11 +122,21 @@ class SystemCliInput:  # TODO: or SystemCliData? (pattern like StaticMetaData)
     settings: Path | None = None
     home: HomeSetup = HomeSetup.PROJECT
 
-    # @classmethod
-    # REMOVE: directly use cls.__call__ as constructor
-    # def load(cls, **args: Unpack[SystemCliArgs]) -> Self:
-    #     return cls(**args)
+
+#  LINE: -- tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def _test_sync_args_input(**cli_args: Unpack[SystemCliArgs]) -> SystemCliInput:
-    return SystemCliInput(**cli_args)
+def _check_toolspec_binder(
+    **tool_spec: Unpack[CliSystemToolSpec],
+) -> CliSystemTools:
+    return CliSystemTools(**tool_spec)
+
+
+_x = _check_toolspec_binder()  # INFO: check IDE input view here
+
+
+def _check_cli_input(**cli_args: Unpack[CliSystemInput]) -> CliSystemData:
+    return CliSystemData(**cli_args)
+
+
+_y = _check_cli_input()  # INFO: check IDE input view here

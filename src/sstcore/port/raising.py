@@ -8,14 +8,13 @@ Provide Namespace for Exceptions before SstError is ready
                                                  DependencyLevel[0]
 """
 
-from dataclasses import dataclass
-
 __all__: list[str] = [
     "SstCoreError",
     "FailedHackError",
 ]
 
-from typing import Any, NamedTuple, Never, TypedDict, Unpack
+from dataclasses import dataclass
+from typing import Any, Literal, NamedTuple, Never, NoReturn, TypedDict, Unpack
 
 from .govern import EnumMachine, EnumZero
 
@@ -49,45 +48,31 @@ class ErrorInput(TypedDict, total=False):
     received: dict
 
 
-class ErrorSpec[TargeT, UnitT](NamedTuple):
-    """Define the Arg Space of the Internal Pipeline"""
-
-    reason: Raiser
-    #
-    expected: tuple[tuple[str, Any], ...] = ()
-    received: tuple[tuple[str, Any], ...] = ()
-    #
-    extra: dict[str, Any] | None = None  # CHECK: can here something change?
-
-
 @dataclass(frozen=True)
 class ErrorData:
     """Define the Arg Space of the Internal Pipeline"""
 
     reason: Raiser
 
+    # IDEA: instead of dict and tuple reconstructing dict:
+    # - use PortLinkData as template, create Edit/Static-Dict?
+    # - combine expected/received,
+
     expected: tuple[tuple[str, Any], ...] = ()
     received: tuple[tuple[str, Any], ...] = ()
 
     extra: dict[str, Any] | None = None  # CHECK: can here something change?
 
 
-class ErrorDTO[ErrorT: Exception](NamedTuple):
-    """Define the Boundary of the Outgoing Message"""
-
-    error: type[ErrorT]
-    message: str = ""
-    args: tuple[Any, ...] = ()
-
-    def __call__(self, *args) -> ErrorT:
-        return self.error(self.message, *self.args, *args)
-
-    def fire(self, *args) -> Never:
-        raise self(*args)
+class ErrorEntry(NamedTuple):  # IDEA: something like this?
+    name: str
+    value: Any
+    cat: Literal["expected", "received", "extra"]
+    info: str | None = None
 
 
 @dataclass(frozen=True)
-class ErrorOutput[ErrorT: Exception]:
+class ErrorDTO[ErrorT: Exception]:
     """Define the Boundary of the Outgoing Message"""
 
     error: type[ErrorT]
@@ -145,32 +130,43 @@ class ErrorMachine(EnumMachine):
         return type(name, bases, {})
 
     @classmethod
-    def run(cls, data: ErrorData) -> ErrorOutput:
-        return ErrorOutput(
+    def run(cls, data: ErrorData) -> ErrorDTO:
+        return ErrorDTO(
             error=cls.compose(data),
             message=cls.message(data),
         )
 
 
 class Raiser(EnumZero):
-    def __call__(self, *args, **kwargs: Unpack[ErrorInput]) -> Exception:
+    def __call__(
+        self,
+        message: str | None = None,
+        /,
+        *args,
+        launch: bool = False,
+        **kwargs: Unpack[ErrorInput],
+    ) -> Exception | NoReturn:
         """Generate the DTO and immediately instantiate the Exception"""
 
-        return self.dto(*args, **kwargs)(*args)
+        error_output: ErrorDTO = self.dto(*args, **kwargs)
+        if launch:
+            # FIX: args/message!! unite the pipeline, check with Data and DTO
+            error_output.fire(*args)
+        else:
+            return error_output(message)
 
-    def dto(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorOutput:
-        """Fallback for deferred execution or message inspection"""
-        input_dto: ErrorData = self.sanitize(*args, **kwargs)
-        return self.order(input_dto)
-
-    def order(self, data: ErrorData) -> ErrorOutput:
-        return ErrorMachine.run(data)
-
-    def sanitize(self, *args, **kwargs) -> ErrorData:
+    def sanitize(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorData:
+        """Extract the ErrorInput to form the ErrorData"""
         return ErrorData(self, *args, **kwargs)
 
-    def launch(self, data: ErrorDTO, *args) -> Never:
-        raise data.fire(data.message, *data.args, *args)
+    def order(self, data: ErrorData) -> ErrorDTO:
+        """Produce the final ErrorDTO with the recipe in ErrorData"""
+        return ErrorMachine.run(data)
+
+    def dto(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
+        """Provide raw error output"""
+        process_data: ErrorData = self.sanitize(*args, **kwargs)
+        return self.order(process_data)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
