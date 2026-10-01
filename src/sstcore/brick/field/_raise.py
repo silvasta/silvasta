@@ -10,6 +10,7 @@ from enum import auto
 from typing import Any, Never, Protocol, Unpack, cast
 
 from ...port.raising import (
+    ErrorData,
     ErrorDTO,
     ErrorInput,
     ErrorMachine,
@@ -49,19 +50,19 @@ class FieldErrorSpec[FieldT, UnitT](ErrorSpec):
 
 class ErrorBuilder(ErrorMachine):
     @classmethod
-    def custom(cls, spec: ErrorSpec) -> type[SstCoreError]:
+    def custom(cls, data: ErrorData) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
-        return get_custom_exception(cast(FieldRaiser, spec.reason))
+        return get_custom_exception(cast(FieldRaiser, data.reason))
 
     @classmethod
-    def builtin(cls, spec: ErrorSpec) -> type[Exception] | None:
+    def builtin(cls, data: ErrorData) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
-        return get_builtin_exception(cast(FieldRaiser, spec.reason))
+        return get_builtin_exception(cast(FieldRaiser, data.reason))
 
     @classmethod
-    def message(cls, spec: ErrorSpec) -> str:
+    def message(cls, data: ErrorData) -> str:
         """Find Builtin Exception if registred in Raiser"""
-        return super().message(spec)
+        return super().message(data)
 
 
 class FieldRaiseCall(Protocol):
@@ -86,8 +87,9 @@ class FieldRaiser(Raiser):
 
     __call__: FieldRaiseCall
 
-    def order(self, spec: ErrorSpec) -> ErrorDTO:
-        return ErrorBuilder.run(spec)
+    def order(self, data: ErrorData) -> ErrorDTO:  # ty:ignore
+        # FIX:
+        return ErrorBuilder.run(data)  # ty:ignore
 
     def __str__(self):
         return self.name
@@ -217,26 +219,23 @@ class FieldError(SstCoreError):
 
 #  LINE: -- USAGE -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-on_error = FieldRaiser
-on_error.ReadOnly("blau", test=3)
 
+def tests():
+    on_error = FieldRaiser
+    on_error.ReadOnly("blau", test=3)
 
-def how_to_use1() -> Never:
-    raise on_error.ReadMissing("")()
+    def how_to_use1() -> Never:
+        raise on_error.ReadMissing("")()
 
+    def how_to_use0() -> ErrorDTO:
+        return on_error.ReadMissing("")()
 
-def how_to_use0() -> ErrorDTO:
-    return on_error.ReadMissing("")()
+    def how_to_use2() -> ErrorDTO:
+        return on_error.ReadMissing("")
 
+    def how_to_use3() -> Never:
+        assembled: ErrorDTO = on_error.ReadMissing("", name="test")
+        return assembled.fire()
 
-def how_to_use2() -> ErrorDTO:
-    return on_error.ReadMissing("")
-
-
-def how_to_use3() -> Never:
-    assembled: ErrorDTO = on_error.ReadMissing(name="test")
-    return assembled.fire()
-
-
-def how_to_use4() -> Never:
-    on_error.ReadMissing("", value="test")()
+    def how_to_use4() -> Never:
+        raise on_error.ReadMissing("", value="test")()

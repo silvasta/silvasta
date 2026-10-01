@@ -26,15 +26,11 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
     """Implement Policy and Execution Logic"""
 
     def __init__(
-        self,
-        enum_type: type[EnumT],
-        *args,
-        frozen: bool = False,
-        **kwargs,
+        self, enum: type[EnumT], /, *args, frozen: bool = False, **kwargs
     ):
-        self.enum_type: type[EnumT] = enum_type
+        self.enum: type[EnumT] = enum
         self.frozen: bool = frozen  # MOVE: FrozenFieldMixin?
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, types=enum, **kwargs)
 
     def validate(self, unit: object, value: EnumId[EnumT]) -> EnumT:
         if self.frozen and self._has_val(unit):  # MOVE: FrozenFieldMixin?
