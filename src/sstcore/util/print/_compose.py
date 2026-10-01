@@ -18,14 +18,14 @@ from rich.console import Console
 
 from ...brick.color import colorize
 from ...forge.view import view
-from ...port.printer import PrintCore
+from ...port.printer import Print  # FIX:
 from ...port.shape import Builder
 from . import _mixins
 from ._engine import PrinterCore
 
 
 @dataclass(frozen=True)
-class PrintBuilder[PrinT: PrintCore]:
+class PrintBuilder[PrinT: Print]:
     # NOTE: PrinterFactory was still much better....
     """Configure PrinterMixins and build composed classes"""
 

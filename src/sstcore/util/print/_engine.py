@@ -11,9 +11,9 @@ from rich.abc import RichRenderable
 from rich.padding import Padding
 
 from ...brick.color import colorize
+from ...port.event import CliRenderable, LogSerializable
 from ...port.event.dto import CliDTO, LogDTO
-from ...port.printer import PrintCore
-from ...port.view import CliRenderable, LogSerializable, Renderable
+from ...port.printer import Print
 
 
 class PrinterCore:
@@ -37,7 +37,7 @@ class PrinterCore:
 
         match target:
             case CliDTO() | LogDTO():
-                renderable: Renderable = self.render(target)
+                renderable = self.render(target)
             case RichRenderable():  # TEST: maybe remove this rich.abc...
                 renderable: RichRenderable = target
             case _:  # FIX: pydantic goes trough..
@@ -45,7 +45,7 @@ class PrinterCore:
 
         indent: int = getattr(target, "indent", kwargs.pop("indent", 0))
 
-        i_hope_it_renders: Renderable = (  # ty:ignore
+        i_hope_it_renders = (  # ty:ignore
             Padding(renderable, (0, 0, 0, indent))
             if indent and renderable is not None
             else renderable
@@ -55,5 +55,5 @@ class PrinterCore:
 
 
 if TYPE_CHECKING:
-    _instance: PrintCore = PrinterCore()
-    _class: type[PrintCore] = PrinterCore
+    _instance: Print = PrinterCore()
+    _class: type[Print] = PrinterCore
