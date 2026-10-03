@@ -7,6 +7,8 @@ Define common Views and Defaults
 
 # TODO: defaults for regular classes
 
+from dataclasses import dataclass
+
 __all__: list[str] = [
     "ViewInjector",
 ]
@@ -16,6 +18,7 @@ __all__: list[str] = [
 from typing import TYPE_CHECKING, Self, overload
 
 from ...brick.none import Ghost
+from ...port.raising import SstCoreError
 from ._compose import ViewBuilder
 
 if TYPE_CHECKING:
@@ -25,19 +28,18 @@ else:
     _MixInjector = Ghost
 
 from ...brick.views import Cli, Log, Repr, Rich, Str, ViewCatalog
-from ...port.register import MixinRegister
 from ...port.shape import Injector
-from .._raise import ViewError
 from ..engine.compose import MixinRegistry
 
 # MOVE: to view._registry
 type ViewArg = Cli | Str | Rich | Repr | Log
 
 
-class ViewInjector[MixT: type, KeyT](_MixInjector):
+@dataclass
+class ViewInjector[MixT: type](_MixInjector):
     """view Distributor: Inject or Build with Preset Views or Modify"""
 
-    vault: MixinRegister[MixT, KeyT]
+    # vault: MixinRegister[MixT]
 
     def __init__(self):
         self.mixin_registger = MixinRegistry(self.mixins)
@@ -69,7 +71,8 @@ class ViewInjector[MixT: type, KeyT](_MixInjector):
         # TODO: decompose
         for arg in args:
             if arg.category in selected_views:
-                raise ViewError(arg.fail_info("Duplicated Argument!"))
+                # raise ViewError(arg.fail_info("Duplicated Argument!"))
+                raise SstCoreError(arg.fail_info("Duplicated Argument!"))
             selected_views[arg.category] = arg
 
         for default in self.all_enums():

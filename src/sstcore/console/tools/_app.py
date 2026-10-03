@@ -26,11 +26,6 @@ from ._monitor import log_monitor
 from ._scanner import folder_scanner
 from ._writer import stub_typer
 
-
-def main() -> None:
-    app()
-
-
 app = SafeTyper(name="tools", help="Basic Equipment for Development")
 
 
@@ -134,4 +129,4 @@ def print_file(path: Path):
 
 
 if __name__ == "__main__":
-    main()
+    app()

@@ -44,7 +44,7 @@ class FileScan(Protocol):
         """Provide str or container object that produces str"""
 
 
-# AI_FOCUS: I need setup that works for all scanner
+# TASK: setup that works for all scanner
 class ScanMode(StrEnum):
     """Govern the exectuion modes of FileScanner"""
 
