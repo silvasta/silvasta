@@ -7,7 +7,20 @@ Adapt the SstCoreError to PortLink
                                                  DependencyLevel[X]
 """
 
-# TASK: imporve internal data pipeline
+# TASK: 1 single port implementation of Raiser
+# - create more universal version
+# - imporve internal data pipeline
+# - maybe keep name: LinkRaiser
+
+__all__: list[str] = [
+    "LinkRaiserCall",
+    "PortErrorInput",
+    "PortErrorData",
+    "ErrorBuilder",
+    "LinkRaiser",
+    "PortLinkError",
+]
+
 
 from dataclasses import dataclass
 from enum import auto
@@ -15,24 +28,24 @@ from typing import Any, Never, Protocol, Unpack
 
 from .raising import (
     ErrorData,
+    ErrorDTO,
     ErrorInput,
     ErrorMachine,
-    ErrorOutput,
     Raiser,
     SstCoreError,
 )
+
+
+class LinkRaiserCall(Protocol):
+    def __call__(
+        self, *args, **kwargs: Unpack[PortErrorInput]
+    ) -> SstCoreError: ...
 
 
 class PortErrorInput(ErrorInput, total=False):
     text: str
     attr: str
     source: type
-
-
-class LinkRaiserCall(Protocol):
-    def __call__(
-        self, *args, **kwargs: Unpack[PortErrorInput]
-    ) -> Exception: ...
 
 
 @dataclass(frozen=True)
@@ -45,7 +58,7 @@ class PortErrorData(ErrorData):
 
 class ErrorBuilder(ErrorMachine):
     @classmethod
-    def custom(cls, data: ErrorData) -> type[SstCoreError]:
+    def custom(cls, data: PortErrorData) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
         if data.reason == LinkRaiser.RAW:
             return SstCoreError
@@ -85,7 +98,7 @@ class LinkRaiser(Raiser):
 
     __call__: LinkRaiserCall
 
-    def order(self, data: ErrorData) -> ErrorOutput:
+    def order(self, data: ErrorData) -> ErrorDTO:
         return ErrorBuilder.run(data)
 
 
@@ -113,7 +126,7 @@ def how_to_use1() -> ErrorData:
     return LinkRaiser.RAW.sanitize()
 
 
-def how_to_use2() -> ErrorOutput:
+def how_to_use2() -> ErrorDTO:
     return LinkRaiser.PipeLine.dto()
 
 

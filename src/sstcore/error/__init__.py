@@ -26,4 +26,4 @@ from ._general import (
     PropertyNotInitializedError,
     TuiSelectorError,
 )
-from ._path_guard import PathGuardError, PathGuardReason
+from ._pathguard import PathGuardError, PathGuardReason

@@ -29,6 +29,7 @@ class TuiSelectorError(SstError):  # LATER: move to .ui|tui|interface?
 
 
 class PropertyNotInitializedError(SstError):
+    # IDEA: FieldError? merge!
     """Raise when property is accessed before its attribute is initialized"""
 
     def __init__(self, property_name: str, attribute_name: str):

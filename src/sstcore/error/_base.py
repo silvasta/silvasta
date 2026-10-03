@@ -21,6 +21,7 @@ from ..port.view import Renderable
 c: ColorBox = Colors()
 
 
+# IDEA: SstBaseError? Then update in .raiser, then final assemble SstError in .__init__?
 class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
     """Define the View and Behaviour of Custom Errors"""
 

@@ -19,34 +19,26 @@ from typing import Self
 
 
 class EnumStr1(Enum):
-    name: str
-
     def __str__(self) -> str:
         return f"{self.name.capitalize()}"
 
 
 class EnumStr2(Enum):
-    name: str
-
     def __str__(self):
         return self.name
 
 
 class EnumRepr1(Enum):
-    value: int
-
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.value}]::{self}"
 
 
 class _EnumRepr2(Enum):
-    def __repr__(self) -> str:
-        # WARN: check how that works for Enum
-        attributes = vars(self)
-        if attributes:
+    def __repr__(self) -> str:  # CHECK: how that works for Enum
+        if attributes := vars(self):
             _vars = [f"{k}={v!r}" for k, v in attributes.items()]
             return f"{type(self).__name__}[{', '.join(_vars)}]"
-        return f"{type(self).__name__}{self.args}"
+        return f"{type(self).__name__}{self}"
 
 
 EnumStr = EnumStr2

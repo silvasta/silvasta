@@ -44,6 +44,7 @@ type Single[ErrorT] = SstCoreError | None
 class ErrorInput(TypedDict, total=False):
     """Define the Kwarg Space of the Error Pipeline"""
 
+    # NOTE: text??
     expected: dict
     received: dict
 
@@ -93,7 +94,11 @@ class ErrorMachine(EnumMachine):
     """Start the Heavy Engine and Produce the Exceptions"""
 
     @classmethod
-    def custom(cls, data: ErrorData) -> type[SstCoreError]:
+    def custom(
+        cls,
+        # CHECK: data: ErrorData,
+        data: Any,
+    ) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
         return SstCoreError
 
