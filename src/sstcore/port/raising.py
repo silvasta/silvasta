@@ -64,6 +64,13 @@ class ErrorData:
 
     extra: dict[str, Any] | None = None  # CHECK: can here something change?
 
+    def __str__(self):
+        return f"{type(self).__name__}[{self.reason}]"
+
+    def __repr__(self):
+        log: str = "-|-".join(f"{k}:={v}" for k, v in vars(self).items())
+        return f"{self}({log})"
+
     @classmethod
     def sanitize(cls, reason: Raiser, **kwargs: Unpack[ErrorInput]) -> Self:
         """Extract the ErrorInput kwargs to form the ErrorData"""
@@ -97,17 +104,15 @@ class ErrorMachine(EnumMachine):
     """Start the Heavy Engine and Produce the Exceptions"""
 
     @classmethod
-    def custom(
-        cls,
-        # CHECK: data: ErrorData,
-        _data: Any,
-    ) -> type[SstCoreError]:
+    def custom(cls, data: ErrorData) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
+        _ = data
         return SstCoreError
 
     @classmethod
-    def builtin(cls, _data: ErrorData) -> type[Exception] | None:
+    def builtin(cls, data: ErrorData) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
+        _ = data
         return Exception
 
     @classmethod
@@ -173,8 +178,8 @@ class Raiser(EnumZero):
 
     def dto(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
         """Provide raw error output"""
-        process_data: ErrorData = self.sanitize(*args, **kwargs)
-        return self.order(process_data)
+        processdata: ErrorData = self.sanitize(*args, **kwargs)
+        return self.order(processdata)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
