@@ -1,9 +1,10 @@
 """
-SimpleNamespace Easy Operators
+Create the SimpleNamespace Easy Operators
 
 - The massively over engineered backbone of the execution pipeline
 - As well a collection of interesting ideas and sharp programming
 
+                               DependencyLevel.sstcore.port.link[2]
 """
 
 __all__: list[str] = [
@@ -20,15 +21,14 @@ __all__: list[str] = [
 ]
 
 
-import functools as _f
-import typing as _t
-from functools import cached_property as _cached_property
+from collections.abc import Callable
+from functools import cached_property, partial
 from inspect import cleandoc as _cleandoc
 from types import SimpleNamespace
+from typing import Any, Literal, Self
 
 from .._raise import LinkRaiser
 from ..raising import SstCoreError
-from .___dunder import DunderSet, DunderStore
 from ._define import (
     Collecting,
     Injecting,
@@ -37,13 +37,14 @@ from ._define import (
     PortLinks,
     Reflecting,
 )
+from ._dunder import DunderSet, DunderStore
 from ._model import SidePolicy
 
 
 class EasyNote(SimpleNamespace):
     """Stable Base for all Easy Member"""
 
-    _emit: _t.Callable | None = None
+    _emit: Callable | None = None
 
     def emit(self, *args, **kwargs):  # TODO: check wiring
         (self._emit or self.port_emit)(*args, sender=self, **kwargs)
@@ -59,7 +60,7 @@ class EasyNote(SimpleNamespace):
         return f"{type(self).__name__}[{todo}]"
 
 
-class EasyCore[Core: _t.Callable](SimpleNamespace):
+class EasyCore[Core: Callable](SimpleNamespace):
     # TODO: resolve wiring
     """Stable Core for all Easy Member"""
 
@@ -74,10 +75,10 @@ class EasyCore[Core: _t.Callable](SimpleNamespace):
         )
 
 
-class EasyBase[Core: _t.Callable](EasyCore, EasyNote):
+class EasyBase[Core: Callable](EasyCore, EasyNote):
     """Mixed Base for all Easy Member"""
 
-    _registry: dict[int, type[_t.Self]] = {}
+    _registry: dict[int, type[Self]] = {}
 
     def __init_subclass__(cls, id: int, art: str, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -95,11 +96,11 @@ class EasyBase[Core: _t.Callable](EasyCore, EasyNote):
 class EasyCatch(EasyBase, id=0, art="D"):
     emit: PortEmit
 
-    def __core__(self, *args, **kwargs):  # TASK: sync with strategy!
+    def __core__(self, *args, **kwargs):  # TODO: sync with strategy!
         with self:
             super().__core__(*args, **kwargs)
 
-    def __enter__(self) -> _t.Self:
+    def __enter__(self) -> Self:
         self.emit(f"{self}: Executing Pipeline in Context")
         return self
 
@@ -120,10 +121,10 @@ class EasyCatch(EasyBase, id=0, art="D"):
             self.emit(f"Continue... {exception_value=}")
             return True
 
-        return False  # LATER: configured handling
+        return True  # PARAM: Error Handling
 
 
-class PortOperator[Core: _t.Callable](EasyCatch, EasyBase, id=1, art="C"):
+class PortOperator[Core: Callable](EasyCatch, EasyBase, id=1, art="C"):
     """Mixed Base for all Easy Member"""
 
     @property
@@ -136,10 +137,10 @@ class Spawner:
 
     operators: frozenset[str] = frozenset({"reflect", "collect", "inject"})
 
-    def __init__(self, registry: dict[int, _t.Any]):
+    def __init__(self, registry: dict[int, Any]):
         if missing := self.operators - registry.keys():
             raise RuntimeError(f"Missing Operators! [{missing}]({registry=})")
-        self._registry: dict[int, _t.Any] = registry
+        self._registry: dict[int, Any] = registry
 
     @property
     def inject(self) -> type[Inject]:
@@ -174,10 +175,10 @@ class EasyAccess(EasyBase, id=2, art="S"):
         if name == "dunders":
             self._methods: DunderStore = self.Dunders(self.dunders)
 
-    def __getattr__(self, name: str) -> _t.Callable:
+    def __getattr__(self, name: str) -> Callable:
         self.emit(f"[{self}].__getattr__: {name}")
         if method := self._methods.get(name):
-            return _f.partial(self.invoke, attribute=method)
+            return partial(self.invoke, attribute=method)
         raise LinkRaiser.PipeLine(f"__getattr__: {name}", state=self._methods)
 
 
@@ -194,9 +195,9 @@ class Inject(PortOperator[Injecting], EasyAccess, id=3, art="O"):
     """Collect the Modificating Methods with Safety"""
 
     __call__: Injecting
-    mode: _t.Literal["soft", "hard"] = "soft"
+    mode: Literal["soft", "hard"] = "soft"
 
-    def __core__(self, target: _t.Any, value: _t.Any, attr: str):
+    def __core__(self, target: Any, value: Any, attr: str):
         _target = self.resolve(target, attr)
         self.strategy(_target, value, attr)
 
@@ -208,13 +209,13 @@ class Inject(PortOperator[Injecting], EasyAccess, id=3, art="O"):
             case "hard":
                 return self.direct
 
-    def direct(self, target: _t.Any, value: _t.Any, attr: str):
+    def direct(self, target: Any, value: Any, attr: str):
         object.__setattr__(target, attr, value)
 
-    def polite(self, target: _t.Any, value: _t.Any, attr: str):
+    def polite(self, target: Any, value: Any, attr: str):
         setattr(target, attr, value)
 
-    def resolve(self, target: _t.Any, attr: str) -> _t.Any:
+    def resolve(self, target: Any, attr: str) -> Any:
         if attr == "__doc__":
             if isinstance(target, property) and target.fget is not None:
                 return target.fget
@@ -223,12 +224,12 @@ class Inject(PortOperator[Injecting], EasyAccess, id=3, art="O"):
         return target
 
 
-def _inject_safe_example(target: _t.Any, value: str, /, attr: str):
+def _inject_safe_example(target: Any, value: str, /, attr: str):
     with Inject(core=_inject_doc_raw) as injector:
         injector(target, attr, value)
 
 
-def _inject_doc_raw(target: _t.Any, value: str):
+def _inject_doc_raw(target: Any, value: str):
     object.__setattr__(target, "__doc__", value)
 
 
@@ -239,7 +240,7 @@ class Reflect(PortOperator[Reflecting], EasyAccess, id=4, art="O"):
     """Collect the Detecting and Extracting Methods"""
 
     __call__: Reflecting
-    mode: _t.Literal["soft", "hard"] = "soft"  # IDEA: combine with inject?
+    mode: Literal["soft", "hard"] = "soft"  # IDEA: combine with inject?
 
     def __core__(self, target: type, attr: str, /):
         _target = self.resolve(target, attr)
@@ -263,23 +264,23 @@ class Reflect(PortOperator[Reflecting], EasyAccess, id=4, art="O"):
         match attr := self(cls, attr):
             case classmethod() | staticmethod():
                 return attr.__func__
-            case property() | _cached_property():
+            case property() | cached_property():
                 return attr
             case _ if callable(attr):
                 return attr
             case _:
                 return None
 
-    def doc(self, target: _t.Any, name: str, /) -> str:
+    def doc(self, target: Any, name: str, /) -> str:
         # IMPORTANT: check dispatch: easy/soft?
-        raw: _t.Any | None = (
+        raw: Any | None = (
             self.polite(target, "__doc__")
             if name
             else self.direct(target, "__doc__")
         )
         return self.clean(raw)
 
-    def clean(self, doc: str | _t.Any, /):
+    def clean(self, doc: str | Any, /):
         return _cleandoc(doc) if isinstance(doc, str) and doc else ""
 
 

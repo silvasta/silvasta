@@ -1,7 +1,7 @@
 """
 Define the Shape of the Event Bus Caller
 
-                                                 DependencyLevel[2]
+                              DependencyLevel.sstcore.port.event[2]
 """
 
 __all__: list[str] = [
@@ -31,7 +31,7 @@ type Log = LogEmit | EventLog
 
 
 class Emit(_Protocol):
-    def __call__(self, event: _EventName, sender: str, **payload) -> None:
+    def __call__(self, event: _EventName, /, sender: str, **payload) -> None:
         """Call to EventBus"""
 
 

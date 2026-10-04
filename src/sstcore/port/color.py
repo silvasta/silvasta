@@ -15,8 +15,7 @@ Future Ideas:
 - ColorBus: global control of already distributed colors
 
 
-                                                 DependencyLevel[3]
-                                                        register(2)
+                                    DependencyLevel.sstcore.port[6]
 """
 
 __all__: list[str] = [
@@ -40,8 +39,10 @@ __all__: list[str] = [
 from enum import auto
 from typing import NamedTuple, Protocol, Self, runtime_checkable
 
-from .calling import Colorizing, Stringable
-from .govern import EnumIndex
+from .calling import Colorizing, Stringable  # 0
+from .solid import EnumIndex  # 1
+
+# NOTE: register: 6
 
 
 class GridIndex(EnumIndex):

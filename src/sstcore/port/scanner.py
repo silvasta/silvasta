@@ -1,8 +1,7 @@
 """
 Scan Folders, Files, ... parsed with(out) syntax and context grouping
 
-                                                 DependencyLevel[2]
-                                                          filter(1)
+                                                 DependencyLevel[5]
 """
 
 __all__: list[str] = [
@@ -21,9 +20,9 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol
 
-from .calling import Stringable
-from .filter import PathFiltering
-from .tree import PathTree
+from .calling import Stringable  # 0
+from .filter import PathFiltering  # 4
+from .tree import PathTree  # 0
 
 
 class FolderScan(Protocol):

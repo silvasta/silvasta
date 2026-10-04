@@ -4,7 +4,7 @@ Adapt the SstCoreError to PortLink
 - This is intendes as the one and only Raiser Implementation in the port
 - Still experimental, like the setups outside the port
 
-                                                 DependencyLevel[X]
+                                                 DependencyLevel[3]
 """
 
 # TASK: 1 single port implementation of Raiser
@@ -58,16 +58,16 @@ class PortErrorData(ErrorData):
 
 class ErrorBuilder(ErrorMachine):
     @classmethod
-    def custom(cls, data: PortErrorData) -> type[SstCoreError]:
+    def custom(cls, _data: PortErrorData) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
-        if data.reason == LinkRaiser.RAW:
+        if _data.reason == LinkRaiser.RAW:
             return SstCoreError
         return PortLinkError
 
     @classmethod
-    def builtin(cls, data: ErrorData) -> type[Exception] | None:
+    def builtin(cls, _data: ErrorData) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
-        match data.reason:
+        match _data.reason:
             case LinkRaiser.RAW:
                 ...
             case LinkRaiser.MissingPlug:

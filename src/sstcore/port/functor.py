@@ -15,8 +15,7 @@ Extensions:
 - SafeFunctorial: Include error handling with policy
 - TODO: Hybrid
 
-                                                 DependencyLevel[0]
-                                                   (soon) attach(1)
+                                    DependencyLevel.sstcore.port[0]
 """
 
 from collections.abc import Callable
@@ -128,7 +127,7 @@ class BindFunctor[**FreeArgs, **BoundArgs, SubSetResult](
     """Narrow the Input Space (LSP-unconform)"""
 
     # FIX: separate input space, but how?
-    _func: Callable[[FreeArgs, BoundArgs], SubSetResult]
+    # _func: Callable[**FreeArgs, **BoundArgs], SubSetResult]
 
     def __call__(
         self, *args: BoundArgs.args, **kwargs: BoundArgs.kwargs
@@ -147,9 +146,9 @@ class ExpandFunctor[**ArgSpace, SubSetResult, SuperSetResult](
     ) -> SuperSetResult: ...
 
 
-# FIX: or later on just drop inheritance or even any declaration
-class TransformFunctor[**FreeArgs, **BoundArgs, SubSetResult, SuperSetResult](
-    BindFunctor[FreeArgs, BoundArgs, SubSetResult],
-    ExpandFunctor[BoundArgs, SubSetResult, SuperSetResult],
-    Protocol,
-): ...
+# # FIX: or later on just drop inheritance or even any declaration
+# class TransformFunctor[**FreeArgs, **BoundArgs, SubSetResult, SuperSetResult](
+#     BindFunctor[FreeArgs, BoundArgs, SubSetResult],
+#     ExpandFunctor[BoundArgs, SubSetResult, SuperSetResult],
+#     Protocol,
+# ): ...

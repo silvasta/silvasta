@@ -7,8 +7,8 @@ Define the Event DTOs for Log and Print
 Rendering Protocols with Runtime check
 - LogSerializable
 - CliRenderable
-                                                 DependencyLevel[0]
-                                                 (inside event)
+
+                              DependencyLevel.sstcore.port.event[0]
 """
 
 __all__: list[str] = [

@@ -1,10 +1,8 @@
 """
 How to track Files with composed Registries?
 
-                                                 DependencyLevel[3]
-                                                         scanner(2)
-                                                        register(2)
-                                                          filter(1)
+                                    DependencyLevel.sstcore.port[6]
+
 """
 
 __all__: list[str] = [
@@ -26,10 +24,10 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol, Self
 
-from .filter import Filter, KeyWord, KeyWords, PathFiltering
-from .register import ListRegister
-from .scanner import FolderScan
-from .tree import PathTree
+from .filter import Filter, KeyWord, KeyWords, PathFiltering  # 4
+from .register import ListRegister  # 5
+from .scanner import FolderScan  # 5
+from .tree import PathTree  # 0
 
 
 class FileFiltering[FileT: File](Filter[str, FileT], Protocol):

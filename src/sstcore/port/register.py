@@ -3,8 +3,7 @@ Define the Shape of the Core Registry
 
 - 1 Interface for Any type of Vaults -> enable independent data handling
 
-                                                 DependencyLevel[2]
-                                                        - filter(1)
+                                    DependencyLevel.sstcore.port[5]
 """
 
 __all__: list[str] = [
@@ -27,9 +26,9 @@ from collections.abc import Callable, Hashable, Iterator, Mapping, Sequence
 from enum import auto
 from typing import Any, Protocol, Self
 
-from .attach import LazyDescriptor, PolicyDescriptor
-from .filter import Filter
-from .govern import EnumIndex, PolicyEnum
+from .attach import LazyDescriptor, PolicyDescriptor  # 3
+from .filter import Filter  # 4
+from .solid import EnumIndex, PolicyEnum  # 1
 
 
 class VaultPolicy(PolicyEnum):
@@ -53,7 +52,7 @@ type Predicate[T] = Callable[[T], bool]
 type Selector[T] = Key | Index | Predicate[T] | tuple[Any, ...]
 
 
-class Registry[Item, Vault: Vault1](Protocol):
+class Registry[Item, Vault: Vault1](Protocol):  # RENAME:??
     """Define the Shape of the General Registry"""
 
     vault: Vault

@@ -7,7 +7,7 @@ Define the Shape of the Filters
 - PathFiltering: Path specification
 - ProjectFiltering: Programming Project specification
 
-                                                 DependencyLevel[1]
+                                    DependencyLevel.sstcore.port[4]
 """
 
 __all__: list[str] = [
@@ -26,7 +26,7 @@ from enum import IntEnum, auto
 from pathlib import Path
 from typing import Protocol, Self, overload
 
-from .raising import FailedHackError
+from .raising import FailedHackError  # 3
 
 
 class FilterSpec[SetType](Protocol):

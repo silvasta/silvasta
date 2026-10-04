@@ -1,15 +1,11 @@
 """
-Define the Shape of the Core
+Draw the Shape of the Core
 
-Check here:
-- Blueprint of any important structure
-
-Purpose:
-- Dependency Resolution
-- Definition and Typing
-- Documentation
-                                                 DependencyLevel[0]
-"""  # TODO: doc
+- Resolve Dependency issues by inverting them
+- Sketch and Annotate specialized objects
+- Document the Library from the Central
+                                         DependencyLevel.sstcore[0]
+"""
 
 __all__: list[str] = [
     "SstSystem",

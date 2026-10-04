@@ -2,7 +2,7 @@
 Define the Shape of the Field Descriptors
 
 - Attach attributes to Classes
-                                                 DependencyLevel[0]
+                                    DependencyLevel.sstcore.port[3]
 """
 
 __all__: list[str] = [
@@ -30,9 +30,9 @@ from typing import Protocol as _Protocol
 from typing import Self as _Self
 from typing import overload as _overload
 
-from .calling import Calling
-from .govern import PolicyEnum
-from .raising import Raiser
+from .calling import Calling  # 0
+from .raising import Raiser  # 2
+from .solid import PolicyEnum  # 1
 
 type Types[T] = type[T] | tuple[type, ...]  # TODO: tuple[T,???]
 

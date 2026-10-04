@@ -9,8 +9,7 @@ Combine Boot, Interface and Distribution:
 - Printer: Nice UX and DX
 
 System: The sst Director
-                                                 DependencyLevel[7]
-                                                         printer(6)
+                                   DependencyLevel.sstcore.port[10]
 """
 
 # STRATEGY: naming check Spec,Data,Inputs,... globally!!

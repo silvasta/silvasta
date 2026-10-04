@@ -3,6 +3,7 @@ The Model and Data Definition
 
 - Designed to test the limits while still producing results
 
+                               DependencyLevel.sstcore.port.link[0]
 """
 
 __all__: list[str] = [
@@ -23,23 +24,22 @@ __all__: list[str] = [
 ]
 
 
-import enum as _e
-import typing as _t
-from collections.abc import Mapping as _Mapping
-from collections.abc import Sequence as _Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from enum import StrEnum, auto
 from types import MappingProxyType as _FixMap
+from typing import NamedTuple, Protocol
 
-type Docs = _Sequence[Doc]
-type DocMap = _Mapping[DocKey, Doc]
+type Docs = Sequence[Doc]
+type DocMap = Mapping[DocKey, Doc]
 
-type PortDocs = _Sequence[PortDoc]
-type PlugDocs = _Sequence[PlugDoc]
+type PortDocs = Sequence[PortDoc]
+type PlugDocs = Sequence[PlugDoc]
 
 
 type DocKey = tuple[str, type]
 
 
-class Doc(_t.NamedTuple):
+class Doc(NamedTuple):
     """Store atomic __doc__ text from attributes mounted to source (owner)"""
 
     text: str
@@ -64,9 +64,9 @@ class PortLinkData:
 
     __slots__ = ("data",)
 
-    data: _Mapping[DocKey, Doc]
+    data: Mapping[DocKey, Doc]
 
-    def __iter__(self) -> _t.Iterator[Doc]:
+    def __iter__(self) -> Iterator[Doc]:
         return iter(self.data.values())
 
     def __len__(self) -> int:
@@ -120,9 +120,9 @@ class PortLinkDocs(PortLinkData):
 
     def __init__(self, data: Docs | DocMap = ()):
         match data:
-            case _Mapping() as mapping:
+            case Mapping() as mapping:
                 self.data: _FixMap[DocKey, Doc] = _FixMap(mapping)
-            case _Sequence() as sequence:
+            case Sequence() as sequence:
                 self.data: _FixMap[DocKey, Doc] = _FixMap(
                     mapping={doc.key: doc for doc in sequence}
                 )
@@ -149,10 +149,10 @@ class PortLinks(PortLinkData):
         match data:
             case Doc() as doc:
                 self[doc.key] = doc
-            case _Mapping():
+            case Mapping():
                 for key, value in data.items():
                     self[key] = value
-            case _Sequence():
+            case Sequence():
                 for doc in data:
                     self[doc.key] = doc
 
@@ -169,11 +169,11 @@ class PortLinks(PortLinkData):
         return PortLinkDocs(self.data)
 
 
-class SidePolicy(_e.StrEnum):
+class SidePolicy(StrEnum):
     """Define Rules for the PortDoc and PlugDoc DTO and provide Access"""
 
-    PORT = _e.auto()
-    PLUG = _e.auto()
+    PORT = auto()
+    PLUG = auto()
 
     @classmethod
     def assess(cls, data: Doc, /) -> SidePolicy:
@@ -193,11 +193,11 @@ class SidePolicy(_e.StrEnum):
             case self.PORT:
                 if not isinstance(data, PortDoc):
                     return False
-                return issubclass(data.source, _t.Protocol)
+                return issubclass(data.source, Protocol)
             case self.PLUG:
                 if not isinstance(data, PlugDoc):
                     return False
-                return not issubclass(data.source, _t.Protocol)
+                return not issubclass(data.source, Protocol)
 
     @property
     def retrieve(self) -> type[PortDoc | PlugDoc]:

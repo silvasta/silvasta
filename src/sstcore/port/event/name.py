@@ -10,7 +10,7 @@ EventNames:
   Pattern:  "{surface}.{entity}.{action}"
   Wildcard: "{surface|*}.{entity|*}.{action|*}"
 
-                                                 DependencyLevel[0]
+                              DependencyLevel.sstcore.port.event[0]
 """
 
 __all__: list[str] = [

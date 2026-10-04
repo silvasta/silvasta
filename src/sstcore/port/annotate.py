@@ -4,7 +4,7 @@ Write and Expose the Shape of the Dynamically created Classes
 - Analyze Mixins and Combinatorials and Draw the Result
 - Provide the Type Checker with best Information (UX++)
 
-                                    DependencyLevel.sstcore.port[1]
+                                    DependencyLevel.sstcore.port[4]
 """
 
 __all__: list[str] = [
@@ -22,8 +22,8 @@ from typing import Any, ClassVar, Self
 from typing import Protocol as _Protocol
 
 from .attach import ConfigDescriptor
-from .govern import Machine, Mode
-from .shape import Typer
+from .shape import Typer  # 0
+from .solid import EnumMachine, EnumMode  # 1
 
 
 class MetaAnnotator(Typer, _Protocol):
@@ -49,13 +49,13 @@ class LazyTyper(Typer, _Protocol):
 #  LINE: -- Automat -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class JobKind(Mode):
+class JobKind(EnumMode):
     STACK = "stack"
     PROTOCOL = "protocol"
     MIXIN = "mixin"
 
 
-class StubFileGenerator(Machine):
+class StubFileGenerator(EnumMachine):
     """Execute the Mechanical and Rule based part of the pyi writing"""
 
     def report(self):  # TODO: think about invisible logging
@@ -96,7 +96,7 @@ class JobDTO1:
 
 @_dataclass(frozen=True)
 class StubJobDTO:
-    """The Universal Blueprint for the Writer Machine"""
+    """The Universal Blueprint for the Writer EnumMachine"""
 
     target_module: str  # e.g., "sstcore.brick.stack"
     class_name: str  # e.g., "StackCore"
@@ -135,7 +135,7 @@ class StubJob2:
 
 @_dataclass(frozen=True, slots=True)
 class StubJob3:
-    """Work order for StubFileMachine. No callables, no paths as objects."""
+    """Work order for StubFileEnumMachine. No callables, no paths as objects."""
 
     kind: JobKind
     public: str  # DTO_STACK

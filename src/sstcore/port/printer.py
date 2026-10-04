@@ -1,8 +1,7 @@
 """
 print
 
-                                                 DependencyLevel[6]
-                                                            view(5)
+                                    DependencyLevel.sstcore.port[9]
 """
 
 __all__: list[str] = [
@@ -23,10 +22,10 @@ from typing import Any, Literal, Required, TypedDict, Unpack
 from typing import Protocol as Protocol
 
 from .calling import Richable
-from .color import ColorBox, ColorIdentifier
+from .color import ColorBox, ColorIdentifier  # 6
 from .config import ProjectInformation
-from .event.dto import CliDTO
-from .view import Renderable
+from .event.dto import CliDTO  # 7
+from .view import Renderable  # 8
 
 
 class PrintSpec(TypedDict, total=False):
@@ -205,6 +204,7 @@ class SpecialPrint(Protocol):
 class Printer(Protocol):
     """TEMP"""
 
+    __call__: Print
     info: ProjectInformation  # TASK: descriptor?!
 
     # def set_info(self, info: ProjectInformation) -> None:

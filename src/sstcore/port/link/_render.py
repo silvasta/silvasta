@@ -2,6 +2,8 @@
 The Docstring Merging Render Engine
 
 - Setup prepared with possibilities to grow
+
+                               DependencyLevel.sstcore.port.link[2]
 """
 
 import enum as _e
@@ -10,7 +12,7 @@ from contextlib import contextmanager
 from typing import Any
 
 from ..calling import Stringable
-from ..govern import EnumMachine
+from ..solid import EnumMachine
 from ._define import LinkSpec
 from ._model import Doc, Docs, PlugDoc, PortDoc, SidePolicy
 

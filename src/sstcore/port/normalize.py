@@ -5,7 +5,7 @@ Define the Shape of the Processing Pipelines
 - norm: fragile input -> stable output
 - labor: input and mission -> result
 
-                                                 DependencyLevel[0]
+                                    DependencyLevel.sstcore.port[0]
 """
 
 __all__: list[str] = [

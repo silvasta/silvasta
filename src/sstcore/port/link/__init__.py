@@ -9,6 +9,7 @@ Reference the Implementations back to their Definitions in the port
 
 - Trigger static type checker warning on implementation mismatch
 
+                                    DependencyLevel.sstcore.port[3]
 """
 
 __all__: list[str] = [
@@ -50,7 +51,6 @@ from ._define import (
     PortLinker,
     Reflecting,
 )
-from ._easy import PortOperator
 from ._model import (
     Doc,
     PlugDoc,
@@ -60,6 +60,7 @@ from ._model import (
     PortLinks,
     SidePolicy,
 )
+from ._operator import PortOperator
 from ._render import MergeMachine
 
 spec = LinkSpec(merge=MergeMachine.Schema1)

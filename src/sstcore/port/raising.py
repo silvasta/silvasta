@@ -5,7 +5,8 @@ Provide Namespace for Exceptions before SstError is ready
 - sstcore.brick[L1] Build essential parts of the Errors
 - sstcore. port[L0] Generally No Errors needed...
 
-                                                 DependencyLevel[0]
+                                    DependencyLevel.sstcore.port[2]
+
 """
 
 __all__: list[str] = [
@@ -14,9 +15,9 @@ __all__: list[str] = [
 ]
 
 from dataclasses import dataclass
-from typing import Any, Literal, NamedTuple, Never, NoReturn, TypedDict, Unpack
+from typing import Any, Never, NoReturn, Self, TypedDict, Unpack
 
-from .govern import EnumMachine, EnumZero
+from .solid import EnumMachine, EnumZero
 
 
 class SstCoreError(Exception):
@@ -35,21 +36,16 @@ class SstCoreError(Exception):
         _vars = [f"{k}={v!r}" for k, v in vars(self).items()]
         return f"{type(self).__name__}[{', '.join(_vars)}]"
 
-    @classmethod
-    # IDEA: extend this latest in SstError
+    @classmethod  # STRATEGY: do this latest in SstError!
     def panic(cls, reason: EnumZero): ...
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-type ErrorPair[ErrorT] = SstCoreError | Exception
-type Single[ErrorT] = SstCoreError | None
-
 
 class ErrorInput(TypedDict, total=False):
     """Define the Kwarg Space of the Error Pipeline"""
 
-    # NOTE: text??
     expected: dict
     received: dict
 
@@ -60,21 +56,23 @@ class ErrorData:
 
     reason: Raiser
 
-    # IDEA: instead of dict and tuple reconstructing dict:
-    # - use PortLinkData as template, create Edit/Static-Dict?
-    # - combine expected/received,
-
-    expected: tuple[tuple[str, Any], ...] = ()
-    received: tuple[tuple[str, Any], ...] = ()
+    # LATER:
+    # expected: tuple[tuple[str, Any], ...] = ()
+    # received: tuple[tuple[str, Any], ...] = ()
+    expected: dict[str, Any] | None = None
+    received: dict[str, Any] | None = None
 
     extra: dict[str, Any] | None = None  # CHECK: can here something change?
 
-
-class ErrorEntry(NamedTuple):  # IDEA: something like this?
-    name: str
-    value: Any
-    cat: Literal["expected", "received", "extra"]
-    info: str | None = None
+    @classmethod
+    def sanitize(cls, reason: Raiser, **kwargs: Unpack[ErrorInput]) -> Self:
+        """Extract the ErrorInput kwargs to form the ErrorData"""
+        return cls(
+            reason=reason,
+            expected=kwargs.get("expected"),
+            received=kwargs.get("received"),
+            extra=kwargs.get("extra"),
+        )
 
 
 @dataclass(frozen=True)
@@ -102,13 +100,13 @@ class ErrorMachine(EnumMachine):
     def custom(
         cls,
         # CHECK: data: ErrorData,
-        data: Any,
+        _data: Any,
     ) -> type[SstCoreError]:
         """Get Custom Exception registred in Raiser"""
         return SstCoreError
 
     @classmethod
-    def builtin(cls, data: ErrorData) -> type[Exception] | None:
+    def builtin(cls, _data: ErrorData) -> type[Exception] | None:
         """Find Builtin Exception if registred in Raiser"""
         return Exception
 
@@ -167,7 +165,7 @@ class Raiser(EnumZero):
 
     def sanitize(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorData:
         """Extract the ErrorInput to form the ErrorData"""
-        return ErrorData(self, *args, **kwargs)
+        return ErrorData.sanitize(self, *args, **kwargs)
 
     def order(self, data: ErrorData) -> ErrorDTO:
         """Produce the final ErrorDTO with the recipe in ErrorData"""
@@ -182,8 +180,7 @@ class Raiser(EnumZero):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# MOVE: to ._error?
-class FailedDispatchError(SstCoreError, NotImplementedError):
+class FailedDispatchError(SstCoreError, NotImplementedError):  # MOVE: ._error?
     # TASK: sync with NotImplementedDispatchError
     """Raise on missing TargetType for singledispatch(method)"""
 
