@@ -18,18 +18,20 @@ from pathlib import Path
 from typing import Unpack
 
 from ..port.config import Config
-from ..port.event import BusRegistration
+from ..port.event import BusRegistration, EventBus
 from ..port.printer import Printer
 from ..port.system import (
     BusLoader,
+    CliSystemInput,
     ConfigLoader,
     SstSystem,
-    SystemCliArgs,
     SystemLoader,
 )
 from ._core import System
 from .config import ConfigManager, HomeSetup, SstPaths, SstSettings
-from .event import EventBus
+from .event import Bus
+
+t = System.boot()
 
 
 def sst_system_loader(  # intended for project configs
@@ -40,7 +42,7 @@ def sst_system_loader(  # intended for project configs
 ) -> SystemLoader:
     """Prepare Loader function ready to setup System"""
 
-    def loader(**cli_args: Unpack[SystemCliArgs]) -> SstSystem:
+    def loader(**cli_args: Unpack[CliSystemInput]) -> SstSystem:
         return System.boot(
             config_loader=config_loader,
             bus_loader=bus_loader,
@@ -84,7 +86,7 @@ def sst_bus_loader(
     """Prepare Loader function ready to setup EventBus"""
 
     def loader() -> EventBus:
-        return EventBus.ready(
+        return Bus.ready(
             bus_registration=bus_registration,
             use_default_registration=use_default_registration,
         )

@@ -15,42 +15,29 @@ __all__: list = [
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
 from ..port.config import Config
-from ..port.event import EventBus as EventBus
+from ..port.event import EventBus
 from ..port.event.emit import Emitter as Emitter_
 from ..port.event.name import CoreEvent, EventName
 from ..port.printer import Printer
+
+# NEXT:
 from ..port.system import (
     BusLoader,
     ConfigLoader,
     SstSystem,
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    SystemCliArgs,
-    SystemCliInput,
+    SystemBootData,
+    SystemBootParam,
 )
 from ..util.log import setup_minimal_logging
-from ..util.print import printer as global_printer
+from ..util.print import PrinterFactory
 from .config import ConfigManager
-from .event import Emitter
-from .event import EventBus as Bus
+from .event import Bus, Emitter
 
 
 class System:
     """Combine the Essentials to work together as one System"""
 
-    def __init__(
-        self,
-        bus: EventBus,
-        config: Config,
-        printer: Printer,
-    ):
+    def __init__(self, bus: EventBus, config: Config, printer: Printer):
         self.bus: EventBus = bus
         self.config: Config = config
         self.printer: Printer = printer
@@ -63,32 +50,37 @@ class System:
     @classmethod
     def boot(
         cls,
-        *,
-        config_loader: ConfigLoader | None = None,
-        bus_loader: BusLoader | None = None,
-        printer: Printer | None = None,
-        **cli_args: Unpack[SystemCliArgs],
+        # *,
+        # config_loader: ConfigLoader | None = None,
+        # bus_loader: BusLoader | None = None,
+        # printer: Printer | None = None,
+        # **cli_args: Unpack[CliSystemInput],
+        #
+        **data: Unpack[SystemBootParam],
     ) -> Self:
         """Assemble Config, wire Bus, ensure Printer and launch the System"""
 
-        args = SystemCliInput(**cli_args)  # LATER: with cast.args decorator
+        param = SystemBootData(**data)
 
-        setup_minimal_logging(level="DEBUG" if args.verbose else "WARNING")
+        setup_minimal_logging(level="DEBUG" if param.verbose else "WARNING")
 
-        config_loader: ConfigLoader = config_loader or ConfigManager.bootstrap
-        config: Config = config_loader(
-            setting_file=args.settings, home_setup=args.home
+        loader: ConfigLoader = param.config_loader or ConfigManager.bootstrap
+        config: Config = loader(
+            # NEXT: verbose,quiet may be useful as well!
+            # - how to backtransforming mixed DTOs?
+            setting_file=param.settings,
+            home_setup=param.home,
         )
 
-        config.launch_log_setup(verbose=args.verbose, quiet=args.quiet)
+        config.launch_log_setup(verbose=param.verbose, quiet=param.quiet)
 
-        bus_loader: BusLoader = bus_loader or Bus.ready
+        bus_loader: BusLoader = param.bus_loader or Bus.ready
         bus: EventBus = bus_loader()
 
-        system_printer: Printer = printer or global_printer
-        system_printer.set_info(config.project_info)
+        printer: Printer = param.printer or PrinterFactory.make()
+        printer.info = config.project_info
 
-        system: Self = cls(config=config, printer=system_printer, bus=bus)
+        system: Self = cls(config=config, printer=printer, bus=bus)
         system.emit(event=CoreEvent.BUS_READY, sender="System")
 
         return system

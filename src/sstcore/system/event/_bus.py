@@ -6,23 +6,24 @@ Provide Infrastructure for Events
                                                        DependencyLevel[1]
 """
 
-from typing import TYPE_CHECKING, Self
-
 __all__: list[str] = [
-    "EventBus",
+    "Bus",
 ]
 
 import fnmatch
 from functools import lru_cache
+from typing import TYPE_CHECKING, Self, Unpack
 
-from ...brick.format import clsname
-from ...port.event import BusRegistration, Event, EventHandler
-from ...port.event import EventBus as EventBus_
+from ...brick.labor import clsname
+from ...port.event import Event, EventBus, EventHandler
 from ...port.event.name import CoreEvent, EventName, EventPattern
+from ...port.link import portlink
+from ...port.system import BusData, BusInput, BusLoader
 from ._handler import register_default_event_handler
 
 
-class EventBus:
+@portlink(EventBus)
+class Bus:
     """Enable decoupled state propagation for synchronous Events"""
 
     def __init__(self) -> None:
@@ -78,19 +79,17 @@ class EventBus:
         return tuple(dict.fromkeys(matched_handlers))
 
     @classmethod
-    def ready(
-        cls,
-        bus_registration: BusRegistration | None = None,
-        use_default_registration=True,
-    ) -> Self:
+    def ready(cls, **data: Unpack[BusInput]) -> Self:
         """Load EventBus explicit as one-time initialization"""
+
+        spec = BusData(**data)
         bus: Self = cls()
 
-        if use_default_registration:
+        if spec.use_default_registration:
             register_default_event_handler(bus)
 
-        if bus_registration:
-            bus_registration(bus)
+        if spec.bus_registration:
+            spec.bus_registration(bus)
 
         bus.emit(
             event_name=CoreEvent.BUS_DIAG,
@@ -113,5 +112,6 @@ def _get_patterns(
 
 
 if TYPE_CHECKING:
-    _instance_check: EventBus_ = EventBus()
-    _class_check: type[EventBus_] = EventBus
+    _loader: BusLoader = Bus.ready
+    _instance_check: EventBus = Bus()
+    _class_check: type[EventBus] = Bus

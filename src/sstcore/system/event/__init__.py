@@ -6,7 +6,7 @@ Wire the Event Infrastructure
 """
 
 __all__: list[str] = [
-    "EventBus",
+    "Bus",
     "EventHandler",
     #
     "Emitter",
@@ -15,5 +15,5 @@ __all__: list[str] = [
 ]
 
 
-from ._bus import EventBus, EventHandler
+from ._bus import Bus, EventHandler
 from ._emit import Emitter

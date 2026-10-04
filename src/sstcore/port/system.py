@@ -4,7 +4,7 @@ Define the Shape of the System
 - Central Layer of the Core Orchestration
 
 Combine Boot, Interface and Distribution:
-- EventBus: Handler and Emitter
+- Bus: Handler and Emitter
 - Config: Settings and Paths
 - Printer: Nice UX and DX
 
@@ -12,7 +12,12 @@ System: The sst Director
                                                  DependencyLevel[7]
                                                          printer(6)
 """
-# - IMPORTANT: naming check Spec,Data,Inputs,... globally!!
+
+# STRATEGY: naming check Spec,Data,Inputs,... globally!!
+
+# IDEA: TypedDictInput->Spec
+# DataClass(OrValidated)->Param, or just DTO?
+# param = SystemBootDTO(**data:SystemBootParam)
 
 __all__: list[str] = [
     "SstSystem",
@@ -23,32 +28,14 @@ __all__: list[str] = [
     "BusLoader",
 ]
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NotRequired, Protocol, Self, TypedDict, Unpack
+from typing import Protocol, Self, TypedDict, Unpack
 
-from .config import Config, HomeSetup
-from .event import EventBus
+from .config import Config, HomeSetup, Paths, Settings
+from .event import BusRegistration, EventBus
 from .event.emit import Emitter
 from .printer import Printer
-
-
-class SystemLoader[SysT: SstSystem](Protocol):
-    def __call__(self, **cli_args: Unpack[CliSystemInput]) -> SysT:
-        """Boot the System with the provided (optional?) args"""
-
-
-class SystemLoading[SysT: CliSystem](Protocol):
-    def __call__(
-        self, **tool_spec: Unpack[CliSystemToolSpec]
-    ) -> SystemLoader[SysT]:
-        """Bind the tools to the system and make it ready to boot"""
-
-
-# TASK: Protocol with TypedDict args?
-type ConfigLoader = Callable[..., Config]
-type BusLoader = Callable[..., EventBus]
 
 
 class SstSystem(Protocol):
@@ -63,11 +50,11 @@ class SstSystem(Protocol):
         """- Boot without Input"""
 
 
-class CliSystem(SstSystem, Protocol):
+class CliSystem[C: Config](SstSystem, Protocol):
     """The SstSystem provides ..."""
 
     @property
-    def config(self) -> Config: ...
+    def config(self) -> C: ...
     @property
     def printer(self) -> Printer: ...
     @property
@@ -78,39 +65,33 @@ class CliSystem(SstSystem, Protocol):
         # TASK: second TypedDict for loader?
         # - maybe with concat?
         cls,
-        *,
-        config_loader: ConfigLoader | None = None,
-        bus_loader: BusLoader | None = None,
-        printer: Printer | None = None,
-        # **tool_spec: Unpack[CliSystemToolSpec],
-        **cli_args: Unpack[CliSystemInput],
+        # *,
+        # config_loader: ConfigLoader | None = None,
+        # bus_loader: BusLoader | None = None,
+        # printer: Printer | None = None,
+        # # AI: concatenate or how could this work?
+        # # **tool_spec: Unpack[CliSystemToolSpec],
+        # **cli_args: Unpack[CliSystemInput],
+        **data: Unpack[SystemBootParam],
     ) -> Self:
         """Accept Changes and Provide the full Infrastructure"""
 
 
-class CliSystemToolSpec(TypedDict, total=False):  # CHECK: total=True??
-    config_loader: ConfigLoader
-    bus_loader: BusLoader
-    printer: Printer
+#  LINE: -- System Boot -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class SystemLoader[SysT: SstSystem](Protocol):
+    def __call__(self, **cli_args: Unpack[CliSystemInput]) -> SysT:
+        """Boot the System with the provided (optional?) args"""
 
 
 class CliSystemInput(TypedDict, total=False):
-    """Provide Typed Args for the System CLI Setup"""
+    """Govern the ArgSpace for the CLI System Setup"""
 
-    # CHECK: was needed for _attach_internal_callback...
     verbose: bool
     quiet: bool
-    # settings: NotRequired[Path | None]  # CHECK:
-    # settings: Path  # CHECK:
-    settings: NotRequired[Path]  # CHECK:
+    settings: Path | None
     home: HomeSetup
-
-
-@dataclass
-class CliSystemTools:
-    config_loader: ConfigLoader | None = None
-    bus_loader: BusLoader | None = None
-    printer: Printer | None = None
 
 
 @dataclass
@@ -123,7 +104,74 @@ class CliSystemData:
     home: HomeSetup = HomeSetup.PROJECT
 
 
-#  LINE: -- tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class SystemLoading[SysT: CliSystem](Protocol):
+    """Bind the tools to the system and make it ready to boot"""
+
+    def __call__(
+        self, **tool_spec: Unpack[CliSystemToolSpec]
+    ) -> SystemLoader[SysT]: ...
+
+
+class CliSystemToolSpec(TypedDict, total=False):  # CHECK: total=True??
+    config_loader: ConfigLoader
+    bus_loader: BusLoader
+    printer: Printer
+
+
+@dataclass
+class CliSystemTools:
+    config_loader: ConfigLoader | None = None
+    bus_loader: BusLoader | None = None
+    printer: Printer | None = None
+
+
+class SystemBootParam(CliSystemToolSpec, CliSystemInput): ...
+
+
+@dataclass
+class SystemBootData(CliSystemData, CliSystemTools): ...
+
+
+#  LINE: -- Config -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class ConfigLoader[P: Paths, S: Settings](Protocol):
+    # class ConfigLoader[C: Config](Protocol):
+    def __call__(self, **options: Unpack[ConfigInput[P, S]]) -> Config:
+        # CHECK: -> Config[N: Names, D: Defaults, S: Settings, P: Paths] ??
+        """Prepare the Configmanager bootstrap with all 4 components"""
+
+
+class ConfigInput[P: Paths, S: Settings](TypedDict, total=False):
+    settings_cls: type[S]
+    paths_cls: type[P]
+    setting_file: Path | None
+    project_name: str | None
+    project_root: Path | None
+    home_setup: HomeSetup | None
+
+
+#  LINE: -- Bus -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class BusLoader(Protocol):
+    def __call__(self, **options: Unpack[BusInput]) -> EventBus:
+        """Prepare the Bus - Ready to Launch with all Subscribers"""
+
+
+class BusInput(TypedDict, total=False):
+    bus_registration: BusRegistration | None
+    use_default_registration: bool
+
+
+@dataclass
+class BusData:
+    bus_registration: BusRegistration | None = None
+    use_default_registration: bool = True
+
+
+# LATER: remove
+# LINE: -- tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def _check_toolspec_binder(

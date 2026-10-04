@@ -19,6 +19,8 @@ from .name import EventName, EventPattern
 
 type BusRegistration = Callable[[EventBus], None]
 
+# NEXT: doc import
+
 
 @dataclass(frozen=True)
 class Event:
