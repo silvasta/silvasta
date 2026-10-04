@@ -15,5 +15,13 @@ __all__: list[str] = [
 ]
 
 
+from ...port.printer import Printer
 from . import _box as box
 from ._compose import printer
+
+
+class PrinterFactory:
+    @classmethod
+    def make(cls) -> Printer:
+        """Temporary Improvisation"""
+        return printer

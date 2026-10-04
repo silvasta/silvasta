@@ -24,14 +24,11 @@ from ._handler import register_default_event_handler
 
 @portlink(EventBus)
 class Bus:
-    """Enable decoupled state propagation for synchronous Events"""
-
     def __init__(self) -> None:
         self._subscribers: dict[EventPattern, list[EventHandler]] = {}
         self._global_subscribers: list[EventHandler] = []
 
     def emit(self, event_name: EventName, sender: str, **payload) -> None:
-        """Fire an Event to all global and event-specific subscribers"""
 
         event = Event(name=event_name, sender=sender, payload=payload)
 
@@ -42,11 +39,9 @@ class Bus:
             handler(event)
 
     def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
-        """Attach handler as subscriber to specific event"""
         self._subscribers.setdefault(name, []).append(handler)
 
     def subscribe_all(self, handler: EventHandler) -> None:
-        """Attach global handler as subscriber to all events"""
         self._global_subscribers.append(handler)
 
     @property
@@ -80,10 +75,9 @@ class Bus:
 
     @classmethod
     def ready(cls, **data: Unpack[BusInput]) -> Self:
-        """Load EventBus explicit as one-time initialization"""
 
-        spec = BusData(**data)
         bus: Self = cls()
+        spec = BusData(**data)
 
         if spec.use_default_registration:
             register_default_event_handler(bus)

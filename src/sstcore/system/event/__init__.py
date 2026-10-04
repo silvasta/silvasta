@@ -9,11 +9,11 @@ __all__: list[str] = [
     "Bus",
     "EventHandler",
     #
-    "Emitter",
+    "EmitCore",
     "LogEmitter",  # FIX:
     "CliEmitter",  # FIX:
 ]
 
 
 from ._bus import Bus, EventHandler
-from ._emit import Emitter
+from ._emit import EmitCore, LogEmitter

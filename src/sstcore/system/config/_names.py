@@ -21,13 +21,13 @@ from pydantic_settings import BaseSettings
 
 from ...brick.format.name import NameParser
 from ...brick.time import day_count
-from ...port.config import Names as Names_
+from ...port.config import Names
+from ...port.link import portlink
 from ...port.view import Stringable
 
 
+@portlink(Names)
 class SstNames(BaseSettings):
-    """Provide static and dynamic names created with parsing tools"""
-
     model_config = ConfigDict(extra="allow")
 
     # Directories in local root
@@ -48,6 +48,5 @@ class SstNames(BaseSettings):
 
 
 if TYPE_CHECKING:
-    # IDEA: Remove Names_??!!
-    _instance_check: Names_ = SstNames()
-    _class_check: type[Names_] = SstNames
+    _instance_check: Names = SstNames()
+    _class_check: type[Names] = SstNames

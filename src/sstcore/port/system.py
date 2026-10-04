@@ -28,7 +28,7 @@ __all__: list[str] = [
     "BusLoader",
 ]
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Protocol, Self, TypedDict, Unpack
 
@@ -50,7 +50,7 @@ class SstSystem(Protocol):
         """- Boot without Input"""
 
 
-class CliSystem[C: Config](SstSystem, Protocol):
+class CliSystem[C: Config, E: Emitter](SstSystem, Protocol):
     """The SstSystem provides ..."""
 
     @property
@@ -58,22 +58,10 @@ class CliSystem[C: Config](SstSystem, Protocol):
     @property
     def printer(self) -> Printer: ...
     @property
-    def emitter(self) -> Emitter: ...
+    def emitter(self) -> E: ...
 
     @classmethod
-    def boot(
-        # TASK: second TypedDict for loader?
-        # - maybe with concat?
-        cls,
-        # *,
-        # config_loader: ConfigLoader | None = None,
-        # bus_loader: BusLoader | None = None,
-        # printer: Printer | None = None,
-        # # AI: concatenate or how could this work?
-        # # **tool_spec: Unpack[CliSystemToolSpec],
-        # **cli_args: Unpack[CliSystemInput],
-        **data: Unpack[SystemBootParam],
-    ) -> Self:
+    def boot(cls, **data: Unpack[SystemBootParam]) -> Self:
         """Accept Changes and Provide the full Infrastructure"""
 
 
@@ -81,8 +69,19 @@ class CliSystem[C: Config](SstSystem, Protocol):
 
 
 class SystemLoader[SysT: SstSystem](Protocol):
-    def __call__(self, **cli_args: Unpack[CliSystemInput]) -> SysT:
-        """Boot the System with the provided (optional?) args"""
+    def __call__(self, **param: Unpack[CliSystemInput]) -> SysT:
+        """Boot the System with or without provided args"""
+
+
+class SystemLoading[SysT: CliSystem](Protocol):
+    """Bind the tools to the system and make it ready to boot"""
+
+    def __call__(
+        self, **spec: Unpack[CliSystemToolSpec]
+    ) -> SystemLoader[SysT]: ...
+
+
+#  LINE: -- System Kwarg Input -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class CliSystemInput(TypedDict, total=False):
@@ -92,6 +91,19 @@ class CliSystemInput(TypedDict, total=False):
     quiet: bool
     settings: Path | None
     home: HomeSetup
+
+
+class CliSystemToolSpec(TypedDict, total=False):
+    config_loader: ConfigLoader
+    bus_loader: BusLoader
+    printer: Printer
+
+
+class SystemBootParam(CliSystemToolSpec, CliSystemInput):
+    """Define Input with both layers of System Input"""
+
+
+#  LINE: -- System Param DTO -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @dataclass
@@ -104,20 +116,6 @@ class CliSystemData:
     home: HomeSetup = HomeSetup.PROJECT
 
 
-class SystemLoading[SysT: CliSystem](Protocol):
-    """Bind the tools to the system and make it ready to boot"""
-
-    def __call__(
-        self, **tool_spec: Unpack[CliSystemToolSpec]
-    ) -> SystemLoader[SysT]: ...
-
-
-class CliSystemToolSpec(TypedDict, total=False):  # CHECK: total=True??
-    config_loader: ConfigLoader
-    bus_loader: BusLoader
-    printer: Printer
-
-
 @dataclass
 class CliSystemTools:
     config_loader: ConfigLoader | None = None
@@ -125,30 +123,71 @@ class CliSystemTools:
     printer: Printer | None = None
 
 
-class SystemBootParam(CliSystemToolSpec, CliSystemInput): ...
-
-
 @dataclass
-class SystemBootData(CliSystemData, CliSystemTools): ...
+class SystemBootData(CliSystemData, CliSystemTools):
+    """Capture Param of both layers of System Params"""
+
+    @classmethod
+    def from_layers(
+        cls,
+        tools: CliSystemTools | None = None,
+        cli: CliSystemData | None = None,
+    ) -> Self:
+        return cls(
+            **asdict(tools or CliSystemTools()),
+            **asdict(cli or CliSystemData()),
+        )
+
+    def extract_base[T](self, target_cls: type[T]) -> T:
+        """Dynamically extract fields belonging to a base class"""
+        _kwargs = {f.name: getattr(self, f.name) for f in fields(target_cls)}  # ty:ignore
+        return target_cls(**_kwargs)
+
+    @property
+    def cli_data(self) -> CliSystemData:
+        """Provide separated CLI input data"""
+        return self.extract_base(CliSystemData)
+
+    @property
+    def cli_tools(self) -> CliSystemTools:
+        """Provide separated Tool Loaders"""
+        return self.extract_base(CliSystemTools)
 
 
 #  LINE: -- Config -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class ConfigLoader[P: Paths, S: Settings](Protocol):
-    # class ConfigLoader[C: Config](Protocol):
+    # FIX: this is just for full input...
+    # - bind by cli input, together with RENAME!!
     def __call__(self, **options: Unpack[ConfigInput[P, S]]) -> Config:
-        # CHECK: -> Config[N: Names, D: Defaults, S: Settings, P: Paths] ??
         """Prepare the Configmanager bootstrap with all 4 components"""
 
 
 class ConfigInput[P: Paths, S: Settings](TypedDict, total=False):
     settings_cls: type[S]
+    # AI: why here not None? why not everywhere or nowhere?
     paths_cls: type[P]
     setting_file: Path | None
     project_name: str | None
     project_root: Path | None
-    home_setup: HomeSetup | None
+    home_setup: HomeSetup
+
+
+@dataclass
+class ConfigData[P: Paths, S: Settings]:
+    settings_cls: type[S] | None = None
+    paths_cls: type[P] | None = None
+    setting_file: Path | None = None
+    project_name: str | None = None
+    project_root: Path | None = None
+    home_setup: HomeSetup = HomeSetup.GLOBAL
+
+    def paths(self, default: type[P]) -> type[P]:
+        return default if self.paths_cls is None else self.paths_cls
+
+    def settings(self, default: type[S]) -> type[S]:
+        return default if self.settings_cls is None else self.settings_cls
 
 
 #  LINE: -- Bus -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -185,6 +224,10 @@ _x = _check_toolspec_binder()  # INFO: check IDE input view here
 
 def _check_cli_input(**cli_args: Unpack[CliSystemInput]) -> CliSystemData:
     return CliSystemData(**cli_args)
+
+
+def _check_cli_data(data: CliSystemData):  # FAIL: no additional check
+    _check_cli_input(**asdict(data))
 
 
 _y = _check_cli_input()  # INFO: check IDE input view here

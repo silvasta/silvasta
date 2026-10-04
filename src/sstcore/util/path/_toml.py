@@ -29,9 +29,13 @@ from typing import TYPE_CHECKING, Self
 from loguru import logger
 
 from ...port.config import HomeSetup, ProjectInformation
+from ...port.link import portlink
 from ._search import get_project_root
 
+_x: HomeSetup  # CHECK: no issues without this in collect?
 
+
+@portlink(ProjectInformation)
 @dataclass
 class ProjectInfo:
     """Check toml to provide Config and Printer with Info"""
@@ -40,13 +44,17 @@ class ProjectInfo:
     version: str = "0.0.0"
 
     @classmethod
-    def collect(cls, home_setup, name: str | None = None) -> Self:
+    def collect(
+        cls,
+        # CHECK: home_setup,
+        name: str | None = None,
+    ) -> Self:
         try:
             name: str = name or pyproject_name()
-            info: Self = cls(name=name or pyproject_name())
+            info: Self = cls(name=name)
         except Exception as error:
-            if home_setup == HomeSetup.GLOBAL:
-                raise RuntimeError("Project Name Missing!") from error
+            # CHECK: if home_setup == HomeSetup.GLOBAL:
+            raise RuntimeError("Project Name Missing!") from error
         return info._update_version()
 
     def _update_version(self) -> Self:

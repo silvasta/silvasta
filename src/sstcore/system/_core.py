@@ -8,19 +8,21 @@ Load and combine all Components in one System.
                                                        DependencyLevel[2]??
 """
 
+from sstcore import portlink
+from sstcore.port import CliSystem
+
 __all__: list = [
     "System",
 ]
 
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
 from ..port.config import Config
 from ..port.event import EventBus
-from ..port.event.emit import Emitter as Emitter_
+from ..port.event.emit import Emitter
 from ..port.event.name import CoreEvent, EventName
 from ..port.printer import Printer
-
-# NEXT:
 from ..port.system import (
     BusLoader,
     ConfigLoader,
@@ -31,9 +33,11 @@ from ..port.system import (
 from ..util.log import setup_minimal_logging
 from ..util.print import PrinterFactory
 from .config import ConfigManager
-from .event import Bus, Emitter
+from .event import Bus, EmitCore
 
 
+@portlink(CliSystem)
+@portlink(SstSystem)
 class System:
     """Combine the Essentials to work together as one System"""
 
@@ -41,23 +45,14 @@ class System:
         self.bus: EventBus = bus
         self.config: Config = config
         self.printer: Printer = printer
-        self.emitter: Emitter_ = Emitter(self.bus)  # ty:ignore
+        self.emitter: Emitter = EmitCore(self.bus)  # ty:ignore
 
     def emit(self, event: EventName, sender: str, **payload: Any) -> None:
         """Provide direct bus access"""
         self.bus.emit(event, sender, **payload)
 
     @classmethod
-    def boot(
-        cls,
-        # *,
-        # config_loader: ConfigLoader | None = None,
-        # bus_loader: BusLoader | None = None,
-        # printer: Printer | None = None,
-        # **cli_args: Unpack[CliSystemInput],
-        #
-        **data: Unpack[SystemBootParam],
-    ) -> Self:
+    def boot(cls, **data: Unpack[SystemBootParam]) -> Self:
         """Assemble Config, wire Bus, ensure Printer and launch the System"""
 
         param = SystemBootData(**data)
@@ -65,13 +60,7 @@ class System:
         setup_minimal_logging(level="DEBUG" if param.verbose else "WARNING")
 
         loader: ConfigLoader = param.config_loader or ConfigManager.bootstrap
-        config: Config = loader(
-            # NEXT: verbose,quiet may be useful as well!
-            # - how to backtransforming mixed DTOs?
-            setting_file=param.settings,
-            home_setup=param.home,
-        )
-
+        config: Config = loader(**asdict(param.cli_data))
         config.launch_log_setup(verbose=param.verbose, quiet=param.quiet)
 
         bus_loader: BusLoader = param.bus_loader or Bus.ready

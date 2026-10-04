@@ -205,6 +205,7 @@ class SpecialPrint(Protocol):
 class Printer(Protocol):
     """TEMP"""
 
-    def set_info(self, info: ProjectInformation) -> None:
-        # TASK: descriptor?!
-        """Attach Project specific information for Printer layouts"""
+    info: ProjectInformation  # TASK: descriptor?!
+
+    # def set_info(self, info: ProjectInformation) -> None:
+    #     """Attach Project specific information for Printer layouts"""

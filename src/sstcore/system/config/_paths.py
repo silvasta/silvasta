@@ -14,40 +14,41 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ...port.config import Defaults, Homes, Names, Paths
+from ...port.link import portlink
 from ...util.path.guard import PathGuard
 from ._defaults import SstDefaults
 from ._homes import HomeSetup, SstHomes
 from ._names import SstNames
 
 
+@portlink(Paths)
 class SstPaths:
-    """Generate paths with the provided Names and Defaults"""
-
     def __init__(
         self,
         defaults: Defaults | None = None,
         names: Names | None = None,
         homes: Homes | None = None,
     ):
+        # LATER: Fields!!
         self._defaults: Defaults = defaults or SstDefaults()
         self._names: Names = names or SstNames()
-        self._homes: Homes = homes or SstHomes.from_setup(HomeSetup.GLOBAL)
+        self.homes: Homes = homes or SstHomes.from_setup(HomeSetup.GLOBAL)
 
     @PathGuard.Dir
     def project_root(self) -> Path:
-        return self._homes.root
+        return self.homes.root
 
     @PathGuard.Dir
     def config_dir(self) -> Path:
-        return self._homes.config
+        return self.homes.config
 
     @PathGuard.Dir
     def log_dir(self) -> Path:
-        return self._homes.log
+        return self.homes.log
 
     @PathGuard.Dir
     def data_dir(self) -> Path:
-        return self._homes.data
+        return self.homes.data
 
     @PathGuard.Dir
     def plot_dir(self) -> Path:
@@ -55,10 +56,9 @@ class SstPaths:
 
     @PathGuard.Dir
     def state_dir(self) -> Path:
-        return self._homes.state
+        return self.homes.state
 
     def dot_env(self) -> Path:
-        """Ensure .env File, create template for missing and raise"""
         return PathGuard.file(
             target=self.dot_env_unconfirmed,
             default_content=self._defaults.dot_env_content,
@@ -66,7 +66,6 @@ class SstPaths:
 
     @property
     def dot_env_unconfirmed(self) -> Path:
-        """Provide bare dot_env Path without any checks"""
         return self.config_dir / ".env"
 
     @PathGuard.unique(ensure_parent=True)
@@ -75,7 +74,6 @@ class SstPaths:
         return self.data_dir / filename
 
     def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
-        """Provide location for Scanner state data"""
         return (scan_root or self.state_dir) / self._names.scanner_cache_file
 
 

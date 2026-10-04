@@ -22,14 +22,14 @@ from pydantic_settings import BaseSettings
 
 from ...brick.time import nice_duration
 from ...port.config import Settings
+from ...port.link import portlink
 from ...util.log import LogParam
 from ._defaults import SstDefaults
 from ._names import SstNames
 
 
+@portlink(Settings)
 class SstSettings(BaseSettings):
-    """Contain Defaults, Names and Log, represent setting file"""
-
     file: Path  # TEST: hold the last loaded file path (useless for boot)
     defaults: SstDefaults = Field(default_factory=SstDefaults)
     names: SstNames = Field(default_factory=SstNames)
@@ -40,12 +40,10 @@ class SstSettings(BaseSettings):
     update_maxlen: int = 79
 
     @classmethod
-    def load(cls, file: Path) -> Self:
-        """Load current status from json"""  # LATER: compare file with Setting.file
+    def load(cls, file: Path) -> Self:  # LATER: compare file with Setting.file
         return cls.model_validate(json.loads(file.read_text(encoding="utf-8")))
 
     def save(self, file: Path) -> None:
-        """Refresh datetime and save current status to json"""
         self.file: Path = file
         before: datetime = self.last_updated
         self.touch()
@@ -66,7 +64,6 @@ class SstSettings(BaseSettings):
         )
 
     def touch(self) -> None:
-        """Update datetime and check maxlen of saved updates"""
         n_saved_update_times: int = self.update_maxlen
         if n_saved_update_times != (before := self.updates.maxlen):
             self.updates: deque[datetime] = deque(

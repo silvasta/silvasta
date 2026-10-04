@@ -7,22 +7,25 @@ Provide ergonomic facade on top of the EventBus
 """
 
 __all__: list[str] = [
-    "Emitter",
+    "EmitCore",
 ]
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from ...brick.view import Repr, Str, view
+from ...brick.views import Repr, Str
+from ...forge.view import view
 from ...port.event import EventBus
-from ...port.event.emit import Emitter as Emitter_
+from ...port.event.emit import Emitter
 from ...port.event.name import CliEvent, EventName
+from ...port.link import portlink
 from .emit import LogEmitter, ViewEmitter  # FIX:
 
 
+@portlink(Emitter)
 @dataclass(frozen=True)
 @view(str=Str.SHORT, repr=Repr.BOX)  # TODO: others?
-class Emitter:
+class EmitCore:
     # TASK: this as assembler, inside system.event._emit?
     """Lead the Distribution of globally wired Bus Entry Points"""
 
@@ -57,11 +60,3 @@ class Emitter:
     @property
     def _repr_box_text(self) -> str:
         return repr(self.bus)
-
-
-if TYPE_CHECKING:
-    from typing import cast
-
-    bus: EventBus = cast(EventBus, object())
-    _instance_check: Emitter_ = Emitter(bus)
-    _class_check: type[Emitter_] = Emitter

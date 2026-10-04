@@ -69,19 +69,6 @@ class XdgHomes(StrEnum):
 
 @dataclass
 class HomeDirs:
-    """
-    Create HomeDir Paths depending on Configuration
-
-    - Global:
-        Located at XDG_HOMES, e.g.:  ~/.config/NAME  or  ~/.local/share/NAME
-
-    - Project:
-        Located at project root usually identified by pyproject.toml
-
-    - Local:
-        Located at given path or usually CWD
-    """
-
     root: Path
     cache: Path
     config: Path

@@ -15,8 +15,6 @@ Path composition according to schema below.
                                                        DependencyLevel[0]
 """
 
-from sstcore.system.config import HomeSetup
-
 __all__: list[str] = [
     "HomeSetup",
     "SstHomes",
@@ -26,10 +24,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
-from ...port.config import Homes
+from ...port.config import Homes, HomeSetup
+from ...port.link import portlink
 from ...util.path import HomeDirs
 
 
+@portlink(Homes)  # CHECK: above dataclass? returns cls, just __doc__ injected
 @dataclass
 class SstHomes(HomeDirs):
     setup: HomeSetup
@@ -38,6 +38,7 @@ class SstHomes(HomeDirs):
     def from_setup(
         cls,
         setup: HomeSetup,
+        /,
         root: Path | None = None,
         name: str | None = None,
         dirs: HomeDirs | None = None,
@@ -46,7 +47,7 @@ class SstHomes(HomeDirs):
             case HomeSetup.GLOBAL:
                 if name:
                     return cls(**asdict(HomeDirs.at_global(name)), setup=setup)
-                message = "global setup needs project name..."
+                fail_reason = "global setup needs project name..."
 
             case HomeSetup.PROJECT:
                 return cls(**asdict(HomeDirs.at_project(root)), setup=setup)
@@ -57,12 +58,11 @@ class SstHomes(HomeDirs):
             case HomeSetup.CUSTOM:
                 if dirs:
                     return cls(**asdict(dirs), setup=setup)
-                message = "custom setup needs defined dirs..."
+                fail_reason = "custom setup needs defined dirs..."
 
-        raise RuntimeError(f"Bad home setup, {message}")
+        raise RuntimeError(f"Bad home setup, {fail_reason}")
 
 
 if TYPE_CHECKING:
     _instance_check: Homes = SstHomes(**dict())
     _class_check: type[Homes] = SstHomes
-    #
