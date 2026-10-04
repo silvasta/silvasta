@@ -10,7 +10,7 @@ from typing import Any, Protocol, Self
 
 from rich.tree import Tree
 
-from ....port.link._printer import QuickPrinter
+from ....port.link._render import _load_printer
 
 
 class SimpleTree(Protocol):
@@ -219,7 +219,7 @@ class SubclassTreeNode(SimpleTreeNode):
         )
 
 
-class Printy(QuickPrinter):
+class Printy(_load_printer()):
     def bases_tree(
         self, cls: type, *, expand_shared: bool = False
     ) -> MroTreeNode2:

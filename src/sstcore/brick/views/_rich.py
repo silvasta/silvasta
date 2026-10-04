@@ -6,6 +6,8 @@ Compose RichMixins
                              DependencyLevel.sstcore.brick.views[0]
 """
 
+from sstcore.port.calling import Richable
+
 __all__: list[str] = [
     "SimpleRichNameMixin",
     "RichNameMixin",
@@ -14,18 +16,19 @@ __all__: list[str] = [
 
 
 from ...port.color import ColorBox
-from ...port.view import Renderable
 from ..color import colorize
 from ..color.box import Colors
 from ..labor import reflect
 
-colors: ColorBox = Colors()
+colors = Colors()
+_c: ColorBox
+# colors: ColorBox = Colors()
 
 
 class SimpleRichNameMixin:
     """Show colorized class name"""
 
-    def __rich__(self) -> Renderable:
+    def __rich__(self) -> Richable:
         return colors(reflect.clsname(self), 3)
 
 
@@ -43,7 +46,7 @@ class RichNameMixin:
 
 
 class RichModuleNameMixin:
-    def __rich__(self) -> Renderable:
+    def __rich__(self) -> Richable:
         """Show module path from project to class name"""
         # LATER: select colors by class attributes?
         return colorize.modules(self)

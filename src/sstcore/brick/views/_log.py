@@ -14,7 +14,7 @@ __all__: list[str] = [
 from typing import Any
 
 from ...port.event.dto import LogDTO
-from ..labor import reflect
+from ..labor import scan
 
 
 class LogDataMixin:
@@ -24,7 +24,7 @@ class LogDataMixin:
         return LogDTO(
             message=str(self),
             level="INFO",
-            metrics=reflect.pydatic(self),
+            metrics=scan.pydantic(self),
         )
 
 

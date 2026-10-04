@@ -8,14 +8,13 @@ __all__: list[str] = [
     "dict_to_str",
     "dict_to_list",
     "list_to_str",
+    "dense_extract",
     "impossible_brackets",
     "format_kv",
 ]
 
 
 from typing import Any
-
-# NEXT: check -> Normalize
 
 
 def dict_to_list(data: dict[str, Any], sep="=") -> list[str]:
@@ -37,7 +36,11 @@ def dict_to_str(data: dict[str, Any], inner="=", outer=", ") -> str:
     return list_to_str(strings, sep=outer)
 
 
-# NOTE: Format?
+def dense_extract(self):
+    """Smash all 3 above into a condensed 1liner"""
+    return "-|-".join(f"{k}:={v}" for k, v in vars(self).items())
+
+
 def impossible_brackets(key: str) -> str:  # INFO: don't loose this
     """Needed for proper {key}"""
     return f"{{{key}}}"

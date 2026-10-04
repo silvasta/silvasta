@@ -46,10 +46,9 @@ Ghost = _GhostBaseEradicator()
 
 
 def example_pipeline():
-    """Show the type check mock workflow"""
-
-    # LATER: inject printer and show colorized MRO tables
     # NEXT: move to examples and use the printer there...
+    # LATER: inject printer and show colorized MRO tables
+    """Show the type check mock workflow"""
 
     class BaseClass:
         def base_method(self) -> None: ...
@@ -74,7 +73,7 @@ def example_pipeline():
         # Show the type checker the next step
         class _MediumStateMixin(EarlyMixin, BaseClass): ...
     else:  # Assign it directly! Do not use the `class` keyword.
-        _MediumStateMixin = Ghost
+        _MediumStateMixin = Ghost  # noqa:N806
 
     class LateMixin(_MediumStateMixin):
         def do_work(self) -> None:

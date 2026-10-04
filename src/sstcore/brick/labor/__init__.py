@@ -37,6 +37,7 @@ __all__: list[str] = [
 ]
 
 
+from . import _invoke as invoke
 from . import _mutate as mutate
 from . import _reflect as reflect
 from . import _scan as scan

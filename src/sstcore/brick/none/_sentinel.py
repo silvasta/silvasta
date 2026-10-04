@@ -44,7 +44,7 @@ def use_latest_features() -> bool:
 if use_latest_features():
     import builtins
 
-    sentinel = builtins.sentinel
+    sentinel = builtins.sentinel  # ty:ignore
 else:
 
     def sentinel(name: str, repr: str | None = None) -> Any:
