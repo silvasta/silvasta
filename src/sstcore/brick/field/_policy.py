@@ -14,7 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from ...port import attach
-from ...port.govern import EnumId, PolicyEnum
+from ...port.solid import EnumId, PolicyEnum
 from ._base import ReadField
 from ._extend import TypedField
 

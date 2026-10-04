@@ -12,7 +12,7 @@ EXPERIMENTAL
 from typing import Any, Protocol
 
 from ...port import attach
-from ...port.govern import Option
+from ...port.solid import EnumOption
 from ._base import NamedField
 from ._combine import DerivedField, Forward, LazyField, RequiredField
 from ._decorate import DecoratedField
@@ -21,14 +21,14 @@ from ._strategy import DynamicStrategy, StrategyField
 #  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class FieldOption(Option):
+class FieldOption(EnumOption):
     LAZY: type[NamedField] = LazyField
     REQUIRED: type[NamedField] = RequiredField
     DERIVED: type[NamedField] = DerivedField
     FORWARD: type[NamedField] = Forward
 
 
-class DecoFieldOption(Option):
+class DecoFieldOption(EnumOption):
     # IDEA: PathGuardField
     # Issue: lives in sstcore.util.path.guard...
     # -> assemble this at a very late point! directly before export
@@ -107,7 +107,7 @@ class _ExampleClass1:
     def test_fn4(self, *args, **kwargs) -> Any: ...
 
 
-class _FieldOption1(Option):
+class _FieldOption1(EnumOption):
     """Default on Index 0"""  # TODO: ensure in BaseEnum/EnumZero
 
     LAZY: type[NamedField] = LazyField
