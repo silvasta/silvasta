@@ -19,8 +19,6 @@ from .name import EventName, EventPattern
 
 type BusRegistration = Callable[[EventBus], None]
 
-# NEXT: doc import
-
 
 @dataclass(frozen=True)
 class Event:
@@ -37,10 +35,17 @@ class EventHandler(Protocol):
 
 
 class EventBus(Protocol):
-    def emit(
-        self, event_name: EventName, sender: str, **payload: Any
-    ) -> None: ...
-    def subscribe(self, name: EventPattern, handler: EventHandler) -> None: ...
-    def subscribe_all(self, handler: EventHandler) -> None: ...
+    """Enable decoupled state propagation for synchronous Events"""
+
+    def emit(self, event_name: EventName, sender: str, **payload: Any) -> None:
+        """Fire an Event to all global and event-specific subscribers"""
+
+    def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
+        """Attach handler as subscriber to specific event"""
+
+    def subscribe_all(self, handler: EventHandler) -> None:
+        """Attach global handler as subscriber to all events"""
+
     @classmethod
-    def ready(cls) -> Self: ...
+    def ready(cls) -> Self:
+        """Load EventBus explicit as one-time initialization"""

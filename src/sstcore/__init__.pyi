@@ -2,7 +2,7 @@
 sstcore - Generalize Project Patterns and Bootstrap with Batteries
 
 - System: Unite config, printer and bus and distribute
-- Emitter: Launch events from ergonomic facade
+- EmitCore: Launch events from ergonomic facade
 - Printer: Visualize fast and with comfort
 - ConfigManager: Bootstrap and simple access
 - SafeTyper: CLI Pipeline with defaults
@@ -49,7 +49,7 @@ Scratchpad and Experimental:
 
 __all__: list[str] = [
     "System",
-    "Emitter",
+    "EmitCore",
     "printer",
     "ConfigManager",
     "SafeTyper",
@@ -61,6 +61,6 @@ from .console import SafeTyper
 from .port.link import portlink
 from .system import System
 from .system.config import ConfigManager
-from .system.event import Emitter
+from .system.event import EmitCore
 from .util.path.guard import PathGuard
 from .util.print import printer

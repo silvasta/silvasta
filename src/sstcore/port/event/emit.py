@@ -49,7 +49,7 @@ class LogEmit(_Protocol):
         *,
         level: str = "INFO",
         **extra,
-    ) -> None:
+    ) -> None:  # IDEA: ->LogDTO:
         """Log to EventBus"""
 
 
@@ -99,5 +99,5 @@ class Emitter(_Protocol):
     log: LogEmitter
     cli: CliEmitter
 
-    def make(self, **defaults) -> Emitter | LogEmitter | CliEmitter: ...
+    def make(self, **defaults) -> Emit | LogEmitter | CliEmitter: ...
     def bind(self, event: _EventName, sender: str, **kwargs) -> BoundEmit: ...
