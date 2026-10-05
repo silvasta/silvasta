@@ -4,11 +4,12 @@ ListRegistry - Main Variation of the Core Registry
 -
 """
 
+from typing import Any
+
 __all__: list[str] = [
     "ListRegistry",
 ]
 
-from typing import Any, Literal
 
 from ...port.link import portlink
 from ...port.register import ListRegister
@@ -18,8 +19,6 @@ from .base import BaseVault
 @portlink(ListRegister)
 class ListRegistry[Item](BaseVault[Item, list, int, Any]):
     """Implement the Shape of the Registry with List"""
-
-    _prefered: Literal["str", "int"] = "int"
 
     def add(self, items: list[Item], override: bool = False) -> list[Item]:
 

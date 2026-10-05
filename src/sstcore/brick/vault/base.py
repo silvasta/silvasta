@@ -5,60 +5,65 @@ ListRegistry - Main Variation of the Core Registry
 """
 
 __all__: list[str] = [
+    "InitialVault",
     "BaseVault",
+    "VaultCore",
 ]
 
-from collections.abc import (
-    Callable,
-    Hashable,
-    Iterable,
-    Iterator,
-    Mapping,
-    Sequence,
-)
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, overload
 
+from ...brick.field import StrategyField
 from ...port.link import portlink
-from ...port.raising import SstCoreError
 from ...port.register import Register, VaultPolicy
+from ...port.register import registry_types as _reg
 from ..field import PolicyField
-from .vault import V2
 
 
-class RegistryError(SstCoreError): ...
+class InitialVault[Item, V: _reg.Vault]:
+    """Define and Ensure the needed Tasks"""
+
+    vault: V
+
+    def _empty(self) -> V:
+        raise NotImplementedError
+
+    def _as_vault(self, items: Item | V | Any, /) -> V:
+        raise NotImplementedError
+
+    def _merge(self, vault: V, incoming: V) -> V:
+        raise NotImplementedError
+
+    def _subtract(self, vault: V, targets: V) -> tuple[V, V]:
+        raise NotImplementedError
+
+    def _collisions(self, incoming: V) -> V:
+        raise NotImplementedError
+
+    def _at(self, uid) -> Item | None:
+        raise NotImplementedError
+
+    def _select(self, id) -> V:
+        raise NotImplementedError
+
+    def _slice(self, s: slice) -> V:
+        raise ValueError(f"Slicing not supported: {s!r}", s)
 
 
-type Vaults = Sequence | Mapping
-
-type Ident[Item] = Callable[[Item], Hashable]
-
-type List[T] = list[T]
-type Tuple[T] = tuple[T, ...]
-type Dict[K, T] = dict[K, T]
-
-type Vault1 = Sequence | Mapping
-type Vault2[T] = List[T] | Tuple[T] | Dict[Any, T]
-
-type Key = str
-type Index = int | slice
-type Predicate[T] = Callable[[T], bool]
-type Selector[T] = Key | Index | Predicate[T] | tuple[Any, ...]
-type Ident[Item] = Callable[[Item], Hashable]
-
-
-class CoreVault[Item, Vault: Vaults](V2):
-    vault: Vault
+class VaultCore[Item, V: _reg.Vault](InitialVault[Item, V]):
+    """Keep the powerful tool of the Vault[**]"""
 
     @overload
     def __getitem__(self, query: int) -> Item: ...
     @overload
     def __getitem__(
-        self, query: slice | Predicate | tuple[Any, ...]
-    ) -> Vault: ...
+        self, query: slice | _reg.Predicate | tuple[Any, ...]
+    ) -> V: ...
     @overload
     def __getitem__(self, query: str) -> Item: ...
-    def __getitem__(self, query: Selector[Item]) -> Item | Vault:
-        """Insert Selector and Extract Values from Vault"""
+
+    def __getitem__(self, query: _reg.Selector[Item]) -> Item | V:
+        """Insert Selector and Extract Values from V"""
         match query:
             case int() as idx:
                 return self._int_get(idx)
@@ -74,30 +79,20 @@ class CoreVault[Item, Vault: Vaults](V2):
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
     def _int_get(self, idx: int) -> Item:
+        # TODO: modify self._at without None and strict?
         return self.vault[idx]
 
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    def _slice_get(self, slx: slice) -> Vault:
-        return self.vault[slx]
+    def _slice_get(self, slx: slice) -> V:
+        return self._slice(slx)
 
     def _str_get(self, key: str) -> Item:
+        # TODO: this lookss somehow pointless...
         for item in self.vault:
             if item[0] == key:
                 return item
         raise KeyError(key)
 
-    def _tuple_get(self, multi_keys: tuple) -> Vault:
+    def _tuple_get(self, multi_keys: tuple) -> V:
         """vault["id1", "id2", 0] -> resolves multiple selectors"""
         matched: list[Item] = []
         for sub_key in multi_keys:
@@ -108,64 +103,88 @@ class CoreVault[Item, Vault: Vaults](V2):
                 matched.append(res)
         return self._as_vault(matched)
 
-    def _call_get(self, fn: Predicate[Item]) -> Vault:
+    def _call_get(self, fn: _reg.Predicate[Item]) -> V:
         return self._as_vault(item for item in self.vault if fn(item))
 
     #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def __setitem__(self, query: Selector[Item], value: Any) -> None:
-        """Insert Selector and Value to Update the Vault"""
+    # IDEA: GetVault and SetVault? provide 2 mixins for either the same setup or only read
+    # - maybe with share match_query function?
+
+    def __setitem__(self, query: _reg.Selector[Item], value: Any) -> None:
+        """Insert Selector and Value to Update the V"""
         match query:
             case int() as idx:
-                return self._int_set(idx)
+                return self._int_set(idx, value)
             case slice() as slx:
-                return self._slice_set(slx)
+                return self._slice_set(slx, value)
             case str() as key:
-                return self._str_set(key)
+                return self._str_set(key, value)
             case tuple() as multi_keys:
-                return self._tuple_set(multi_keys)
+                return self._tuple_set(multi_keys, value)
             case fn if callable(fn):
-                return self._call_set(fn)
+                return self._call_set(fn, value)
             case _:
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
-    def _int_set(self, idx: int):
-        pass
+    def _int_set(self, idx: int, value: Any):
+        self.vault[idx] = self._normalize(value)
 
-    def _slice_set(self, slx: slice):
-        pass
+    def _slice_set(self, slx: slice, value: Any):
+        self.vault[slx] = [self._normalize(v) for v in value]
 
-    def _str_set(self, key: str):
-        pass
+    def _str_set(self, key: str, value: Any):
+        # TODO:
+        norm_val: Item = self._normalize(value)
+        for idx, (existing_k, _) in enumerate(self.vault):
+            if existing_k == key:
+                self.vault[idx] = norm_val
+                return
+        self.vault.append(norm_val)
 
-    def _tuple_set(self, multi_keys: tuple):
+    def _tuple_set(self, multi_keys: tuple, value: Any):
         """vault["id1", "id2", 0] -> resolves multiple selectors"""
+        values = list(value)
+        if len(multi_keys) != len(values):
+            raise ValueError(
+                f"Cannot unpack {len(values)} values into {len(multi_keys)} selectors"
+            )
+        for sub_key, sub_val in zip(multi_keys, values, strict=True):
+            self[sub_key] = sub_val
 
-    def _call_set(self, fn: Predicate[Item]):
-        pass
+    def _call_set(self, fn: _reg.Predicate[Item], value: Any):
+        for idx, item in enumerate(self.vault):
+            if fn(item):
+                # IMPORTANT: dispatch str|int by Mapping|Sequence
+                if callable(value):
+                    self._items[idx] = self._normalize_item(value(item))
+                else:
+                    self._items[idx] = self._normalize_item(value)
+
+    def _normalize(self, value: Any, *args, **kwarg) -> Item:
+        """Transform the value to a valid Item"""
 
 
 @portlink(Register)
-class BaseVault[Item, Vault: Vaults](CoreVault, V2):
+class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
     """Provide initial Setup"""
 
-    vault: Vault
-    _ident: Ident[Item] | None
     policy = PolicyField(VaultPolicy, default=VaultPolicy.RAISE)
+    ident = StrategyField(lambda item: hash(item))
 
     def __init__(
         self,
-        initial: Vault | Iterable | Mapping | None = None,
+        initial: V | Iterable | Mapping | None = None,
         *,
-        ident: Ident[Item] | None = None,
+        ident: _reg.Ident[Item] | None = None,
     ) -> None:
-        self._ident: Ident[Item] | None = ident
-        self.vault = self._as_vault(initial)
+        self.ident: _reg.Ident[Item] | None = ident
+        self.vault: V = self._as_vault(initial)
 
-    def add(self, data: Item | Vault, override: bool = False) -> Vault:
+    def add(self, data: Item | V, override: bool = False) -> V:
         """Extend vault by Items, get removed files back"""
 
-        incoming = self._as_vault(data)
+        incoming: V = self._as_vault(data)
         collisions = self._collisions(incoming)
         if override:
             self.vault, displaced = self._subtract(self.vault, collisions)
@@ -175,7 +194,7 @@ class BaseVault[Item, Vault: Vaults](CoreVault, V2):
         self.vault = self._merge(self.vault, fresh)
         return skipped
 
-    def clear(self, query: Selector[Item] | None = None) -> Vault:
+    def clear(self, query: _reg.Selector[Item] | None = None) -> V:
         """Remove all Items or remove filtered  by identifier"""
         if query is None:
             displaced, self.vault = self.vault, self._empty()
@@ -184,11 +203,11 @@ class BaseVault[Item, Vault: Vaults](CoreVault, V2):
         self.vault, _ = self._subtract(self.vault, displaced)
         return displaced
 
-    def find(self, query: Selector[Item]) -> Vault:
+    def find(self, query: _reg.Selector[Item]) -> V:
         """Provide 0..N items that match the item identifier"""
         return self._select(query)
 
-    def count(self, query: Selector[Item]) -> int:
+    def count(self, query: _reg.Selector[Item]) -> int:
         """How many items match the item identifier?"""
         return len(self.find(query))
 

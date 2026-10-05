@@ -1,5 +1,5 @@
 """
-Define the Shape of the Core Registry
+Define the Shape of the Core Register
 
 - 1 Interface for Any type of Vaults -> enable independent data handling
 
@@ -8,74 +8,67 @@ Define the Shape of the Core Registry
 
 __all__: list[str] = [
     # root
-    "Registry",
+    "Register",
     # bases
     "ListRegister",
     "TupleRegister",
     "DictRegister",
-    ## bisect
-    "BoundaryPolicy",
-    "InsertPolicy",
-    "BisectRegister",
     # extenstions
     "MixinRegister",
     "FuncRegister",
+    ## bisect
+    "BisectRegister",
+    "BoundaryPolicy",
+    "InsertPolicy",
+    "BisectDTO",
+    #
+    "registry_types",
 ]
 
-from collections.abc import Callable, Hashable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator
 from enum import auto
-from typing import Any, Protocol, Self
+from typing import Any, Protocol, Self, overload
 
+from .._types import _registry as registry_types
 from .attach import LazyDescriptor, PolicyDescriptor  # 3
 from .filter import Filter  # 4
 from .solid import EnumIndex, PolicyEnum  # 1
 
-
-class VaultPolicy(PolicyEnum):
-    """On Conflic Strategy - Index and Default start on Zero"""
-
-    RAISE = auto()
-    SKIP = auto()
-    MERGE = auto()
+_reg = registry_types
 
 
-type List[T] = list[T]
-type Tuple[T] = tuple[T, ...]
-type Dict[K, T] = dict[K, T]
-
-type Vault1 = Sequence | Mapping
-type Vault2[T] = List[T] | Tuple[T] | Dict[Any, T]
-
-type Key = str
-type Index = int | slice
-type Predicate[T] = Callable[[T], bool]
-type Selector[T] = Key | Index | Predicate[T] | tuple[Any, ...]
-
-
-class Registry[Item, Vault: Vault1](Protocol):  # RENAME:??
-    """Define the Shape of the General Registry"""
+class Register[Item, Vault: _reg.Vault](Protocol):
+    """Define the Shape of the General Register"""
 
     vault: Vault
 
-    on_conflict: PolicyDescriptor[VaultPolicy]
-    _ident: Callable[[Item], Hashable] | None
+    policy: PolicyDescriptor[VaultPolicy]
+    ident: _reg.Ident[Item] | None
 
     def add(self, data: Item | Vault) -> Vault:
         """Extend vault by Items, get removed files back"""
 
-    def clear(self, query: Selector[Item] | None = None) -> Vault:
+    def clear(self, query: _reg.Selector[Item] | None = None) -> Vault:
         """Remove all Items or remove filtered  by identifier"""
 
-    def find(self, query: Selector[Item]) -> Vault:
+    def find(self, query: _reg.Selector[Item]) -> Vault:
         """Provide 0..N items that match the item identifier"""
 
-    def count(self, query: Selector[Item]) -> int:
+    def count(self, query: _reg.Selector[Item]) -> int:
         """How many items match the item identifier?"""
 
-    def __getitem__(self, query: Selector[Item]) -> Item | Vault:
+    @overload
+    def __getitem__(self, query: int) -> Item: ...
+    @overload
+    def __getitem__(
+        self, query: slice | _reg.Predicate | tuple[Any, ...]
+    ) -> Vault: ...
+    @overload
+    def __getitem__(self, query: str) -> Item: ...
+    def __getitem__(self, query: _reg.Selector[Item]) -> Item | Vault:
         """Insert Selector and Extract Values from Vault"""
 
-    def __setitem__(self, query: Selector[Item], value: Any):
+    def __setitem__(self, query: _reg.Selector[Item], value: Any):
         """Insert Selector and Value to Update the Vault"""
 
     def __len__(self) -> int:
@@ -88,35 +81,68 @@ class Registry[Item, Vault: Vault1](Protocol):  # RENAME:??
         """Is the target item already member?"""
 
 
+class VaultPolicy(PolicyEnum):
+    """On Conflic Strategy - Index and Default start on Zero"""
+
+    RAISE = auto()
+    SKIP = auto()
+    MERGE = auto()
+
+
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Level 1 Mixins
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class ListRegister[Item](Registry[Item, List[Item]], Protocol):
-    """Establish the Registry with a List of Items"""
+class ListRegister[Item](Register[Item, _reg.List[Item]], Protocol):
+    """Establish the Register with a List of Items"""
 
 
-class TupleRegister[Item](Registry[Item, Tuple[Item]], Protocol):
-    """Establish the Registry with Tuples"""
+class TupleRegister[Item](Register[Item, _reg.Tuple[Item]], Protocol):
+    """Establish the Register with Tuples"""
 
 
-class DictRegister[Item, K](Registry[Item, Dict[K, Item]], Protocol):
-    """Establish the Registry with a Dict of Items"""
+class DictRegister[Item, K](Register[Item, _reg.Dict[K, Item]], Protocol):
+    """Establish the Register with a Dict of Items"""
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class BisectRegister[Item, DTO: BisectData](
-    Registry[Item, List[Item]], Protocol
+class MixinRegister[S: _reg.Slot](TupleRegister[_reg.Mixin], Protocol):
+    # TODO: check in forge.compose.SLOT
+    """Provide a stable Container for Compositiions"""
+
+    @property
+    def mixins(self) -> tuple[S, ...]: ...
+
+
+class RegisterDescriptor(LazyDescriptor, Protocol):
+    @classmethod
+    def as_field(cls, *args, **kwargs) -> Self:
+        """Mount the vault keeper proper to the classes"""
+
+
+class FuncRegister[Item: Callable](Protocol):
+    """Extend the Register for Functions (LATER: and Functors)"""
+
+    # RENAME: check conflicts with with fields and bisect register
+    def attach(self) -> Callable[[Item], Item]:
+        """Register new member by Decorator"""
+
+
+#  LINE: -- ongoing bisect project -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class BisectRegister[Item, DTO: BisectDTO](
+    Register[Item, _reg.List[Item]], Protocol
 ):
-    """Define the Registry with sort-and-read bisect access"""
+    """Define the Register with sort-and-read bisect access"""
 
-    dto: DTO  # CHECK:
+    dto: DTO
 
 
-class BisectData[ThreshT: int | float](Protocol):
+class BisectDTO[ThreshT: int | float](Protocol):
     """Define the Shape of the BisectDTOs"""
 
     @property
@@ -166,34 +192,7 @@ class BoundaryPolicy(BisectPolicyBase):
     EXCLUSIVE = auto()
 
 
-#  LINE: -- Mixin Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-type Proto = type
-type Mixin = type
-
-type Slot = tuple[Mixin, Proto] | Mixin | Proto
-
-
-class MixinRegister[S: Slot](TupleRegister[Mixin], Protocol):
-    # TODO: check in forge.compose.SLOT
-    """Provide a stable Container for Compositiions"""
-
-    @property
-    def mixins(self) -> tuple[S, ...]: ...
-
-
-class RegistryDescriptor(LazyDescriptor, Protocol):
-    @classmethod
-    def as_field(cls, *args, **kwargs) -> Self:
-        """Mount the vault keeper proper to the classes"""
-
-
-class FuncRegister[Item: Callable](Protocol):
-    """Extend the Registry for Functions (LATER: and Functors)"""
-
-    # NEXT: check with fields/attach
-    def attach(self) -> Callable[[Item], Item]:  # RENAME: sync with bisect
-        """Register new member by Decorator"""
+#  LINE: -- Experiments -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class _IndexRegister[Item, Axes: tuple[EnumIndex, ...]](Protocol):
@@ -207,7 +206,7 @@ class _IndexRegister[Item, Axes: tuple[EnumIndex, ...]](Protocol):
 
 
 class _FilterRegister[Item: Callable](Protocol):
-    """Extend the Registry with Filtering"""
+    """Extend the Register with Filtering"""
 
     # TODO: build FilterField
     # TASK: this is 1:1 a descriptor mock...
@@ -226,4 +225,4 @@ class _FilterRegister[Item: Callable](Protocol):
     def active_filter(self) -> Filter:
         """Provide attached Filter, load default first if needed"""
 
-    """Establish the Registry with Enum and Tuple"""
+    """Establish the Register with Enum and Tuple"""
