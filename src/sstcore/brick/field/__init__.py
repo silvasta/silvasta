@@ -27,10 +27,15 @@ __all__: list[str] = [
     "DerivedField",
     "Forward",
     # _policy
-    "PolicyFieldEngine",
-    "PolicyMatchMixin",
     "PolicyField",
     "MatchPolicyField",
+    "PolicyFieldEngine",
+    "PolicyMatchMixin",
+    # _strategy
+    "StrategyField",
+    "MorphingField",
+    "MethodFieldEngine",
+    "BoundStrategy",
     # _raise
     "FieldError",
     "FieldErrorInput",
@@ -47,7 +52,7 @@ from ._base import (
     ReadField,
     WriteField,
 )
-from ._combine import (
+from ._combos import (
     DerivedField,
     Forward,
     LazyField,

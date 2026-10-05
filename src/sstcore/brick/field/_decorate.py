@@ -84,6 +84,7 @@ class FieldDecorator[**In, Out](ValidField):
 class DecoratedField[**In, Out](
     ReadField[Calling[In, Out]], FieldDecorator[In, Out]
 ):
+    # IDEA: swap names?
     """FieldDecorator with default ReadField for direct usage"""
 
     def read(self, unit: object) -> Calling[In, Out]:

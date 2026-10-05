@@ -7,9 +7,10 @@ Provide the Bricks for Descriptor Compositions
 
 __all__: list[str] = [
     "PolicyField",
+    "MatchPolicyField",
+    #
     "PolicyFieldEngine",
     "PolicyMatchMixin",
-    "MatchPolicyField",
 ]
 
 from collections.abc import Callable
@@ -19,19 +20,6 @@ from ...port.link import portlink
 from ...port.solid import EnumId, PolicyEnum
 from ._base import ReadField
 from ._extend import TypedField
-
-# IMPORTANT: the manual
-# class BaseVault[Item, Vault: Vaults, U, A: Any]:
-#     # Set default to a specific Enum member, not the class
-#     on_conflict = MatchPolicyField(
-#         VaultPolicy,
-#         default=VaultPolicy.RAISE,
-#         enum_match=default_conflict_handler)
-#     def add(self, data: Item) -> Vault:
-#         if self._is_conflict(data):
-#             # Access the descriptor from the class to call match()
-#             return type(self).on_conflict.match(unit=self, data=data)
-#         # ... normal add logic ...
 
 
 class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
@@ -53,12 +41,16 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
 
 
 @portlink(attach.PolicyDescriptor)
+class PolicyField[EnumT: PolicyEnum](PolicyFieldEngine[EnumT], ReadField):
+    """PolicyEngine with Simple ReadField"""
+
+
 class PolicyMatchMixin[FieldT, EnumT: PolicyEnum](ReadField[FieldT]):
     """Extend the Policy Read Pipelin"""
 
     enum_type: EnumT
 
-    def __init__(  # LATER: specify:enum_match: Callable
+    def __init__(
         self,
         *args,
         enum_match: Callable | None = None,
@@ -79,11 +71,6 @@ class PolicyMatchMixin[FieldT, EnumT: PolicyEnum](ReadField[FieldT]):
             raise self.raiser.Function(self, unit)
         _current_policy = self.read(unit)
         return self._match(_current_policy, unit, *args, **kwargs)
-
-
-# @portlink(attach.PolicyDescriptor)
-class PolicyField[EnumT: PolicyEnum](PolicyFieldEngine[EnumT], ReadField):
-    """PolicyEngine with Simple ReadField"""
 
 
 @portlink(attach.PolicyDescriptor)
