@@ -65,11 +65,25 @@ pythonpath = ["src"]
 
 [tool.ty.src]
 include = ["src", "examples"]
-exclude = []
+exclude = [
+  # Match all files/dirs starting with 3+ underscores anywhere
+  "**/____*",
+  # Specific directory branches (if you prefer explicit paths)
+  "src/sstcore/brick/field/___ideas",
+  "src/sstcore/brick/vault/___ideas",
+]
 
 [tool.ruff]
 line-length = 79
 exclude = ["tests"]
+extend-exclude = [
+  "tests",
+  # Catch any file or folder starting with 3+ underscores
+  "**/____*",
+  # Explicit folders / file targets if needed
+  "src/sstcore/brick/field/___ideas",
+  "src/sstcore/brick/vault/___ideas",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
