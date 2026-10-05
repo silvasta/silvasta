@@ -26,6 +26,7 @@ from typing import (
     Self,
     TypedDict,
     Unpack,
+    overload,
 )
 
 from .solid import EnumZero
@@ -133,11 +134,64 @@ class Raiser(EnumZero):
     def builtin(self) -> type[Exception] | None:
         return Exception
 
+    @property
+    def error_name(self) -> str:
+        match len(bases := self.bases):
+            case 1:
+                front = f"{bases[0].__name__}"
+            case 2:
+                front = f"{bases[0].__name__[0:-5]}{bases[-1].__name__}"
+        return f"{self.name}{front}"
+
     def message(self, data: ErrorData) -> str:
         """Find Builtin Exception if registred in Raiser"""
         return repr(data)
 
-    def __call__(  # LATER: overload dispatch by Literal
+    @property
+    def bases(self) -> Errors:
+        """Gather the registed Error classes"""
+        sst_error: type[SstCoreError] = self.custom
+        exception: type[Exception] | None = self.builtin
+        # NOTE: Assuming data has no influence on selection
+        return (sst_error,) if exception is None else (sst_error, exception)
+
+    def compose(self) -> type[SstCoreError]:
+        """Mix builtin Exception into the custom Error"""
+        bases: Errors = self.bases
+        name: str = self.error_name
+        return type(name, bases, {})
+
+    @overload
+    def __call__(
+        self,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["dto"],
+        **kwargs: Unpack[ErrorInput],
+    ) -> ErrorDTO: ...
+
+    @overload
+    def __call__(
+        self,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["exception"] = "exception",
+        **kwargs: Unpack[ErrorInput],
+    ) -> Exception: ...
+
+    @overload
+    def __call__(
+        self,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["raise"],
+        **kwargs: Unpack[ErrorInput],
+    ) -> NoReturn: ...
+
+    def __call__(
         self,
         text="",
         /,
@@ -159,32 +213,3 @@ class Raiser(EnumZero):
                 return _dto(*args)
             case "raise":
                 return _dto.fire(*args)
-
-    def run(self, data: ErrorData) -> ErrorDTO:
-        return ErrorDTO(
-            error=self.compose(),
-            message=self.message(data),
-        )
-
-    def compose(self) -> type[SstCoreError]:
-        """Mix builtin Exception into the custom Error"""
-        bases: Errors = self.bases
-        name: str = self.error_name
-        return type(name, bases, {})
-
-    @property
-    def bases(self) -> Errors:
-        """Gather the registed Error classes"""
-        sst_error: type[SstCoreError] = self.custom
-        exception: type[Exception] | None = self.builtin
-        # NOTE: Assuming data has no influence on selection
-        return (sst_error,) if exception is None else (sst_error, exception)
-
-    @property
-    def error_name(self) -> str:
-        match len(bases := self.bases):
-            case 1:
-                front = f"{bases[0].__name__}"
-            case 2:
-                front = f"{bases[0].__name__[0:-5]}{bases[-1].__name__}"
-        return f"{self.name}{front}"
