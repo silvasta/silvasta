@@ -73,7 +73,9 @@ class WriteField[FieldT](BaseField):
 
 class NoWriteField(BaseField):
     def __set__(self, unit: object, reject: object) -> Never:
-        raise AttributeError(f"{self.name(unit)} is not Writable! {reject=}")
+        raise self.raiser.ReadOnly(
+            self, unit, attr=self.public_name, value=reject
+        )
 
 
 @portlink(attach.ReadDescriptor)
@@ -91,7 +93,7 @@ class ReadField[FieldT](BaseField):
 
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
-            raise self.raiser.ReadMissing(self, unit)()
+            raise self.raiser.ReadMissing(self, unit)
         return self._get_val(unit)
 
 

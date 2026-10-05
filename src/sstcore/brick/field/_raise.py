@@ -1,7 +1,15 @@
 """
 Adapt the SstCoreError to the Fields and implement Raiser
 
-- The Implementation
+- FieldRaiser(Raiser)
+  - WriteExists = auto()
+  - ReadMissing = auto()
+  - ReadOnly = auto()
+  - Validation = auto()
+  - Function = auto()
+  - Signature = auto()
+  - Transition = auto()
+    RAW = auto()
 
                                                  DependencyLevel[0]
 """
@@ -16,7 +24,7 @@ __all__: list[str] = [
 
 
 from enum import auto
-from typing import Any, Literal, Never, Protocol, Unpack
+from typing import Any, Literal, NoReturn, Protocol, Unpack, overload
 
 from ...port.raising import (
     ErrorData,
@@ -49,7 +57,7 @@ class FieldError(SstCoreError):
 class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
     """Define the Kwarg Space of the Error pipeline"""
 
-    cls_attr_name: str
+    attr: str
     owner: type | None
     value: UnitT | Any
 
@@ -59,23 +67,12 @@ class FieldErrorData[FieldT, UnitT](ErrorData):
 
     field: FieldT | None = None
     instance: UnitT | None = None
-    cls_attr_name: str = ""
+    attr: str = ""
     owner: type | None = None
     value: FieldT | Any = None
 
 
-class FieldRaiseCall(Protocol):
-    def __call__(
-        self,
-        text: str = "",
-        /,
-        *args,
-        mode: Literal["dto", "exception", "raise"] = "exception",
-        **kwargs: Unpack[FieldErrorInput],
-    ) -> ErrorDTO | Exception | Never: ...
-
-
-class FieldRaiser(Raiser):
+class FieldRaiser(Raiser):  # TARGET: here is the most important part
     RAW = auto()
 
     WriteExists = auto()
@@ -132,7 +129,7 @@ class FieldRaiser(Raiser):
         assert isinstance(data, FieldErrorData), (
             f"Expected FieldErrorData, got {type(data)}"
         )
-        name: str = data.cls_attr_name or "Unknown"
+        name: str = data.attr or "Unknown"
         field: Any = data.field
         value: Any = data.value
         match self:
@@ -159,3 +156,50 @@ class FieldRaiser(Raiser):
 
             case FieldRaiser.Transition:
                 return f"Failed transfer for {name}: {field}"
+
+
+class FieldRaiseCall(Protocol):
+    @overload
+    def __call__(
+        self,
+        field,
+        instance,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["dto"],
+        **kwargs: Unpack[FieldErrorInput],
+    ) -> ErrorDTO: ...
+
+    @overload
+    def __call__(
+        self,
+        field,
+        instance,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["exception"] = "exception",
+        **kwargs: Unpack[FieldErrorInput],
+    ) -> Exception: ...
+
+    @overload
+    def __call__(
+        self,
+        field,
+        instance,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["raise"],
+        **kwargs: Unpack[FieldErrorInput],
+    ) -> NoReturn: ...
+
+    def __call__(
+        self,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["dto", "exception", "raise"] = "exception",
+        **kwargs: Unpack[FieldErrorInput],
+    ) -> ErrorDTO | Exception | NoReturn: ...

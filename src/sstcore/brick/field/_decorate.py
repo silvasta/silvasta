@@ -11,24 +11,17 @@ __all__: list[str] = [
 
 from inspect import Signature, signature
 from types import MethodType
-from typing import TYPE_CHECKING, Any, Never, Self
+from typing import Any, Self
 
 from ...port import attach
 from ...port.calling import Calling
+from ...port.link import portlink
 from ..labor import reflect
 from ._base import ReadField
 from ._extend import ValidField
 
-# AI_TASK: separation between initial read/write and later usage
-# - define the mounting at the init for all cases:
-#   - decorator that acts on the method without changing it
-#   - decorator that manipulates the method on request
-# - handle the decorator execution in class body:
-#   - without args
-#   - with args
-# - what about a decorator that writes/manipulates the method and has rules for reading?
 
-
+@portlink(attach.DecoDescriptor)
 class FieldDecorator[**In, Out](ValidField):
     """
     Decorate Method with or without Args
@@ -39,79 +32,69 @@ class FieldDecorator[**In, Out](ValidField):
       - the other is to modify the callable itself (with/without decorator?)
     """
 
+    target_func: Calling[In, Out] | None = None
+    signature: Signature | None = None
+
     def __init__(
         self,
-        no_arg_deco_func: Calling[In, Out] | None = None,
+        func: Calling[In, Out] | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Check if Decorator has Input -> Bind or Attach"""
-
-        if no_arg_deco_func is None:  # CHECK: simply: target_func??
-            raise NotImplementedError("Bind! Outer func", args, kwargs)
-        else:
-            self.bind(no_arg_deco_func)
-
+        """Initialize and optionally bind if used as @Field (no parens)."""
         super().__init__(*args, **kwargs)
-        # NEXT: ensure write here!
+        if func is not None:
+            self.bind(func)
 
-    def __call__(self, with_arg_deco_func: Calling[In, Out]) -> Self:
-        """Invoked only when used as @Field(args)"""
-        self.bind(with_arg_deco_func)
+    def __call__(self, func: Calling[In, Out]) -> Self:
+        """Invoked only when used as @Field(args) (with parens)."""
+        self.bind(func)
         return self
 
     def __str__(self):
         return f"{self.target_func}[{self.signature}]"
 
-    def raise_on_unbound(self, unit: object) -> Never:
-        # LATER: combine with raise_on_missing?
-        raise RuntimeError(f"{self.name(unit)} Missing Function!")
+    def bind(self, func: Calling) -> None:
 
-    def raise_on_signature(self, unit: object, bad_func: Any) -> Never:
-        message: str = (
-            f"{self.name(unit)} expected {self.signature!r}, got {bad_func}"
-            if self.signature is not None
-            else f"{self.name(unit)} Missing Signature! Call: {bad_func=}"  # CHECK:
-        )
-        raise TypeError(message)
+        if not callable(func):
+            raise TypeError(f"Target must be callable, got {type(func)}")
 
-    def bind(self, func: Calling, override=False) -> None:
         self.target_func = func
+        self.signature: Signature = signature(func)
+
         default_doc = f"Bound Function by {self}"
         self.__doc__: str = reflect.doc(func, default=default_doc)
         self.public_name: str = reflect.funcname(func)  # TODO: default value?
-        self.signature: Signature = signature(func)
 
     def validate(
-        self, unit: object, value: Calling[In, Out], reset=False
+        self, unit: object, value: Calling[In, Out]
     ) -> Calling[In, Out]:
         """Finish the loop and return the value"""
-        if self._has_val(unit) and not reset:  # IDEA: self.is_writable
-            raise RuntimeError(f"Function already Exists! {self}]")
+
         if not callable(value):
-            raise TypeError(f"Not Callable, {value=}! {self}")
+            raise self.raiser.Function(self, unit, value=value)
+
+        if self._has_val(unit):
+            raise self.raiser.WriteExists(self, unit, value=value)
 
         return super().validate(unit, value)
 
 
-class DecoratedField[FieldT](ReadField[FieldT], FieldDecorator):
+@portlink(attach.DecoDescriptor)
+class DecoratedField[**In, Out](
+    ReadField[Calling[In, Out]], FieldDecorator[In, Out]
+):
     """FieldDecorator with default ReadField for direct usage"""
 
-    def read(self, unit: object) -> FieldT:
+    def read(self, unit: object) -> Calling[In, Out]:
         if self._has_val(unit):
             return self._get_val(unit)
 
-        # TASK: do at most  dispatch here!
-        # - create write in FieldDecorator!
-        # - trigger preferably in FieldDecorator!
         if self.target_func is None:
-            self.raise_on_unbound(unit)
+            raise self.raiser.Function(
+                self, unit, "Missing target_func to bind."
+            )
         bound_method = MethodType(self.target_func, unit)
         self.write(unit, bound_method)
+
         return bound_method
-
-
-if TYPE_CHECKING:
-    _deco: type[attach.DecoDescriptor] = DecoratedField
-    _deco: type[attach.DecoDescriptor] = FieldDecorator
-    _deco: type[attach.DecoDescriptor] = FieldDecorator
