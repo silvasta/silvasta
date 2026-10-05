@@ -101,15 +101,20 @@ class ErrorData:
         cls, reason: Raiser, /, *args, **kwargs: Unpack[ErrorInput]
     ) -> Self:
         """Extract the ErrorInput kwargs to form the ErrorData"""
+
         items: dict[str, Any] = {}
         extra: dict[str, Any] = {}
         if args:
             extra["args"] = args
+
+        _valid_fields = cls.__dataclass_fields__.keys()
+
         for key, value in kwargs.items():
-            if hasattr(cls, key):  # WARN: hasattr on CLS??
+            if key in _valid_fields:
                 items[key] = value
             else:
                 extra[key] = value
+
         return cls(reason, extra=extra, **items)
 
 
@@ -128,8 +133,6 @@ class Raiser(EnumZero):
     def builtin(self) -> type[Exception] | None:
         return Exception
 
-    # AI: what is with overriding this one? might that result in trouble?
-    # - other ideas are to let the ErrorDTO handle and customize the message
     def message(self, data: ErrorData) -> str:
         """Find Builtin Exception if registred in Raiser"""
         return repr(data)

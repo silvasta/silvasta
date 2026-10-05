@@ -3,205 +3,34 @@ Adapt the SstCoreError to the Fields and implement Raiser
 
 - The Implementation
 
-                                                 DependencyLevel[X]
+                                                 DependencyLevel[0]
 """
 
+__all__: list[str] = [
+    "FieldError",
+    "FieldErrorInput",
+    "FieldErrorData",
+    "FieldRaiseCall",
+    "FieldRaiser",
+]
+
+
 from enum import auto
-from typing import Any, Never, Protocol, Unpack, cast
+from typing import Any, Literal, Never, Protocol, Unpack
 
 from ...port.raising import (
     ErrorData,
     ErrorDTO,
     ErrorInput,
-    ErrorMachine,
-    ErrorSpec,
     Raiser,
     SstCoreError,
 )
 from ..labor import clsname
 
 
-class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
-    """Define the Kwarg Space of the Error pipeline"""
-
-    # TODO: make them as well args from here?
-    # field: FieldT
-    # instance: UnitT | None
-    cls_attr_name: str
-    #
-    owner: type | None
-    value: UnitT | Any
-    #
-    # CHECK: from base??
-    # expected: dict
-    # received: dict
-
-
-class FieldErrorSpec[FieldT, UnitT](ErrorSpec):
-    """Define the Arg Space of the Internal Pipeline"""
-
-    field: FieldT
-    instance: UnitT | None = None
-    cls_attr_name: str = ""  # "Cls.attr"
-
-    owner: type | None = None
-    value: FieldT | Any = None
-
-
-class ErrorBuilder(ErrorMachine):
-    @classmethod
-    def custom(cls, data: ErrorData) -> type[SstCoreError]:
-        """Get Custom Exception registred in Raiser"""
-        return get_custom_exception(cast(FieldRaiser, data.reason))
-
-    @classmethod
-    def builtin(cls, data: ErrorData) -> type[Exception] | None:
-        """Find Builtin Exception if registred in Raiser"""
-        return get_builtin_exception(cast(FieldRaiser, data.reason))
-
-    @classmethod
-    def message(cls, data: ErrorData) -> str:
-        """Find Builtin Exception if registred in Raiser"""
-        return super().message(data)
-
-
-class FieldRaiseCall(Protocol):
-    def __call__(
-        self,
-        field: Any,
-        unit: Any | None = None,
-        **kwargs: Unpack[FieldErrorInput],
-    ) -> ErrorDTO: ...
-
-
-class FieldRaiser(Raiser):
-    RAW = auto()  # IDEA: this as index 0? (later)
-
-    WriteExists = auto()
-    ReadMissing = auto()
-    ReadOnly = auto()
-    Validation = auto()
-    Function = auto()
-    Signature = auto()
-    Transition = auto()
-
-    __call__: FieldRaiseCall
-
-    def order(self, data: ErrorData) -> ErrorDTO:  # ty:ignore
-        # FIX:
-        return ErrorBuilder.run(data)  # ty:ignore
-
-    def __str__(self):
-        return self.name
-
-    def map(self, name, field, value):
-        # NEXT:
-        # REFACTOR: complete split, fill the get_* matches
-        match self:
-            case FieldRaiser.WriteExists:
-                f"{name}: {self} already Exists! {field}"
-                AttributeError()
-            case FieldRaiser.ReadMissing:
-                f"{name}: {self} is Missing! {field}"
-                AttributeError()
-            case FieldRaiser.ReadOnly:
-                # set by OnlyReadField or anything else
-                reject = value
-                f"{name}: {self} is not Writable! {reject=}"
-                TypeError()
-            case FieldRaiser.Validation:
-                # bad input for function attach
-                # IDEA: move this to FieldRaiser.Signature,
-                # remove missing there and slots are filled
-                signature = field
-                bad_func = value
-                f"{name}: expected {signature=}, got {bad_func=}"
-                TypeError()
-                # bad input for function execution
-                types = value
-                f"{name}: expected {types}, got {clsname(value)}"
-                ValueError()
-            case FieldRaiser.Function:
-                bad_func = str(field)
-                f"{name}: {self} is Missing! {bad_func=}"
-                RuntimeError()
-                f"Not Callable, {value=}! {self}"
-                TypeError()
-            case FieldRaiser.Signature:
-                bad_func = str(field)
-                f"{name}: {self} is Missing! {bad_func=}"
-                RuntimeError()
-            case FieldRaiser.Transition:
-                states = str(field)  # CHECK:
-                f"Failed transfer for {name}: {states}"
-                RuntimeError()
-
-
-def get_format_pattern(reason: FieldRaiser) -> str:
-    match reason:
-        case FieldRaiser.RAW:
-            return ""
-        case FieldRaiser.WriteExists:
-            return ""
-        case FieldRaiser.ReadMissing:
-            return ""
-        case FieldRaiser.ReadOnly:
-            return ""
-        case FieldRaiser.Validation:
-            return ""
-        case FieldRaiser.Function:
-            return ""
-        case FieldRaiser.Signature:
-            return ""
-        case FieldRaiser.Transition:
-            return ""
-    raise NotImplementedError(reason)
-
-
-def get_builtin_exception(reason: FieldRaiser) -> type[Exception] | None:
-    match reason:
-        case FieldRaiser.RAW:
-            return None
-        case FieldRaiser.WriteExists:
-            return None
-        case FieldRaiser.ReadMissing:
-            return None
-        case FieldRaiser.ReadOnly:
-            return None
-        case FieldRaiser.Validation:
-            return None
-        case FieldRaiser.Function:
-            return None
-        case FieldRaiser.Signature:
-            return None
-        case FieldRaiser.Transition:
-            return None
-    raise NotImplementedError(reason)
-
-
-def get_custom_exception(reason: FieldRaiser) -> type[SstCoreError]:
-    match reason:
-        case FieldRaiser.RAW:
-            return SstCoreError
-        case FieldRaiser.WriteExists:
-            raise NotImplementedError
-        case FieldRaiser.ReadMissing:
-            raise NotImplementedError
-        case FieldRaiser.ReadOnly:
-            raise NotImplementedError
-        case FieldRaiser.Validation:
-            raise NotImplementedError
-        case FieldRaiser.Function:
-            raise NotImplementedError
-        case FieldRaiser.Signature:
-            raise NotImplementedError
-        case FieldRaiser.Transition:
-            raise NotImplementedError
-    raise NotImplementedError(reason)
-
-
 class FieldError(SstCoreError):
-    # IDEA: use this FieldError and mix it with the errors above
+    """Custom Exception for Field Operations"""
+
     def __init__(
         self,
         message: str,
@@ -217,25 +46,116 @@ class FieldError(SstCoreError):
         super().__init__(*args)
 
 
-#  LINE: -- USAGE -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
+    """Define the Kwarg Space of the Error pipeline"""
+
+    cls_attr_name: str
+    owner: type | None
+    value: UnitT | Any
 
 
-def tests():
-    on_error = FieldRaiser
-    on_error.ReadOnly("blau", test=3)
+class FieldErrorData[FieldT, UnitT](ErrorData):
+    """Define the Arg Space of the Internal Pipeline"""
 
-    def how_to_use1() -> Never:
-        raise on_error.ReadMissing("")()
+    field: FieldT | None = None
+    instance: UnitT | None = None
+    cls_attr_name: str = ""
+    owner: type | None = None
+    value: FieldT | Any = None
 
-    def how_to_use0() -> ErrorDTO:
-        return on_error.ReadMissing("")()
 
-    def how_to_use2() -> ErrorDTO:
-        return on_error.ReadMissing("")
+class FieldRaiseCall(Protocol):
+    def __call__(
+        self,
+        text: str = "",
+        /,
+        *args,
+        mode: Literal["dto", "exception", "raise"] = "exception",
+        **kwargs: Unpack[FieldErrorInput],
+    ) -> ErrorDTO | Exception | Never: ...
 
-    def how_to_use3() -> Never:
-        assembled: ErrorDTO = on_error.ReadMissing("", name="test")
-        return assembled.fire()
 
-    def how_to_use4() -> Never:
-        raise on_error.ReadMissing("", value="test")()
+class FieldRaiser(Raiser):
+    RAW = auto()
+
+    WriteExists = auto()
+    ReadMissing = auto()
+    ReadOnly = auto()
+    Validation = auto()
+    Function = auto()
+    Signature = auto()
+    Transition = auto()
+
+    __call__: FieldRaiseCall
+
+    @property
+    def data(self) -> type[FieldErrorData]:
+        """Override to map to specific ErrorData"""
+        return FieldErrorData
+
+    @property
+    def custom(self) -> type[SstCoreError]:
+        """Override to map to specific Custom Error"""
+        return FieldError
+
+    @property
+    def builtin(self) -> type[Exception] | None:
+        """Override to map to builtin Exceptions"""
+        match self:
+            case FieldRaiser.RAW:
+                return None
+
+            case FieldRaiser.WriteExists:
+                return AttributeError
+
+            case FieldRaiser.ReadMissing:
+                return AttributeError
+
+            case FieldRaiser.ReadOnly:
+                return TypeError
+
+            case FieldRaiser.Validation:
+                return ValueError
+
+            case FieldRaiser.Function:
+                return TypeError
+
+            case FieldRaiser.Signature:
+                return TypeError
+
+            case FieldRaiser.Transition:
+                return RuntimeError
+
+    def message(self, data: ErrorData) -> str:
+        """Override to generate formatted messages based on the Enum state"""
+
+        assert isinstance(data, FieldErrorData), (
+            f"Expected FieldErrorData, got {type(data)}"
+        )
+        name: str = data.cls_attr_name or "Unknown"
+        field: Any = data.field
+        value: Any = data.value
+        match self:
+            case FieldRaiser.RAW:
+                return super().message(data)
+
+            case FieldRaiser.WriteExists:
+                return f"{name}: {self.name} already Exists! {field}"
+
+            case FieldRaiser.ReadMissing:
+                return f"{name}: {self.name} is Missing! {field}"
+
+            case FieldRaiser.ReadOnly:
+                return f"{name}: {self.name} is not Writable! reject={value}"
+
+            case FieldRaiser.Validation:
+                return f"{name}: expected {value}, got {clsname(value) if value else 'None'}"
+
+            case FieldRaiser.Function:
+                return f"Not Callable, {value=}! {self.name}"
+
+            case FieldRaiser.Signature:
+                return f"{name}: expected {field=}, but got {value=}"
+
+            case FieldRaiser.Transition:
+                return f"Failed transfer for {name}: {field}"
