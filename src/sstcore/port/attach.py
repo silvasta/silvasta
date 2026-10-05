@@ -11,7 +11,6 @@ __all__: list[str] = [
     "WriteDescriptor",
     "DeleteDescriptor",
     "Descriptor",
-    "FullDescriptor",
     #
     "ValidDescriptor",
     "TypedDescriptor",
@@ -31,43 +30,16 @@ from typing import Self as _Self
 from typing import overload as _overload
 
 from .calling import Calling  # 0
-from .raising import Raiser  # 2
 from .solid import PolicyEnum  # 1
 
-type Types[T] = type[T] | tuple[type, ...]  # TODO: tuple[T,???]
 
-
-class FieldLoader[T](_Callable, _Protocol):
-    def __call__(self, _: _Any, /) -> T:
-        """Execute with exactly the attached Instance as Input"""
-
-
-class NamedDescriptor(_Protocol):
-    """Define the Base Contract: Ensure the Name"""
-
-    public_name: str
-    private_name: str
+class Descriptor[T](_Protocol):
+    """Define the Base Contract for any Field"""
 
     def __set_name__(self, owner: type, name: str) -> None: ...
 
-
-class _DescriptorAccess(_Protocol):
-    """IDEA: some querries... mixed into base"""
-
-
-class _RaisingDescriptor(_Protocol):
-    """IDEA: attach Raiser: mix into base"""
-
-    on_error: type[Raiser]
-
-
-class Descriptor[T](NamedDescriptor, _Protocol):
-    """
-    Mixed Base Descriptor Definition
-
-    IDEA: mix with query and error
-
-    """
+    public_name: str
+    private_name: str
 
 
 #  LINE: -- Level 1 -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -98,23 +70,16 @@ class DeleteDescriptor(Descriptor, _Protocol):
     def remove(self, unit: object) -> None: ...
 
 
-class DecoDescriptor(Descriptor, _Protocol):
-    # NEXT: check what and how to parametrize
+class DecoDescriptor[**In, Out](Descriptor, _Protocol):
     """Define the Descriptor that Decorates"""
 
     def __init__(
-        self, target: _Callable | None = None, *args: _Any, **kwargs: _Any
+        self, func: Calling[In, Out] | None = None, *args: _Any, **kwargs: _Any
     ):
         """Insert Initial Strategy or Bind Decorator"""
 
-    def __call__(self, target_func: _Any):
+    def __call__(self, func: Calling[In, Out]) -> _Self:
         """Decorate Initial Strategy for Bound Decorator"""
-
-
-class FullDescriptor[T](
-    WriteDescriptor[T], ReadDescriptor[T], DeleteDescriptor, _Protocol
-):
-    """Define the Descriptor equipped with all methods"""
 
 
 #  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -130,7 +95,7 @@ class TypedDescriptor[T](ValidDescriptor[T], _Protocol):
         """Confirm the Type while attaching"""
 
 
-#  LINE: -- Combinations -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+type Types[T] = type[T] | tuple[type, ...]
 
 
 class LazyDescriptor[T](Descriptor[T], _Protocol):
@@ -140,41 +105,48 @@ class LazyDescriptor[T](Descriptor[T], _Protocol):
     loader: FieldLoader
 
 
+class FieldLoader[T](_Callable, _Protocol):
+    def __call__(self, _: _Any, /) -> T:
+        """Execute with exactly the attached Instance as Input"""
+
+
+class PolicyDescriptor[EnumT: PolicyEnum](
+    TypedDescriptor, ReadDescriptor, _Protocol
+):
+    """Govern the Enum including match and dispatch"""
+
+
+class MatchingDescriptor[EnumT: PolicyEnum](PolicyDescriptor, _Protocol):
+    """Govern the Enum including match and dispatch"""
+
+    def match(self, state: EnumT, unit: object):  # LATER: specify
+        """Launch match_func, get override or Raise"""
+
+
 #  LINE: -- Strategy -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# NEXT: check what needed / required
 class CallingDescriptor[**In, Out](
     DecoDescriptor,
     ValidDescriptor[Calling[In, Out]],
     ReadDescriptor[Calling[In, Out]],
-    DeleteDescriptor,  # TODO: needed/desired? del Cls.method -> default? why not?
+    DeleteDescriptor,
     _Protocol,
 ):
     """Switch Callable Attribute (Method) with enforced Rules"""
 
     def switch(self, func: Calling[In, Out]) -> _Self:
-        # TODO: check if Self useful or other returns are more valuable
         """Install new LSP conform Method"""
 
 
-# NEXT: check what needed / required
 class MorphingDescriptor(CallingDescriptor, _Protocol):
     """Switch Callable Attribute (Method) with less Rules"""
 
     def morph(self, func: Calling) -> _Self:
-        # TODO: check if Self useful or other returns are more valuable
         """Install new Method with possible LSP Violation"""
 
 
-#  LINE: -- State and Transmission -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class PolicyDescriptor[EnumT: PolicyEnum](_Protocol):
-    """Govern the Enum including match and dispatch"""
-
-    def match(self, state: EnumT, unit: object):  # LATER: specify
-        """Launch match_func, get override or Raise"""
+#  LINE: -- Next Steps -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class Transition[T](_Protocol):  # LATER: move to state transition
@@ -190,11 +162,8 @@ class TransitionDescriptor[T: _Enum](TypedDescriptor[T], _Protocol):
         """Implement rigid state-machine rules here"""
 
 
-class StateDescriptor[T: _Enum](TransitionDescriptor[T], FullDescriptor[T]):
+class StateDescriptor[T: _Enum](TransitionDescriptor[T]):
     """Govern the Lifecycle of the State"""
-
-
-#  LINE: -- Interactions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class _TempEmit[**P, R](_Protocol):
