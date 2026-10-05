@@ -8,18 +8,21 @@ __all__: list[str] = [
     "ListRegistry",
 ]
 
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
+from ...port.link import portlink
 from ...port.register import ListRegister
-from ._base import BaseRegistry
+from .base import BaseVault
 
 
-class ListRegistry[Item](BaseRegistry[Item, list, int, Any]):
+@portlink(ListRegister)
+class ListRegistry[Item](BaseVault[Item, list, int, Any]):
     """Implement the Shape of the Registry with List"""
 
     _prefered: Literal["str", "int"] = "int"
 
     def add(self, items: list[Item], override: bool = False) -> list[Item]:
+
         # INFO: outdated
         cleared: list[Item] = []
         for item in items:
@@ -68,8 +71,3 @@ class ListRegistry[Item](BaseRegistry[Item, list, int, Any]):
 
     def __contains__(self, target: Item) -> bool:
         return target in self.vault  # Works
-
-
-if TYPE_CHECKING:
-    _instance: ListRegister = ListRegistry()
-    _class: type[ListRegister] = ListRegistry

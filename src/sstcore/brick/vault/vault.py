@@ -7,7 +7,7 @@ Define the Shape of the Core Registry
                                                         - filter(1)
 """
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Any, Self, overload
 
 from annotated_types import Predicate
@@ -68,6 +68,12 @@ class Vault[Item]:
                     f"Unsupported selector type: {type(key).__name__}"
                 )
 
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
     def __setitem__(self, key: Any, value: Any) -> None:
         match key:
             # 1. Positional overwrite
@@ -156,3 +162,71 @@ class Vault2[A, Item]:
             (removed if item[0] in target_ids else retained).append(item)
         self._items = retained
         return Vault(removed)
+
+
+class V1[Item, Vault: Vaults, U, A: Any]:
+    """Provide initial Setup"""
+
+    def _clear_all(self) -> None:
+        raise NotImplementedError
+
+    def _slice_action(self, s: slice) -> Any:
+        raise NotImplementedError
+
+    def _str_action(self, k: str) -> Any:
+        raise NotImplementedError
+
+    def _item_action(self, target: Item) -> Any:
+        raise NotImplementedError
+
+    def _int_action(self, i: int) -> Item | None:
+        raise NotImplementedError
+
+    def _sanitize(self, result: Vault | Item | None) -> Vault:
+        raise NotImplementedError
+
+    def _remove(self, targets: Vault) -> Vault:
+        """Return all removed"""
+        raise NotImplementedError
+
+    def _append(self, items: Vault) -> Vault:
+        """Return all duplicated"""
+        raise NotImplementedError
+
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    # NEXT:
+
+
+class V2[Item, Vault: Vaults, U, A]:
+    vault: Vault
+
+    def _empty(self) -> Vault:
+        raise NotImplementedError
+
+    def _as_vault(self, items: Any, /) -> Vault:
+        raise NotImplementedError
+
+    def _merge(self, vault: Vault, incoming: Vault) -> Vault:
+        raise NotImplementedError
+
+    def _subtract(self, vault: Vault, targets: Vault) -> tuple[Vault, Vault]:
+        raise NotImplementedError
+
+    def _collisions(self, incoming: Vault) -> Vault:
+        raise NotImplementedError
+
+    def _at(self, uid: U) -> Item | None:
+        raise NotImplementedError
+
+    def _select(self, id: A) -> Vault:
+        raise NotImplementedError
+
+    def _slice(self, s: slice) -> Vault:
+        raise ValueError(f"Slicing not supported: {s!r}", s)
+
+    def vault(self) -> Iterator[Item]:
+        yield from self.vault

@@ -6,13 +6,12 @@ Extensions for the Core Registry
 
 """
 
-from collections.abc import Callable
-
 __all__: list[str] = [
     "FilterRegistry",
     "FunctorRegistry",  # TODO: check with realisations, e.g. with Handler
 ]
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Self
 
 from ...port.filter import Filter

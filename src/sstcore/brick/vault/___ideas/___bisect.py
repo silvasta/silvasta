@@ -25,16 +25,18 @@ from bisect import bisect_left, bisect_right, insort, insort_left, insort_right
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, overload
 
-from ...port.register import (
+from ....port.link import portlink
+from ....port.register import (
     BisectData,
     BisectPolicyBase,
     BoundaryPolicy,
     InsertPolicy,
 )
-from ..field._base import PolicyField
-from ._base import BaseRegistry
+from ...field import PolicyField
+from .._base import BaseRegistry
 
 
+@portlink(BisectData)
 @dataclass
 class BisectDTO[ThreshT: float | int, ObjecT: Any]:
     """Store threshold for bisectional comparison and corresponing value"""
@@ -61,6 +63,8 @@ if TYPE_CHECKING:
     _dto: BisectData = BisectDTO(25, Any)
 
 
+# @portlink(Register)
+# @portlink(BisectRegister)
 class BisectMixin[ThreshT: int | float]:
     """Collect python.bisect and provide for registry or other purposes"""
 
@@ -158,6 +162,8 @@ class InsertField(BisectMixin, BisectField[BoundaryPolicy]):
                     self.attach_right(item)
 
 
+# @portlink(Registry)
+# @portlink(BisectRegister)
 class BisectRegistry[KeyT: float | int](
     BisectMixin, BaseRegistry[list, BisectDTO, KeyT]
 ):
@@ -179,11 +185,11 @@ class BisectRegistry[KeyT: float | int](
 
         self.add(*items)
 
-    def insert(self, item):  # IMPORTANT:
-        type(self).insert_mode.execute(self, item)
-
-    def compare(self, item):  # IMPORTANT:
-        type(self).boundry_mode.execute(self, item)
+    # def insert(self, item):  # IMPORTANT:
+    #     type(self).insert_mode.execute(self, item)
+    #
+    # def compare(self, item):  # IMPORTANT:
+    #     type(self).boundry_mode.execute(self, item)
 
     def __contains__(self, target: BisectDTO) -> bool:
         """Check if threshold exists in exactly one O(log(N)) pass"""
