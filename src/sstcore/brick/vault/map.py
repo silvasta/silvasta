@@ -1,10 +1,25 @@
+"""
+Mapping Registry - Dict, Map, ...
+
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "Mapped",
+    "DictVault",
+]
+
+
 from collections.abc import Iterator
 from typing import Any
 
-from .base import BaseRegistry
+from ...port.link import portlink
+from ...port.register import DictRegister
+from .base import BaseVault
 
 
-class MappingRegistry[Item, K, A](BaseRegistry[Item, dict[K, Item], K, A]):
+@portlink(DictRegister)
+class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
     def _empty(self) -> dict[K, Item]:
         return {}
 
@@ -21,24 +36,24 @@ class MappingRegistry[Item, K, A](BaseRegistry[Item, dict[K, Item], K, A]):
     def _subtract(
         self, vault: dict[K, Item], targets: dict[K, Item]
     ) -> tuple[dict[K, Item], dict[K, Item]]:
-        removed = {k: vault[k] for k in targets if k in vault}
-        kept = {k: v for k, v in vault.items() if k not in targets}
-        return kept, removed
+        _removed = {k: vault[k] for k in targets if k in vault}
+        _kept = {k: v for k, v in vault.items() if k not in targets}
+        return _kept, _removed
 
     def _collisions(self, incoming: dict[K, Item]) -> dict[K, Item]:
         return {k: self.vault[k] for k in incoming if k in self.vault}
 
     def _at(self, uid: K) -> Item | None:
         if uid in self.vault:
+            # CHECK: None should not be a valid option!
+            # - either return empyt vault or raise
             return self.vault[uid]
         return None
 
-    def _select(self, id: A) -> dict[K, Item]:
-        if id in self.vault:  # type: ignore[operator]
-            return {id: self.vault[id]}  # type: ignore[index,dict-item]
-        if self._ident is None:
-            return {}
-        return {k: v for k, v in self.vault.items() if self._ident(v) == id}
+    def _select(self, id: Any) -> dict[K, Item]:
+        if id in self.vault:
+            return {id: self.vault[id]}
+        return {k: v for k, v in self.vault.items() if self.ident(v) == id}
 
     def _items(self) -> Iterator[Item]:
         yield from self.vault.values()
@@ -48,4 +63,5 @@ class MappingRegistry[Item, K, A](BaseRegistry[Item, dict[K, Item], K, A]):
         return {k: self.vault[k] for k in keys}
 
 
-class DictRegistry[Item, K, A](MappingRegistry[Item, K, A]): ...
+@portlink(DictRegister)
+class DictVault[Item, K](Mapped[Item, K]): ...

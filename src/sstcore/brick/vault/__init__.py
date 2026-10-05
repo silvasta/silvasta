@@ -13,15 +13,11 @@ Info:
 
 __all__: list[str] = [
     "ListRegistry",
-    "FilterRegistry",
     "DictRegistry",
     "TupleRegistry",
-    # "BisectRegistry",
 ]
 
 
-# from ._bisect import BisectRegistry
 from ._dict import DictRegistry
-from ._extras import FilterRegistry
 from ._list import ListRegistry
 from ._tuple import TupleRegistry

@@ -13,10 +13,10 @@ __all__: list[str] = [
 from enum import auto
 from typing import Any, Literal
 
-from ...port.register import Index
+from ...port.solid import EnumIndex
 
 
-class GridIndex(Index):
+class GridIndex(EnumIndex):
     ALPHA = auto()
     BETA = auto()
     DELTA = auto()
