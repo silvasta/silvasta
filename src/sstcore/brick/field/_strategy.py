@@ -28,7 +28,7 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
     """Base Engine for dynamic Calling fields."""
 
     def __init__(self, func: Calling[In, Out], *args: Any, **kwargs: Any):
-        # 'func' maps to 'DecoratedField.target_func'
+        """Map func to DecoratedField.target_func"""
         super().__init__(func, *args, default=func, **kwargs)
 
     def read(self, unit: object) -> BoundStrategy[In, Out]:
@@ -36,20 +36,22 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
 
         if self._has_val(unit):
             func: Calling[In, Out] = self._get_val(unit)
-        else:
+        elif self.target_func is not None:
             func: Calling[In, Out] = self.target_func
+        else:
+            raise self.raiser.Function(self, unit, "Missing target_func")
 
         return BoundStrategy[In, Out](self, unit, func)
-
-
-@portlink(attach.CallingDescriptor)
-class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
-    """Forces the override to match the default function's signature."""
 
     def switch(self, func: Calling[In, Out]) -> Self:
         """Modify the Class-Level baseline strategy."""
         self.bind(func)
         return self
+
+
+@portlink(attach.CallingDescriptor)
+class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
+    """Forces the override to match the default function's signature."""
 
     def validate(
         self, unit: object, value: Calling[In, Out]
@@ -96,6 +98,10 @@ class BoundStrategy[**In, Out]:
         self.engine: MethodFieldEngine[In, Out] = engine
         self.unit: Any = unit
         self.func: Calling[In, Out] = func
+
+    @property
+    def __name__(self) -> str:
+        return self.func.__name__
 
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         return self.func(self.unit, *args, **kwargs)

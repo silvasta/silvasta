@@ -29,7 +29,7 @@ from ._raise import FieldRaiser
 
 @portlink(attach.Descriptor)
 class NamedField:
-    """Provide Utils for all Fields"""
+    """Provide Name for all Fields"""
 
     raiser: type[FieldRaiser] = FieldRaiser
 

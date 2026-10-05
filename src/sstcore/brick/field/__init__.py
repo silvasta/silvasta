@@ -80,3 +80,9 @@ from ._raise import (
     FieldRaiseCall,
     FieldRaiser,
 )
+from ._strategy import (
+    BoundStrategy,
+    MethodFieldEngine,
+    MorphingField,
+    StrategyField,
+)
