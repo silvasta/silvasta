@@ -4,6 +4,8 @@ BaseVault - Final assembled brick ready to be built
 -
 """
 
+from typing import Any
+
 __all__: list[str] = [
     "BaseVault",
 ]
@@ -12,25 +14,29 @@ __all__: list[str] = [
 from collections.abc import Iterable, Iterator, Mapping
 
 from ...brick.field import StrategyField
-from ...port.register import VaultPolicy
-from ...port.register import registry_types as _reg
+from ...port.link import portlink
+from ...port.register import Register, VaultPolicy
+from ...port.register import registry_types as _r
 from ..field import PolicyField
-from ._kernel import VaultCore
+from ._access import VaultAccess
 
 
-class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
+@portlink(Register)
+class BaseVault[Item, V: _r.Vault](VaultAccess[Item, V]):
+    """Establish the port definition for further specification"""
+
     policy = PolicyField(VaultPolicy, default=VaultPolicy.RAISE)
-    ident = StrategyField(lambda item: hash(item))  # WARN: proper default?
+    ident = StrategyField(lambda item: item)
 
     def __init__(
         self,
         initial: V | Iterable | Mapping | None = None,
         *,
-        ident: _reg.Ident[Item] | None = None,
+        ident: _r.Ident[Item] | None = None,
         policy: VaultPolicy | None = None,
     ) -> None:
         if ident is not None:
-            self.ident: _reg.Ident[Item] = ident
+            self.ident: _r.Ident[Item] = ident
         if policy is not None:
             self.policy: VaultPolicy = policy
         self.vault: V = self._as_vault(initial)
@@ -42,7 +48,7 @@ class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
             self.vault: V = self._merge(self.vault, incoming)
             return self._empty()
 
-        match self.policy:  # NOTE: this as well for __setitem__?
+        match self.policy:
             case VaultPolicy.RAISE:
                 raise ValueError("vault collision")
 
@@ -58,7 +64,7 @@ class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
             case _:
                 raise TypeError(f"Unsupported policy: {self.policy!r}")
 
-    def clear(self, query: _reg.Selector[Item] | None = None) -> V:
+    def clear(self, query: _r.Selector[Item] | None = None) -> V:
         if query is None:
             displaced, self.vault = self.vault, self._empty()
             return displaced
@@ -66,8 +72,9 @@ class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
         self.vault, _ = self._subtract(self.vault, displaced)
         return displaced
 
-    def find(self, query: _reg.Selector[Item]) -> V:
-        match query:
+    def find(self, query: _r.Selector[Item]) -> V:
+        q: Any = query
+        match q:
             case int() as idx if not isinstance(idx, bool):
                 return self._box_index(idx)
             case str() as key:
@@ -79,10 +86,11 @@ class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
             case _:
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
-    def count(self, query: _reg.Selector[Item]) -> int:
+    def count(self, query: _r.Selector[Item]) -> int:
         return len(self.find(query))
 
-    # IDEA: move below to abstract or to core?
+    # NOTE: beside the gap here (filled by core) it follows perfectly the protocol
+
     def __len__(self) -> int:
         return len(self.vault)
 
@@ -91,3 +99,10 @@ class BaseVault[Item, V: _reg.Vault](VaultCore[Item, V]):
 
     def __contains__(self, target: Item) -> bool:
         return any(item == target for item in self._iter_items())
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def _replace_where(self, fn: _r.Predicate[Item], item: Item) -> None:
+        hits: list[int] = [i for i, current in enumerate(self) if fn(current)]
+        for i in hits:
+            self._index_put(i, item)

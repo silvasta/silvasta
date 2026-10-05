@@ -1,38 +1,34 @@
 """
-The Inner Processing Core
+The Operators to Set and Get items from the Vault
 
-- Idea:
-  - GetVault
-  - SetVault
-    -> VaultCore(SetVault,GetVault)
-
+-
 """
 
 __all__: list[str] = [
-    "VaultCore",
-    "GetVault",
-    "SetVault",
+    "VaultAccess",
+    "VaultReader",
+    "VaultWriter",
 ]
 
 from typing import Any, overload
 
-from ...port.register import registry_types as _reg
-from ._contract import AbstractVault
+from ...port.register import registry_types as _r
+from ._contract import VaultContract
 
 
-class GetVault[Item, V: _reg.Vault](AbstractVault[Item, V]):
-    """Pich the Items from the Vault"""
+class VaultReader[Item, V: _r.Vault](VaultContract[Item, V]):
+    """Pick the Items from the Vault"""
 
     @overload
     def __getitem__(self, query: int) -> Item: ...
     @overload
     def __getitem__(
-        self, query: slice | _reg.Predicate | tuple[Any, ...]
+        self, query: slice | _r.Predicate | tuple[Any, ...]
     ) -> V: ...
     @overload
     def __getitem__(self, query: str) -> Item: ...
 
-    def __getitem__(self, query: _reg.Selector[Item]) -> Item | V:
+    def __getitem__(self, query: _r.Selector[Item]) -> Item | V:
         return self._dispatch_get(query)
 
     def _dispatch_get(self, query: Any) -> Item | V:
@@ -51,14 +47,14 @@ class GetVault[Item, V: _reg.Vault](AbstractVault[Item, V]):
 
             case fn if callable(fn):
                 return self._where(fn)
+            case _:
+                raise TypeError(f"Unsupported: {type(query).__name__}")
 
-        raise TypeError(f"Unsupported: {type(query).__name__}")
 
-
-class SetVault[Item, V: _reg.Vault](AbstractVault[Item, V]):
+class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
     """Place the Items in the Vault"""
 
-    def __setitem__(self, query: _reg.Selector[Item], value: Any) -> None:
+    def __setitem__(self, query: _r.Selector[Item], value: Any) -> None:
         self._dispatch_set(query, value)
 
     def _dispatch_set(self, query: Any, value: Any) -> None:
@@ -77,11 +73,11 @@ class SetVault[Item, V: _reg.Vault](AbstractVault[Item, V]):
 
             case fn if callable(fn):
                 self._replace_where(fn, self._normalize(value))
-
-        raise TypeError(f"Unsupported: {type(query).__name__}")
+            case _:
+                raise TypeError(f"Unsupported: {type(query).__name__}")
 
     def _scatter(self, keys: tuple[Any, ...], value: Any) -> None:
-        values = list(value)
+        values: list[Any] = list(value)
         if len(keys) != len(values):
             raise ValueError(
                 f"Cannot unpack {len(values)} values into {len(keys)} selectors"
@@ -90,5 +86,6 @@ class SetVault[Item, V: _reg.Vault](AbstractVault[Item, V]):
             self[key] = item
 
 
-class VaultCore[Item, V: _reg.Vault](SetVault[Item, V], GetVault[Item, V]):
-    """Default assembled processing Core"""
+class VaultAccess[Item, V: _r.Vault](
+    VaultWriter[Item, V], VaultReader[Item, V]
+): ...

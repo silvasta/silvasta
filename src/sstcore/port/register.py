@@ -109,6 +109,16 @@ class DictRegister[Item, K](Register[Item, _reg.Dict[K, Item]], Protocol):
 #  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+class _IndexRegister[Item, Axes: tuple[EnumIndex, ...]](Protocol):
+    # TASK: colorgrid!!
+    """Build the ultimate robust and stable container"""
+
+    axes: Axes
+
+    @property
+    def n_axes(self) -> int: ...
+
+
 class MixinRegister[S: _reg.Slot](TupleRegister[_reg.Mixin], Protocol):
     # TODO: check in forge.compose.SLOT
     """Provide a stable Container for Compositiions"""
@@ -193,16 +203,6 @@ class BoundaryPolicy(BisectPolicyBase):
 
 
 #  LINE: -- Experiments -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class _IndexRegister[Item, Axes: tuple[EnumIndex, ...]](Protocol):
-    # TASK: colorgrid!!
-    """Build the ultimate robust and stable container"""
-
-    axes: Axes
-
-    @property
-    def n_axes(self) -> int: ...
 
 
 class _FilterRegister[Item: Callable](Protocol):
