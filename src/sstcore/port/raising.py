@@ -11,13 +11,26 @@ Provide Namespace for Exceptions before SstError is ready
 
 __all__: list[str] = [
     "SstCoreError",
-    "FailedHackError",
+    "ErrorDTO",
+    "ErrorInput",
+    "ErrorData",
+    "Raiser",
 ]
 
 from dataclasses import dataclass
-from typing import Any, Never, NoReturn, Self, TypedDict, Unpack
+from typing import (
+    Any,
+    Literal,
+    Never,
+    NoReturn,
+    Self,
+    TypedDict,
+    Unpack,
+)
 
-from .solid import EnumMachine, EnumZero
+from .solid import EnumZero
+
+type Errors = tuple[type[Exception]] | tuple[type[Exception], type[Exception]]
 
 
 class SstCoreError(Exception):
@@ -37,49 +50,10 @@ class SstCoreError(Exception):
         return f"{type(self).__name__}[{', '.join(_vars)}]"
 
     @classmethod  # STRATEGY: do this latest in SstError!
-    def panic(cls, reason: EnumZero): ...
+    def panic(cls, reason: Raiser): ...
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class ErrorInput(TypedDict, total=False):
-    """Define the Kwarg Space of the Error Pipeline"""
-
-    expected: dict
-    received: dict
-
-
-@dataclass(frozen=True)
-class ErrorData:
-    """Define the Arg Space of the Internal Pipeline"""
-
-    reason: Raiser
-
-    # LATER:
-    # expected: tuple[tuple[str, Any], ...] = ()
-    # received: tuple[tuple[str, Any], ...] = ()
-    expected: dict[str, Any] | None = None
-    received: dict[str, Any] | None = None
-
-    extra: dict[str, Any] | None = None  # CHECK: can here something change?
-
-    def __str__(self):
-        return f"{type(self).__name__}[{self.reason}]"
-
-    def __repr__(self):
-        log: str = "-|-".join(f"{k}:={v}" for k, v in vars(self).items())
-        return f"{self}({log})"
-
-    @classmethod
-    def sanitize(cls, reason: Raiser, **kwargs: Unpack[ErrorInput]) -> Self:
-        """Extract the ErrorInput kwargs to form the ErrorData"""
-        return cls(
-            reason=reason,
-            expected=kwargs.get("expected"),
-            received=kwargs.get("received"),
-            extra=kwargs.get("extra"),
-        )
 
 
 @dataclass(frozen=True)
@@ -97,111 +71,117 @@ class ErrorDTO[ErrorT: Exception]:
         raise self(*args)
 
 
-type Errors = tuple[type[Exception], ...]
+class ErrorInput(TypedDict, total=False):
+    """Define the Kwarg Space of the Error Pipeline"""
+
+    expected: dict
+    received: dict
 
 
-class ErrorMachine(EnumMachine):
-    """Start the Heavy Engine and Produce the Exceptions"""
+@dataclass(frozen=True)
+class ErrorData:
+    """Define the Arg Space of the Internal Pipeline"""
 
-    @classmethod
-    def custom(cls, data: ErrorData) -> type[SstCoreError]:
-        """Get Custom Exception registred in Raiser"""
-        _ = data
-        return SstCoreError
+    reason: Raiser
 
-    @classmethod
-    def builtin(cls, data: ErrorData) -> type[Exception] | None:
-        """Find Builtin Exception if registred in Raiser"""
-        _ = data
-        return Exception
+    expected: dict[str, Any] | None = None
+    received: dict[str, Any] | None = None
 
-    @classmethod
-    def message(cls, data: ErrorData) -> str:
-        """Find Builtin Exception if registred in Raiser"""
-        return f"{data.reason}: ..."
+    extra: dict[str, Any] | None = None  # CHECK: can here something change?
 
-    #  LINE: -- override the above methods -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+    def __str__(self):
+        return f"{type(self).__name__}[{self.reason}]"
 
-    @classmethod
-    def bases(cls, data: ErrorData) -> Errors:
-        """Gather the registed Error classes"""
-        sst_error: type[SstCoreError] = cls.custom(data)
-        exception: type[Exception] | None = cls.builtin(data)
-        return (sst_error,) if exception is None else (sst_error, exception)
+    def __repr__(self):
+        log: str = "-|-".join(f"{k}:={v}" for k, v in vars(self).items())
+        return f"{self}({log})"
 
     @classmethod
-    def error_name(cls, reason: Raiser, bases: Errors) -> str:
-        error: str = bases[-1].__name__
-        prefix: str = bases[0].__name__[0:-5]  # CHECK: idea is, cut: Error
-        return f"{reason.name}{prefix}{error}"
-
-    @classmethod
-    def compose(cls, data: ErrorData) -> type[SstCoreError]:
-        """Mix builtin Exception into the custom Error"""
-        bases: Errors = cls.bases(data)
-        name: str = cls.error_name(data.reason, bases)
-        return type(name, bases, {})
-
-    @classmethod
-    def run(cls, data: ErrorData) -> ErrorDTO:
-        return ErrorDTO(
-            error=cls.compose(data),
-            message=cls.message(data),
-        )
+    def absorb(
+        cls, reason: Raiser, /, *args, **kwargs: Unpack[ErrorInput]
+    ) -> Self:
+        """Extract the ErrorInput kwargs to form the ErrorData"""
+        items: dict[str, Any] = {}
+        extra: dict[str, Any] = {}
+        if args:
+            extra["args"] = args
+        for key, value in kwargs.items():
+            if hasattr(cls, key):  # WARN: hasattr on CLS??
+                items[key] = value
+            else:
+                extra[key] = value
+        return cls(reason, extra=extra, **items)
 
 
 class Raiser(EnumZero):
-    def __call__(
+    """Assemble all data and throw it with panic"""
+
+    @property
+    def data(self) -> type[ErrorData]:
+        return ErrorData
+
+    @property
+    def custom(self) -> type[SstCoreError]:
+        return SstCoreError
+
+    @property
+    def builtin(self) -> type[Exception] | None:
+        return Exception
+
+    # AI: what is with overriding this one? might that result in trouble?
+    # - other ideas are to let the ErrorDTO handle and customize the message
+    def message(self, data: ErrorData) -> str:
+        """Find Builtin Exception if registred in Raiser"""
+        return repr(data)
+
+    def __call__(  # LATER: overload dispatch by Literal
         self,
-        message: str | None = None,
+        text="",
         /,
         *args,
-        launch: bool = False,
+        mode: Literal["dto", "exception", "raise"] = "exception",
         **kwargs: Unpack[ErrorInput],
-    ) -> Exception | NoReturn:
+    ) -> ErrorDTO | Exception | NoReturn:
         """Generate the DTO and immediately instantiate the Exception"""
 
-        error_output: ErrorDTO = self.dto(*args, **kwargs)
-        if launch:
-            # FIX: args/message!! unite the pipeline, check with Data and DTO
-            error_output.fire(*args)
-        else:
-            return error_output(message)
+        data: ErrorData = self.data.absorb(self, *args, **kwargs)
+        error: type[SstCoreError] = self.compose()
+        message: str = f"{self.message(data)} {text}".strip()
+        _dto = ErrorDTO(error, message=message, args=args)
 
-    def sanitize(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorData:
-        """Extract the ErrorInput to form the ErrorData"""
-        return ErrorData.sanitize(self, *args, **kwargs)
+        match mode:
+            case "dto":
+                return _dto
+            case "exception":
+                return _dto(*args)
+            case "raise":
+                return _dto.fire(*args)
 
-    def order(self, data: ErrorData) -> ErrorDTO:
-        """Produce the final ErrorDTO with the recipe in ErrorData"""
-        return ErrorMachine.run(data)
+    def run(self, data: ErrorData) -> ErrorDTO:
+        return ErrorDTO(
+            error=self.compose(),
+            message=self.message(data),
+        )
 
-    def dto(self, *args, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
-        """Provide raw error output"""
-        processdata: ErrorData = self.sanitize(*args, **kwargs)
-        return self.order(processdata)
+    def compose(self) -> type[SstCoreError]:
+        """Mix builtin Exception into the custom Error"""
+        bases: Errors = self.bases
+        name: str = self.error_name
+        return type(name, bases, {})
 
+    @property
+    def bases(self) -> Errors:
+        """Gather the registed Error classes"""
+        sst_error: type[SstCoreError] = self.custom
+        exception: type[Exception] | None = self.builtin
+        # NOTE: Assuming data has no influence on selection
+        return (sst_error,) if exception is None else (sst_error, exception)
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class FailedDispatchError(SstCoreError, NotImplementedError):  # MOVE: ._error?
-    # TASK: sync with NotImplementedDispatchError
-    """Raise on missing TargetType for singledispatch(method)"""
-
-    def __init__(self, first: Any, *args: Any, **kwargs):
-        self.first = first
-        msg = f"Missing dispatch target for {type(first).__name__}"
-        super().__init__(msg, *(first, *args), **kwargs)
-
-
-class FailedHackError(SstCoreError):
-    """
-    It was a nice try, but...
-
-    (I hope I don't have to  explain that this is mostly for internal tests...)
-    """
-
-    def __init__(self, *args) -> None:
-        """Forward Args to Exception"""
-        super().__init__("...I told you it will fail!", *args)
+    @property
+    def error_name(self) -> str:
+        match len(bases := self.bases):
+            case 1:
+                front = f"{bases[0].__name__}"
+            case 2:
+                front = f"{bases[0].__name__[0:-5]}{bases[-1].__name__}"
+        return f"{self.name}{front}"
