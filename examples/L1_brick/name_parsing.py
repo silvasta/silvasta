@@ -9,7 +9,6 @@ from contextlib import suppress
 from typing import Any
 
 import fire
-
 from sstcore.format.name import NamePattern, ParsedName
 from sstcore.utils import day_count, printer
 from sstcore.utils.parse import SchemaName

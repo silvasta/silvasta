@@ -1,14 +1,8 @@
 from pathlib import Path
 
 from pydantic import Field
-from sstcore.cli.tools.app import launch_folder_scanner, launch_log_monitor_2
-from sstcore.config.setup import (
-    sst_config_loader,
-)
-from sstcore.system.core import sst_system_loader
-
-from sstcore import PathGuard
 from sstcore.cli import SafeTyper, tools
+from sstcore.cli.tools.app import launch_folder_scanner, launch_log_monitor_2
 from sstcore.config import (
     ConfigManager,
     SstDefaults,
@@ -16,8 +10,14 @@ from sstcore.config import (
     SstPaths,
     SstSettings,
 )
-from sstcore.error import TuiSelectorError
+from sstcore.config.setup import (
+    sst_config_loader,
+)
+from sstcore.system.core import sst_system_loader
 from sstcore.utils import printer
+
+from sstcore import PathGuard
+from sstcore.error import TuiSelectorError
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Example and Instruction: Setup Custom Config and CLI

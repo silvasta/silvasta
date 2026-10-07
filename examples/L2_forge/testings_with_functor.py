@@ -18,6 +18,7 @@ from typing import Any, TypeGuard
 
 from sstcore.brick.forge.blueprint._functor import FunctorMetaData
 from sstcore.brick.func._tor import BaseFunctor
+
 from sstcore.port.functor import Functor as Functor
 
 
