@@ -45,12 +45,12 @@ class ColoredName(NameParser):
         """Explicit raw alias (same as default __call__)."""
         return self.format(target)
 
-    def extract(self, name: Path | str) -> dict[str, Any]:
+    def extract(self, name: Path | str) -> dict[str, Any]:  # CHECK: why?
         """Always extract from the raw (stripped) version."""
         return super().extract(name)
 
     @contextmanager
-    def color_mode(self):
+    def color_mode(self):  # CHECK: any better trick?
         mode_before: bool = getattr(self, "_color_mode", True)
         self._color_mode = True
         try:

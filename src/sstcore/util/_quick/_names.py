@@ -8,11 +8,6 @@ import itertools
 from collections.abc import Iterator, Sequence
 from typing import Literal, Self
 
-# MOVE: util
-# MOVE: util
-# MOVE: util
-# MOVE: util
-
 
 class GetNames:
     defaults: list[str] = [

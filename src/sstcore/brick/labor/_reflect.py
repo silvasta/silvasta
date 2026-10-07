@@ -25,7 +25,7 @@ def clsname(target: Any, /, default="") -> str:
     return __core__(target, attrs=("__name__",), default=default)
 
 
-def funcname(target: Any, default="Func") -> str:
+def funcname(target: Any, /, default="Func") -> str:
     """Check attribute list, provide match or default"""
     attrs: Sequence[str] = ("__name__", "__qualname__")
     return __core__(target, attrs, default)

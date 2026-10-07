@@ -33,14 +33,14 @@ __all__: list[str] = [
     "data",
     "pydantic",
     # mutate
-    "mutate",
+    "transform",
 ]
 
 
 from . import _invoke as invoke
-from . import _mutate as mutate
 from . import _reflect as reflect
 from . import _scan as scan
+from . import _transform as transform
 from ._collection import just_return
 from ._inspect import validate_signature
 from ._invoke import cli, invoking, log, rich

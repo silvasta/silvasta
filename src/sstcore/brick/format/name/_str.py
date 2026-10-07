@@ -46,8 +46,9 @@ class Name(NameParser, str):
     def parse(self) -> dict[str, Any]:
         return self.extract(str(self))
 
-    def format(self, keys: dict | list | tuple) -> Name:
-        new_value = self.format(keys)
+    def format(self, keys: dict | list | tuple) -> Name:  # ty:ignore
+        """Override str.format with NameParser.format"""  # CHECK:
+        new_value: str = self.format(keys)
         return type(self)(new_value)
 
     def __rich__(self) -> str:

@@ -37,7 +37,7 @@ class ViewSentinel:
 
 
 def use_latest_features() -> bool:
-    """Next type check dummy, avoiding greying out..."""
+    """Next type check dummy, avoid grey shadowing iff..."""
     return sys.version_info >= (3, 15)
 
 

@@ -1,9 +1,6 @@
 """
 Provide Ghost class imitation that disappears for runtime MRO
 
-- Ghost: Empty class with empty MRO entries
-- example_pipeline: check how to wire it
-
 The Idea:
   - show the type checker a full class composition
   - instead (hiddenly) replace the class by the Ghost
@@ -25,10 +22,7 @@ type checker to hard is not recommended.
 
 __all__: list[str] = [
     "Ghost",
-    "example_pipeline",
 ]
-
-from typing import TYPE_CHECKING
 
 
 class _GhostBaseEradicator:
@@ -40,55 +34,3 @@ class _GhostBaseEradicator:
 
 
 Ghost = _GhostBaseEradicator()
-
-
-#  LINE: -- Example -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def example_pipeline():
-    # NEXT: move to examples and use the printer there...
-    # LATER: inject printer and show colorized MRO tables
-    """Show the type check mock workflow"""
-
-    class BaseClass:
-        def base_method(self) -> None: ...
-
-    class EarlyMixin:
-        def early_method(self) -> None: ...
-
-    if TYPE_CHECKING:
-        # Show the type checker the desired class hierarchy
-        class _EarlyStateMixin(EarlyMixin, BaseClass): ...
-    else:
-        # Place instead an MRO-empty ghost object there
-        _EarlyStateMixin = _GhostBaseEradicator()  # noqa:N806
-
-    class IntermediateMixin(_EarlyStateMixin):
-        def late_method(self) -> None:
-            """IDE and type checker still see everything!"""
-            self.base_method()
-            self.early_method()
-
-    if TYPE_CHECKING:
-        # Show the type checker the next step
-        class _MediumStateMixin(EarlyMixin, BaseClass): ...
-    else:  # Assign it directly! Do not use the `class` keyword.
-        _MediumStateMixin = Ghost  # noqa:N806
-
-    class LateMixin(_MediumStateMixin):
-        def do_work(self) -> None:
-            pass
-
-    class FinalWorker(LateMixin, IntermediateMixin, EarlyMixin, BaseClass):
-        pass
-
-
-def _impossible_type_mock(*classes: type):
-    """Dynamic MRO unpacking fails... proves why the static Ghost is needed!"""
-
-    if not TYPE_CHECKING:
-        return Ghost
-
-    class _TypeCheckerGhost(*classes): ...
-
-    return _TypeCheckerGhost

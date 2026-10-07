@@ -6,6 +6,8 @@ The Docstring Merging Render Engine
                                DependencyLevel.sstcore.port.link[2]
 """
 
+# TASK: remove QuickPrinter asap
+
 import enum as _e
 from collections.abc import Iterable
 from contextlib import contextmanager
@@ -31,7 +33,7 @@ class MergeMachine(EnumMachine):
         for doc in docs:
             global printer  # INFO: temporary workaround
             if printer is None:
-                printer = _load_printer()
+                printer = _load_printer()()
             printer.line(color="cyan")
             match doc:
                 case PortDoc():
@@ -120,7 +122,6 @@ def _load_printer():
 
         def __call__(self, *args, **kwargs):
             if self.console is None:
-                _load_printer()
                 self.console = Console()
             self.console.print(*args, **kwargs)
 
@@ -208,4 +209,4 @@ def _load_printer():
         default: str = default or type(target).__name__
         return getattr(target, "__name__", default)
 
-    return QuickPrinter()
+    return QuickPrinter

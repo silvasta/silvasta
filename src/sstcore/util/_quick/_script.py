@@ -52,9 +52,14 @@ def separator():
     print("\n---\n")
 
 
+# NEXT: absorb examples.index_color
+
+
 @contextmanager
+# NEXT: absorb examples.index_color
 def section(_title: str) -> _Generator:
     start(_title)
+    # NEXT: absorb examples.index_color
     try:
         yield
     except Exception as error:

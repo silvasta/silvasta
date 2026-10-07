@@ -10,9 +10,9 @@ Define the Shape of the Processing Pipelines
 
 __all__: list[str] = [
     "NamingPattern",
-    "FormatNormalizing",
-    "ExtractNormalizing",
-    "Bidirect",
+    "FormatNormalize",
+    "ExtractNormalize",
+    "BidirectNaming",
     "NameParsing",
 ]
 
@@ -28,14 +28,18 @@ class NamingPattern(Protocol):
         """Format string with keywords and pattern"""
 
     def extract(self, name: str) -> dict[str, str]:
-        """Extract keywords from string or Raise"""  # LATER: safe mode with -> None
+        """Extract keywords from string or Raise"""  # LATER: safe mode with -> None ?
+
+    # AI: Safe-Mode: where to apply?
+    # - maybe both format/extract
+    # - but catch here? maybe as feature of BidirectNaming?
 
     def update_pattern(self, pattern: str) -> None:
         """Recompile internal pattern and keywords"""
 
 
-class FormatNormalizing(NamingPattern, Protocol):
-    def normalize_keys(
+class FormatNormalize(Protocol):
+    def normalize_keys(  # LATER: think about name and parametrization
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
     ) -> dict[str, str]:
         """Ensure all keys are present and stringable"""
@@ -44,22 +48,28 @@ class FormatNormalizing(NamingPattern, Protocol):
         """Render normalized keywords"""
 
 
-class ExtractNormalizing(NamingPattern, Protocol):
-    def normalize_name(self, target: Path | str) -> str:
+class ExtractNormalize(Protocol):
+    def normalize_name(self, target: Path | str) -> str:  # LATER: sync naming
         """Ensure stringable name and sanitizing"""
 
     def extract(self, name: Path | str) -> dict[str, str]:
         """Parse keywords from cleaned string"""
 
 
-class Bidirect(ExtractNormalizing, FormatNormalizing, Protocol):
+class BidirectNaming(Protocol):
     """Route the Calls trough the right channel"""
+
+    @overload
+    def safe(self, target: Path | str) -> dict[str, str] | None: ...
+    @overload
+    def safe(self, target: dict | list | tuple) -> str | None: ...
+    def safe(self, target: Any) -> dict[str, str] | str | None:
+        """Gatekeeper for Error that returns None for bad Parsings"""
 
     @overload
     def __call__(self, target: Path | str) -> dict[str, str]: ...
     @overload
     def __call__(self, target: dict | list | tuple) -> str: ...
-
     def __call__(self, target: Any):
         """
         Add the bidirectional dispatch
@@ -69,7 +79,7 @@ class Bidirect(ExtractNormalizing, FormatNormalizing, Protocol):
         """
 
 
-class NameParsing(Bidirect, ExtractNormalizing, FormatNormalizing, Protocol):
+class NameParsing(BidirectNaming, ExtractNormalize, FormatNormalize, Protocol):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
 
