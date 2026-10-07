@@ -3,6 +3,8 @@ import inspect
 from collections.abc import Callable
 from typing import Any
 
+from sstcore.brick.color._arg import resolve_color
+
 from ...port.color import Color
 
 
