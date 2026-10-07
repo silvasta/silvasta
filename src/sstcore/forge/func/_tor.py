@@ -16,7 +16,11 @@ from typing import (
     overload,
 )
 
-from ...brick.field import PolicyField, StrategyField, TypedField
+from ...brick.field import (
+    PolicyField,
+    RequiredField,
+)
+from ...brick.field._strategy import morphing, strategy
 from ...brick.labor import clsname, funcname
 from ...port.functor import (
     ErrorPolicy,
@@ -56,7 +60,6 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
         super().__init__()
 
     def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
-        """Instance-Level Execution & Delayed Binding"""
         return self.call(*args, **kwargs)
 
 
@@ -64,11 +67,11 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
 class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
     """Protect the Execution, Hanldle Errors, everything able to customize"""
 
-    catch: Callable[[Exception, Any], Result | None]
-    __call__: Callable[Args, Result]
+    # AI: morphing
+    catch: Callable[Concatenate[Exception, Args], Result | None]
 
     error_policy = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)
-    exit_code = TypedField(types=int, default=1)
+    exit_code = RequiredField(types=int, default=1)
 
     def __init__(
         self,
@@ -93,7 +96,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
 
 
 class Detect[In](Protocol):
-    def __call__(self, target: object) -> TypeGuard[In]: ...
+    def __call__(self, target: Any) -> TypeGuard[In]: ...
 
 
 @portlink(HybridFunctorial)
@@ -105,16 +108,10 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
             self.detect: Detect = detect
         super().__init__(**kwargs)
 
-    # AI_TASK: I know this StrategyFields are somehow wrong...
-    # - but how to wire them proper? how to bind self proper?
-    # - check as well the brick.field below, no new fields!
-    #   (deriving StrategyField might be ok)
-
-    @StrategyField
-    def detect(self, target: object) -> TypeGuard[In]:
+    def detect(self, target: Any, /) -> TypeGuard[In]:
         raise NotImplementedError("Need TypeGuard to detect!", target)
 
-    @StrategyField
+    @strategy
     def wrap[**Fn](
         self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[Fn, Out]:
@@ -122,19 +119,18 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
 
         @functools.wraps(fn)
         def wrapper(*fn_args: Fn.args, **fn_kwargs: Fn.kwargs) -> Out:
-            return self(fn(*fn_args, **fn_kwargs), *args, **kwargs)
+            return self.call(fn(*fn_args, **fn_kwargs), *args, **kwargs)
 
         return wrapper
 
-    @StrategyField
+    @morphing
     def delay(
         self, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[[Callable[..., In]], Callable[..., Out]]:
         """Case 3: Bind additional input to case 2"""
         return lambda fn: self.wrap(fn, *args, **kwargs)
 
-    @StrategyField
-    def reject(self, fail: object, *args, **kwargs) -> NoReturn:
+    def reject(self, fail: Any, *args, **kwargs) -> NoReturn:
         # LATER: improve, use from ._hybrid
         self.emit("Invalid Hybrid Usage", fail, *args, **kwargs)
         raise TypeError("Invalid Hybrid Usage")
@@ -153,12 +149,12 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
 
     def __call__(
-        self, target: object = None, /, *args: P.args, **kwargs: P.kwargs
+        self, target: Any = None, /, *args: P.args, **kwargs: P.kwargs
     ):
         """Hybrid triple dispatch"""
 
         if self.detect(target):
-            return self(target, *args, **kwargs)
+            return self.call(target, *args, **kwargs)
 
         if callable(target) and target is not type:
             return self.wrap(target, *args, **kwargs)

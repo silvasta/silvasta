@@ -53,7 +53,7 @@ class Functor[**ArgSpace, SubSetResult](Protocol):
 class SafeFunctorial[**Param, Result](Protocol):
     """Execute Functions in Safe Environement"""
 
-    catch: Callable[Concatenate[Exception, Param], Result | None] | None
+    catch: Callable[Concatenate[Exception, Param], Result | None]
 
     @property
     def error_policy(self) -> ErrorPolicy: ...
@@ -62,7 +62,7 @@ class SafeFunctorial[**Param, Result](Protocol):
 
     def safe(
         self, *args: Param.args, **kwargs: Param.kwargs
-    ) -> Result | None: ...
+    ) -> Result | None | NoReturn: ...
 
 
 class ErrorPolicy(StrEnum):  # LATER: Str? only Enum?
@@ -88,7 +88,7 @@ class HybridFunctorial[In, Out, **P](Protocol):
         self, /, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
 
-    def detect(self, target: object) -> TypeGuard[In]:
+    def detect(self, target: Any, /) -> TypeGuard[In]:
         """Check if target is direct function call"""
 
     def wrap[**Fn](
@@ -99,4 +99,4 @@ class HybridFunctorial[In, Out, **P](Protocol):
         self, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[[Callable[Fn, In]], Callable[Fn, Out]]: ...
 
-    def reject(self, fail: object, *args, **kwargs) -> NoReturn: ...
+    def reject(self, fail: Any, *args, **kwargs) -> NoReturn: ...
