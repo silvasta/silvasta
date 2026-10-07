@@ -1,26 +1,26 @@
 """
-Implement the Functors for functions and more
+Implement the Functors for calltions and more
 
 - Pick and provide the best of OOP/FP
 
 """
 
 import functools
-import sys
 from collections.abc import Callable
 from typing import (
-    TYPE_CHECKING,
     Any,
     Concatenate,
     NoReturn,
     Protocol,
     TypeGuard,
+    overload,
 )
 
-from loguru import logger
-
+from ...brick.field import PolicyField, StrategyField, TypedField
+from ...brick.labor import clsname, funcname
 from ...port.functor import (
     ErrorPolicy,
+    FuncEmit,
     Functor,
     HybridFunctorial,
     SafeFunctorial,
@@ -32,137 +32,133 @@ FunctorInput = FunctorMetaData()
 
 
 @portlink(Functor)
-class BaseFunctor[**Param, Result](metaclass=FunctorMeta, data=FunctorInput):
+class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
     """Ensure Requirements and close MRO forwarding"""
+
+    emit: FuncEmit
 
     def __init__(
         self,
-        func: Callable[Param, Result] | None = None,
-        name: str = "",  # WARN: when does this arrive?
+        call: Callable[Args, Result] | None = None,
+        name: str = "",
         **kwargs,
     ):
-        self._func: Callable[Param, Result] = func
+        if call:
+            self.call: Callable[Args, Result] = call
+
+        name: str = name or funcname(self.call, default=f"{clsname(self)}Unit")
+        self.__name__: str = name
+        self.__qualname__: str = name
+
+        if kwargs:
+            self.emit(f"Undestroyed kwargs: {kwargs!r}")
 
         super().__init__()
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         """Instance-Level Execution & Delayed Binding"""
-
-        # Phase 2 of CASE 3: We received @MyFunctor(kwargs), now we get the function
-        if getattr(self, "_func", None) is None:
-            self._func = args[0]
-            functools.update_wrapper(self, self._func)
-            return self
-
-        # FIX: why apply? why here in BaseFunctor? better override _func there?
-        return self.apply(args[0], *args[1:], **kwargs)
-
-
-if TYPE_CHECKING:
-    _instance: Functor = BaseFunctor()
-    _class: type[Functor] = BaseFunctor
-
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Essentials
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+        return self.call(*args, **kwargs)
 
 
 @portlink(SafeFunctorial)
-class SafeFunctorMixin[**Param, Result]:
-    # __call__: Callable  # NOTE: toggle this while implementing
+class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
     """Protect the Execution, Hanldle Errors, everything able to customize"""
 
-    # WARN: the issue is somehow that 1 FunctorType may have multiple instances,
-    # - each with different requirements for policy or exit_code or catch
+    catch: Callable[[Exception, Any], Result | None]
+    __call__: Callable[Args, Result]
+
+    error_policy = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)
+    exit_code = TypedField(types=int, default=1)
+
     def __init__(
         self,
         catch: Callable[[Exception, Any], Result | None] | None = None,
-        error_policy: ErrorPolicy = ErrorPolicy.LOG_AND_CONTINUE,
-        exit_code: int = 1,
         **kwargs,
     ):
-        self.catch: Callable[[Exception, Any], Result | None] | None = catch
-        self.error_policy: ErrorPolicy = error_policy
-        self.exit_code: int = exit_code
+        if catch is not None:
+            self.catch: Callable[[Exception, Any], Result | None] = catch
         super().__init__(**kwargs)
 
     def safe(
-        self, *args: Param.args, **kwargs: Param.kwargs
+        self, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | None | NoReturn:
         """Execute Function in Safe Environment"""
         try:
             return self(*args, **kwargs)
         except Exception as error:
-            # STRATEGY: either all to meta-dto, or directly to cls
-            if catch_func := self.__class__._data.catch:
-                return catch_func(self, error, *args, **kwargs)
-            return self.on_error(error, *args, **kwargs)
-
-    def on_error(self, error: Exception, *_, **__) -> Any | NoReturn:
-        """Handle Function fail by Policy if Catch is not defined"""
-
-        # STRATEGY: either all to meta-dto, or directly to cls
-        policy: ErrorPolicy = self.__class__._data.policy
-        exit_code: int = self.__class__._data.exit_code
-
-        logger.critical(f"{self} failed: {error}")
-
-        match policy:
-            case ErrorPolicy.LOG_AND_CONTINUE:
-                return None
-
-            case ErrorPolicy.LOG_AND_EXIT:
-                logger.error(f"Original error: {error}")
-                sys.exit(exit_code)
-
-            case ErrorPolicy.RE_RAISE:
-                raise error
+            self.catch(error, *args, **kwargs)
 
 
-if TYPE_CHECKING:
-    _instance: SafeFunctorial = SafeFunctorMixin()
-    _class: type[SafeFunctorial] = SafeFunctorMixin
-
-
-@portlink(SafeFunctorial)
-class SafeFunctor[**P, R](SafeFunctorMixin[P, R], BaseFunctor[P, R]): ...
-
-
-#  TESTING:  - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Hybrid -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class Detect[In](Protocol):
     def __call__(self, target: object) -> TypeGuard[In]: ...
 
 
-class HybridFunctorMixin[In, Out, **P]:
-    # class HybridFunctorMixin[In, Out, **P](_GhostFunctor):
-    _func: Callable[Concatenate[In, P], Out]  # NOTE: toggle if needed
-    emit: Callable
-    """Dispatch only. Logic lives in _func / apply."""
-
+@portlink(HybridFunctorial)
+class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     detect: Detect[In]
 
+    def __init__(self, detect: Detect[In] | None, **kwargs):
+        if detect is not None:
+            self.detect: Detect = detect
+        super().__init__(**kwargs)
+
+    # AI_TASK: I know this StrategyFields are somehow wrong...
+    # - but how to wire them proper? how to bind self proper?
+    # - check as well the brick.field below, no new fields!
+    #   (deriving StrategyField might be ok)
+
+    @StrategyField
     def detect(self, target: object) -> TypeGuard[In]:
         raise NotImplementedError("Need TypeGuard to detect!", target)
 
+    @StrategyField
+    def wrap[**Fn](
+        self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[Fn, Out]:
+        """Case 2: Decorator"""
+
+        @functools.wraps(fn)
+        def wrapper(*fn_args: Fn.args, **fn_kwargs: Fn.kwargs) -> Out:
+            return self(fn(*fn_args, **fn_kwargs), *args, **kwargs)
+
+        return wrapper
+
+    @StrategyField
+    def delay(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[[Callable[..., In]], Callable[..., Out]]:
+        """Case 3: Bind additional input to case 2"""
+        return lambda fn: self.wrap(fn, *args, **kwargs)
+
+    @StrategyField
     def reject(self, fail: object, *args, **kwargs) -> NoReturn:
         # LATER: improve, use from ._hybrid
         self.emit("Invalid Hybrid Usage", fail, *args, **kwargs)
         raise TypeError("Invalid Hybrid Usage")
 
+    @overload
     def __call__(
-        self,
-        target: object = None,
-        /,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> object:
+        self, target: In, /, *args: P.args, **kwargs: P.kwargs
+    ) -> Out: ...
+    @overload
+    def __call__[**Fn](
+        self, target: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[Fn, Out]: ...
+    @overload
+    def __call__(
+        self, /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
+
+    def __call__(
+        self, target: object = None, /, *args: P.args, **kwargs: P.kwargs
+    ):
         """Hybrid triple dispatch"""
 
         if self.detect(target):
-            return self.apply(target, *args, **kwargs)
+            return self(target, *args, **kwargs)
 
         if callable(target) and target is not type:
             return self.wrap(target, *args, **kwargs)
@@ -171,48 +167,3 @@ class HybridFunctorMixin[In, Out, **P]:
             return self.delay(*args, **kwargs)
 
         self.reject(target)
-
-    def apply(self, value: In, /, *args: P.args, **kwargs: P.kwargs) -> Out:
-        """Case 1: Function"""
-        if not self._func:  # IDEA: super().__call__??
-            raise NotImplementedError("Provide func or override __call__!")
-        return self._func(value, *args, **kwargs)
-
-    def wrap[**Fn](
-        self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
-    ) -> Callable[Fn, Out]:
-        """Case 2: Decorator"""
-
-        @functools.wraps(fn)
-        def wrapper(*fn_args: Fn.args, **fn_kwargs: Fn.kwargs) -> Out:
-            return self.apply(fn(*fn_args, **fn_kwargs), *args, **kwargs)
-
-        return wrapper
-
-    def delay(
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> Callable[[Callable[..., In]], Callable[..., Out]]:
-        """Case 3: Bind additional input to case 2"""
-        # TODO: check how well the parametrization works with that
-        return lambda fn: self.wrap(fn, *args, **kwargs)
-
-
-@portlink(HybridFunctorial)
-class HybridFunctor[In, Out, **P](
-    HybridFunctorMixin[In, Out, P],
-    BaseFunctor[Concatenate[In, P], Out],
-):
-    def __init__(  # REMOVE: ??
-        # IDEA: inject hybrid here?? as func!!
-        self,
-        func: Callable[Concatenate[In, P], Out],
-        *,
-        detect: Detect[In],
-        reject: Callable[[object], NoReturn],
-        name: str = "",
-        **kwargs,
-    ):
-        # REFACTOR: maybe a generalized inject/override? in Meta?? MetaData?
-        self.detect = detect
-        self.reject = reject
-        super().__init__(func=func, name=name, **kwargs)

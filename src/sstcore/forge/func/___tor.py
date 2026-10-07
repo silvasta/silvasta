@@ -19,8 +19,6 @@ from ...brick.labor import clsname, funcname
 from ...port.functor import ErrorPolicy, Functor, SafeFunctorial
 from ...port.link import portlink
 
-# AI: this file was the former implementation
-
 
 @portlink(Functor)
 class BaseFunctor[**Param, Result]:
@@ -44,7 +42,6 @@ class BaseFunctor[**Param, Result]:
         self.__qualname__: str = name
 
     def __call__(self, *args: Param.args, **kwargs: Param.kwargs) -> Result:
-        # IDEA: instead of override this, override BaseFunctor.func?
         if not self._func:
             raise NotImplementedError("Provide func or override __call__!")
         return self._func(*args, **kwargs)

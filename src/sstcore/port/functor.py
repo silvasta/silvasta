@@ -18,35 +18,36 @@ Extensions:
                                     DependencyLevel.sstcore.port[0]
 """
 
-from collections.abc import Callable
-from enum import StrEnum
-from typing import Concatenate, Protocol, TypedDict, overload
-
 __all__: list[str] = [
     "Functor",
     "SafeFunctorial",
     "ErrorPolicy",
 ]
 
+from collections.abc import Callable
+from enum import StrEnum
+from typing import Any, Concatenate, NoReturn, Protocol, TypeGuard, overload
+
+
+class FuncEmit(Protocol):
+    def __call__(self, *args, **kwargs: Any) -> None:
+        """Keep the place until proper Emit arrives here"""
+
 
 class Functor[**ArgSpace, SubSetResult](Protocol):
-    """Dictate the Basic Requirements for any Functor"""
+    """Define the Basic Requirements for any Functor"""
 
+    call: Callable[ArgSpace, SubSetResult]
     __name__: str
     __qualname__: str
-    # IDEA: make _func public! why not? or descriptor? or from meta?
-    _func: Callable[ArgSpace, SubSetResult]  # IDEA: __func__??
 
-    def __call__(  # TODO:
+    @property
+    def emit(self) -> FuncEmit:
+        """Provide default message sending"""
+
+    def __call__(
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
     ) -> SubSetResult: ...
-
-    # NEXT: activate this again
-    # def emit(self, **kwargs: Any) -> None:
-    #     """Provide default message sending"""
-
-
-#  INFO:  Safe Extension - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 class SafeFunctorial[**Param, Result](Protocol):
@@ -70,13 +71,25 @@ class ErrorPolicy(StrEnum):  # LATER: Str? only Enum?
     RE_RAISE = "raise"
 
 
-#  INFO:  Hybrid Extension - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Hybrid -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class HybridFunctorial[In, Out, **P](Protocol):
-    def apply(
-        self, value: In, /, *args: P.args, **kwargs: P.kwargs
+    @overload
+    def __call__(
+        self, target: In, /, *args: P.args, **kwargs: P.kwargs
     ) -> Out: ...
+    @overload
+    def __call__[**Fn](
+        self, target: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[Fn, Out]: ...
+    @overload
+    def __call__(
+        self, /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
+
+    def detect(self, target: object) -> TypeGuard[In]:
+        """Check if target is direct function call"""
 
     def wrap[**Fn](
         self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
@@ -86,65 +99,4 @@ class HybridFunctorial[In, Out, **P](Protocol):
         self, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[[Callable[Fn, In]], Callable[Fn, Out]]: ...
 
-    # IDEA: delete entire __call__ here and instead, inject hybrid as _func!
-    @overload
-    def __call__(  # INFO: regular function
-        self,
-        target: In,
-        /,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> Out: ...
-
-    @overload
-    def __call__[**Fn](  # INFO: regular decorator
-        self,
-        target: Callable[Fn, In],
-        /,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> Callable[Fn, Out]: ...
-
-    @overload
-    def __call__(  # INFO: decorator with args
-        self,
-        /,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
-
-
-#  LINE:  LSP acrobatic - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-
-# REMOVE: or find usage as BindFunctor (kw)arg?
-class HybridPolicy(TypedDict, total=False):
-    """Base policy to be extended by specific implementations."""
-
-
-class BindFunctor[**FreeArgs, **BoundArgs, SubSetResult](
-    Functor[BoundArgs, SubSetResult], Protocol
-):
-    """Narrow the Input Space (LSP-unconform)"""
-
-    # FIX: separate input space, but how?
-    # Fail1: _func: Callable[**FreeArgs, **BoundArgs], SubSetResult]
-    _func: Callable[Concatenate[FreeArgs, BoundArgs], SubSetResult]
-    # WARNING: Fail 2 (above)
-    # └╴  Bare ParamSpec `FreeArgs` is not valid in this context in a type expression
-
-    def __call__(
-        self, *args: BoundArgs.args, **kwargs: BoundArgs.kwargs
-    ) -> SubSetResult: ...
-
-
-class ExpandFunctor[**ArgSpace, SubSetResult, SuperSetResult](
-    Functor[ArgSpace, SuperSetResult], Protocol
-):
-    """Extend the output Space (LSP-unconform)"""
-
-    _func: Callable[ArgSpace, SubSetResult]
-
-    def __call__(
-        self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
-    ) -> SuperSetResult: ...
+    def reject(self, fail: object, *args, **kwargs) -> NoReturn: ...

@@ -9,7 +9,7 @@ import functools
 from collections.abc import Callable
 from typing import Any, TypedDict, TypeGuard, Unpack
 
-from sstcore.port.raising import SstCoreError
+from ...port.raising import SstCoreError
 
 
 class HybridError(TypeError, SstCoreError): ...
@@ -18,21 +18,16 @@ class HybridError(TypeError, SstCoreError): ...
 class HybridPolicy(TypedDict, total=False): ...
 
 
-type WriteInStub = Any  # LATER: flag for StubGenerator?
-
-
 def hybrid_factory[TargeT, **P, R](
     logic: Callable[..., R],
     is_target: Callable[[Any], TypeGuard[TargeT]],
 ) -> Callable[..., R]:
     """Bind the Hybrid construction"""
 
-    def main(
-        target: object = None, **policy: Unpack[HybridPolicy]
-    ) -> WriteInStub:
+    def main(target: object = None, **policy: Unpack[HybridPolicy]):
         """Dispatch target to proper execution"""
 
-        # INFO: remove if...:__doc__ before usage
+        # LATER: remove if...:__doc__ before usage
 
         if is_target(target):
             """# Case 1: Direct Execution (Data provided)"""
