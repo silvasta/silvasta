@@ -51,21 +51,9 @@ class SstMeta(type):
         data: SstMetaData | None = None,
         **kwargs,
     ):
-        cls = super().__new__(
-            mcs,
-            name,
-            bases,
-            namespace,
-            # TASK: forward kwargs??
-            # - maybe keep it open for custom changes
-            # - on the other side why do this here?
-            # - maybe just emit when kwargs not empty?
-            # similar for potential SstMeta.__init__?
-            **kwargs,
-        )
-
+        # CHECK: forward kwargs needed?
+        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
         cls._data = data or mcs._data_class()
-
         return cls
 
 

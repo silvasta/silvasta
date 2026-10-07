@@ -9,10 +9,10 @@ import functools
 from collections.abc import Callable
 from typing import Any, TypedDict, TypeGuard, Unpack
 
-from sstcore.port.error import SstError
+from sstcore.port.raising import SstCoreError
 
 
-class HybridError(TypeError, SstError): ...
+class HybridError(TypeError, SstCoreError): ...
 
 
 class HybridPolicy(TypedDict, total=False): ...

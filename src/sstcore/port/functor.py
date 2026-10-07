@@ -20,7 +20,7 @@ Extensions:
 
 from collections.abc import Callable
 from enum import StrEnum
-from typing import Any, Concatenate, Protocol, TypedDict, overload
+from typing import Concatenate, Protocol, TypedDict, overload
 
 __all__: list[str] = [
     "Functor",
@@ -41,8 +41,9 @@ class Functor[**ArgSpace, SubSetResult](Protocol):
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
     ) -> SubSetResult: ...
 
-    def emit(self, **kwargs: Any) -> None:
-        """Provide default message sending"""
+    # NEXT: activate this again
+    # def emit(self, **kwargs: Any) -> None:
+    #     """Provide default message sending"""
 
 
 #  INFO:  Safe Extension - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -113,12 +114,12 @@ class HybridFunctorial[In, Out, **P](Protocol):
     ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
 
 
-# REMOVE: or find purpose
+#  LINE:  LSP acrobatic - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+
+
+# REMOVE: or find usage as BindFunctor (kw)arg?
 class HybridPolicy(TypedDict, total=False):
     """Base policy to be extended by specific implementations."""
-
-
-#  INFO:  LSP acrobatic - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 class BindFunctor[**FreeArgs, **BoundArgs, SubSetResult](
@@ -127,7 +128,10 @@ class BindFunctor[**FreeArgs, **BoundArgs, SubSetResult](
     """Narrow the Input Space (LSP-unconform)"""
 
     # FIX: separate input space, but how?
-    # _func: Callable[**FreeArgs, **BoundArgs], SubSetResult]
+    # Fail1: _func: Callable[**FreeArgs, **BoundArgs], SubSetResult]
+    _func: Callable[Concatenate[FreeArgs, BoundArgs], SubSetResult]
+    # WARNING: Fail 2 (above)
+    # └╴  Bare ParamSpec `FreeArgs` is not valid in this context in a type expression
 
     def __call__(
         self, *args: BoundArgs.args, **kwargs: BoundArgs.kwargs
@@ -144,11 +148,3 @@ class ExpandFunctor[**ArgSpace, SubSetResult, SuperSetResult](
     def __call__(
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
     ) -> SuperSetResult: ...
-
-
-# # FIX: or later on just drop inheritance or even any declaration
-# class TransformFunctor[**FreeArgs, **BoundArgs, SubSetResult, SuperSetResult](
-#     BindFunctor[FreeArgs, BoundArgs, SubSetResult],
-#     ExpandFunctor[BoundArgs, SubSetResult, SuperSetResult],
-#     Protocol,
-# ): ...
