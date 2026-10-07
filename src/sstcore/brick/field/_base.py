@@ -10,6 +10,8 @@ Define the Atomic Components of the Fields
                                                  DependencyLevel[1]
 """
 
+from sstcore.brick.none import sentinel
+
 __all__: list[str] = [
     "NamedField",
     "BaseField",
@@ -25,6 +27,8 @@ from ...port import attach
 from ...port.link import portlink
 from ..labor import reflect
 from ._raise import FieldRaiser
+
+MISSING = sentinel("MISSING")
 
 
 @portlink(attach.Descriptor)
@@ -49,6 +53,13 @@ class NamedField:
 class BaseField(NamedField):
     """Provide Utils for all Fields"""
 
+    def __init__(
+        self, *args, default: Any = MISSING, frozen: bool = False, **kwargs
+    ):
+        self.default = default
+        self.frozen: bool = frozen
+        super().__init__(*args, **kwargs)
+
     def _get_val(self, unit: object) -> Any:
         return unit.__dict__[self.private_name]
 
@@ -68,6 +79,8 @@ class WriteField[FieldT](BaseField):
         self.write(unit, value)
 
     def write(self, unit: object, value: FieldT) -> None:
+        if self.frozen and self._has_val(unit):
+            raise self.raiser.ReadOnly(self, unit)
         self._set_val(unit, value)
 
 
@@ -93,6 +106,8 @@ class ReadField[FieldT](BaseField):
 
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
+            if self.default is not MISSING:
+                return self.default
             raise self.raiser.ReadMissing(self, unit)
         return self._get_val(unit)
 

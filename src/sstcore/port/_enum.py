@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 
 from enum import Enum
-from typing import Self
+from typing import Any, Literal, Self
 
 #  LINE: -- Views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
@@ -48,9 +48,16 @@ EnumRepr = EnumRepr1
 #  LINE: -- Index -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-type EnumId[EnumT] = EnumT | str | int
-
 type EnumSlice[EnumT] = EnumId[EnumT] | slice
+
+
+class SlicingEnum(Enum):
+    # TASK: ok that with the slice is not even so easy...
+    def __getitem__(self, key: EnumSlice):
+        raise NotImplementedError(key)
+
+
+type EnumId[EnumT] = EnumT | str | int
 
 
 class Enum0(Enum):
@@ -69,38 +76,47 @@ class Enum0(Enum):
         return count
 
 
-class SlicingEnum(Enum):
-    # TASK: slicing
-    def __getitem__(self, key: EnumSlice):
-        raise NotImplementedError(key)
-
-
 class ResolvingEnum(Enum):
     """Match by Int, Str and Slice"""
 
-    def resolve(self, identifier: str | int | Self, default=None):
-        # TASK: ok that with the slice is not even so easy...
+    @classmethod
+    def includes(
+        cls, target: Self | type[Self] | Any, /
+    ) -> (
+        tuple[Literal["unit"], Self]
+        | tuple[Literal["cls"], type[Self]]
+        | tuple[Literal["fail"], None]
+    ):
+        """Check if target is Enum class or instance"""
+
+        if isinstance(target, cls):
+            return "unit", target
+
+        if isinstance(target, type) and issubclass(target, cls):
+            return "cls", target
+
+        return "fail", None
+
+    @classmethod
+    def identify(cls, identifier: str | int | Self, /, default=None) -> Self:
         """Map [int|str|EnumT] to EnumT, Default or Raise"""
-        enum = type(self)
         try:
             match identifier:
-                case enum():
+                case cls():
                     return identifier
 
                 case int() as index:
-                    return enum(index)
+                    return cls(index)
 
                 case str() as name:
-                    return enum[name.upper()]
-
+                    return cls[name.upper()]
                 case _:
                     raise ValueError(f"Unrecognized type: {type(identifier)}")
 
         except (ValueError, KeyError) as error:
             if default is None:
-                raise ValueError(
-                    f"Mapping {enum} failed: {identifier=}"
-                ) from error
+                message = f"Mapping {cls} failed: {identifier=}"
+                raise ValueError(message) from error
         return default
 
 

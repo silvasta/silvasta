@@ -59,7 +59,7 @@ class FieldDecorator[**In, Out](ValidField):
         if not callable(func):
             raise TypeError(f"Target must be callable, got {type(func)}")
 
-        self.target_func = func
+        self.target_func: Calling[In, Out] = func
         self.signature: Signature = signature(func)
 
         default_doc = f"Bound Function by {self}"
@@ -84,7 +84,6 @@ class FieldDecorator[**In, Out](ValidField):
 class DecoratedField[**In, Out](
     ReadField[Calling[In, Out]], FieldDecorator[In, Out]
 ):
-    # IDEA: swap names?
     """FieldDecorator with default ReadField for direct usage"""
 
     def read(self, unit: object) -> Calling[In, Out]:

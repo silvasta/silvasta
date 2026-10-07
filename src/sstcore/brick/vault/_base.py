@@ -25,7 +25,7 @@ from ._access import VaultAccess
 class BaseVault[Item, V: _r.Vault](VaultAccess[Item, V]):
     """Establish the port definition for further specification"""
 
-    policy = PolicyField(VaultPolicy, default=VaultPolicy.RAISE)
+    policy = PolicyField(VaultPolicy)
     ident = StrategyField(lambda item: item)
 
     def __init__(

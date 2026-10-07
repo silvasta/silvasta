@@ -14,30 +14,52 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
+from typing import Any
 
 from ...port import attach
 from ...port.link import portlink
 from ...port.solid import EnumId, PolicyEnum
-from ._base import ReadField
+from ._base import MISSING, ReadField
 from ._extend import TypedField
 
 
 class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
     """Implement Policy and Execution Logic"""
 
+    enum_type: type[EnumT]
+
     def __init__(
-        self, enum: type[EnumT], /, *args, frozen: bool = False, **kwargs
+        self,
+        policy: type[EnumT] | Any,
+        /,
+        *args,
+        default: PolicyEnum | Any = MISSING,
+        **kwargs,
     ):
-        self.enum: type[EnumT] = enum
-        self.frozen: bool = frozen  # MOVE: FrozenFieldMixin?
-        super().__init__(*args, types=enum, **kwargs)
+        match PolicyEnum.includes(policy):
+            case ("fail", _, _):
+                raise self.raiser.Validation(
+                    self,
+                    None,  # == instance == unit, not already built
+                    "Derive from PolicyEnum!",
+                    expected={"policy": PolicyEnum},
+                    received={"policy": policy},
+                )
+            case ("cls", enum_cls, _):
+                self.enum_type: type[EnumT] = enum_cls
+
+            case ("unit", enum_cls, enum_unit):
+                self.enum_type: EnumT = enum_cls
+                if default is MISSING:
+                    default: EnumT = enum_unit
+
+        super().__init__(
+            *args, types=self.enum_type, default=default, **kwargs
+        )
 
     def validate(self, unit: object, value: EnumId[EnumT]) -> EnumT:
-        if self.frozen and self._has_val(unit):  # MOVE: FrozenFieldMixin?
-            raise self.raiser.ReadOnly(self, unit)
-
-        value: EnumT = self.enum_type.resolve(value)  # ty:ignore
-        return super().validate(unit, value)
+        resolved_value: EnumT = self.enum_type.identify(value)
+        return super().validate(unit, resolved_value)
 
 
 @portlink(attach.PolicyDescriptor)
@@ -60,11 +82,6 @@ class PolicyMatchMixin[FieldT, EnumT: PolicyEnum](ReadField[FieldT]):
         self._match: Callable | None = enum_match
         self.active: bool = active
         super().__init__(*args, **kwargs)
-
-    def read(self, unit: object) -> FieldT:
-        if not self._has_val(unit):
-            raise self.raiser.ReadMissing(self, unit)
-        return self._get_val(unit)
 
     def match(self, unit: object, *args, **kwargs):
         if self._match is None or not self.active:

@@ -42,8 +42,8 @@ class EnumMachine(EnumView):  # TODO: sketch StubMachine(Machine)
     """Task Executor"""
 
 
-class PolicyEnum(BaseEnum):  # TODO: attach to PolicyDescriptor
-    """Task Toggle"""
+class PolicyEnum(BaseEnum):
+    """Task and Rule Toggle"""
 
 
 #  LINE: -- boundaries unclear... -- -- - -- -- - -- -- - -- -- - -- -- - -- --
