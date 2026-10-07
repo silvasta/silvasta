@@ -5,6 +5,8 @@ Construct Components, Bases and MetaMixins
 
 """
 
+from typing import Any
+
 __all__: list[str] = [
     "SstMeta",
     "SstMetaData",
@@ -14,7 +16,6 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any
 
 from ....brick.color._arg import resolve_color
 from ....brick.color.box import Colors
@@ -22,10 +23,13 @@ from ....brick.labor import clsname, just_return
 from ....port.calling import ClassRendering
 from ....port.color import Color, ColorIdentifier
 from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
+from ....port.link import portlink
+from ....port.shape import Meta, MetaData
 
 colors = Colors()  # LATER: resolve this somehows
 
 
+@portlink(MetaData)
 class SstMetaData:
     """Level 0 Mdto"""
 
@@ -35,30 +39,30 @@ class SstMetaData:
         self.color: Color = resolve_color(color_guess=color)
 
 
+@portlink(Meta)
 class SstMeta(type):
+    # CHECK: SstMeta.__init__? yes! and __call__, but later...
     """Level 0 Meta"""
 
-    _data_class: type[SstMetaData] = SstMetaData  # RENAME: _dto? or _dtc?
     _data: SstMetaData
-
-    # TODO: check SstMeta.__init__?
 
     def __new__(
         mcs,
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
-        data: SstMetaData | None = None,
-        **kwargs,
+        data: SstMetaData,
+        # CHECK: destroy kwargs?
     ):
-        # CHECK: forward kwargs needed?
-        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
-        cls._data = data or mcs._data_class()
+        cls = super().__new__(mcs, name, bases, namespace)
+        cls._data = data
         return cls
 
 
 class MetaViewData(SstMetaData):
     """Base DTO for Class-Level Views."""
+
+    # IMPORTANT: define defaults!
 
     name: ClassRendering
     rich: ClassRendering
@@ -69,7 +73,7 @@ class MetaViewData(SstMetaData):
         name: ClassRendering | str = "",
         rich: ClassRendering | str = "",
         cli: CliDtoCreator | str = "",
-        color: ColorIdentifier = Color.AZURE,  # LATER: define defaults
+        color: ColorIdentifier = Color.AZURE,
     ):
         self.name: ClassRendering = (
             name
@@ -111,34 +115,24 @@ class MetaViewData(SstMetaData):
         return _default_cli
 
 
-class MetaViewBase(SstMeta):  # WARN: base works now but don't overmix it...!
+class MetaViewBase(SstMeta):
     """Provide all Views for Classes"""
 
-    _data_class: type[MetaViewData] = MetaViewData
-    # TASK: find better way for default cls
-    _data: MetaViewData
-
     toolkit: Callable[[], list[str]]
+    _data: MetaViewData
 
     def __new__(
         mcs,
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
-        data: MetaViewData | None = None,
-        **kwargs,
+        data: MetaViewData,
     ):
-        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
+        cls = super().__new__(mcs, name, bases, namespace, data)
 
-        cls._data = data or mcs._data_class()
+        cls._data = data
 
         return cls
-
-    # AI:_QUESTION: why use _data after __new__ / during entire process?
-    # - not that it should be deleted, but what is the issue with attach?
-    # - meaning that the functions get transfered to the class in __new__
-    # what about some kind of descriptor? is that possible for (meta-)classees?
-    # -> that would allow same control as if one would modify _data
 
     def __cli__(cls) -> CliDTO:
         return cls._data.cli(cls)
@@ -150,8 +144,7 @@ class MetaViewBase(SstMeta):  # WARN: base works now but don't overmix it...!
         return cls._data.rich(cls)
 
     def __repr__(cls) -> str:
-        # LATER: find solution for toolkit,
-        # maybe in static base? or from format
+        # LATER: find solution for toolkit, maybe in static base? or from format
         return f"{clsname(cls)}[{', '.join(cls.toolkit()) or 'useless'}]"
 
     def __log__(cls) -> LogDTO:
