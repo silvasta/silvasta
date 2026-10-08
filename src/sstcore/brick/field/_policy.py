@@ -14,7 +14,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any, reveal_type
+from typing import Any
 
 from ...port import attach
 from ...port.link import portlink
@@ -36,17 +36,8 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         default: PolicyEnum | Any = MISSING,
         **kwargs,
     ):
-        match PolicyEnum.membership(policy):
-            case (enum_cls, enum_unit):
-                reveal_type(enum_cls)
-                reveal_type(enum_unit)
-                self.enum_type: type[EnumT] = enum_cls
-                if default is MISSING:
-                    default: EnumT = enum_unit
-            case (enum_cls,):
-                reveal_type(enum_cls)
-                self.enum_type: type[EnumT] = enum_cls
 
+        match PolicyEnum.membership(policy):
             case ():
                 raise self.raiser.Validation(
                     self,
@@ -55,6 +46,17 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
                     expected={"policy": PolicyEnum},
                     received={"policy": policy},
                 )
+            case (enum_cls,):
+                self.enum_type: type[EnumT] = enum_cls
+                _extracted_default = self.enum_type.resolve(0, default=MISSING)
+
+            case (enum_cls, enum_unit):
+                self.enum_type: type[EnumT] = enum_cls
+                _extracted_default = enum_unit
+
+        if default is MISSING and _extracted_default is not MISSING:
+            default: EnumT = _extracted_default  # UnboundError impossible?
+
         super().__init__(
             *args, types=self.enum_type, default=default, **kwargs
         )

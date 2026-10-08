@@ -10,11 +10,10 @@ __all__: list[str] = [
     # common
     "PolicyEnum",
     "EnumMachine",
-    "EnumIndex",
     # base
     "BaseEnum",
-    "EnumZero",
     "EnumId",
+    "EnumRelation",
     #
     "EnumView",
     "EnumRepr",
@@ -22,40 +21,44 @@ __all__: list[str] = [
 ]
 
 
-from ._enum import EnumId, EnumRepr, EnumStr, EnumZero
+from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
 
 
 class EnumView(EnumStr, EnumRepr):
     """Global Default"""
 
 
-class BaseEnum(EnumZero, EnumView):
+class BaseEnum(EnumView, metaclass=SstEnumMeta):
     """Provide Base with Simple View and Modified Access"""
 
 
 #  LINE: -- frequently used -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class PolicyEnum(BaseEnum):  # LATER: Zero? maybe for default?
+class PolicyEnum(BaseEnum, zero=True, walk=True):
     """Task and Rule Toggle"""
 
+    def __bool__(self):  # CHECK:
+        """Default Policy mapped to Index 0"""
+        return self.value == 0
 
-class EnumMachine(EnumView):  # TODO: sketch StubMachine(Machine)
+
+class EnumMachine(BaseEnum):  # TODO: sketch StubMachine(Machine)
     """Task Executor"""
-
-
-class EnumIndex(BaseEnum):  # CHECK: collapse with base??
-    """Define the Axis for the {0..N} Members"""
 
 
 #  LINE: -- boundaries unclear... -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class EnumMode(BaseEnum):
+class EnumMode(BaseEnum, walk=True):  # CHECK: same as Option?
     """Task Toggle"""
 
 
-class EnumOption(BaseEnum):
+# IDEA: Mode:= no zero, Option:= zero as default
+# - if so, mount MRO walk to meta for detecting superclasses with flag
+
+
+class EnumOption(PolicyEnum, zero=True):
     """Multiple Selections - Always 1 default (on zero)"""
 
 

@@ -4,8 +4,6 @@ Govern the Shape and Structure of the Strict and Reliable Container
                                                  DependencyLevel[0]
 """
 
-from typing import NamedTuple, Self
-
 __all__: list[str] = [
     "SstEnumMeta",
     "EnumRelation",
@@ -55,24 +53,53 @@ class SstEnumMeta(EnumMeta):
 
         enum_dict = super().__prepare__(cls, bases, **kwargs)
 
-        if WalkZero.resolve(bases, kwargs).zero:
+        # AI: new approach, superclass can define walk=True,
+        # -> that must hold for subclasses as well
+        # cases:
+        # - zero True on parent, walk True on parent, child always zero except on override
+        # - zero True on parent, walk False on parent, child can override either
+        # - zero False on parent, walk True on parent, child must override zero
+        # - zero False on parent, walk False on parent, child must override zero
+        # walk=True works as always inherited attribute while zero must be set explicitly or be included by walk
+        # - is this reasonable? goal is to allow inherited zero with walk but default to enforced override
+
+        _use_zero = kwargs.get("zero", False)
+        if not _use_zero:
+            _walk_for_zero = kwargs.get("walk", False)
+            if not _walk_for_zero:
+                _walk_for_zero = any(
+                    getattr(b, "_walk_for_zero", False) for b in bases
+                )
+            if _walk_for_zero:
+                _use_zero = any(
+                    getattr(b, "_is_zero_indexed", False) for b in bases
+                )
+        if _use_zero:
             enum_dict["_generate_next_value_"] = staticmethod(from_zero)
+        # AI: END: new approach
+
+        # AI: version before
+        if (_direct_zero := kwargs.get("zero", False)) or (
+            (_walk_for_zero := kwargs.get("walk", False))
+            and any(getattr(b, "_is_zero_indexed", False) for b in bases)
+        ):
+            enum_dict["_generate_next_value_"] = staticmethod(from_zero)
+        # AI: END: version before
 
         return enum_dict
 
     def __new__(metacls, cls, bases, classdict, **kwargs):
         """Destroy all custom kwargs and attach Zero"""
 
-        resolved: WalkZero = WalkZero.resolve(bases, kwargs)
-
-        kwargs.pop("zero", None)
-        kwargs.pop("walk", None)
+        _is_zero: bool = kwargs.pop("zero", False)
+        _walk_for_zero: bool = kwargs.pop("walk", False)
 
         new_enum_cls = super().__new__(
             metacls, cls, bases, classdict, **kwargs
         )
-        new_enum_cls._is_zero_indexed = resolved.zero
-        new_enum_cls._walk_for_zero = resolved.walk
+
+        new_enum_cls._is_zero_indexed = _is_zero
+        new_enum_cls._walk_for_zero = _walk_for_zero
 
         return new_enum_cls
 
@@ -114,23 +141,6 @@ class SstEnumMeta(EnumMeta):
 def from_zero(name, start, count, last_values):
     """Later: add good doc"""
     return count
-
-
-class WalkZero(NamedTuple):
-    walk: bool
-    zero: bool
-
-    @classmethod
-    def resolve(cls, bases: tuple[type, ...], kwargs: dict) -> Self:
-        """Resolve inherited walk and zero flags from kwargs and bases"""
-        walk: bool = kwargs.get(
-            "walk", any(getattr(b, "_walk_for_zero", False) for b in bases)
-        )
-        zero: bool = kwargs.get(
-            "zero",
-            walk and any(getattr(b, "_is_zero_indexed", False) for b in bases),
-        )
-        return cls(walk, zero)
 
 
 #  LINE: -- views -- -- - -- -- - -- -- - -- -- - -- -- - -- --

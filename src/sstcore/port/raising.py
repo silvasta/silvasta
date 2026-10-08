@@ -29,7 +29,7 @@ from typing import (
     overload,
 )
 
-from .solid import EnumZero
+from .solid import BaseEnum
 
 type Errors = tuple[type[Exception]] | tuple[type[Exception], type[Exception]]
 
@@ -119,7 +119,7 @@ class ErrorData:
         return cls(reason, extra=extra, **items)
 
 
-class Raiser(EnumZero):
+class Raiser(BaseEnum):
     """Assemble all data and throw it with panic"""
 
     @property

@@ -67,7 +67,7 @@ class FieldErrorData[FieldT, UnitT](raising.ErrorData):
     value: FieldT | Any = None
 
 
-class FieldRaiser(Raiser):  # TARGET: here is the most important part
+class FieldRaiser(Raiser, zero=True):
     RAW = auto()
 
     WriteExists = auto()
@@ -158,9 +158,9 @@ class FieldRaiseCall(Protocol):
     def __call__(
         self,
         field,
+        /,
         instance,
         text: str = "",
-        /,
         *args,
         mode: Literal["dto"],
         **kwargs: Unpack[FieldErrorInput],
@@ -170,9 +170,9 @@ class FieldRaiseCall(Protocol):
     def __call__(
         self,
         field,
+        /,
         instance,
         text: str = "",
-        /,
         *args,
         mode: Literal["exception"] = "exception",
         **kwargs: Unpack[FieldErrorInput],
@@ -182,9 +182,9 @@ class FieldRaiseCall(Protocol):
     def __call__(
         self,
         field,
+        /,
         instance,
         text: str = "",
-        /,
         *args,
         mode: Literal["raise"],
         **kwargs: Unpack[FieldErrorInput],
@@ -193,7 +193,6 @@ class FieldRaiseCall(Protocol):
     def __call__(
         self,
         text: str = "",
-        /,
         *args,
         mode: Literal["dto", "exception", "raise"] = "exception",
         **kwargs: Unpack[FieldErrorInput],
