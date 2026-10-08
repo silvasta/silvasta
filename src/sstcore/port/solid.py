@@ -7,22 +7,26 @@ Define the Shape and Behaviour of the Solid Objects
 """
 
 __all__: list[str] = [
+    # common
     "PolicyEnum",
     "EnumMachine",
-    "EnumId",
     "EnumIndex",
     # base
     "BaseEnum",
     "EnumZero",
+    "EnumId",
+    #
+    "EnumView",
     "EnumRepr",
     "EnumStr",
 ]
 
 
-from ._enum import EnumRepr, EnumStr, EnumZero
+from ._enum import EnumId, EnumRepr, EnumStr, EnumZero
 
 
-class EnumView(EnumStr, EnumRepr): ...
+class EnumView(EnumStr, EnumRepr):
+    """Global Default"""
 
 
 class BaseEnum(EnumZero, EnumView):
@@ -31,19 +35,17 @@ class BaseEnum(EnumZero, EnumView):
 
 #  LINE: -- frequently used -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-type EnumId[EnumT] = EnumT | str | int
 
-
-class EnumIndex(BaseEnum):
-    """Define the Axis for the {0..N} Members"""
+class PolicyEnum(BaseEnum):  # LATER: Zero? maybe for default?
+    """Task and Rule Toggle"""
 
 
 class EnumMachine(EnumView):  # TODO: sketch StubMachine(Machine)
     """Task Executor"""
 
 
-class PolicyEnum(BaseEnum):
-    """Task and Rule Toggle"""
+class EnumIndex(BaseEnum):  # CHECK: collapse with base??
+    """Define the Axis for the {0..N} Members"""
 
 
 #  LINE: -- boundaries unclear... -- -- - -- -- - -- -- - -- -- - -- -- - -- --

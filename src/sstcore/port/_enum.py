@@ -6,6 +6,7 @@ Govern the Shape and Structure of the Strict and Reliable Container
 
 __all__: list[str] = [
     "EnumZero",
+    "EnumId",
     # view
     "EnumRepr",
     "EnumStr",
@@ -14,6 +15,74 @@ __all__: list[str] = [
 
 from enum import Enum
 from typing import Any, Literal, Self
+
+#  LINE: -- Index -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class Enum0(Enum):
+    """Set Count to Zero"""
+
+    # TODO: shortcut, eg: LOG_AND_CONTINUE = "log"
+    # - as well for matching!
+    # - Enum0.key->str
+    # - Enum0.index->int
+
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values) -> int:
+        """Count the Enum Index starting at Zero"""
+        return count
+
+
+type EnumId[EnumT] = EnumT | str | int
+
+
+class ResolvingEnum(Enum):
+    """Match by Int, Str and Slice"""
+
+    @classmethod
+    def identify(
+        cls, target: Self | type[Self] | Any, /
+    ) -> (
+        tuple[Literal["unit"], Self]
+        | tuple[Literal["cls"], type[Self]]
+        | tuple[Literal["fail"], None]
+    ):
+        """Check if target is Enum class or instance"""
+
+        if isinstance(target, cls):
+            return "unit", target
+
+        if isinstance(target, type) and issubclass(target, cls):
+            return "cls", target
+
+        return "fail", None
+
+    @classmethod
+    def resolve(cls, identifier: EnumId[Self], /, default=None) -> Self:
+        """Map [int|str|EnumT] to EnumT, Default or Raise"""
+        try:
+            match identifier:
+                case cls():
+                    return identifier
+
+                case int() as index:
+                    return cls(index)
+
+                case str() as name:
+                    return cls[name.upper()]
+                case _:
+                    raise ValueError(f"Unrecognized type: {type(identifier)}")
+
+        except (ValueError, KeyError) as error:
+            if default is None:
+                message = f"Mapping {cls} failed: {identifier=}"
+                raise ValueError(message) from error
+        return default
+
+
+class EnumZero(ResolvingEnum, Enum0):
+    """Set Count to Zero and Match by Int, Str and Slice"""
+
 
 #  LINE: -- Views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
@@ -43,82 +112,3 @@ class _EnumRepr2(Enum):
 
 EnumStr = EnumStr2
 EnumRepr = EnumRepr1
-
-
-#  LINE: -- Index -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-type EnumSlice[EnumT] = EnumId[EnumT] | slice
-
-
-class SlicingEnum(Enum):
-    # TASK: ok that with the slice is not even so easy...
-    def __getitem__(self, key: EnumSlice):
-        raise NotImplementedError(key)
-
-
-type EnumId[EnumT] = EnumT | str | int
-
-
-class Enum0(Enum):
-    # IDEA: one step more!
-    # ignore value=auto()
-    # -> directly attach (paramerized) target
-    # e.g. LAZY = LazyField
-    # for identification:
-    # - Enum0.key->str
-    # - Enum0.index->int
-    """Set Count to Zero"""
-
-    @staticmethod
-    def _generate_next_value_(name, start, count, last_values) -> int:
-        """Count the Enum Index starting at Zero"""
-        return count
-
-
-class ResolvingEnum(Enum):
-    """Match by Int, Str and Slice"""
-
-    @classmethod
-    def includes(
-        cls, target: Self | type[Self] | Any, /
-    ) -> (
-        tuple[Literal["unit"], Self]
-        | tuple[Literal["cls"], type[Self]]
-        | tuple[Literal["fail"], None]
-    ):
-        """Check if target is Enum class or instance"""
-
-        if isinstance(target, cls):
-            return "unit", target
-
-        if isinstance(target, type) and issubclass(target, cls):
-            return "cls", target
-
-        return "fail", None
-
-    @classmethod
-    def identify(cls, identifier: str | int | Self, /, default=None) -> Self:
-        """Map [int|str|EnumT] to EnumT, Default or Raise"""
-        try:
-            match identifier:
-                case cls():
-                    return identifier
-
-                case int() as index:
-                    return cls(index)
-
-                case str() as name:
-                    return cls[name.upper()]
-                case _:
-                    raise ValueError(f"Unrecognized type: {type(identifier)}")
-
-        except (ValueError, KeyError) as error:
-            if default is None:
-                message = f"Mapping {cls} failed: {identifier=}"
-                raise ValueError(message) from error
-        return default
-
-
-class EnumZero(ResolvingEnum, Enum0):
-    """Set Count to Zero and Match by Int, Str and Slice"""
