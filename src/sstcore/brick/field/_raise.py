@@ -26,17 +26,12 @@ __all__: list[str] = [
 from enum import auto
 from typing import Any, Literal, NoReturn, Protocol, Unpack, overload
 
-from ...port.raising import (
-    ErrorData,
-    ErrorDTO,
-    ErrorInput,
-    Raiser,
-    SstCoreError,
-)
+from ...port import raising
+from ...port.raising import Raiser
 from ..labor import clsname
 
 
-class FieldError(SstCoreError):
+class FieldError(raising.SstCoreError):
     """Custom Exception for Field Operations"""
 
     def __init__(
@@ -54,7 +49,7 @@ class FieldError(SstCoreError):
         super().__init__(*args)
 
 
-class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
+class FieldErrorInput[FieldT, UnitT: Any](raising.ErrorInput, total=False):
     """Define the Kwarg Space of the Error pipeline"""
 
     attr: str
@@ -62,7 +57,7 @@ class FieldErrorInput[FieldT, UnitT: Any](ErrorInput, total=False):
     value: UnitT | Any
 
 
-class FieldErrorData[FieldT, UnitT](ErrorData):
+class FieldErrorData[FieldT, UnitT](raising.ErrorData):
     """Define the Arg Space of the Internal Pipeline"""
 
     field: FieldT | None = None
@@ -87,11 +82,11 @@ class FieldRaiser(Raiser):  # TARGET: here is the most important part
 
     @property
     def data(self) -> type[FieldErrorData]:
-        """Override to map to specific ErrorData"""
+        """Override to map to specific raising.ErrorData"""
         return FieldErrorData
 
     @property
-    def custom(self) -> type[SstCoreError]:
+    def custom(self) -> type[FieldError]:
         """Override to map to specific Custom Error"""
         return FieldError
 
@@ -123,11 +118,11 @@ class FieldRaiser(Raiser):  # TARGET: here is the most important part
             case FieldRaiser.Transition:
                 return RuntimeError
 
-    def message(self, data: ErrorData) -> str:
+    def message(self, data: raising.ErrorData) -> str:
         """Override to generate formatted messages based on the Enum state"""
 
         assert isinstance(data, FieldErrorData), (
-            f"Expected FieldErrorData, got {type(data)}"
+            f"Expected Fieldraising.ErrorData, got {type(data)}"
         )
         name: str = data.attr or "Unknown"
         field: Any = data.field
@@ -169,7 +164,7 @@ class FieldRaiseCall(Protocol):
         *args,
         mode: Literal["dto"],
         **kwargs: Unpack[FieldErrorInput],
-    ) -> ErrorDTO: ...
+    ) -> raising.ErrorDTO: ...
 
     @overload
     def __call__(
@@ -202,4 +197,4 @@ class FieldRaiseCall(Protocol):
         *args,
         mode: Literal["dto", "exception", "raise"] = "exception",
         **kwargs: Unpack[FieldErrorInput],
-    ) -> ErrorDTO | Exception | NoReturn: ...
+    ) -> raising.ErrorDTO | Exception | NoReturn: ...

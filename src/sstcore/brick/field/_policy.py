@@ -36,7 +36,7 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         default: PolicyEnum | Any = MISSING,
         **kwargs,
     ):
-        match PolicyEnum.includes(policy):
+        match PolicyEnum.identify(policy):
             case ("fail", _, _):
                 raise self.raiser.Validation(
                     self,
@@ -58,7 +58,7 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         )
 
     def validate(self, unit: object, value: EnumId[EnumT]) -> EnumT:
-        resolved_value: EnumT = self.enum_type.identify(value)
+        resolved_value: EnumT = self.enum_type.resolve(value)
         return super().validate(unit, resolved_value)
 
 

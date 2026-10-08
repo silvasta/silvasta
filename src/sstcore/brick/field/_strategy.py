@@ -14,7 +14,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from inspect import Parameter, Signature, signature
+from inspect import Parameter, Signature, _ParameterKind, signature
 from typing import Any, Self
 
 from ...port import attach
@@ -24,19 +24,23 @@ from ._decorate import DecoratedField
 from ._extend import ResetField
 
 
-# AI_FOCUS: when are strategy() and morphing() applied?
 def strategy[F: Callable](func: F) -> F:
-    """Identity marker. Metaclass mounts a StrategyField; ty still sees a method."""
+    """Mark the Field for StrategyField assembling"""
+    # CHECK: Calling.__field_kind__
+    # TODO: brick.labor.inject->
     func.__field_kind__ = StrategyField  # ty:ignore
     return func
 
 
-# AI_FOCUS: when are strategy() and morphing() applied?
 def morphing[F: Callable](func: F) -> F:
+    """Mark the Field for MorphingField assembling"""
+    # TODO: brick.labor.inject->
+    # CHECK: Calling.__field_kind__
     func.__field_kind__ = MorphingField  # ty:ignore
     return func
 
 
+@portlink(attach.DecoDescriptor)
 class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
     """Base Engine for dynamic Calling fields."""
 
@@ -44,45 +48,38 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
         self,
         func: Calling[In, Out],
         *args: Any,
-        binds_instance: bool = False,
+        bind_to_self: bool = False,
         **kwargs: Any,
     ):
         """Map func to DecoratedField.target_func"""
-        self.binds_instance: bool = binds_instance
-        default: Any = kwargs.pop("default", (func, binds_instance))
+        self.bind_to_self: bool = bind_to_self
+        default: Any = kwargs.pop("default", (func, bind_to_self))
         super().__init__(func, *args, default=default, **kwargs)
-        if func is not None and binds_instance and self.signature is not None:
-            self.signature: Signature = _public_signature(
-                func, binds_instance=True
+        if func is not None and self.signature is not None:
+            self.signature: Signature = _extract_signature(
+                func, bind_to_self=bind_to_self
             )
 
     def write(self, unit: object, value: Calling[In, Out]) -> None:
-        # AI: unsure if the tuple with the bool belongs to unit.__dict__
-        # - when it is anyway false, why not just use this information?
+        """Store an instance override as (func, bind=False).
+
+        Replacements match the *public* signature, so they are not bound
+        to the unit. The 2-tuple is the same shape as the field default
+        `(target_func, binds_instance)` that reset writes back.
+        """
         _value = self.validate(unit, value)
+        # TASK: unsure if the tuple with the bool belongs to unit.__dict__
+        # - when it is anyway False, why storing this information?
         self._set_val(unit, (_value, False))
 
     def read(self, unit: object) -> BoundStrategy[In, Out]:
         if self._has_val(unit):
             _func, _bind = self._get_val(unit)
         elif self.target_func is not None:
-            _func, _bind = self.target_func, self.binds_instance
+            _func, _bind = self.target_func, self.bind_to_self
         else:
             raise self.raiser.Function(self, unit, "Missing target_func")
         return BoundStrategy(self, unit, _func, bind=_bind)
-
-    # REMOVE: when new update finished
-    # def _read(self, unit: object) -> BoundStrategy[In, Out]:
-    #     """Intercept read to return a self-aware Proxy instead of raw func."""
-    #     if self._has_val(unit):
-    #         func: Calling[In, Out] = self._get_val(unit)
-    #         bind = False
-    #     elif self.target_func is not None:
-    #         func: Calling[In, Out] = self.target_func
-    #         bind = True
-    #     else:
-    #         raise self.raiser.Function(self, unit, "Missing target_func")
-    #     return BoundStrategy[In, Out](self, unit, func, bind=bind)
 
     def switch(self, func: Calling[In, Out]) -> Self:
         """Modify the Class-Level baseline strategy."""
@@ -115,10 +112,17 @@ class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
 class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
     """Allows swapping methods with arbitrary new signatures."""
 
-    def morph(self, func: Calling) -> Self:
+    def morph(self, func: Calling[..., Any]) -> Self:
+        # LATER: check [B=In&Any,S=Out&|&&|Any]
         """Unsafe Function Exchange on the Class Level."""
         self.bind(func)
         return self
+
+    def _write(self, unit: object, value: Calling[..., Any]) -> None:
+        # IMPORTANT: confirm not needed, wired proper???
+        """Instance override; signature is not a contract."""
+        _value = self.validate(unit, value)
+        self._set_val(unit, (_value, False))
 
     def validate(self, unit: object, value: Calling) -> Calling:
         """Permit arbitrary Callings."""
@@ -152,19 +156,43 @@ class BoundStrategy[**In, Out]:
         return self.func(*args, **kwargs)
 
     def switch(self, new_func: Calling[In, Out]) -> Self:
-        """LSP-compliant function swap for this instance only."""
+        """Swap function while ensuring LSP-consitency"""
         self.engine.write(self.unit, new_func)
         self.func: Calling[In, Out] = new_func
         self.bind = False
         return self
 
-    def morph[**P, R](self, new_func: Calling[P, R]) -> Self:
-        """Unsafe/LSP-violating function swap for this instance only."""
-        if hasattr(self.engine, "morph"):
-            self.engine.write(self.unit, new_func)
-            self.func: Calling[P, R] = new_func
-            return self
-        raise TypeError("Morphing not supported on strict StrategyField.")
+    def morph[**Bound, Opened](self, new_func: Calling[Bound, Opened]) -> Self:
+        """Swap function while ignoring LSP-violatons"""
+        if not isinstance(self.engine, MorphingField):  # CHECK: needed?
+            raise self.engine.raiser.Function(
+                self.engine,  # LATER: raise from engine??
+                self.unit,
+                message="Morphing forbidden on StrategyField!",  # CHECK:
+                value=new_func,
+            )
+        self.engine.write(self.unit, new_func)  # ty:ignore
+        self.func: Calling[Bound, Opened] = new_func
+        self.bind = False  # CHECK:
+        return self
+
+
+#  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  MOVE: -- probably to brick.***
+
+
+def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:
+    sig: Signature = signature(func)
+    if not bind_to_self:
+        return sig
+    params: list[Parameter] = list(sig.parameters.values())
+    if params and params[0].kind in (
+        Parameter.POSITIONAL_ONLY,
+        Parameter.POSITIONAL_OR_KEYWORD,
+    ):
+        # CHECK: return sig instead of nop replace??
+        params: list[Parameter] = params[1:]
+    return sig.replace(parameters=params)
 
 
 def _valid_sig(func: Callable, baseline: Signature) -> bool:
@@ -172,14 +200,23 @@ def _valid_sig(func: Callable, baseline: Signature) -> bool:
         new_sig: Signature = signature(func)
     except ValueError:
         return False
-
+    # LATER: Extend list maybe by level
+    # (Liskov Substitution checks)
     checks_ok: list[bool] = [
         _is_open_signature(baseline),
         _check_sig_param_length(new_sig, baseline),
-        # LATER: Extend list maybe by level
-        # (Liskov Substitution checks)
     ]
     return all(checks_ok)
+
+
+def _is_open_signature(sig: Signature) -> bool:
+    """Placeholder (*args, **kwargs) is not a real contract."""
+    kinds: list[_ParameterKind] = [p.kind for p in sig.parameters.values()]
+    return kinds in (
+        [],
+        [Parameter.VAR_POSITIONAL],
+        [Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD],
+    )
 
 
 def _check_sig_param_length(sig1: Signature, sig2: Signature) -> bool:
@@ -195,26 +232,3 @@ def _strip_self(sig: Signature) -> Signature:
     if params and params[0].name in ("self", "cls"):
         return sig.replace(parameters=params[1:])
     return sig
-
-
-def _public_signature(func: Callable, *, binds_instance: bool) -> Signature:
-    sig: Signature = signature(func)
-    if not binds_instance:
-        return sig
-    params: list[Parameter] = list(sig.parameters.values())
-    if params and params[0].kind in (
-        Parameter.POSITIONAL_ONLY,
-        Parameter.POSITIONAL_OR_KEYWORD,
-    ):
-        params: list[Parameter] = params[1:]
-    return sig.replace(parameters=params)
-
-
-def _is_open_signature(sig: Signature) -> bool:
-    """Placeholder (*args, **kwargs) is not a real contract."""
-    kinds = [p.kind for p in sig.parameters.values()]
-    return kinds in (
-        [],
-        [Parameter.VAR_POSITIONAL],
-        [Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD],
-    )
