@@ -27,7 +27,6 @@ from ..port.raising import (
     ErrorData,
     ErrorDTO,
     ErrorInput,
-    ErrorMachine,
     Raiser,
 )
 from ._base import SstError
@@ -57,7 +56,7 @@ class SstErrorData(ErrorData):
 _check: type[SstError] = NotImplementedDispatchError
 
 
-class ErrorBuilder(ErrorMachine):
+class ErrorBuilder:
     # FIX: structure in builder is broken... split!
     # - EnumMachine for building
     # - Raiser for selecting, Or for Orchestration

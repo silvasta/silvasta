@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 from enum import auto
 
-from ....port.collections import Stringable
+from ....port.calling import Stringable
 from ....port.color import Adapter, ColorData, Palette
 from ._base import CustomBlock, PaletteDTO, StandardBlock
 

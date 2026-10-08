@@ -17,6 +17,9 @@ __all__: list[str] = [
     "path",
 ]
 
+# NEXT: make this modular feature stack of ColorBox
+
+
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any

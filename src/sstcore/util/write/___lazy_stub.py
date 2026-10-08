@@ -23,7 +23,7 @@ def latest_python() -> bool:
 
 if latest_python():
     from typing import TypedDict as TypedDict
-    from typing import TypeForm as TypeForm
+    from typing import TypeForm as TypeForm  # ty:ignore
 else:
     from typing_extensions import TypedDict as TypedDict
     from typing_extensions import TypeForm as TypeForm

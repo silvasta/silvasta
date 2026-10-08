@@ -14,11 +14,11 @@ __all__: list[str] = [
 from enum import auto
 
 from ...port.annotate import StubJobDTO
-from ...port.govern import Machine
+from ...port.solid import EnumMachine
 from ...util.path.guard import StubFileGuard
 
 
-class StubFileMachine(Machine):
+class StubFileMachine(EnumMachine):
     """Execute the plan and manufacture all parts of the *.pyi"""
 
     TYPE = auto()
@@ -27,7 +27,7 @@ class StubFileMachine(Machine):
         raise NotImplementedError(args, kwargs)
 
 
-class StubFileMachine1(Machine):
+class StubFileMachine1(EnumMachine):
     """Executes the high-frequency fabrication of .pyi files based on DTOs"""
 
     @classmethod

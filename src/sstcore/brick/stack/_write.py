@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from ..time import day_count_plus
-from . import _test_data as test_data
+from . import ___test_data as test_data
 
 
 class Config:

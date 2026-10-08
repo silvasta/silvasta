@@ -16,5 +16,5 @@ __all__: list[str] = [
     "STRING_STACK",
 ]
 
+from .___example import ANSI_STACK, DTO_STACK, STRING_STACK
 from ._core import StackBase, StackCore, StackLayer, StackRunner, StackState
-from ._example import ANSI_STACK, DTO_STACK, STRING_STACK

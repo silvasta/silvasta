@@ -22,7 +22,8 @@ __all__: list[str] = [
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from ...brick.view import Repr, Str, view
+from ...brick.views import Repr, Str
+from ...forge.view import view
 from ...port.event.dto import LogDTO
 from ...port.event.emit import (
     BoundEmit,

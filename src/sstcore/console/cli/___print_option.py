@@ -29,7 +29,7 @@ from itertools import product
 from typing import Any, Literal, Protocol, cast
 
 from ...brick.color import colorize
-from ...util import printer
+from ...util.print import printer
 
 type PrintFunc = Callable[..., None]
 

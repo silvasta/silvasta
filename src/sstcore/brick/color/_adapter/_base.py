@@ -13,7 +13,7 @@ __all__: list[str] = [
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, NamedTuple
 
-from ....port.collections import Colorizing
+from ....port.calling import Colorizing
 from ....port.color import Color, ColorData
 
 
@@ -51,6 +51,29 @@ def _format_named_blocks(*blocks: NamedTuple) -> tuple[tuple[str, str], ...]:
     )
 
 
+class ColorTuple(NamedTuple):
+    def as_tuple_dict(self) -> tuple[tuple[str, str], ...]:
+        return tuple(
+            (raw_key.strip("_"), value)
+            for raw_key, value in self._asdict().items()
+        )
+
+
+class _StandardBlock(ColorTuple):
+    """Define aligned Schema for Standard Colors"""
+
+    white_: str
+    black_: str
+    blue__: str
+    green_: str
+    yellow: str
+    red___: str
+
+
+x = _StandardBlock().as_tuple_dict()
+y = x[1]
+
+
 class StandardBlock(NamedTuple):
     """Define aligned Schema for Standard Colors"""
 
@@ -74,10 +97,10 @@ class CustomBlock(NamedTuple):
 
 
 class _SemanticBlock(NamedTuple):
-    success: Color
-    error__: Color
+    alert__: Color
     danger_: Color
-    warning: Color
+    error__: Color
     info___: Color
-    title__: Color
     special: Color
+    success: Color
+    title__: Color

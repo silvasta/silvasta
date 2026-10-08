@@ -168,6 +168,7 @@ class StackState[T]:
         new_used_ids: set[int] = set(self.used_value_ids)
 
         match mode:
+            # TODO: resolve to simple evolve with just 1 field/kwarg change
             case LayerMode.SINGLE:
                 new_locked.add(layer)
             case LayerMode.MULTI:

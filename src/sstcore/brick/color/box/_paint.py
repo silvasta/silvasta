@@ -23,14 +23,14 @@ class Paint(str):
 
     __slots__ = ("color", "adapter", "_paint")
 
-    def __new__(cls, color: Color, *_args, **_kwargs):
+    def __new__(cls, color: Color, /, *_args, **_kwargs):
         return super().__new__(cls, color.name.lower())
 
     def __init__(self, color: Color, paint: Colorizing):
         self.color: Color = color
         self._paint: Colorizing = paint
 
-        print(f"Created: {self} {self!r}")  # REMOVE:
+        print(f"Created: str({self}) repr({self!r})")  # REMOVE:
 
     def __repr__(self) -> str:
         return f"{self}[{self.color!r}]"

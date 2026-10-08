@@ -26,9 +26,9 @@ from ....brick.color.box import Colors
 from ....port.color import ColorBox
 from ....port.config import Config
 from ....system.boot import ConfigLoader
-from ....util import PathGuard, printer
 from ....util.log import fetch_log_result
-from ....util.print import boxes
+from ....util.path.guard import PathGuard
+from ....util.print import boxes, printer
 from .._TODO_print_option import PrintOption, SelectMode
 
 # TASK: system and bus!
@@ -100,7 +100,7 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
         styler: LoaderStyler,
         mode: Mode,
     ) -> None:
-        _config: str = c.cyan(config)
+        _config: str = c.azure(config)
         _loader: str = styler(loader)
 
         text: str = f"{_config} loaded via {_loader}"
@@ -130,9 +130,9 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
 def _config_modules_2(config: Config, loader: ConfigLoader) -> None:
     # MOVE: do stuff like this in colorize
     project, *modules = loader.__module__.split(".")
-    module: str = ".".join([c.cyan(project), *modules])
+    module: str = ".".join([c.a(project), *modules])
     _loader = f"{c.white(getattr(loader, '__name__', 'loader_func'))}"
-    text: str = f"{c.cyan(config)} loaded via {module}::{loader}"
+    text: str = f"{c.a(config)} loaded via {module}::{loader}"
     printer.mini_box(text, mode="both")
 
 
@@ -183,11 +183,11 @@ def setup(config: Config, loader: Callable):
     # TODO: quiet?
 
     config_loader(config, loader)
-    log_or_config_path(config.setting_file, mode="config")
+    log_or_config_path(config.settings.file, mode="config")
 
     if log_result := fetch_log_result():
         #
-        if log_result.print_at_setup:
+        if log_result.print_at_setup:  # ty:ignore
             printer(log_result)
 
         if log_result.log_to_file:
@@ -242,7 +242,7 @@ class SetupStatus(PrintOption[StatusSignature]):
 
         if show_all:
             for exception in exceptions:
-                printer(exc_formatter(exception), _i=4)
+                printer(exc_formatter(type(exception)), _i=4)
 
         printer("Some statistics: ...", _i=2)
         printer.line("yellow")

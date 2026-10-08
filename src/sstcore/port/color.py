@@ -37,12 +37,11 @@ __all__: list[str] = [
 
 
 from enum import auto
-from typing import NamedTuple, Protocol, Self, runtime_checkable
+from typing import NamedTuple, Protocol, Self
 
+from ._enum import EnumId  # 0
 from .calling import Colorizing, Stringable  # 0
 from .solid import EnumIndex  # 1
-
-# NOTE: register: 6
 
 
 class GridIndex(EnumIndex):
@@ -50,25 +49,29 @@ class GridIndex(EnumIndex):
 
 
 class Color(GridIndex):
-    # TODO: think about 2x6, 3x4 or 4x3 as minimal quantize
-    """Define the Base Palette with 12 indexed Colors (Start at 0)"""
+    """Define the Base Palette with 12 Colors"""
 
-    WHITE = auto()
-    BLACK = auto()
-    BLUE = auto()
     GREEN = auto()
-    YELLOW = auto()
+    TEAL = auto()
+    AZURE = auto()
+    BLUE = auto()
+    PURPLE = auto()
     RED = auto()
-
+    ORANGE = auto()
+    YELLOW = auto()
+    WHITE = auto()
     SLATE = auto()
     CARBON = auto()
-    AZURE = auto()
-    TEAL = auto()
-    ORANGE = auto()
-    PURPLE = auto()
+    BLACK = auto()
 
 
-type ColorIdentifier = int | str | Color
+# NEXT: apply this
+# NEXT: apply this
+# NEXT: apply this
+# NEXT: apply this
+type ColorId = EnumId[Color]  # CHECK:
+type ColorIdentifier = EnumId[Color]
+type _ColorIdentifier = int | str | Color  # CHECK:
 
 
 class Adapter(GridIndex):
@@ -114,7 +117,6 @@ class ColorFactory(Protocol):
         """Produce Numbered Palette of executable Colors out of Raw Data"""
 
 
-@runtime_checkable
 class Painter(Protocol):
     color: Color
     _paint: Colorizing
@@ -155,12 +157,6 @@ class ColorRegistry(Protocol):  # TODO: Registry type
 class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     """Global Orchestrator and Distributor of Colors"""
 
-    # IMPORTANT::
-    # STRATEGY: prepare system that evolves from and after here
-    # - subclass detection
-    # - ghost color box
-    # ...
-
     def get(self, color: ColorIdentifier): ...
 
     def stack(self, *_args, **_kwargs):  # TODO:
@@ -178,40 +174,3 @@ class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
 
     def index(self, target: str | Painter) -> Color | None:
         """Map Identifier or Painter to ColorIndex"""
-
-    # REMOVE: when pyi fixed
-    b: Painter
-    g: Painter
-    r: Painter
-    y: Painter
-    a: Painter
-    t: Painter
-    o: Painter
-    p: Painter
-    w: Painter
-    s: Painter
-    c: Painter
-    d: Painter
-    # REMOVE: when pyi fixed
-    blue: Painter
-    green: Painter
-    red: Painter
-    yellow: Painter
-    azure: Painter
-    teal: Painter
-    orange: Painter
-    purple: Painter
-    white: Painter
-    slate: Painter
-    carbon: Painter
-    black: Painter
-    # REMOVE: when pyi fixed
-
-
-class ColorBus(Protocol):
-    """
-    FUTURE IDEA: Keep control over any deployed color
-
-    - With a simple implementation and local wiring
-    - or as EventHandler of the global EventBus
-    """
