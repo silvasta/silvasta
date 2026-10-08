@@ -8,61 +8,74 @@ Construct Components, Bases and MetaMixins
 from typing import Any
 
 __all__: list[str] = [
-    "SstMeta",
-    "SstMetaData",
-    # view
-    "MetaViewBase",
-    "MetaViewData",
+    "ClsViewBase",
+    "ClsViewData",
 ]
 
 from collections.abc import Callable
 
-from ....brick.color._arg import resolve_color
 from ....brick.color.box import Colors
 from ....brick.labor import clsname, just_return
+from ....port import view
 from ....port.calling import ClassRendering
 from ....port.color import Color, ColorIdentifier
 from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
 from ....port.link import portlink
-from ....port.shape import Meta, MetaData
+from ....port.view import SstView
+from ._meta_base import SstMeta, SstMetaData
 
 colors = Colors()  # LATER: resolve this somehows
 
 
-@portlink(MetaData)
-class SstMetaData:
-    """Level 0 Mdto"""
+@portlink(SstView)
+# @portlink(view.SstPropView)
+# @portlink(view.SstShortView)
+@portlink(view.SstFullView)
+class ClsViewBase(SstMeta):
+    """Provide all Views for Classes"""
 
-    color: Color
-
-    def __init__(self, color: ColorIdentifier = Color.AZURE):
-        self.color: Color = resolve_color(color_guess=color)
-
-
-@portlink(Meta)
-class SstMeta(type):
-    # CHECK: SstMeta.__init__? yes! and __call__, but later...
-    """Level 0 Meta"""
-
-    _data: SstMetaData
+    toolkit: Callable[[], list[str]]
+    _data: ClsViewData
 
     def __new__(
         mcs,
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
-        data: SstMetaData,
-        # CHECK: destroy kwargs?
+        data: ClsViewData,
     ):
-        cls = super().__new__(mcs, name, bases, namespace)
+        cls = super().__new__(mcs, name, bases, namespace, data)
+
         cls._data = data
+
         return cls
 
+    def __cli__(cls) -> CliDTO:  # noqa:N805
+        return cls._data.cli(cls)
 
-class MetaViewData(SstMetaData):
+    def __str__(cls) -> str:  # noqa:N805
+        return cls._data.name(cls)
+
+    def __rich__(cls) -> str:  # noqa:N805
+        return cls._data.rich(cls)
+
+    def __repr__(cls) -> str:  # noqa:N805
+        # LATER: find solution for toolkit, maybe in static base? or from format
+        return f"{clsname(cls)}[{', '.join(cls.toolkit()) or 'useless'}]"
+
+    def __log__(cls) -> LogDTO:  # noqa:N805
+        return LogDTO(
+            message=str(cls),
+            level="INFO",
+            metrics={"toolkit": cls.toolkit()},
+            extra={"toolkit": repr(cls)},
+        )
+
+
+class ClsViewData(SstMetaData):
     """Base DTO for Class-Level Views."""
 
-    # IMPORTANT: define defaults!
+    # IMPORTANT: define better defaults!
 
     name: ClassRendering
     rich: ClassRendering
@@ -113,44 +126,3 @@ class MetaViewData(SstMetaData):
             )
 
         return _default_cli
-
-
-class MetaViewBase(SstMeta):
-    """Provide all Views for Classes"""
-
-    toolkit: Callable[[], list[str]]
-    _data: MetaViewData
-
-    def __new__(
-        mcs,
-        name: str,
-        bases: tuple[type, ...],
-        namespace: dict[str, Any],
-        data: MetaViewData,
-    ):
-        cls = super().__new__(mcs, name, bases, namespace, data)
-
-        cls._data = data
-
-        return cls
-
-    def __cli__(cls) -> CliDTO:
-        return cls._data.cli(cls)
-
-    def __str__(cls) -> str:
-        return cls._data.name(cls)
-
-    def __rich__(cls) -> str:
-        return cls._data.rich(cls)
-
-    def __repr__(cls) -> str:
-        # LATER: find solution for toolkit, maybe in static base? or from format
-        return f"{clsname(cls)}[{', '.join(cls.toolkit()) or 'useless'}]"
-
-    def __log__(cls) -> LogDTO:
-        return LogDTO(
-            message=str(cls),
-            level="INFO",
-            metrics={"toolkit": cls.toolkit()},
-            extra={"toolkit": repr(cls)},
-        )

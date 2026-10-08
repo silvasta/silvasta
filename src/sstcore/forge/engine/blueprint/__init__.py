@@ -8,7 +8,7 @@ StaticFuncMeta: Static Methods Toolkit
 - StaticFuncMetaData
 
 Components
-- MetaViewBase and MetaViewData: attach __VIEWS__(cls)
+- ClsViewBase and ClsViewData: attach def __[cli|log|rich|repr|str]__(cls) -> :
 
 """
 
@@ -20,13 +20,14 @@ __all__: list[str] = [
     "StaticFuncMeta",
     "StaticFuncMetaData",
     # components
-    "MetaViewBase",
-    "MetaViewData",
+    "ClsViewBase",
+    "ClsViewData",
     # base
     "SstMeta",
     "SstMetaData",
 ]
 
-from ._base import MetaViewBase, MetaViewData, SstMeta, SstMetaData
-from ._call import FunctorMeta, FunctorMetaData
-from ._static import StaticFuncMeta, StaticFuncMetaData
+from ._functor import FunctorMeta, FunctorMetaData
+from ._meta_base import SstMeta, SstMetaData
+from ._meta_view import ClsViewBase, ClsViewData
+from ._static_func import StaticFuncMeta, StaticFuncMetaData
