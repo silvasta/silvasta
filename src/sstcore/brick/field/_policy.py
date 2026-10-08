@@ -14,7 +14,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, reveal_type
 
 from ...port import attach
 from ...port.link import portlink
@@ -30,29 +30,31 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
 
     def __init__(
         self,
-        policy: type[EnumT] | Any,
+        policy: type[EnumT] | EnumT,
         /,
         *args,
         default: PolicyEnum | Any = MISSING,
         **kwargs,
     ):
-        match PolicyEnum.identify(policy):
-            case ("fail", _, _):
+        match PolicyEnum.membership(policy):
+            case (enum_cls, enum_unit):
+                reveal_type(enum_cls)
+                reveal_type(enum_unit)
+                self.enum_type: type[EnumT] = enum_cls
+                if default is MISSING:
+                    default: EnumT = enum_unit
+            case (enum_cls,):
+                reveal_type(enum_cls)
+                self.enum_type: type[EnumT] = enum_cls
+
+            case ():
                 raise self.raiser.Validation(
                     self,
-                    None,  # == instance == unit, not already built
-                    "Derive from PolicyEnum!",
+                    instance=None,
+                    message="Derive from PolicyEnum!",
                     expected={"policy": PolicyEnum},
                     received={"policy": policy},
                 )
-            case ("cls", enum_cls, _):
-                self.enum_type: type[EnumT] = enum_cls
-
-            case ("unit", enum_cls, enum_unit):
-                self.enum_type: EnumT = enum_cls
-                if default is MISSING:
-                    default: EnumT = enum_unit
-
         super().__init__(
             *args, types=self.enum_type, default=default, **kwargs
         )
