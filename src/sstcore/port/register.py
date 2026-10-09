@@ -13,7 +13,7 @@ __all__: list[str] = [
     "ListRegister",
     "TupleRegister",
     "DictRegister",
-    # extenstions
+    # extensions
     "MixinRegister",
     "FuncRegister",
     ## bisect
@@ -22,19 +22,20 @@ __all__: list[str] = [
     "InsertPolicy",
     "BisectDTO",
     #
-    "registry_types",  # IDEA: export rendered module
+    "registry_types",
 ]
 
+import typing as _t
 from collections.abc import Callable, Iterator
 from enum import auto
 from typing import Any, Protocol, Self, overload
 
-from .._types import _registry as registry_types
+from ._types import registry_types
 from .attach import LazyDescriptor, PolicyDescriptor  # 3
 from .filter import Filter  # 4
 from .solid import EnumZero, PolicyEnum  # 1
 
-_reg = registry_types  # IDEA: import from ._types: registry_types = F(class)->module
+_reg = registry_types
 
 
 class Register[Item, Vault: _reg.Vault](Protocol):
@@ -61,7 +62,7 @@ class Register[Item, Vault: _reg.Vault](Protocol):
     def __getitem__(self, query: int) -> Item: ...
     @overload
     def __getitem__(
-        self, query: slice | _reg.Predicate | tuple[Any, ...]
+        self, query: slice | _reg.Predicate | tuple[_t.Any, ...]
     ) -> Vault: ...
     @overload
     def __getitem__(self, query: str) -> Item: ...
@@ -194,7 +195,7 @@ class BoundaryPolicy(BisectPolicyBase):
     """
     Dictate mathematical boundaries during lookup
 
-    - INCLUSIVE (>=) bisect_right: Evaluate to its own tier for exact match
+    - INCLUSIVE (>=) bisect_regight: Evaluate to its own tier for exact match
     - EXCLUSIVE (>) bisect_left: Fall back to the previous tier for exact match
     """
 
