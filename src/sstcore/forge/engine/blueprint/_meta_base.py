@@ -1,8 +1,7 @@
 """
-Construct Components, Bases and MetaMixins
+Construct the MetaBase
 
-- Prepare Views for (Static) Blueprints
-
+-
 """
 
 from typing import Any
@@ -13,12 +12,9 @@ __all__: list[str] = [
 ]
 
 
-from ....brick.color.box import Colors
 from ....port.color import Color, ColorIdentifier
 from ....port.link import portlink
 from ....port.shape import Meta, MetaData
-
-colors = Colors()  # LATER: resolve this somehows
 
 
 @portlink(MetaData)
@@ -33,7 +29,6 @@ class SstMetaData:
 
 @portlink(Meta)
 class SstMeta(type):
-    # CHECK: SstMeta.__init__? yes! and __call__, but later...
     """Level 0 Meta"""
 
     _data: SstMetaData
@@ -44,7 +39,7 @@ class SstMeta(type):
         bases: tuple[type, ...],
         namespace: dict[str, Any],
         data: SstMetaData,
-        # CHECK: destroy kwargs?
+        # LATER: handle or destroy kwargs?
     ):
         cls = super().__new__(mcs, name, bases, namespace)
         cls._data = data

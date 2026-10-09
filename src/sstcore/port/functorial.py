@@ -51,10 +51,10 @@ class Functorial[**ArgSpace, SubSetResult](_t.Protocol):
     ) -> SubSetResult: ...
 
 
-class SafeFunctorial[**Param, Result](_t.Protocol):
+class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
     """Execute Functions in Safe Environement"""
 
-    catch: _Callable[_t.Concatenate[Exception, Param], Result | None]
+    # catch: _Callable[_t.Concatenate[Exception, ArgSpace], SubSetResult | None]
 
     @property
     def policy(self) -> ErrorPolicy:
@@ -65,11 +65,13 @@ class SafeFunctorial[**Param, Result](_t.Protocol):
         """The sys.exit(Value)"""
 
     def safe(
-        self, *args: Param.args, **kwargs: Param.kwargs
-    ) -> Result | None | _t.NoReturn:
+        self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
+    ) -> SubSetResult | None | _t.NoReturn:
         """Establish the Frame for Safe Execution"""
 
-    def catch(self, error: Exception, *args, **kwargs) -> _t.Any | _t.NoReturn:
+    def catch(
+        self, error: Exception, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
+    ) -> SubSetResult | None | _t.NoReturn:
         """Handle Function fail by Policy"""
 
 
@@ -103,7 +105,7 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
     def bind[**Fn](
         self, *args: P.args, **kwargs: P.kwargs
     ) -> _Callable[[_Callable[Fn, In]], _Callable[Fn, Out]]:
-        """Bind the Target with additional Parameter"""
+        """Bind the Target with additional ArgSpaceeter"""
 
     def reject(self, fail: _t.Any, *args, **kwargs) -> _t.NoReturn:
         """Handle Target that failed in Dispatch"""

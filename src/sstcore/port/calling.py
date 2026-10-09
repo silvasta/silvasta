@@ -25,7 +25,7 @@ from typing import Any, Protocol, runtime_checkable
 class Calling[**In, Out](Protocol):
     """Define the Shape of a Callable with Name"""
 
-    # IDEA: __func__
+    # CHECK: Calling.__field_kind__
     # IDEA: __func__
     @property
     def __name__(self) -> str: ...

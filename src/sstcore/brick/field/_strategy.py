@@ -24,19 +24,15 @@ from ._decorate import DecoratedField
 from ._extend import ResetField
 
 
-def strategy[F: Callable](func: F) -> F:
+def strategy[F: Callable[..., Any]](func: F) -> F:
     """Mark the Field for StrategyField assembling"""
-    # CHECK: Calling.__field_kind__
-    # TODO: brick.labor.inject->
-    func.__field_kind__ = StrategyField  # ty:ignore
+    func.__field_kind__ = StrategyField  # type: ignore
     return func
 
 
-def morphing[F: Callable](func: F) -> F:
+def morphing[F: Callable[..., Any]](func: F) -> F:
     """Mark the Field for MorphingField assembling"""
-    # TODO: brick.labor.inject->
-    # CHECK: Calling.__field_kind__
-    func.__field_kind__ = MorphingField  # ty:ignore
+    func.__field_kind__ = MorphingField  # type: ignore
     return func
 
 
@@ -119,7 +115,7 @@ class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
         return self
 
     def _write(self, unit: object, value: Calling[..., Any]) -> None:
-        # IMPORTANT: confirm not needed, wired proper???
+        # IMPORTANT: is this needed (as MorphingField.write), wired proper otherwise???
         """Instance override; signature is not a contract."""
         _value = self.validate(unit, value)
         self._set_val(unit, (_value, False))
@@ -178,7 +174,7 @@ class BoundStrategy[**In, Out]:
 
 
 #  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-#  MOVE: -- probably to brick.***
+#  MOVE: -- probably to brick.labor.***
 
 
 def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:

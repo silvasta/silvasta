@@ -25,9 +25,8 @@ _MISSING = sentinel("MISSING")
 
 
 @portlink(MetaData)
-# NOTE: so far nothing interesting to add...
 class FunctorMetaData(SstMetaData):
-    """Collect Policy and input check"""
+    """# NOTE: so far nothing interesting to add..."""
 
 
 @portlink(Meta)

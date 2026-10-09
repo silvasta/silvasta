@@ -26,6 +26,7 @@ FunctorInput = FunctorMetaData()
 class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
     """Ensure Requirements and close MRO forwarding"""
 
+    call: Callable[Args, Result]
     emit: functorial._FuncEmit
 
     def __init__(
@@ -51,42 +52,40 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
         return self.call(*args, **kwargs)
 
 
+type _Catch[**A, R] = Callable[Concatenate[Exception, A], R | None]
+
+
 @portlink(functorial.SafeFunctorial)
 class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
     """Protect the Execution, Hanldle Errors, everything able to customize"""
 
-    # AI: morphing
-    # catch: Callable[Concatenate[Exception, Args], Result | None]
-
     policy = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)
     exit_code = RequiredField(types=int, default=1)
 
-    def __init__(
-        self,
-        catch: Callable[[Exception, Any], Result | None] | None = None,
-        **kwargs,
-    ):
+    def __init__(self, catch: _Catch[Args, Result] | None = None, **kwargs):
         if catch is not None:
-            # FIX: here the otherr case with broken self
-            self.catch = catch  # ty:ignore
-            # self.catch: Callable[[Exception, Any], Result | None] = catch
+            # CHECK: if direct assing works at usage!
+            # needed because of confusion below
+            setattr(self, "catch", catch)  # noqa:B010
         super().__init__(**kwargs)
 
-    def safe(  # IDEA: overload to super().__call__?? and this here @strategy
+    def safe(
         self, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | None | _t.NoReturn:
         try:
             return self(*args, **kwargs)
         except Exception as error:
-            self.catch(error, *args, **kwargs)  # ty:ignore FIX: broken self in @strategy
+            self.catch(error, *args, **kwargs)
 
     @strategy
-    def catch(self, error: Exception, *args, **kwargs) -> Any | _t.NoReturn:
+    def catch(
+        self, error: Exception, *args: Args.args, **kwargs: Args.kwargs
+    ) -> Result | None | _t.NoReturn:
         """Execute pure Policy if catch is not defined"""
         self.emit(
             f"{self} failed: {error}", level="CRITICAL", param=(args, kwargs)
         )
-        match self.error_policy:  # ty:ignore FIX: broken self in @strategy
+        match self.policy:
             case ErrorPolicy.LOG_AND_CONTINUE:
                 return None
 
@@ -107,7 +106,7 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     def __init__(self, detect: functorial.Detect[In] | None, **kwargs):
         # IMPORTANT: where is Hybrid2??
         if detect is not None:
-            self.detect: functorial.Detect = detect
+            setattr(self, "detect", detect)  # noqa:B010
         super().__init__(**kwargs)
 
     @strategy
@@ -128,15 +127,15 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
         return wrapper
 
     @morphing
-    def bind(
+    def bind[**Fn](
         self, *args: P.args, **kwargs: P.kwargs
-    ) -> Callable[[Callable[..., In]], Callable[..., Out]]:
+    ) -> Callable[[Callable[Fn, In]], Callable[Fn, Out]]:
         """Case 3: Bind additional input to case 2"""
         return lambda fn: self.wrap(fn, *args, **kwargs)
 
     def reject(self, failed: Any, *args, **kwargs) -> _t.NoReturn:
         self.emit("Invalid Hybrid Usage", failed, *args, **kwargs)
-        raise TypeError("Invalid Hybrid Usage")  # TASK: FunctorError
+        raise TypeError("Invalid Hybrid Usage")
 
     @_t.overload
     def __call__(
@@ -156,8 +155,7 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     ):
         """Hybrid triple dispatch"""
 
-        if self.detect(target):  # ty:ignore
-            # FIX: why is self broken here???
+        if self.detect(target):
             return self.call(target, *args, **kwargs)
 
         if callable(target) and target is not type:
