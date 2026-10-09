@@ -8,32 +8,26 @@ __all__: list[str] = [
     "FileSyncMixin",
 ]
 
-# AI: just for information, the Files were refactored but not already completed
-# -> issues and potential fixes here doesn't matter
-# Main purpose for showing this is the usage of SyncMode
 
 from collections.abc import Callable
 from functools import singledispatchmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self
+from typing import Any, Self
 
 from loguru import logger
 from pydantic import BaseModel
 
 from ...error import NotImplementedDispatchError
 from ...port.files import File, SyncMode, SyncRegister
-from ...util import PathGuard
+from ...port.link import portlink
+from ...util.path.guard import PathGuard
+from ...util.path.guard._operate import TransferStrategy
 from ._file import SstFile
 
 type _PathS = Path | list[Path]
 
-# NEXT: finish other 3 pathguard Functor
-#
-# NEXT: fix broken executor
-#
-# STRATEGY: think about sync mode, maybe change
 
-
+@portlink(SyncRegister)
 class FileSyncMixin[File: SstFile]:
     """Execute File System Operations supported by PathGuard"""
 
@@ -56,7 +50,7 @@ class FileSyncMixin[File: SstFile]:
 
         return self._sync_external_files(
             source,
-            transfer_strategy=TransferStrategy.from_func(
+            transfer_strategy=TransferStrategy(
                 func=PathGuard.copy, name="Copy"
             ),
         )
@@ -178,9 +172,9 @@ class FileSyncMixin[File: SstFile]:
 
         target: Path = self.root_dir / (new_local_path or source.name)
 
-        if result := transfer_strategy.safe_call(
-            source, target, self.sync_mode
-        ):
+        if result := transfer_strategy.safe(
+            source, target
+        ):  # FIX:, self.sync_mode):
             return self.attach_from_path(result)
 
         if self.sync_mode == SyncMode.IGNORE:
@@ -227,8 +221,3 @@ class FileSyncMixin[File: SstFile]:
                 scanner_data.scan_root = local_root
 
         return type(self)(local_root=local_root, **cloned_data)
-
-
-if TYPE_CHECKING:
-    _instance_check: SyncRegister = FileSyncMixin()
-    _class_check: type[SyncRegister] = FileSyncMixin

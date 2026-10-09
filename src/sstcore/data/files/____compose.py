@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ...brick.vault import ListRegistry
+from ...brick.vault import ListVault
 from ...brick.views import Cli, Log, Repr, Rich, Str
 from ...forge.engine.compose.___typed_builder import _TestTypedBuilder
 from ...forge.view import ViewBuilder, view
@@ -50,7 +50,7 @@ class _FilePathMixin(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class ModelListRegistry[ItemT](ListRegistry[ItemT], BaseModel):
+class ModelListVault[ItemT](ListVault[ItemT], BaseModel):
     items: list[ItemT] = Field(default_factory=list)
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -80,7 +80,7 @@ class Slot[P]:
 
 class RegistryBuilder[ItemT: SstFile, P]:
     """
-    Assemble a file registry class from ListRegistry + capability slots.
+    Assemble a file registry class from ListVault + capability slots.
 
     Example:
     -------
@@ -147,17 +147,17 @@ class RegistryBuilder[ItemT: SstFile, P]:
     # TODO: select 1
     def _bases(self) -> tuple[type, ...]:
         """
-        MRO order: capability mixins (LIFO of addition? FIFO?) → ListRegistry → BaseModel?
+        MRO order: capability mixins (LIFO of addition? FIFO?) → ListVault → BaseModel?
 
-        FIFO of .add() means first added is farthest from ListRegistry
+        FIFO of .add() means first added is farthest from ListVault
         if we reverse for standard 'mixin left' MRO.
 
-        We want: Sync, Scan, Query, Path, Identity, ListRegistry, [BaseModel]
+        We want: Sync, Scan, Query, Path, Identity, ListVault, [BaseModel]
         essential() adds Identity, Path, Query — then with_scan, with_sync.
-        So reverse(slots) + ListRegistry + optional Model.
+        So reverse(slots) + ListVault + optional Model.
         """
         mixins: list[type] = [s.mixin for s in self._slots]
-        ordered: list[type] = [*reversed(mixins), ListRegistry]
+        ordered: list[type] = [*reversed(mixins), ListVault]
         if self._use_model:
             ordered.append(BaseModel)
         ordered.extend(self._extra_bases)
@@ -168,11 +168,11 @@ class RegistryBuilder[ItemT: SstFile, P]:
         mixins = [s.mixin for s in reversed(self._slots)]
         # IMPORTANT: collect the Protocol as well!
         if self._use_model:
-            # Mixins are BaseModel subclasses; ListRegistry is plain —
-            # put ListRegistry before Model only if ListRegistry has no fields.
+            # Mixins are BaseModel subclasses; ListVault is plain —
+            # put ListVault before Model only if ListVault has no fields.
             # Pattern: *mixins (models), ModelListBridge
-            return tuple(mixins) + (ModelListRegistry,)
-        return tuple(mixins) + (ListRegistry,)
+            return tuple(mixins) + (ModelListVault,)
+        return tuple(mixins) + (ListVault,)
 
     def build(self) -> type[Any]:
         bases: tuple[type, ...] = self.bases()

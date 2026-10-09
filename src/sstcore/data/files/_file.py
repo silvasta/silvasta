@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from ...brick.view import Cli, Log, Rich, Str, view
+from ...brick.views import Cli, Log, Rich, Str
+from ...forge.view import view
 from ...port.files import File
 
 

@@ -8,9 +8,8 @@ __all__: list[str] = [
     "SstFile",
     #
     "SstFiles",
-    "FileQueryMixin",
+    "QueryRegisterMixin",
     "SstFileFilter",
-    "FileFilterMixin",
     "FileScanMixin",
     "FileSyncMixin",
     "SstFileRegistry",
@@ -19,40 +18,9 @@ __all__: list[str] = [
 ]
 
 
-from typing import TYPE_CHECKING
-
+from .____compose import RegistryBuilder, SstFileRegistry
 from ._base import SstFiles
-from ._compose import RegistryBuilder, SstFileRegistry
 from ._file import SstFile
-from ._filter import FileFilterMixin
-from ._query import FileQueryMixin
+from ._query import QueryRegisterMixin
 from ._scan import FileScanMixin
 from ._sync import FileSyncMixin
-
-# MOVE: _assemble?
-if TYPE_CHECKING:
-    from ...port.files import (
-        FileFiltering,
-        FileQuery,
-        FileRegistry,
-        Files,
-        FileScanning,
-        FileSyncing,
-    )
-    from ...port.registry import ListingRegistry
-
-    class _ComposedFiles(
-        SstFiles,
-        FileQuery,
-        FileFilterMixin,
-        FileScanMixin,
-        ListingRegistry[SstFile],
-    ):
-        pass
-
-    _files_check: Files = _ComposedFiles()
-    _query_check: FileQuery = _ComposedFiles()
-    _filter_check: FileFiltering = _ComposedFiles()
-    _scan_check: FileScanning = _ComposedFiles()
-    _sync_check: FileSyncing = _ComposedFiles()
-    _full_check: FileRegistry = _ComposedFiles()

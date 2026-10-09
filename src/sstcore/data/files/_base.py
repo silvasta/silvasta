@@ -9,15 +9,16 @@ __all__: list[str] = [
 ]
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from ...brick.registry import ListRegistry
+from ...brick.vault import ListVault
 from ...error import PathGuardError, RegistrySyncError
 from ...port.files import File, Files
-from ...util import PathGuard
+from ...port.link import portlink
+from ...util.path.guard import PathGuard
 
 
-class SstFiles(ListRegistry):
+@portlink(Files)
+class SstFiles(ListVault):
     """Provide basic registry access and confirmation"""
 
     root_dir: Path
@@ -31,7 +32,7 @@ class SstFiles(ListRegistry):
         self.items: list[File] = value
 
     def _item_identifier(self, item: File) -> Path:
-        """Plug ListRegistry identity into SstFile.path"""
+        """Plug ListVault identity into SstFile.path"""
 
         return item.path
 
@@ -53,7 +54,7 @@ class SstFiles(ListRegistry):
     def attach_from_path(self, path: Path, strict: bool = True) -> File:
         """Attach File that is already inside root_dir"""
         file: File = self.create_local_file(path, strict=strict)
-        self.attach(file)
+        self.add(file)
         return file
 
     def create_local_file(self, path: Path, *, strict=True) -> File:
@@ -67,8 +68,3 @@ class SstFiles(ListRegistry):
     def _create_local_file(self, *_args, **_kwargs) -> File:
         """Derive class and override this to set file constructor"""
         raise NotImplementedError(f"Create File from: {self}")
-
-
-if TYPE_CHECKING:
-    _instance_check: Files = SstFiles()
-    _class_check: type[Files] = SstFiles

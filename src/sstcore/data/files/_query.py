@@ -5,17 +5,17 @@ Provide Container for Files and Tools for FileSystem Operations
 """
 
 __all__: list[str] = [
-    "FileQueryMixin",
+    "QueryRegisterMixin",
 ]
 
 from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ...port.files import File, FileQuery
+from ...port.files import File, QueryRegister
 
 
-class FileQueryMixin:
+class QueryRegisterMixin:
     """Provide basic registry access and confirmation"""
 
     # --- Mixin Dependencies (Expected from Host & SstFiles) ---
@@ -66,5 +66,5 @@ class FileQueryMixin:
 
 
 if TYPE_CHECKING:
-    _instance_check: FileQuery = FileQueryMixin()
-    _class_check: type[FileQuery] = FileQueryMixin
+    _instance_check: QueryRegister = QueryRegisterMixin()
+    _class_check: type[QueryRegister] = QueryRegisterMixin

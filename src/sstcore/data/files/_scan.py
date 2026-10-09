@@ -4,32 +4,34 @@ Provide Container for Files and Tools for FileSystem Operations
                                                        DependencyLevel[0]
 """
 
+from src.sstcore.port.link import portlink
+from src.sstcore.util.filter._extend import FileFilter
+
 __all__: list[str] = [
     "FileScanMixin",
 ]
 
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from loguru import logger
 
 from ...port.files import File, ScanRegister
 from ...port.filter import PathFiltering, ProjectFiltering
 from ...port.tree import PathTree
-from ...util import FolderScanner
 from ...util.filter import ProjectFilter
+from ...util.scan import FolderScanner
 from ...util.tree import build_path_tree
-from ._filter import FileFilter
 
 
+@portlink(ScanRegister)
 class FileScanMixin:
     """Setup scanner, load directories and build tree"""
 
     root_dir: Path
     files: list[File]
     attach_from_path: Callable[[Path], File]
-    filtered: Callable[[FileFilter | None], list[File]]
     clear: Callable[..., int]
     paths: Callable[..., set[Path]]
 
@@ -87,11 +89,7 @@ class FileScanMixin:
         self, root_name: str = "", file_filter: FileFilter | None = None
     ) -> PathTree:
         return build_path_tree(
-            paths=[file.path for file in self.filtered(file_filter)],
+            # NEXT: apply new, better filter
+            paths=[file.path for file in self.filtered(file_filter)],  # ty:ignore
             root_name=root_name or self.root_dir.name,
         )
-
-
-if TYPE_CHECKING:
-    _instance: ScanRegister = FileScanMixin.sprout_at(scan_root=Path.cwd())
-    _class_check: type[ScanRegister] = FileScanMixin
