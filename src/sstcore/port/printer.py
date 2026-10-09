@@ -25,7 +25,7 @@ from .calling import Richable
 from .color import ColorBox, ColorIdentifier  # 6
 from .config import ProjectInformation
 from .event.dto import CliDTO  # 7
-from .view import Renderable  # 8
+from .represent import CliRenderable  # 8
 
 
 class PrintSpec(TypedDict, total=False):
@@ -50,7 +50,7 @@ class _NewIntermediateTemplateProcess(Protocol):
     """Define the Printers Print"""
 
     # AI:
-    def __call__(self, target: Template, /, **kwargs) -> Renderable: ...
+    def __call__(self, target: Template, /, **kwargs) -> CliRenderable: ...
 
 
 class _PrintReadyForEngine(Protocol):
@@ -59,9 +59,9 @@ class _PrintReadyForEngine(Protocol):
     # AI: this is what the printer engine throws into the adapter like rich.Console
     def __call__(
         self,
-        target: Renderable,
+        target: CliRenderable,
         /,
-        *more: Renderable,
+        *more: CliRenderable,
         **spec: Unpack[PrintSpec],
     ) -> CliDTO: ...
 
