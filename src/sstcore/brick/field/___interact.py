@@ -9,13 +9,15 @@ __all__: list[str] = [
     "ConfigField",
 ]
 
-from typing import TYPE_CHECKING, Any, NoReturn, TypedDict, Unpack
+from typing import Any, NoReturn, TypedDict, Unpack
 
+from ....port.link import portlink
 from ...port.attach import ConfigDescriptor, EventDescriptor
 from ...port.event.emit import Emit
 from ._base import DeleteField, ReadField, WriteField
 
 
+@portlink(EventDescriptor)
 class EmitField[T](ReadField[T], WriteField[T], DeleteField):
     def __init__(self, *args, emit: Emit, **kwargs) -> None:
         self.emit: Emit = emit
@@ -38,12 +40,12 @@ class _ExampleConfig(TypedDict, total=False):
     max_length: int | None
 
 
+@portlink(ConfigDescriptor)
 class ConfigField(WriteField):
-    # REMOVE: _ExampleConfig on first usage, replace by T or dTo
     config = _ExampleConfig(read_only=False, max_length=None)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # IDEA: for later: use config object, more precise  thant this here...
+        # LATER: use config object, more precise  thant this here...
         config_kwargs = {k: v for k, v in kwargs.items() if k in self.config}
         super_kwargs = {
             k: v for k, v in kwargs.items() if k not in self.config
@@ -63,8 +65,3 @@ class ConfigField(WriteField):
     def write(self, unit: object, value: Any) -> None:
         self.check(unit, value)
         super().write(unit, value)
-
-
-if TYPE_CHECKING:
-    _emit: type[EventDescriptor] = EmitField
-    _config: type[ConfigDescriptor] = ConfigField
