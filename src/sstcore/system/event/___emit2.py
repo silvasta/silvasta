@@ -6,32 +6,21 @@ Provide ergonomic facade on top of the EventBus
                                                        DependencyLevel[X]
 """
 
-from collections.abc import Callable
-
-from sstcore.port.view import CliRenderable, LogSerializable
+# TASK: define Emitter!!!
 
 __all__: list[str] = [
     "Emitter",
     "LogEmitter",
     "ViewEmitter",
 ]
-# REFACTOR:
-# REFACTOR:
-# REFACTOR:
-# REFACTOR:
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ...brick.views import Repr, Str
 from ...forge.view import view
-from ...port.event.dto import LogDTO
-from ...port.event.emit import (
-    BoundEmit,
-    #
-    Emit,
-    LogEmitter,
-)
-from ...port.event.emit import Emitter as Emitter_
+from ...port.event.dto import CliRenderable, LogDTO, LogSerializable
+from ...port.event.emit import BoundEmit, Emit, Emitter, LogEmitter
 from ...port.event.name import CliEvent, EventName
 
 
@@ -103,9 +92,6 @@ class FullLogEmitter(LogLevelMixin):
         self.emit(event, sender, log=dto)
 
 
-_log: type[LogEmitter] = FullLogEmitter
-
-
 @view(Str.SHORT, Repr.BOX)
 class _EmitterView:
     sender: str
@@ -156,7 +142,7 @@ class ViewEmitter(_EmitterView):
 
 @dataclass(frozen=True)
 @view(str=Str.SHORT, repr=Repr.BOX)
-class Emitter(LogLevelMixin):
+class EmitCore(LogLevelMixin):
     """Lead the Distribution of globally wired Bus Entry Points"""
 
     emit: Emit
@@ -173,17 +159,22 @@ class Emitter(LogLevelMixin):
         self, event: EventName, sender: str, **defaults: Any
     ) -> BoundEmit:
         """Create a specialized, pre-bound emitter."""
-        return EventEmitter(self.emit, event, sender, defaults)
+        # return EventEmitter(self.emit, event, sender, defaults)
+        raise NotImplementedError
 
     def view(
         self, sender: str, event: EventName = CliEvent.RENDER
     ) -> ViewEmitter:
         """Create a CLI/Log hybrid emitter for complex objects."""
-        return ViewEmitter(
-            emit=self.bind(event, sender), sender=sender, event=event
-        )
+        # return ViewEmitter(
+        #     emit=self.bind(event, sender),
+        #     sender=sender,
+        #     event=event,
+        # )
+        raise NotImplementedError
 
 
-if TYPE_CHECKING:
-    _instance_check: Emitter_ = Emitter()
-    _class_check: type[Emitter_] = Emitter
+# NEXT: portlink
+# if TYPE_CHECKING:
+#     _instance_check: Emitter_ = Emitter()
+#     _class_check: type[Emitter_] = Emitter

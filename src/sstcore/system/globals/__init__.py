@@ -3,7 +3,7 @@ Set and fetch Global Instances - wireless setup
 
 - System
 - ConfigManager
-- EventBus
+- Bus
 
 WARN:
 - the wired setup is much safer and predictable
@@ -38,7 +38,7 @@ from typing import Any
 
 from .._core import System
 from ..config import ConfigManager
-from ..event import EventBus
+from ..event import Bus
 from ._state import _GlobalState
 
 ### -- - -- Fetch -- - -- ###
@@ -54,8 +54,8 @@ def config() -> ConfigManager:
     return _GlobalState.CONFIG.fetch
 
 
-def bus() -> EventBus:
-    """Fetch Global EventBus Singleton"""
+def bus() -> Bus:
+    """Fetch Global Bus Singleton"""
     return _GlobalState.BUS.fetch
 
 
@@ -73,7 +73,7 @@ def load_global_config(override=False) -> None:
 
 
 def load_global_bus(override=False) -> None:
-    """Load the global EventBus using its default loader"""
+    """Load the global Bus using its default loader"""
     _GlobalState.BUS.load(override)
 
 
@@ -96,7 +96,7 @@ def reset_global_config() -> None:
 
 
 def reset_global_bus() -> None:
-    """Clear the currently set global EventBus instance"""
+    """Clear the currently set global Bus instance"""
     _GlobalState.BUS.reset()
 
 
@@ -118,8 +118,8 @@ def set_global_config(config: ConfigManager) -> None:
     _GlobalState.CONFIG.update(instance=config)
 
 
-def set_global_bus(bus: EventBus) -> None:
-    """Set or replace the global EventBus instance"""
+def set_global_bus(bus: Bus) -> None:
+    """Set or replace the global Bus instance"""
     _GlobalState.BUS.update(instance=bus)
 
 
@@ -132,7 +132,7 @@ def change_all_globals(
     *,
     system: System | None | Any = IGNORE,
     config: ConfigManager | None | Any = IGNORE,
-    bus: EventBus | None | Any = IGNORE,
+    bus: Bus | None | Any = IGNORE,
 ) -> None:
     """Set multiple or all globals, None for reset, unset values are ignored"""
 

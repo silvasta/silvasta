@@ -8,8 +8,6 @@ Provide Container for Names and tools for name composition
                                                        DependencyLevel[0]
 """
 
-from typing import TYPE_CHECKING
-
 __all__: list[str] = [
     "SstNames",
 ]
@@ -23,7 +21,7 @@ from ...brick.format.name import NameParser
 from ...brick.time import day_count
 from ...port.config import Names
 from ...port.link import portlink
-from ...port.view import Stringable
+from ...port.represent import Stringable
 
 
 @portlink(Names)
@@ -45,8 +43,3 @@ class SstNames(BaseSettings):
         return self._summary_file(
             target={"day": day or day_count(), "suffix": suffix.lstrip(".")}
         )
-
-
-if TYPE_CHECKING:
-    _instance_check: Names = SstNames()
-    _class_check: type[Names] = SstNames

@@ -13,7 +13,7 @@ from loguru import logger
 from .._core import System
 from ..boot import sst_bus_loader, sst_config_loader, sst_system_loader
 from ..config import ConfigManager
-from ..event import EventBus
+from ..event import Bus
 
 # LATER: use bus and emit if avaliable?
 
@@ -123,4 +123,4 @@ _system: _Singleton[System] = _Singleton(state=_GlobalState.SYSTEM)
 
 _config: _Singleton[ConfigManager] = _Singleton(state=_GlobalState.CONFIG)
 
-_bus: _Singleton[EventBus] = _Singleton(state=_GlobalState.BUS)
+_bus: _Singleton[Bus] = _Singleton(state=_GlobalState.BUS)

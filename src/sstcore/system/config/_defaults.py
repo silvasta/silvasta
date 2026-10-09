@@ -10,7 +10,6 @@ __all__: list[str] = [
     "SstDefaults",
 ]
 
-from typing import TYPE_CHECKING
 
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
@@ -26,8 +25,3 @@ class SstDefaults(BaseSettings):
     timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]  # parse dates
     dot_env_content: str = ""
-
-
-if TYPE_CHECKING:
-    _instance_check: Defaults = SstDefaults()
-    _class_check: type[Defaults] = SstDefaults

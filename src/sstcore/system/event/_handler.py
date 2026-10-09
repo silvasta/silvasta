@@ -25,8 +25,8 @@ from loguru import logger
 
 from ...port.event import Event, EventBus
 from ...port.event import EventHandler as EventHandler_
-from ...util import printer
 from ...util.log import handle_log_event
+from ...util.print import printer
 
 
 def register_default_event_handler(bus: EventBus) -> None:

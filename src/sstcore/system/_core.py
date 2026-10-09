@@ -8,20 +8,19 @@ Load and combine all Components in one System.
                                                        DependencyLevel[2]??
 """
 
-from sstcore import portlink
-from sstcore.port import CliSystem
-
 __all__: list = [
     "System",
 ]
 
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Self, Unpack
+from typing import Any, Self, Unpack
 
+from ..port import CliSystem
 from ..port.config import Config
 from ..port.event import EventBus
 from ..port.event.emit import Emitter
 from ..port.event.name import CoreEvent, EventName
+from ..port.link import portlink
 from ..port.printer import Printer
 from ..port.system import (
     BusLoader,
@@ -73,12 +72,3 @@ class System:
         system.emit(event=CoreEvent.BUS_READY, sender="System")
 
         return system
-
-
-if TYPE_CHECKING:
-    # base protocol
-    _instance_check: SstSystem = System.boot()
-    _class_check: type[SstSystem] = System
-    # only internals
-    _instance_check: SstSystem = System.boot()
-    _class_check: type[SstSystem] = System
