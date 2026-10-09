@@ -16,7 +16,6 @@ __all__: list[str] = [
     "LinkRaiserCall",
     "PortErrorInput",
     "PortErrorData",
-    "ErrorBuilder",
     "LinkRaiser",
     "PortLinkError",
 ]
@@ -24,85 +23,13 @@ __all__: list[str] = [
 
 from dataclasses import dataclass
 from enum import auto
-from typing import Any, Never, Protocol, Unpack
+from typing import Any, Protocol, Unpack
 
-from .raising import (
-    ErrorData,
-    ErrorDTO,
-    ErrorInput,
-    ErrorMachine,
-    Raiser,
-    SstCoreError,
-)
+from . import raising
+from .raising import Raiser
 
 
-class LinkRaiserCall(Protocol):
-    def __call__(
-        self, *args, **kwargs: Unpack[PortErrorInput]
-    ) -> SstCoreError: ...
-
-
-class PortErrorInput(ErrorInput, total=False):
-    text: str
-    attr: str
-    source: type
-
-
-@dataclass(frozen=True)
-class PortErrorData(ErrorData):
-    reason: LinkRaiser
-    text: str | None = None
-    attr: str | None = None
-    source: type | None = None
-
-
-class ErrorBuilder(ErrorMachine):
-    @classmethod
-    def custom(cls, _data: PortErrorData) -> type[SstCoreError]:
-        """Get Custom Exception registred in Raiser"""
-        if _data.reason == LinkRaiser.RAW:
-            return SstCoreError
-        return PortLinkError
-
-    @classmethod
-    def builtin(cls, _data: ErrorData) -> type[Exception] | None:
-        """Find Builtin Exception if registred in Raiser"""
-        match _data.reason:
-            case LinkRaiser.RAW:
-                ...
-            case LinkRaiser.MissingPlug:
-                return AttributeError
-
-            case LinkRaiser.PipeLine:
-                return RuntimeError
-
-            case LinkRaiser.Inject:
-                return AttributeError
-
-            case LinkRaiser.Reflect:
-                return AttributeError
-
-    @classmethod
-    def message(cls, data: ErrorData) -> str:
-        """Find Builtin Exception if registred in Raiser"""
-        return f"Error in Port!! ... {data.reason}"
-
-
-class LinkRaiser(Raiser):
-    RAW = auto()
-
-    MissingPlug = auto()
-    PipeLine = auto()
-    Inject = auto()
-    Reflect = auto()
-
-    __call__: LinkRaiserCall
-
-    def order(self, data: ErrorData) -> ErrorDTO:
-        return ErrorBuilder.run(data)
-
-
-class PortLinkError(SstCoreError):
+class PortLinkError(raising.SstCoreError):
     def __init__(
         self,
         message: str,
@@ -122,18 +49,93 @@ class PortLinkError(SstCoreError):
         super().__init__(*args)
 
 
-def how_to_use1() -> ErrorData:
-    return LinkRaiser.RAW.sanitize()
+class PortErrorInput(raising.ErrorInput, total=False):
+    text: str
+    attr: str
+    source: type
 
 
-def how_to_use2() -> ErrorDTO:
-    return LinkRaiser.PipeLine.dto()
+@dataclass(frozen=True)
+class PortErrorData(raising.ErrorData):
+    text: str | None = None
+    attr: str | None = None
+    source: type | None = None
+    # IDEA: port,plug == Protocol,Cls
 
 
-def how_to_use3() -> Never:
-    assembled: Exception = LinkRaiser.PipeLine(None, "build", Raiser)
-    raise assembled
+class LinkRaiser(Raiser):
+    RAW = auto()
+
+    MissingPlug = auto()
+    PipeLine = auto()
+    Inject = auto()
+    Reflect = auto()
+
+    __call__: LinkRaiserCall
+
+    @property
+    def data(self) -> type[PortErrorData]:
+        """Override to map to specific raising.ErrorData"""
+        return PortErrorData
+
+    @property
+    def custom(self) -> type[PortLinkError]:
+        """Override to map to specific Custom Error"""
+        return PortLinkError
+
+    @property
+    def builtin(self) -> type[Exception] | None:
+        """Find Builtin Exception if registred in Raiser"""
+        match self:
+            case LinkRaiser.RAW:
+                return None
+
+            case LinkRaiser.MissingPlug:
+                return AttributeError
+
+            case LinkRaiser.PipeLine:
+                return RuntimeError
+
+            case LinkRaiser.Inject:
+                return AttributeError
+
+            case LinkRaiser.Reflect:
+                return AttributeError
+
+    def message(self, data: raising.ErrorData) -> str:
+        """Override to generate formatted messages based on the Enum state"""
+
+        assert isinstance(data, PortErrorData), (
+            f"Expected Fieldraising.ErrorData, got {type(data)}"
+        )
+        text: str = data.text or "No __doc__"
+        attr: str = data.attr or "Unknown"
+        source_name: str = (
+            data.source.__name__ if data.source else "Unknown Implementation"
+        )
+
+        # TASK: improve!!
+
+        match self:
+            case LinkRaiser.RAW:
+                return super().message(data)
+
+            case LinkRaiser.MissingPlug:
+                return f"Not found: {source_name} for {attr=}"
+
+            case LinkRaiser.PipeLine:
+                return f"Issue with: {source_name} for {attr=}"
+
+            case LinkRaiser.Inject:
+                return f"Issue for: {source_name}.{attr}, __doc__:{text}"
+
+            case LinkRaiser.Reflect:
+                return f"Issue for: {source_name}.{attr}, __doc__:{text}"
+
+        return f"Failed Match: {type(self).__name__}.message: {self=}"
 
 
-def how_to_use4() -> Never:
-    LinkRaiser.Inject.dto().fire()
+class LinkRaiserCall(Protocol):  # TASK: think about parametrization
+    def __call__(
+        self, *args, **kwargs: Unpack[PortErrorInput]
+    ) -> raising.SstCoreError: ...

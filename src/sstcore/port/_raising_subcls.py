@@ -2,6 +2,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import ClassVar, Protocol, reveal_type
 
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+
 
 @dataclass(frozen=True)
 class TopicConfig:
@@ -16,7 +21,6 @@ class ConfiguredEnum(Enum):
         cls.config = config
 
 
-# Pass the DTO instance directly in the class signature:
 class EventTopics(
     ConfiguredEnum, config=TopicConfig(prefix="events.v1.", dead_letter=False)
 ):
@@ -24,28 +28,26 @@ class EventTopics(
     USER_DELETED = "user.deleted"
 
 
-print(EventTopics.config.prefix)  # 'events.v1.'
-print(EventTopics.USER_CREATED.value)  # 'user.created'
+print(EventTopics.config.prefix)
+print(EventTopics.USER_CREATED.value)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class BaseEnum(Enum):
+class SubClassBase(Enum):
     def __init_subclass__(cls, config: TopicConfig, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.config = config
 
 
-# Dynamically spawn a subclass
-DynamicTopic = BaseEnum(
-    "DynamicTopic",
-    ["PING", "PONG"],
-    config=TopicConfig(prefix="internal."),  # Forwarded to __init_subclass__
-)
-
-print(DynamicTopic.config.prefix)  # 'internal.'
-print(DynamicTopic.PING)  # <DynamicTopic.PING: 1>
+# FAIL: # Dynamically spawn a subclass:
+# DynamicTopic = SubClassBase(
+#     "DynamicTopic",
+#     ["PING", "PONG"],
+#     config=TopicConfig(prefix="internal."),  # Forwarded to __init_subclass__)
+# print(DynamicTopic.config.prefix)  # 'internal.'
+# print(DynamicTopic.PING)  # <DynamicTopic.PING: 1>
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -58,7 +60,6 @@ class TopicConfig:
 
 
 class ConfiguredEnum(Enum):
-    # Annotate on the base class so type checkers know it exists
     config: ClassVar[TopicConfig]
 
     def __init_subclass__(cls, config: TopicConfig, **kwargs):
@@ -92,11 +93,7 @@ class Endpoint(Enum):
     ORDERS = EndpointMeta("/orders", 50)
 
 
-# Type checkers know `meta` has .path and .rate_limit:
-reveal_type(Endpoint.USERS.meta.path)  # Revealed type: "str"
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+reveal_type(Endpoint.USERS.meta.path)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -116,7 +113,7 @@ class RabbitDTO:
 
 
 # --- Base Enum ---
-class BaseEnum(Enum):
+class NextSubClassBase(Enum):
     config: ClassVar[object]  # Generic or broad baseline
 
     def __init_subclass__(cls, config: object, **kwargs):
@@ -125,13 +122,26 @@ class BaseEnum(Enum):
 
 
 # --- Concrete Enum Subclass ---
-class QueueEnum(BaseEnum, config=RabbitDTO("app.", "orders.#", "amq.direct")):
+class QueueEnum(
+    NextSubClassBase, config=RabbitDTO("app.", "orders.#", "amq.direct")
+):
     # Subclass narrows the type locally (can be a Protocol or a Child DTO)
     config: ClassVar[HasRouting]
 
     ORDERS = "orders"
 
 
-# Type checker narrows the type:
-reveal_type(QueueEnum.config)  # Revealed type: HasRouting
+reveal_type(QueueEnum.config)
 print(QueueEnum.config.routing_key)
+
+
+class NextQueueEnum(
+    NextSubClassBase, config=RabbitDTO("app.", "orders.#", "amq.direct")
+):
+    config: ClassVar[RabbitDTO]
+
+    ORDERS = "orders"
+
+
+reveal_type(NextQueueEnum.config)
+print(NextQueueEnum.config.exchange)

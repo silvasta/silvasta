@@ -7,6 +7,8 @@ Create the SimpleNamespace Easy Operators
                                DependencyLevel.sstcore.port.link[2]
 """
 
+# TASK: raiser!
+
 __all__: list[str] = [
     "EasyNote",
     "EasyCore",
@@ -80,6 +82,7 @@ class EasyBase[Core: Callable](EasyCore, EasyNote):
 
     _registry: dict[int, type[Self]] = {}
 
+    # FIX: replace id again by str, or some Literal/Enum
     def __init_subclass__(cls, id: int, art: str, **kwargs):
         super().__init_subclass__(**kwargs)
         if not id:
@@ -123,6 +126,7 @@ class EasyCatch(EasyBase, id=0, art="D"):
             self.emit(f"Continue... {error=}")
             return True
 
+        # TASK: thi, Never, Nevers is True for top-level handler, other should break trough
         return True  # PARAM: Error Handling
 
 

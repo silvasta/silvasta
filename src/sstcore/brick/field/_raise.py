@@ -127,6 +127,7 @@ class FieldRaiser(Raiser, zero=True):
         name: str = data.attr or "Unknown"
         field: Any = data.field
         value: Any = data.value
+
         match self:
             case FieldRaiser.RAW:
                 return super().message(data)
@@ -152,8 +153,10 @@ class FieldRaiser(Raiser, zero=True):
             case FieldRaiser.Transition:
                 return f"Failed transfer for {name}: {field}"
 
+        return f"Issue with match in Self.message: {self=}"
 
-class FieldRaiseCall(Protocol):
+
+class FieldRaiseCall(Protocol):  # TASK: think about parametrization
     @overload
     def __call__(
         self,

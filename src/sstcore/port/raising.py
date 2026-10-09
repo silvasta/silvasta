@@ -119,7 +119,7 @@ class ErrorData:
         return cls(reason, extra=extra, **items)
 
 
-class Raiser(BaseEnum):
+class Raiser(BaseEnum, zero=True, walk=True):
     """Assemble all data and throw it with panic"""
 
     @property
@@ -191,7 +191,7 @@ class Raiser(BaseEnum):
         **kwargs: Unpack[ErrorInput],
     ) -> NoReturn: ...
 
-    def __call__(
+    def __call__(  # TASK: think about parametrization
         self,
         text="",
         /,

@@ -7,6 +7,9 @@ Specify SstCoreError before SstError is ready
                                     DependencyLevel.sstcore.port[2]
 """
 
+
+# IMPORTANT: Global strategy, sync with sstcore.error
+
 __all__: list[str] = [
     "FailedDispatchError",
     "FailedHackError",

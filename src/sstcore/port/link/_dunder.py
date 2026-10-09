@@ -4,6 +4,8 @@ Solve a Simple Problem with elegantly building new Types
                                DependencyLevel.sstcore.port.link[0]
 """
 
+# IDEA: merge with Data
+
 __all__: list[str] = [
     "DunderStore",
     "DunderFormatMixin",
