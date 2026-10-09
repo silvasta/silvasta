@@ -11,12 +11,14 @@ __all__: list[str] = [
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, overload
+from typing import Any, overload
 
 from ...port.filter import Filter
+from ...port.link import portlink
 from ._base import FilterData
 
 
+@portlink(Filter)
 @dataclass
 class FilterSet[SetType: str | Path | int, TargetT: Any](FilterData[SetType]):
     """Wire different Checks and Execute when Called"""
@@ -70,8 +72,3 @@ class FilterSet[SetType: str | Path | int, TargetT: Any](FilterData[SetType]):
         if not self.fulfills_require_any(target_set):
             return False
         return True
-
-
-if TYPE_CHECKING:
-    _is_instance: Filter = FilterSet()
-    _is_class: type[Filter] = FilterSet

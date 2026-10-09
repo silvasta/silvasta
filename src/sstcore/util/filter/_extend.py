@@ -12,10 +12,10 @@ __all__: list[str] = [
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from ...port.files import File
-from ...port.filter import FileFiltering, PathFiltering, ProjectFiltering
+from ...port.filter import PathFiltering, ProjectFiltering
+from ...port.link import portlink
 from ._box import FilterArgs
 from ._engine import FilterSet
 
@@ -25,6 +25,7 @@ class FileFilter[FileT: File](FilterSet[str, FileT]):
         return self.fulfills_trio(target_set=target.keywords)
 
 
+@portlink(PathFiltering)
 @dataclass
 class PathFilter(FilterSet[str, Path]):
     def _fulfill(self, target: Path) -> bool:
@@ -34,6 +35,7 @@ class PathFilter(FilterSet[str, Path]):
         )
 
 
+@portlink(ProjectFiltering)
 @dataclass
 class ProjectFilter(PathFilter):
     """Reject unwanted Folders and include desired Files"""
@@ -57,14 +59,3 @@ class ProjectFilter(PathFilter):
             return self.fulfills_require_any(target_set)
 
         return False
-
-
-if TYPE_CHECKING:
-    _instance: FileFiltering = FileFilter()
-    _class: type[FileFiltering] = FileFilter
-    #
-    _instance: PathFiltering = PathFilter()
-    _class: type[PathFiltering] = PathFilter
-    #
-    _instance: ProjectFiltering = ProjectFilter()
-    _class: type[ProjectFiltering] = ProjectFilter

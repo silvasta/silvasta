@@ -11,11 +11,13 @@ __all__: list[str] = [
 ]
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from ...port.filter import FilterSpec
+from ...port.link import portlink
 
 
+@portlink(FilterSpec)
 @dataclass
 class FilterData[SetType]:
     exclude: set[SetType] = field(default_factory=set)
@@ -46,8 +48,3 @@ class FilterData[SetType]:
         self.require_all.difference_update(args.require_all)
         self.require_any.difference_update(args.require_any)
         return self
-
-
-if TYPE_CHECKING:
-    _is_instance: FilterSpec = FilterData()
-    _is_class: type[FilterSpec] = FilterData

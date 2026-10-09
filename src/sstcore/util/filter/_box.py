@@ -5,6 +5,7 @@ Prepare default sets for Filters
                                                        DependencyLevel[1]
 """
 
+# IMPORTANT: check monkey patch
 # LATER: dispatch text-binary file eg: {".pdf"}
 
 __all__: list[str] = [

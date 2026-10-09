@@ -18,10 +18,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Self
 
+from ...port.link import portlink
 from ...port.tree import PathTree
 from ._simple import SimpleTreeNode
 
 
+@portlink(PathTree)
 @dataclass(frozen=True)
 class PathTreeNode(SimpleTreeNode):
     """Represent FileTree with Nodes=Folders and Leafs=Files"""
@@ -56,10 +58,7 @@ def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
     return _recursive_path_tree(path_parts, current_node_name=root_name)
 
 
-def _recursive_path_tree(
-    # NEXT: generalize, first for SimpleTreeNode
-    # NEXT: generalize, first for SimpleTreeNode
-    # NEXT: generalize, first for SimpleTreeNode
+def _recursive_path_tree(  # NEXT: generalize, first for SimpleTreeNode
     path_parts: list[deque[str]],
     current_node_name: str = "",
     current_node_path: Path = Path(),

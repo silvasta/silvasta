@@ -143,7 +143,7 @@ class RegexMatchBox[MatchArgs: Any, MatchResult: Any]:
                     time.sleep(sleep)
                     continue
 
-                if match := self(line):
+                if match := self(line):  # ty:ignore
                     yield line, match
 
     @classmethod

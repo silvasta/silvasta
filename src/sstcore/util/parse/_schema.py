@@ -6,15 +6,11 @@ Transform to BaseModel and Merge with Registries and Files
                                                        DependencyLevel[0]
 """
 
-# TASK: further derive in coordination with ParsedName
-# STRATEGY: this as heavy version
-# - easily merges with BaseModels
-
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
-from ...brick.name import NameParser
+from ...brick.format.name import NameParser
 
 __all__: list[str] = [
     "SchemaName",

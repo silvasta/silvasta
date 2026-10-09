@@ -25,7 +25,7 @@ import sys
 
 from loguru import logger
 
-from ...port.config import LogData  # FIX: remove or build!
+from ...port.config import LogData
 from ._format import load_format_pattern, ndjson_formatter
 from ._param import LogParam
 

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ...port.tree import AstKind, ASTree
+from ...port.tree import AstKind, AsTree
 from ..scan._ast import AstVisitor  # WARN: Bad Dependency
 from ..tree import SimpleTreeNode
 
@@ -26,8 +26,8 @@ class AstNode(SimpleTreeNode):
 
 
 if TYPE_CHECKING:
-    _instance: ASTree = AstNode("ast")
-    _class: type[ASTree] = AstNode
+    _instance: AsTree = AstNode("ast")
+    _class: type[AsTree] = AstNode
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### G420

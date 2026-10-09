@@ -17,12 +17,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Self
 
-# NEXT: view
-# NEXT: generate SimpleTree
+from ...port.link import portlink
+from ...port.tree import SimpleTree
 
 
+@portlink(SimpleTree)
 @dataclass(frozen=True)
-class SimpleTreeNode:
+class SimpleTreeNode:  # NEXT: generate SimpleTree
     """Build Node with 0..N subnodes each with own subnodes"""
 
     name: str

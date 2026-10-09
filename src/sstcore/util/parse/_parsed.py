@@ -6,8 +6,6 @@ ParsedName
                                                        DependencyLevel[0]
 
 """
-# TASK: further derive in coordination with SchemaName
-# STRATEGY: this as base or most simple version
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -59,7 +57,7 @@ class ParsedName[DTO](NameParser):
     @overload
     def __call__(self, target: dict | list | tuple) -> str: ...
 
-    def __call__(self, target: Any) -> Any:
+    def __call__(self, target: Any) -> Any:  # ty:ignore
         """Route Target to Extract (String -> DTO) or Format (DTO -> String)"""
 
         # TASK: figure out how to exploit this as base
@@ -75,14 +73,11 @@ class ParsedName[DTO](NameParser):
         if isinstance(target, (dict, list, tuple)):
             return super().__call__(target)
 
-        if hasattr(target, "_asdict"):
-            # NamedTuple support
+        if hasattr(target, "_asdict"):  # NamedTuple support
             target: dict[str, Any] = target._asdict()
-        elif hasattr(target, "__dict__"):
-            # Dataclass & Standard Class support
+        elif hasattr(target, "__dict__"):  # Dataclass & Standard Class support
             target: dict[str, Any] = vars(target)
-        elif hasattr(target, "model_dump"):
-            # Graceful fallback if Pydantic sneaks in
+        elif hasattr(target, "model_dump"):  # fallback for Pydantic
             target: dict[str, Any] = target.model_dump()
 
         return super().__call__(target)

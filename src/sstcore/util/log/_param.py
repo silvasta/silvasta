@@ -11,7 +11,7 @@ __all__: list[str] = [
 ]
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self
+from typing import Any, Self
 
 from pydantic import BaseModel, Field
 
@@ -23,20 +23,16 @@ from ..path.guard import PathGuard
 
 @portlink(LogData)
 class LogParam(BaseModel):
-    # Toggles (The 3 outputs you need to control)
+    print_at_setup: bool = False
+
     log_to_console: bool = True
     log_to_file: bool = True
     log_to_json: bool = True
 
-    # Setup behaviour
-    print_at_setup: bool = False
-
-    # Runtime behaviour and file management
     log_level: str = "INFO"
     retention: str = "1 week"
     rotation: str = "5 MB"
 
-    # Directories and names
     log_dir: Path = Field(default_factory=any_root)  # TODO:
     log_file_stem: str = "debug"
     file_suffix: str = ".log"
@@ -59,8 +55,3 @@ class LogParam(BaseModel):
         if quiet:
             updates["log_to_console"] = False
         return self.model_copy(update=updates)
-
-
-if TYPE_CHECKING:
-    _instance_check: LogData = LogParam()
-    _class_check: type[LogData] = LogParam

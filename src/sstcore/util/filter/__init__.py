@@ -22,4 +22,4 @@ __all__: list[str] = [
 from ._base import FilterData
 from ._box import FilterArgs
 from ._engine import FilterSet
-from ._filters import FileFilter, PathFilter, ProjectFilter
+from ._extend import FileFilter, PathFilter, ProjectFilter
