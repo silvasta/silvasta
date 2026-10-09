@@ -22,7 +22,7 @@ __all__: list[str] = [
     "InsertPolicy",
     "BisectDTO",
     #
-    "registry_types",
+    "registry_types",  # IDEA: export rendered module
 ]
 
 from collections.abc import Callable, Iterator
@@ -32,9 +32,9 @@ from typing import Any, Protocol, Self, overload
 from .._types import _registry as registry_types
 from .attach import LazyDescriptor, PolicyDescriptor  # 3
 from .filter import Filter  # 4
-from .solid import EnumIndex, PolicyEnum  # 1
+from .solid import EnumZero, PolicyEnum  # 1
 
-_reg = registry_types
+_reg = registry_types  # IDEA: import from ._types: registry_types = F(class)->module
 
 
 class Register[Item, Vault: _reg.Vault](Protocol):
@@ -109,7 +109,7 @@ class DictRegister[Item, K](Register[Item, _reg.Dict[K, Item]], Protocol):
 #  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class _IndexRegister[Item, Axes: tuple[EnumIndex, ...]](Protocol):
+class _IndexRegister[Item, Axes: tuple[EnumZero, ...]](Protocol):
     # TASK: colorgrid!!
     """Build the ultimate robust and stable container"""
 
