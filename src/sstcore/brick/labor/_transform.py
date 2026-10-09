@@ -41,6 +41,10 @@ def dense_extract(self):
     return "-|-".join(f"{k}:={v}" for k, v in vars(self).items())
 
 
+def _vars(target, /, sep="\n", map=":="):
+    return f"{sep}".join(f" - {k}{map}{v}" for k, v in vars(target).items())
+
+
 def impossible_brackets(key: str) -> str:  # INFO: don't loose this
     """Needed for proper {key}"""
     return f"{{{key}}}"

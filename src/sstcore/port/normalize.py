@@ -8,6 +8,11 @@ Define the Shape of the Processing Pipelines
                                     DependencyLevel.sstcore.port[0]
 """
 
+# TASK: Parametrize!!
+# - keep it general here, no early data_type selection
+# - find the minimal required shape
+# - use type Xxx[T1,...]=... to connect pipeline steps
+
 __all__: list[str] = [
     "NamingPattern",
     "FormatNormalize",
@@ -22,6 +27,7 @@ from typing import Any, Protocol, overload
 
 
 class NamingPattern(Protocol):
+    # TODO: think about parametrization
     """Compile the Pattern, format and parse Keys and Names"""
 
     def format(self, keys: dict[str, str]) -> str:
@@ -57,6 +63,7 @@ class ExtractNormalize(Protocol):
 
 
 class BidirectNaming(Protocol):
+    # TODO: think about parametrization
     """Route the Calls trough the right channel"""
 
     @overload
