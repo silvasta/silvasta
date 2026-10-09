@@ -17,10 +17,10 @@ from pathlib import Path
 
 import typer
 
-from ...util import FolderScanner, Printer
-from ...util import printer as backup_printer
 from ...util.filter import PathFilter, ProjectFilter
-from ...util.scan import SummaryFile
+from ...util.print import Printer
+from ...util.print import printer as _printer
+from ...util.scan import FolderScanner, SummaryFile
 from ..select import TreeSelectorApp
 
 # TASK: global setup
@@ -43,8 +43,9 @@ def folder_scanner(
     # scan_mode: ScanMode = ScanMode.RAW,
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
-
-    printer: Printer = local_printer or backup_printer
+    _x = _printer
+    if (printer := local_printer) is None:
+        raise NotImplementedError
 
     if filter is None:
         filter = ProjectFilter(require_all=set(), require_any=set())
@@ -66,7 +67,7 @@ def folder_scanner(
                 output_file,
                 target_files=selected_files,
                 local_root=scan_root,
-                scan_mode=scan_mode,
+                # scan_mode=scan_mode,
             )
         )
     )

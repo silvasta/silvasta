@@ -33,7 +33,7 @@ app = SafeTyper(name="tools", help="Basic Equipment for Development")
 def launch_stub_engine(
     ctx: Context,
     _output_file: args.OutputFile = None,
-    _file_type: StubFileMachine = StubFileMachine.MD,
+    _file_type: StubFileMachine = StubFileMachine.TYPE,
     _reset: args.CleanState = False,
     _select: bool = False,
 ):
@@ -109,7 +109,7 @@ def config_details_and_write(ctx: Context, write_config: args.Write = False):
     config: Config = ctx.obj["config"]
     printer(config)
     printer(config.settings)
-    printer(config.setting_file)
+    printer(config.settings.file)
 
     if write_config:
         config.save_settings()

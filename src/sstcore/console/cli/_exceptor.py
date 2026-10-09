@@ -9,7 +9,6 @@ UNDER CONSTRUCTION!
 
 # TASK: split regular|typer, create easy setup for fast tests, check __log|cli__
 
-import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Self
@@ -17,10 +16,9 @@ from typing import Any, Self
 from sstcore import printer
 
 from ...brick.color.box import Colors
-from ...port.color import ColorBox
 from .._engine import SafeTyper  # WARN: DEPENDENCY ISSUE
 
-c: ColorBox = Colors()
+c = Colors()
 
 
 type ErrorHandler = Callable[[Any], None]
@@ -218,7 +216,3 @@ class ExceptorTask:
 
             case (False, False):
                 return self.error(*self.args, **self.kwargs)  # ty:ignore
-
-        arguments: str = f"{c.c('args')} and {c.c('kwargs')}"
-        printer.special(f"{c.purple(self)} Failed to load {arguments}!")
-        return sys.exit(2)

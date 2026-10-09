@@ -33,7 +33,7 @@ class Colors:
     def __str__(self) -> str:
         return "ColorBox==Colors"
 
-    def __getattr__(self, name) -> Painter | str:
+    def __getattr__(self, name) -> Painter:
         if color := SHORTCUTS.get(name):
             return self.paint(color)
 

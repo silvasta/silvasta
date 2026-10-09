@@ -23,17 +23,16 @@ from rich.box import Box
 
 from ....brick.color import colorize
 from ....brick.color.box import Colors
-from ....port.color import ColorBox
 from ....port.config import Config
 from ....system.boot import ConfigLoader
 from ....util.log import fetch_log_result
 from ....util.path.guard import PathGuard
 from ....util.print import boxes, printer
-from .._TODO_print_option import PrintOption, SelectMode
+from ..___print_option import PrintOption, SelectMode
 
 # TASK: system and bus!
 
-c: ColorBox = Colors()
+c = Colors()
 
 toggle: dict[str, SelectMode] = {
     # TODO: find better solution!
