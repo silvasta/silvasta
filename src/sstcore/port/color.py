@@ -41,10 +41,10 @@ from typing import NamedTuple, Protocol, Self
 
 from ._enum import EnumId  # 0
 from .calling import Colorizing, Stringable  # 0
-from .solid import EnumIndex  # 1
+from .solid import BaseEnum  # 1
 
 
-class GridIndex(EnumIndex):
+class GridIndex(BaseEnum, zero=True, walk=True):
     """Provide unique Base for Grid-Axes and Grid-Registries"""
 
 

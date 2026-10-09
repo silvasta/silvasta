@@ -32,13 +32,17 @@ class BaseEnum(EnumView, metaclass=SstEnumMeta):
     """Provide Base with Simple View and Modified Access"""
 
 
+class EnumZero(BaseEnum, zero=True):
+    """Index based Enum - activate (permanentely) with walk=True"""
+
+
 #  LINE: -- frequently used -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class PolicyEnum(BaseEnum, zero=True, walk=True):
+class PolicyEnum(EnumZero, walk=True):
     """Task and Rule Toggle"""
 
-    def __bool__(self):  # CHECK:
+    def __bool__(self):  # CHECK: maybe for option? or for policy?
         """Default Policy mapped to Index 0"""
         return self.value == 0
 
@@ -58,7 +62,7 @@ class EnumMode(BaseEnum, walk=True):  # CHECK: same as Option?
 # - if so, mount MRO walk to meta for detecting superclasses with flag
 
 
-class EnumOption(PolicyEnum, zero=True):
+class EnumOption(EnumZero):
     """Multiple Selections - Always 1 default (on zero)"""
 
 
