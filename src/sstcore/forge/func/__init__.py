@@ -1,12 +1,18 @@
 """
-The Functor - Easy and Safe Binding!
+forge.func
 
 - Closures with Comfort
+- Func input ensured
 
 """
 
-# TODO:
 __all__: list[str] = [
+    "BaseFunctor",
     "SafeFunctor",
+    "HybridFunctor",
+    #
+    "ArgCast",
+    "ArgCaster",
 ]
-from ._tor import SafeFunctor
+from ._cast import ArgCast, ArgCaster
+from ._tor import BaseFunctor, HybridFunctor, SafeFunctor

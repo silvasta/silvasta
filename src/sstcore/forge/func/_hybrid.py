@@ -18,6 +18,9 @@ class HybridError(TypeError, SstCoreError): ...
 class HybridPolicy(TypedDict, total=False): ...
 
 
+# TASK: Parameterization!
+
+
 def hybrid_factory[TargeT, **P, R](
     logic: Callable[..., R],
     is_target: Callable[[Any], TypeGuard[TargeT]],
