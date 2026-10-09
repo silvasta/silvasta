@@ -6,6 +6,8 @@ Collect Types for Hinting
                       DependencyLevel.sstcore.forge.engine.typed[0]
 """
 
+# MOVE: port._types
+
 __all__: list[str] = [
     "ProtoType",
     "AttrName",

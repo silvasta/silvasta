@@ -16,21 +16,19 @@ from collections.abc import Callable
 
 from ....brick.color.box import Colors
 from ....brick.labor import clsname, just_return
-from ....port import view
+from ....port import represent
 from ....port.calling import ClassRendering
 from ....port.color import Color, ColorIdentifier
 from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
 from ....port.link import portlink
-from ....port.view import SstView
+from ....port.represent import SstView
 from ._meta_base import SstMeta, SstMetaData
 
 colors = Colors()  # LATER: resolve this somehows
 
 
 @portlink(SstView)
-# @portlink(view.SstPropView)
-# @portlink(view.SstShortView)
-@portlink(view.SstFullView)
+@portlink(represent.SstFullView)
 class ClsViewBase(SstMeta):
     """Provide all Views for Classes"""
 
@@ -75,7 +73,7 @@ class ClsViewBase(SstMeta):
 class ClsViewData(SstMetaData):
     """Base DTO for Class-Level Views."""
 
-    # IMPORTANT: define better defaults!
+    # IMPORTANT: imporve defaults!
 
     name: ClassRendering
     rich: ClassRendering

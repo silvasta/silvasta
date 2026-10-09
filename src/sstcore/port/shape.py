@@ -144,7 +144,7 @@ class Builder[BaseT: type](Protocol):  # NEXT: composer finish!
     def compose(self, mixins: Mixins) -> BaseT: ...
 
     def compose[TargeT](
-        self, cls: type | None = None, **kwargs
+        self, cls: type | None = None, mixins: Mixins | None = None, **kwargs
     ) -> BaseT | TargeT:
         """Build new Class from Mixins or Inject to Target for new Subclass"""
 

@@ -15,39 +15,35 @@ __all__: list[str] = [
 
 import inspect
 from types import FunctionType
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from ....brick.color.box import Colors
-from ....port.color import ColorBox
+from ....port.link import portlink
 from ....port.shape import Meta, MetaData
-from ._base import MetaViewBase, MetaViewData
+from ._meta_view import ClsViewBase, ClsViewData
 
-colors: ColorBox = Colors()  # ty:ignore
+colors = Colors()
 
 
-class StaticFuncMetaData(MetaViewData):
-    # IDEAS:
-    # - some toolkit config
-    # - namespace policy: FunctionType or what else? some selection
+@portlink(MetaData)
+class StaticFuncMetaData(ClsViewData):  # IDEAS: - some toolkit config
     """Collect views and ..."""
 
 
-class StaticFuncMeta(MetaViewBase):
+@portlink(Meta)
+class StaticFuncMeta(ClsViewBase):
     """Create Blueprint for Static Functorials"""
-
-    _data_class = StaticFuncMetaData
-    # TASK: find better way for default cls
-    _data: StaticFuncMetaData
 
     def __new__(
         mcls,
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
-        data: StaticFuncMetaData | None = None,  # IDEA: not optional?
+        data: StaticFuncMetaData,
     ):
         """Attach all methods as staticmethod and load input for dunder data"""
 
+        # EXTRACT: auto-staticmethods, add config for _private,...
         new_static_methods: dict[str, Any] = {
             key: staticmethod(value)
             for key, value in namespace.items()
@@ -55,7 +51,6 @@ class StaticFuncMeta(MetaViewBase):
         }
         namespace.update(new_static_methods)
 
-        # TASK: how to handle this: cls._data = data or StaticFuncMetaData()
         return super().__new__(mcls, name, bases, namespace, data=data)
 
     def __call__(cls, *_, **__) -> Any:  # noqa:N805
@@ -76,9 +71,3 @@ class StaticFuncMeta(MetaViewBase):
             and isinstance(inspect.getattr_static(cls, name), staticmethod)
         ]
         return sorted(names) if sort else names
-
-
-if TYPE_CHECKING:
-    _cls_meta: type[Meta] = StaticFuncMeta
-    _cls_data: type[MetaData] = StaticFuncMetaData
-    _instance_data: MetaData = StaticFuncMetaData()

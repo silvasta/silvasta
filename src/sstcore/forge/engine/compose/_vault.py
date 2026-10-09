@@ -9,13 +9,17 @@ __all__: list[str] = [
     "DuoRegistry",
 ]
 
-from typing import TYPE_CHECKING, Any, Literal, NoReturn
+from typing import Any, Literal, NoReturn
 
-from ....brick.vault import TupleRegistry
+from ....brick.vault import TupleVault
+from ....port.link import portlink
 from ....port.register import MixinRegister
 
+# NEXT: build solid stack
 
-class MixinRegistry[MixinT: type](TupleRegistry[MixinT]):
+
+@portlink(MixinRegister)
+class MixinRegistry[MixinT: type](TupleVault[MixinT]):
     """Gatekeeper for mixin order. Assembly stays in brick.mix / the composer."""
 
     def _guard_input(self, item: type | Any) -> None | NoReturn:
@@ -28,10 +32,10 @@ class MixinRegistry[MixinT: type](TupleRegistry[MixinT]):
         return self.vault
 
 
-class DuoRegistry[DuoT: tuple[type, type]](TupleRegistry[DuoT]):
+@portlink(MixinRegister)
+class DuoRegistry[DuoT: tuple[type, type]](TupleVault[DuoT]):
     """Hold Mixins and Protocols in Paralell"""
 
-    # NEXT:
     def _guard_input(self, item: DuoT | Any) -> None | NoReturn:
         if isinstance(item[0], type) and isinstance(item[1], type):
             return
@@ -47,12 +51,3 @@ class DuoRegistry[DuoT: tuple[type, type]](TupleRegistry[DuoT]):
     @property
     def protocols(self) -> tuple[type, ...]:
         return self._split(mixin_or_protocol=1)
-
-
-# NEXT:
-if TYPE_CHECKING:
-    _instance: MixinRegister = MixinRegistry()
-    _class: type[MixinRegister] = MixinRegistry
-    #
-    _instance: MixinRegister = DuoRegistry()
-    _class: type[MixinRegister] = DuoRegistry

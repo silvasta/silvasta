@@ -16,6 +16,6 @@ __all__: list[str] = [
 ]
 
 from . import _mixer as mix
-from ._composer import MixinComposer
+from ._compose import MixinComposer
 from ._injector import MixInjector
 from ._vault import DuoRegistry, MixinRegistry

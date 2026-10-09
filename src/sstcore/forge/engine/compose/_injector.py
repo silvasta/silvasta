@@ -1,9 +1,15 @@
 from collections.abc import Callable
 from typing import Any, overload
 
-from ._composer import MixinComposer
+from ....port.link import portlink
+from ....port.shape import Builder, Injector
+from ._compose import MixinComposer
+
+# NEXT: setup Builder-Injector Pipeline
 
 
+@portlink(Builder)
+@portlink(Injector)
 class MixInjector:
     """Generic Routing Layer for Decorators."""
 
@@ -22,11 +28,6 @@ class MixInjector:
     @overload
     def __call__(self, target: type, /) -> type: ...
     @overload
-    # FIX:
-    # FIX:
-    # FIX:
-    # FIX:
-    # FIX:
     # FIX:
     def __call__(
         self, *args: Any, **kwargs: Any
