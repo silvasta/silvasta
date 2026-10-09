@@ -107,7 +107,7 @@ class PathGuard:
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
 
-    # EXTRACT: for StaticMeta
+    # EXTRACT: define at StaticMeta and mix it here?
 
     def __init__(self) -> NoReturn: ...
     @classmethod

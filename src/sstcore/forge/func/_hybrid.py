@@ -27,7 +27,7 @@ def hybrid_factory[TargeT, **P, R](
     def main(target: object = None, **policy: Unpack[HybridPolicy]):
         """Dispatch target to proper execution"""
 
-        # LATER: remove if...:__doc__ before usage
+        # LATER: remove 'if ...:__doc__' before usage
 
         if is_target(target):
             """# Case 1: Direct Execution (Data provided)"""
@@ -43,7 +43,7 @@ def hybrid_factory[TargeT, **P, R](
             return wrapper
 
         if target is None:
-            """Case 3: Parameterized Decorator (None provided, kwargs set)"""
+            """Case 3: Parameterized Decorator"""
 
             def decorator(fn: Callable[P, TargeT]) -> Callable[P, R]:
                 """Recursive call to Case 2"""

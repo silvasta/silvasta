@@ -78,7 +78,7 @@ class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
 class ErrorPolicy(_PolicyEnum):
     """Provide RuleName Shortcut and basic resolving"""
 
-    LOG_AND_CONTINUE = "log"
+    LOG_AND_CONTINUE = "log"  # WARN: overrides zero?
     LOG_AND_EXIT = "exit"
     RE_RAISE = "raise"
 
@@ -125,7 +125,7 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
     def __call__(
         self, target: _t.Any = None, /, *args: P.args, **kwargs: P.kwargs
     ):
-        """Dispatch __call__ by:
+        """Dispatch __call__:
 
         - Case 1: directly call function
         - Case 2: decorat target function

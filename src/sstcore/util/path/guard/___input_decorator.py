@@ -67,7 +67,7 @@ def validate_paths(func):
     return wrapper
 
 
-class _PathGuard:
+class PathGuardDummy:
     @staticmethod
     @validate_paths
     def rotate(

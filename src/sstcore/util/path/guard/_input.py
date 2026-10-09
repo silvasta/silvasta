@@ -11,9 +11,25 @@ __all__: list[str] = [
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Annotated, Any, Self
+
+from pydantic import BaseModel, BeforeValidator, Field
 
 from ....error import PathGuardError, PathGuardReason
+
+
+def ensure_path(v: str | Path) -> Path:
+    # Coercion stage: executes BEFORE schema validation
+    return Path(v) if isinstance(v, str) else v
+
+
+_CoercedPath = Annotated[Path, BeforeValidator(ensure_path)]
+
+
+class Config(BaseModel):
+    data_dir: _CoercedPath
+    timeout: int = Field(strict=True)  # Rejects "30", requires literal 30
+
 
 type PathInput = str | Path | PathSpec
 
