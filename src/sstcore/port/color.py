@@ -6,9 +6,9 @@ Define the Interface Colors and the Shape of the ColorBox
 - Palette: 1-N Palettes all data of the Adapter (p-axis of the grid)
 
 - ColorCoordinate: Navigate inside the 3d ColorGrid
-- ColorIdentifier: Valid input types to get Color
+- ColorId: Valid input types to get Color
 
-- ColorManager: Connect Factory, Grid and Facade
+- ColorHub: Connect Factory, Grid and Facade
 - ColorBox: Provide Simple and Fast Color Supply
 
 Future Ideas:
@@ -18,20 +18,22 @@ Future Ideas:
                                     DependencyLevel.sstcore.port[6]
 """
 
+from src.sstcore.port.register import TupleRegister
+
 __all__: list[str] = [
     "Color",
     "Adapter",
     "Palette",
-    #
     "ColorData",
-    "ColorFactory",
+    #
     "Painter",
+    "ColorSchema",
+    "PaintMill",
     #
-    "ColorIdentifier",
+    "ColorId",
     "ColorCoordinate",
-    "ColorRegistry",
     #
-    "ColorManager",
+    "ColorHub",
     "ColorBox",
 ]
 
@@ -65,13 +67,7 @@ class Color(GridIndex):
     BLACK = auto()
 
 
-# NEXT: apply this
-# NEXT: apply this
-# NEXT: apply this
-# NEXT: apply this
-type ColorId = EnumId[Color]  # CHECK:
-type ColorIdentifier = EnumId[Color]
-type _ColorIdentifier = int | str | Color  # CHECK:
+type ColorId = EnumId[Color]
 
 
 class Adapter(GridIndex):
@@ -92,29 +88,32 @@ class Palette(GridIndex):
 
 
 class ColorData(Protocol):
-    """Incoming Adapter Data ready to produce ColorPalette"""
+    """Incoming Adapter Data ready to produce ColorSchema"""
 
     @property
-    def func(self) -> Colorizing: ...
-    @property
-    def name(self) -> str: ...
+    def func(self) -> Coloring: ...
     @property
     def colors(self) -> tuple[str, ...]: ...
 
 
-class ColorPalette(ColorData, Protocol):
-    painter: Painter
+class Coloring(Protocol):
+    def __call__(self, text: Stringable, color: str, /) -> str:
+        """Apply handed in Color to Text"""
+
+
+class ColorSchema(Protocol):
+    """Transform the Adapter Data to internal Structure"""
 
     @property
-    def lookup(self) -> tuple[str, ...]: ...
+    def colors(self) -> TupleRegister[str]:
+        """The lookup table for the painters"""
 
+    @property
+    def paints(self) -> TupleRegister[Painter]:
+        """The prepared colorizing functions with lookup"""
 
-class ColorFactory(Protocol):
-    """Color Factory and Cache"""
-
-    def provide(self, color: Color, palette: Palette) -> Painter: ...
-    def setup(self, data: ColorData) -> ColorPalette:
-        """Produce Numbered Palette of executable Colors out of Raw Data"""
+    def bind(self, index: int, data: ColorData, /) -> Colorizing:
+        """Bind Color to internal Coloring"""
 
 
 class Painter(Protocol):
@@ -129,15 +128,23 @@ class Painter(Protocol):
         """Return yourself"""
 
 
-class ColorManager(Protocol):
+class PaintMill(Protocol):
+    """Color Factory and Cache"""
+
+    def setup(self, palette: Palette) -> ColorSchema:
+        """Produce Numbered Palette of executable Colors out of Raw Data"""
+
+    def paint(self, color: Color, palette: Palette) -> Painter: ...
+
+
+class ColorHub(Protocol):
     """Control the RuntimePalette and connect Grid, Factory and Box"""
 
-    def painter(self, color: Color) -> Painter: ...
-    def switch(self, adapter: Adapter) -> None: ...
-    def set_palette(self, palette_id: Palette) -> None: ...
-    def resolve(self, target: ColorIdentifier) -> Color: ...
+    def paint(self, color: Color) -> Painter: ...
+    def switch(self, palette: Palette) -> None: ...
     @classmethod
-    def bootstrap(cls) -> Self: ...
+    def boot(cls) -> Self:
+        """Start without any Configuration if needed"""
 
 
 class ColorCoordinate(NamedTuple):
@@ -148,29 +155,14 @@ class ColorCoordinate(NamedTuple):
     p: Palette
 
 
-class ColorRegistry(Protocol):  # TODO: Registry type
-    """Define Schema with all Colors"""
-
-    def __init__(self, c: Color, a: Adapter, p: Palette): ...
-
-
 class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     """Global Orchestrator and Distributor of Colors"""
 
-    def get(self, color: ColorIdentifier): ...
-
-    def stack(self, *_args, **_kwargs):  # TODO:
-        raise NotImplementedError
-
-    def __getattr__(self) -> Painter:
+    def __getattr__(self, name: str) -> Painter:
         """Provide Colors on ColorIndex Name and Shortcut"""
 
-    def __call__(self, text: Stringable, color: ColorIdentifier) -> str:
-        # IDEA: return here painter!
+    def __call__(self, text: Stringable, color: ColorId) -> str:
         """Find Color by Identifier and return painted text"""
 
-    def paint(self, color: ColorIdentifier) -> Painter | None:
+    def paint(self, color: ColorId) -> Painter | None:
         """Map ColorIndex to Painter of active Palette"""
-
-    def index(self, target: str | Painter) -> Color | None:
-        """Map Identifier or Painter to ColorIndex"""

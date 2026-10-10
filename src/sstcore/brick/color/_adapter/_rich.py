@@ -15,7 +15,7 @@ from enum import auto
 
 from ....port.calling import Stringable
 from ....port.color import Adapter, ColorData, Palette
-from ._base import CustomBlock, PaletteDTO, StandardBlock
+from ._base import ColorBlock, PaletteDTO
 
 
 class RichPalette(Palette):
@@ -26,18 +26,15 @@ class RichPalette(Palette):
     def data(self) -> ColorData:
         match self:
             case self.CLI1:
-                return PaletteDTO(
-                    func=apply_rich,
-                    colors=(RICH_STANDARD + RICH_CUSTOM),
-                    name=str(self),
-                )
+                return PaletteDTO(func=apply_rich, colors=RICH1)
+        return type(self)(0).data()
 
     @property
     def adapter(self) -> Adapter:
         return Adapter.ANSI
 
 
-def apply_rich(text, color: Stringable = "", modifier: Stringable = ""):
+def apply_rich(text, color: Stringable = "", *modifier: Stringable):
     return rich_markup(text, rich_style(modifier, color))
 
 
@@ -45,24 +42,22 @@ def rich_markup(text: Stringable, style: Stringable = "bold"):
     return f"[{style}]{text}[/]" if style else text
 
 
-def rich_style(modifier: Stringable, color: Stringable):
-    f"{modifier} {color}".strip()  # LATER: the ..on.. background?
+def rich_style(color: Stringable, *modifier: Stringable):
+    # LATER: handle background etc...
+    return " ".join([str(m) for m in modifier] + [str(color)]).strip()
 
 
-RICH_STANDARD = StandardBlock(
-    white_="white",
-    black_="black",
-    blue__="blue",
+RICH1 = ColorBlock(
     green_="green",
-    yellow="gold3",
+    teal__="steel_blue1",
+    azure_="cyan",
+    blue__="blue",
+    purple="medium_purple3",
     red___="red",
-)
-
-RICH_CUSTOM = CustomBlock(
+    orange="orange_red1",
+    yellow="gold3",
+    white_="white",
     slate_="grey70",
     carbon="grey30",
-    azure_="cyan",
-    teal__="steel_blue1",
-    orange="orange_red1",
-    purple="medium_purple3",
+    black_="black",
 )

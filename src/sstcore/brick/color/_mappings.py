@@ -12,32 +12,8 @@ __all__: list[str] = [
 
 from ...port.color import Color
 
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
+# NEXT: apply to cb
 
-SHORTCUTS: dict[str, Color] = {
-    "a": Color.AZURE,
-    "b": Color.BLUE,
-    "c": Color.CARBON,
-    "d": Color.BLACK,
-    "g": Color.GREEN,
-    "o": Color.ORANGE,
-    "p": Color.PURPLE,
-    "r": Color.RED,
-    "s": Color.SLATE,
-    "t": Color.TEAL,
-    "w": Color.WHITE,
-    "y": Color.YELLOW,
-}
 
 SEMANTIC: dict[str, Color] = {
     "alert": Color.YELLOW,
@@ -54,12 +30,12 @@ SEMANTIC: dict[str, Color] = {
     "warn": Color.TEAL,
 }
 
-_SHORTCUTS: dict[str, Color] = {
+SHORTCUTS: dict[str, Color] = {
     "a": Color.AZURE,
     "b": Color.BLUE,
     "c": Color.CARBON,
-    "n": Color.BLACK,
     "g": Color.GREEN,
+    "n": Color.BLACK,
     "o": Color.ORANGE,
     "p": Color.PURPLE,
     "r": Color.RED,

@@ -5,102 +5,67 @@ Create internal Color Schemes and Palettes
 
 """
 
+from src.sstcore.port.calling import Stringable
+
 __all__: list[str] = [
     "ColorBlock",
     "PaletteDTO",
 ]
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple
 
 from ....port.calling import Colorizing
-from ....port.color import Color, ColorData
+from ....port.color import Color, ColorData, Coloring
+from ....port.link import portlink
 
 
+@portlink(ColorData)
 @dataclass
 class PaletteDTO:
-    func: Colorizing
-    name: str
-    colors: tuple[str, ...]
+    func: Coloring
+    colors: ColorBlock
 
     def __post_init(self) -> None:
+        print(f"loaded: {self=}")
         if len(self.colors) != len(Color):
             raise ValueError(f"Invalid colors... {self.colors=}, {Color=}")
 
+    def bind(self, index: int, /) -> Colorizing:
+        def colorizing(text: Stringable) -> str:
+            return self.func(text, self.colors[index])
 
-if TYPE_CHECKING:
-    _test: type[ColorData] = PaletteDTO
+        return colorizing
+
+
+# LATER: something like this
+# class AdapterPalette(Palette):
+#     def __init_subclass__(): ...
 
 
 class ColorBlock(NamedTuple):
-    """Define numbered aligned Schema"""
+    """Define aligned Schema for Standard Colors"""
 
-    c0: str
-    c1: str
-    c2: str
-    c3: str
-    c4: str
-    c5: str
+    green_: str
+    teal__: str
+    azure_: str
+    blue__: str
+    purple: str
+    red___: str
+    orange: str
+    yellow: str
+    white_: str
+    slate_: str
+    carbon: str
+    black_: str
 
+    @property
+    def names(self) -> tuple[str, ...]:
+        return tuple(name.strip("_") for name in self._asdict().keys())
 
-def _format_named_blocks(*blocks: NamedTuple) -> tuple[tuple[str, str], ...]:
-    return tuple(
-        (raw_key.strip("_"), value)
-        for block in blocks
-        for raw_key, value in block._asdict().items()
-    )
-
-
-class ColorTuple(NamedTuple):
-    def as_tuple_dict(self) -> tuple[tuple[str, str], ...]:
+    @property
+    def pairs(self) -> tuple[tuple[str, str], ...]:
         return tuple(
             (raw_key.strip("_"), value)
             for raw_key, value in self._asdict().items()
         )
-
-
-class _StandardBlock(ColorTuple):
-    """Define aligned Schema for Standard Colors"""
-
-    white_: str
-    black_: str
-    blue__: str
-    green_: str
-    yellow: str
-    red___: str
-
-
-x = _StandardBlock().as_tuple_dict()
-y = x[1]
-
-
-class StandardBlock(NamedTuple):
-    """Define aligned Schema for Standard Colors"""
-
-    white_: str
-    black_: str
-    blue__: str
-    green_: str
-    yellow: str
-    red___: str
-
-
-class CustomBlock(NamedTuple):
-    """Define aligned Schema for Custom Colors"""
-
-    slate_: str
-    carbon: str
-    azure_: str
-    teal__: str
-    orange: str
-    purple: str
-
-
-class _SemanticBlock(NamedTuple):
-    alert__: Color
-    danger_: Color
-    error__: Color
-    info___: Color
-    special: Color
-    success: Color
-    title__: Color

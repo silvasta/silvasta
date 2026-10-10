@@ -4,8 +4,6 @@ Sequential Registry - Tuple, List, ...
                                                        DependencyLevel[0]
 """
 
-from sstcore._types._registry import Predicate
-
 __all__: list[str] = [
     "Sequential",
     "ListVault",
@@ -18,6 +16,7 @@ from typing import Any
 
 from ...port.link import portlink
 from ...port.register import ListRegister, TupleRegister
+from ...port.register import registry_types as _reg
 from ._base import BaseVault
 
 
@@ -35,7 +34,7 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
             return self._empty()
         if isinstance(data, (str, bytes)):
             return self._ctor((self._normalize(data),))
-        if isinstance(data, Sequence):
+        if isinstance(data, Iterable):
             return self._ctor(self._normalize(x) for x in data)
         return self._ctor((self._normalize(data),))
 
@@ -87,7 +86,7 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
         items[s] = list(self._as_vault(value))
         self.vault: V = self._ctor(items)
 
-    def _where(self, fn: Predicate[Item]) -> V:
+    def _where(self, fn: _reg.Predicate[Item]) -> V:
         return self._ctor(x for x in self._iter_items() if fn(x))
 
 

@@ -9,51 +9,44 @@ __all__: list[str] = [
     "Colors",
 ]
 
-from typing import TYPE_CHECKING
 
 from loguru import logger
 
 from ....port.calling import Stringable
-from ....port.color import Color, ColorBox, ColorIdentifier, Painter
+from ....port.color import Color, ColorBox, ColorHub, ColorId, Painter
+from ....port.link import portlink
 from .._mappings import SHORTCUTS
+from ._manager import ColorManager
 
-# from .._stack import ColorStack
 
-
+@portlink(ColorBox)
 class Colors:
     """Assembe and Orchestrate the Color Distribution"""
 
-    # IMPORTANT: init strategy
-    # - maybe provide adapter specific variations to simplify/allow strong typing
-
     def __init__(self, *_args, **_kwargs) -> None:
-        # self._hub: ColorManager = ColorHub.boot()
-        pass
+        self._hub: ColorHub = ColorManager.boot()
 
-    def __str__(self) -> str:
-        return "ColorBox==Colors"
-
-    def __getattr__(self, name) -> Painter:
+    def __getattr__(self, name: str) -> Painter:
         if color := SHORTCUTS.get(name):
             return self.paint(color)
 
         if name in Color:
             return self.paint(name)
+
         raise AttributeError(f"{self} Missing Attribute: '{name}'!")
 
-    def paint(self, color: ColorIdentifier) -> Painter:
-        raise NotImplementedError(color)
+    def paint(self, color: ColorId) -> Painter:
+        return self._hub.paint(Color.resolve(color))
 
-    def index(self, target: ColorIdentifier | Painter) -> Color:
-        raise NotImplementedError
+    def __call__(self, text: Stringable, color: ColorId) -> str:
+        return self.paint(color)(text)
 
-    def __call__(self, text: Stringable, color: ColorIdentifier) -> str:
-        raise NotImplementedError
-
+    # NEXT: use brick.stack
     # def stack(self, *_args, **_kwargs) -> ColorStack:
     #     raise NotImplementedError
 
     @classmethod
+    # REMOVE: colorbox is facade with many instances
     def set_active(cls, box: ColorBox) -> None:
         # MOVE: do this in the manager?
         # - spawn the facade everywhere without considering about others
@@ -63,8 +56,3 @@ class Colors:
         else:
             logger.info(f"New Box set as global active: {box!r}")
             cls._active = box
-
-
-if TYPE_CHECKING:
-    _instance_check: Colors = ColorBox()
-    _class_check: type[Colors] = ColorBox
