@@ -144,7 +144,7 @@ class ColorHub(Protocol):
     def switch(self, palette: Palette) -> None: ...
     @classmethod
     def boot(cls) -> Self:
-        """Start without any Configuration if needed"""
+        """Start without any Configuration"""
 
 
 class ColorCoordinate(NamedTuple):
@@ -158,11 +158,15 @@ class ColorCoordinate(NamedTuple):
 class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     """Global Orchestrator and Distributor of Colors"""
 
+    @property
+    def hub(self) -> ColorHub:
+        """Configuration access"""
+
+    def paint(self, color: ColorId) -> Painter | None:
+        """Map ColorIndex to Painter of active Palette"""
+
     def __getattr__(self, name: str) -> Painter:
         """Provide Colors on ColorIndex Name and Shortcut"""
 
     def __call__(self, text: Stringable, color: ColorId) -> str:
         """Find Color by Identifier and return painted text"""
-
-    def paint(self, color: ColorId) -> Painter | None:
-        """Map ColorIndex to Painter of active Palette"""

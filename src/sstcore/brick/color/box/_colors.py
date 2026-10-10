@@ -10,8 +10,6 @@ __all__: list[str] = [
 ]
 
 
-from loguru import logger
-
 from ....port.calling import Stringable
 from ....port.color import Color, ColorBox, ColorHub, ColorId, Painter
 from ....port.link import portlink
@@ -23,9 +21,17 @@ from ._manager import ColorManager
 class Colors:
     """Assembe and Orchestrate the Color Distribution"""
 
-    def __init__(self, *_args, **_kwargs) -> None:
-        self._hub: ColorHub = ColorManager.boot()
+    def __init__(self, manager: ColorHub | None = None) -> None:
+        self._hub: ColorHub = manager or ColorManager.boot()
 
+    @property
+    def hub(self) -> ColorHub:
+        return self._hub
+
+    def paint(self, color: ColorId) -> Painter:
+        return self._hub.paint(Color.resolve(color))
+
+    # NEXT: use brick.stack
     def __getattr__(self, name: str) -> Painter:
         if color := SHORTCUTS.get(name):
             return self.paint(color)
@@ -35,24 +41,5 @@ class Colors:
 
         raise AttributeError(f"{self} Missing Attribute: '{name}'!")
 
-    def paint(self, color: ColorId) -> Painter:
-        return self._hub.paint(Color.resolve(color))
-
     def __call__(self, text: Stringable, color: ColorId) -> str:
         return self.paint(color)(text)
-
-    # NEXT: use brick.stack
-    # def stack(self, *_args, **_kwargs) -> ColorStack:
-    #     raise NotImplementedError
-
-    @classmethod
-    # REMOVE: colorbox is facade with many instances
-    def set_active(cls, box: ColorBox) -> None:
-        # MOVE: do this in the manager?
-        # - spawn the facade everywhere without considering about others
-        # - the manager handles and maybe the factory holds the active
-        if cls._active is box:
-            logger.info(f"Already set as global active Box: {box!r}")
-        else:
-            logger.info(f"New Box set as global active: {box!r}")
-            cls._active = box

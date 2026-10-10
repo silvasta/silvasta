@@ -6,6 +6,8 @@ Color Factory
 
 """
 
+from typing import ClassVar
+
 __all__: list[str] = [
     "PaintMill",
     "Paint",
@@ -73,16 +75,21 @@ class ColorPalette:
 class ColorFactory:
     """Produce Colors depending on Palette and Task"""
 
-    def __init__(self) -> None:  # LATER: DictRegister
-        self._cache: dict[Palette, ColorSchema] = {}  # IDEA: classvar?
+    _cache: ClassVar[dict[Palette, ColorSchema]] = {}  # LATER: DictRegister
+
+    def __init__(self, palette: Palette | None = None) -> None:
+        if palette:
+            self.setup(palette)
 
     def setup(self, palette: Palette) -> ColorSchema:
-        # LATER: exchange theme, if palette in _cache...
-        self._cache[palette] = (colors := ColorPalette(palette.data()))
-        self._active = palette  # LATER: use this for self.paint?
-        return colors
+        # LATER: exchange theme if palette already in _cache
+        if palette not in self._cache:
+            self._cache[palette] = ColorPalette(palette.data())
+        return self._cache[palette]
 
     def paint(self, color: Color, palette) -> Painter:
+        if palette not in self._cache:
+            self.setup(palette)
         return self._cache[palette].paints[color.value]
 
     def __len__(self) -> int:
