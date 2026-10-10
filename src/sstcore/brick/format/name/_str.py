@@ -8,7 +8,7 @@ Transform to str, be the pattern and parse the pattern
 from pathlib import Path
 from typing import Any, Self
 
-from ._core import NameParser
+from ._parse import NameParser
 
 __all__: list[str] = [
     "Name",
@@ -32,6 +32,8 @@ class Name(NameParser, str):
         data = ev.parse()          # → dict
     """
 
+    # IDEA: slots?
+
     def __new__(cls, value: str | Path, **kwargs: Any) -> Self:
         if isinstance(value, Path):
             value = value.name
@@ -39,9 +41,9 @@ class Name(NameParser, str):
         parser = NameParser(pattern=getattr(cls, "pattern", value), **kwargs)
         parser.extract(value)  # Validate on construction
 
-        obj: Self = str.__new__(cls, value)
-        obj._parser = parser  # ty:ignore
-        return obj
+        new_name: Self = str.__new__(cls, value)
+        new_name._parser = parser  # ty:ignore
+        return new_name
 
     def parse(self) -> dict[str, Any]:
         return self.extract(str(self))
@@ -52,4 +54,4 @@ class Name(NameParser, str):
         return type(self)(new_value)
 
     def __rich__(self) -> str:
-        return f"[bold cyan]{self}[/]"
+        return f"[bold {self._color}]{self}[/]"

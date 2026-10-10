@@ -13,6 +13,11 @@ from typing import Any
 
 # TODO: Strategy for __dict__ operations
 # - consider as well __slots__
+# components:
+# - get/set (soft)
+# - [key](=..) (hard)
+# - analyze
+# - filter
 
 
 def _dict(_target: Any, *, key: str) -> Any:

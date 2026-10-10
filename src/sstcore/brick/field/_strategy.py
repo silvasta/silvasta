@@ -176,6 +176,8 @@ class BoundStrategy[**In, Out]:
 #  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 #  MOVE: -- probably to brick.labor.***
 
+#  NEXT: combine with brick.labor._inspect
+
 
 def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:
     sig: Signature = signature(func)

@@ -9,9 +9,11 @@ from contextlib import suppress
 from typing import Any
 
 import fire
-from sstcore.format.name import NamePattern, ParsedName
-from sstcore.utils import day_count, printer
-from sstcore.utils.parse import SchemaName
+
+from sstcore.brick.format.name import NamePattern
+from sstcore.brick.time import day_count
+from sstcore.util.parse import ParsedName, SchemaName
+from sstcore.util.print import printer
 
 pattern1: str = "{day}_summary.{suffix}"
 

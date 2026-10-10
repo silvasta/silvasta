@@ -5,11 +5,11 @@ Provide view and basic functionalities for Names
 """
 
 __all__: list[str] = [
-    "_NameView",
+    "NameView",
 ]
 
 
-class _NameView:
+class NameView:
     pattern: str
     keys: tuple[str, ...]
 

@@ -15,5 +15,5 @@ __all__: list[str] = [
 ]
 
 from ._colored import ColoredName
-from ._core import NameParser, NamePattern
+from ._parse import NameParser, NamePattern
 from ._str import Name as StrName

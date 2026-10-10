@@ -95,26 +95,19 @@ class ClassRendering(Protocol):
 
 #  LINE: -- adapter -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-type Richable = RichView | _RichConsolable | str
-
-
-# IDEA: combined runtime_checkable full richable protocol!
-@runtime_checkable  # FIX: only 1 required!
-class _Richable(Protocol):
-    def __rich__(self) -> Richable: ...
-    def __rich_console__(self): ...
-    def __str__(self): ...
-
 
 @runtime_checkable
 class RichView(Protocol):
-    def __rich__(self) -> Richable: ...
+    def __rich__(self): ...
 
 
-# CHECK: maybe to view, maybe copy and here with runtime_checkable
-class _RichConsolable(Protocol):
+@runtime_checkable
+class RichConsolable(Protocol):
     def __rich_console__(self):
         """Just extend the Renderable type"""
+
+
+Richable = RichView | RichConsolable | str
 
 
 @runtime_checkable

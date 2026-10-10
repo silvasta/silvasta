@@ -16,6 +16,8 @@ from typing import Literal
 
 type Level = Literal[1, 2, 3, 4]
 
+# NEXT: absorb with brick.field._strategy (bottom)
+
 
 def validate_signature(
     func: Callable, baseline: Signature, level: Level = 1

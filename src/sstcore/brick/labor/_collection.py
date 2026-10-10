@@ -11,10 +11,10 @@ __all__: list[str] = [
 from collections.abc import Callable
 
 
-def just_return[Target](constant: Target) -> Callable[..., Target]:
-    """Wrap function that constantly returns _target as value"""
+def just_return[Target](value: Target, /) -> Callable[..., Target]:
+    """Wrap function that constantly returns value"""
 
     def constant_function(*_, **__) -> Target:
-        return constant
+        return value
 
     return constant_function

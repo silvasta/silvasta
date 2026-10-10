@@ -32,11 +32,11 @@ from ....port import normalize
 from ....port._error import FailedDispatchError
 from ....port.link import portlink
 from ...none import Ghost
-from ._zero import _NameView
+from ._zero import NameView
 
 
 @portlink(normalize.NamingPattern)
-class NamePattern(_NameView):
+class NamePattern(NameView):
     def __init__(self, pattern: str, **_kwargs: Any) -> None:
         self.update_pattern(pattern)
 
@@ -75,9 +75,14 @@ class NamePattern(_NameView):
 
 @portlink(normalize.FormatNormalize)
 class FormatNormalizer(NamePattern):
-    def __init__(self, datetime_format: str = "%Y-%m-%d_%H-%M-%S", **kwargs):
+    def __init__(
+        self,
+        pattern: str,
+        datetime_format: str = "%Y-%m-%d_%H-%M-%S",
+        **kwargs,
+    ):
         self.datetime_format: str = datetime_format
-        super().__init__(**kwargs)
+        super().__init__(pattern, **kwargs)
 
     def normalize_keys(
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
@@ -107,13 +112,14 @@ class FormatNormalizer(NamePattern):
 class ExtractNormalizer(NamePattern):
     def __init__(
         self,
+        pattern: str,
         strip_extension: bool = False,
         strip_increments: bool = False,
         **kwargs: Any,
     ):
         self.strip_extension: bool = strip_extension
         self.strip_increments: bool = strip_increments
-        super().__init__(**kwargs)
+        super().__init__(pattern, **kwargs)
 
     def normalize_name(self, target: Path | str) -> str:
         """Normalize type and strip PathGuard increments"""
