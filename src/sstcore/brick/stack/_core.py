@@ -55,6 +55,9 @@ class StackBase[ValueT](Mapping):
     def __getitem__(self, key: str) -> Any:
         return self._data[key]
 
+    def __contains__(self, value) -> bool:
+        return value in self._data
+
     def __iter__(self) -> Iterator[str]:
         return iter(self._data)
 
@@ -202,7 +205,7 @@ class StackRunner[**In, ValueT, Out]:
         if name in self.state.locked_layers:
             raise AttributeError(f"Layer containing '{name}' is locked!")
 
-        if name not in self._core:
+        if name not in self._core:  # ty:ignore # FIX:
             raise AttributeError(f"'{self._core}' has no attribute '{name}'")
 
         layer_name: str = self._core.source_map[name]

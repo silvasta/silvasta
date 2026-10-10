@@ -30,6 +30,7 @@ from typing import Self as _Self
 from typing import overload as _overload
 
 from .calling import Calling  # 0
+from .event.emit import Emit
 from .solid import PolicyEnum  # 1
 
 
@@ -166,15 +167,15 @@ class StateDescriptor[T: _Enum](TransitionDescriptor[T]):
     """Govern the Lifecycle of the State"""
 
 
-class _TempEmit[**P, R](_Protocol):
-    def __call__(self, args=P.args, kwargs=P.kwargs) -> None:
-        """# TODO: at first usage, update emit with port.event"""
+# class Emit[**P, R](_Protocol):
+#     def __call__(self, args=P.args, kwargs=P.kwargs) -> None:
+#         """# TODO: at first usage, update emit with port.event"""
 
 
 class EventDescriptor[T](_Protocol):
-    emit: _TempEmit
+    emit: Emit
 
-    def __init__(self, func: _TempEmit) -> None:
+    def __init__(self, func: Emit) -> None:
         """Listen to all Chanels and Message to EventBus"""
 
 

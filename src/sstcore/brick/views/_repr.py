@@ -13,8 +13,7 @@ __all__: list[str] = [
 ]
 
 
-from ..labor import reflect, scan
-from ..norm import transform
+from ..labor import reflect, scan, transform
 
 
 class ReprMixin:

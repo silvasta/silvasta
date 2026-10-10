@@ -7,8 +7,6 @@ Mapping Registry - Dict, Map, ...
                                                        DependencyLevel[0]
 """
 
-from sstcore._types._registry import Predicate
-
 __all__: list[str] = [
     "Mapped",
     "DictVault",
@@ -19,7 +17,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, cast
 
 from ...port.link import portlink
-from ...port.register import DictRegister
+from ...port.register import DictRegister, registry_types
 from ._base import BaseVault
 
 
@@ -96,7 +94,7 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
         pairs[s] = list(self._as_vault(value).items())
         self.vault: dict[K, Item] = dict(pairs)
 
-    def _where(self, fn: Predicate[Item]) -> dict[K, Item]:
+    def _where(self, fn: registry_types.Predicate[Item]) -> dict[K, Item]:
         return {k: v for k, v in self.vault.items() if fn(v)}
 
 

@@ -31,7 +31,6 @@ from enum import Enum, auto
 
 from ...port.calling import LogStringable, RichView, Stringable
 from ...port.event import CliRenderable, LogSerializable
-from ...port.view import Renderable
 from ..labor import clsname
 from ..none import ViewSentinel
 from . import _cli as cli
@@ -55,7 +54,7 @@ class MixinCatalog(Enum):  # MOVE: maybe port?
         return clsname(self).lower()
 
     @property
-    def mixin(self) -> type[Renderable]:
+    def mixin(self) -> type:
         raise NotImplementedError
 
     def fail_info(self, reason: str) -> str:

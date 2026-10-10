@@ -19,8 +19,7 @@ from pathlib import Path
 
 from ...port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
 from ..color import colorize
-from ..labor import invoke, reflect, scan
-from ..norm import transform
+from ..labor import invoke, reflect, scan, transform
 
 
 class MarkdownMixin:

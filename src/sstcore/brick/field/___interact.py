@@ -11,9 +11,9 @@ __all__: list[str] = [
 
 from typing import Any, NoReturn, TypedDict, Unpack
 
-from ....port.link import portlink
 from ...port.attach import ConfigDescriptor, EventDescriptor
 from ...port.event.emit import Emit
+from ...port.link import portlink
 from ._base import DeleteField, ReadField, WriteField
 
 

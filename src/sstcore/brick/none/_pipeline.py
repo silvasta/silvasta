@@ -57,6 +57,6 @@ def _impossible_type_mock(*classes: type):
     if not TYPE_CHECKING:
         return Ghost
 
-    class _TypeCheckerGhost(*classes): ...
+    class _TypeCheckerGhost(*classes): ...  # ty:ignore
 
     return _TypeCheckerGhost

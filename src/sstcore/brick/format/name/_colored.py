@@ -10,7 +10,7 @@ from typing import Any
 
 from rich.control import strip_control_codes
 
-from ._core import NameParser
+from ._parse import NameParser
 
 __all__: list[str] = [
     "ColoredName",

@@ -16,9 +16,8 @@ from ....brick.labor.mro.___mrotree import (
     SubclassTreeNode,
     TypeTreeNode,
 )
-from ....port.link._error import LinkRaiser
-from ....port.link._printer import printer
-from ....port.link.data import (
+from ....port._raise import LinkRaiser
+from ....port.link._model import (
     Docs,
     PlugDoc,
     PortDoc,
@@ -27,6 +26,7 @@ from ....port.link.data import (
     PortLinks,
     SidePolicy,
 )
+from ....port.link._render import printer
 
 
 class SpawnOperator[Core: Callable]:
@@ -241,7 +241,7 @@ def _edit_and_save():
         from itertools import product
 
         for doc, policy in list(product(docs, SidePolicy)):
-            printer(f"{doc} -> {policy.name}: {policy.valid(doc)}")
+            printer(f"{doc} -> {policy.name}: {policy.valid(doc)}")  # ty:ignore
 
 
 def mro_chain(
