@@ -12,7 +12,7 @@ __all__: list[str] = [
 ]
 
 
-from ....port.color import Color, ColorIdentifier
+from ....port.color import Color, ColorId
 from ....port.link import portlink
 from ....port.shape import Meta, MetaData
 
@@ -23,7 +23,7 @@ class SstMetaData:
 
     color: Color
 
-    def __init__(self, color: ColorIdentifier = Color.AZURE):
+    def __init__(self, color: ColorId = Color.AZURE):
         self.color: Color = Color.resolve(color)
 
 

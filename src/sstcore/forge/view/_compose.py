@@ -22,6 +22,8 @@ from ..engine import combine_mixins
 
 # NEXT:
 # NEXT:
+# NEXT:
+# NEXT:
 
 
 @dataclass(frozen=True)  # TODO: needed?
@@ -87,6 +89,12 @@ class ViewBuilder[ViewBase: type]:
     ) -> Target:
         """Compose selected Mixins and Inject to new Subclass of Target"""
 
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
         # NEXT: functions like this could be placed in sstcore.forge._fragments
         # TASK: this method looks for example way to heavy for the registry,
         # - maybe this method with others in a BuilderBox inside brick

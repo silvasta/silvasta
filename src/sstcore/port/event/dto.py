@@ -171,6 +171,7 @@ class LogSerializable(_Protocol):
     def __log__(self) -> LogDTO: ...
 
 
+@_runtime_checkable
 # MOVE: view??
 class CliDtoCreator(_Protocol):
     # MOVE: view??

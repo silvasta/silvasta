@@ -18,7 +18,7 @@ from ....brick.color.box import Colors
 from ....brick.labor import clsname, just_return
 from ....port import represent
 from ....port.calling import ClassRendering
-from ....port.color import Color, ColorIdentifier
+from ....port.color import Color, ColorId
 from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
 from ....port.link import portlink
 from ....port.represent import SstView
@@ -84,19 +84,19 @@ class ClsViewData(SstMetaData):
         name: ClassRendering | str = "",
         rich: ClassRendering | str = "",
         cli: CliDtoCreator | str = "",
-        color: ColorIdentifier = Color.AZURE,
+        color: ColorId = Color.AZURE,
     ):
         self.name: ClassRendering = (
             name
             if isinstance(name, ClassRendering)
-            else just_return(constant=name)
+            else just_return(name)
             if name
             else self._default_name
         )
         self.rich: ClassRendering = (
             rich
             if isinstance(rich, ClassRendering)
-            else just_return(constant=rich)
+            else just_return(rich)
             if rich
             else self._default_rich
         )
@@ -120,7 +120,7 @@ class ClsViewData(SstMetaData):
             return PanelDTO(
                 content=content or list(cls.toolkit()),
                 title=cls.__rich__(),
-                frame=colors.get(self.color),  # ty:ignore
+                frame=colors.get(self.color),
             )
 
         return _default_cli
