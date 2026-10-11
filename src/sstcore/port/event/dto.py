@@ -34,7 +34,7 @@ from typing import runtime_checkable as _runtime_checkable
 
 from ..calling import Richable as _Richable
 from ..color import Color as _Color
-from ..color import ColorIdentifier as _ColorIdentifier
+from ..color import ColorId as _ColorId
 
 type _Renderable = str | CliRenderable | _Richable
 
@@ -57,7 +57,7 @@ class CliDTO[ContenT: _Renderable | list[_Renderable]]:
     """Root of the Cli Pipeline"""
 
     content: ContenT
-    color: _ColorIdentifier = _Color.AZURE
+    color: _ColorId = _Color.AZURE
     indent: int = 0
     meta: dict[str, _Any] = _field(default_factory=dict)
 
