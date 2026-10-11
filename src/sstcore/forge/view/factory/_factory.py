@@ -13,21 +13,20 @@ import warnings
 from collections.abc import Sequence
 from typing import Any
 
-from ...brick.color.box import Colors
-from ...brick.forge.blueprint import StaticFuncMeta, StaticFuncMetaData
-from ...brick.format import clsname
-from ...port.color import ColorBox
-from ...port.event.dto import (
+from ....brick.color.box import Colors
+from ....brick.labor import clsname
+from ....forge.engine.blueprint import StaticFuncMeta, StaticFuncMetaData
+from ....port.color import ColorBox
+from ....port.event.dto import (
     GroupDTO,
     LineDTO,
     MarkdownDTO,
     PanelDTO,
-    RuleDTO,
     TableDTO,
 )
-from ...port.view import Renderable
+from ....port.view import Renderable
 
-colors: ColorBox = Colors()  # ty:ignore
+colors: ColorBox = Colors()
 
 CliDtoFactoryMetaInput = StaticFuncMetaData(
     name=lambda cls: f"󰕧 {clsname(cls)} 󰕧",
@@ -58,10 +57,6 @@ class CliDtoFactory(metaclass=StaticFuncMeta, data=CliDtoFactoryMetaInput):
     def line(character: str = "─", *, style: str = "cyan") -> LineDTO:
         """Create a horizontal character LineDTO."""
         return LineDTO(content=character, color=style)
-
-    def rule(title: str = "", *, style: str = "cyan") -> RuleDTO:
-        """Create a dedicated horizontal RuleDTO."""
-        return RuleDTO(content=title, color=style)
 
     def markdown(
         text: str, *, header: int = 0, style: str = "white"

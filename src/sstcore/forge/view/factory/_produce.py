@@ -7,11 +7,11 @@ CliFactory - Experiment 3
 
 from typing import Any
 
-from ...brick.color.box import Colors
-from ...port.color import ColorBox
-from ...port.event.dto import LineDTO, PanelDTO, TableDTO
+from ....brick.color.box import Colors
+from ....port.color import ColorBox
+from ....port.event.dto import LineDTO, PanelDTO, TableDTO
 
-colors: ColorBox = Colors()  # ty:ignore
+colors: ColorBox = Colors()
 
 
 class TableProducer:
@@ -56,3 +56,5 @@ class CliDtoFactory:
 
 # Provide a ready-to-use instance
 cli_factory = CliDtoFactory()
+
+cli_factory.layout.line()

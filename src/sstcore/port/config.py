@@ -24,6 +24,7 @@ from typing import Any, Protocol, Self
 from .calling import Stringable
 
 
+# NEXT: runtime_checkable?? (for Printer)
 class ProjectInformation(Protocol):
     """Collect Data and forward to Display"""
 

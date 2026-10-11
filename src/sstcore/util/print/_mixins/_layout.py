@@ -22,6 +22,8 @@ from ....port.event.dto import LineDTO, PanelDTO, RuleDTO
 from .. import boxes
 from ..blueprint import Printer
 
+# NEXT: Stacking!
+
 
 class PanelMixin:
     def panel(self: Printer, target: Any, **kwargs) -> None:

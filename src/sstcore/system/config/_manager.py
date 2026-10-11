@@ -54,7 +54,7 @@ class ConfigManager[D: Defaults, N: Names, P: Paths, S: Settings]:
         self.settings: S = settings
         self.paths: P = paths
 
-        self.project_info: ProjectInfo = info
+        self.project_info: ProjectInformation = info
         self._env_loaded = False
 
     @classmethod

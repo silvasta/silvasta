@@ -32,7 +32,7 @@ from ...port.config import HomeSetup, ProjectInformation
 from ...port.link import portlink
 from ._search import get_project_root
 
-_x: HomeSetup  # CHECK: no issues without this in collect?
+_x: HomeSetup  # NEXT: no issues without this in collect?
 
 
 @portlink(ProjectInformation)
@@ -42,12 +42,11 @@ class ProjectInfo:
 
     name: str = "sstcore"
     version: str = "0.0.0"
+    # CHECK: home_setup,
 
     @classmethod
-    def collect(
-        cls,
-        # CHECK: home_setup,
-        name: str | None = None,
+    def collect(  # CHECK: home_setup,
+        cls, name: str | None = None
     ) -> Self:
         try:
             name: str = name or pyproject_name()

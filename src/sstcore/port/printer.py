@@ -16,113 +16,120 @@ __all__: list[str] = [
 
 # TASK: finish printer
 
-from enum import Enum, auto
-from string import Template
-from typing import Any, Literal, Required, TypedDict, Unpack
+from enum import auto
+from string.templatelib import Template
+from typing import Any, Literal, TypedDict, Unpack
 from typing import Protocol as Protocol
 
 from .calling import Richable
-from .color import ColorBox, ColorIdentifier  # 6
+from .color import Color, ColorBox, ColorId
 from .config import ProjectInformation
 from .event.dto import CliDTO  # 7
 from .represent import CliRenderable  # 8
+from .solid import EnumMode
 
 
-class PrintSpec(TypedDict, total=False):
-    """Define the Input Space of the Printers Print"""
-
-    # AI: this is like the base set for the kwargs
-    color: str
+class StdPrintInput(TypedDict, total=False):
     sep: str
     end: str
+
+
+class SstPrintInput(TypedDict, total=False):
+    color: ColorId
+
+
+class PrintInput(StdPrintInput, SstPrintInput):
+    """Define the Input Space of the Printers Print"""
+
+
+x = PrintInput(color=Color.AZURE)
 
 
 class Print(Protocol):
     """Define the Printers Print"""
 
-    # AI: this is like the main gate, but there are many others
     def __call__(
-        self, target: Any, /, *more: Any, **spec: Unpack[PrintSpec]
-    ) -> CliDTO: ...
+        self, target: Any, /, *more: Any, **spec: Unpack[PrintInput]
+    ) -> Any: ...
 
 
-class _NewIntermediateTemplateProcess(Protocol):
-    """Define the Printers Print"""
-
-    # AI:
-    def __call__(self, target: Template, /, **kwargs) -> CliRenderable: ...
+# NEXT: TemplateEngine! Including Log/Cli,...?
+class TemplatePrint(Protocol):
+    def __call__(self, target: Template, /, **kwargs) -> CliDTO: ...
 
 
+# NEXT: specify steps to mouth
 class _PrintReadyForEngine(Protocol):
     """Define the Normalized Call to the Printer Engine"""
 
-    # AI: this is what the printer engine throws into the adapter like rich.Console
     def __call__(
         self,
         target: CliRenderable,
         /,
         *more: CliRenderable,
-        **spec: Unpack[PrintSpec],
+        **spec: Unpack[PrintInput],
     ) -> CliDTO: ...
 
 
-class DontForget(TypedDict, total=False):  # REMOVE: when memorized
-    maybe1: int
-    maybe2: int
-    needed: Required[int]
-
-
-class PrintMode(Enum):
+class PrintMode(EnumMode):
     """
     Define the Execution Mode
 
+    NEXT:
+    NEXT:
+    NEXT:
     - SPLIT??? Adapter and Mode?
       - e.g. rich as adapter maybe even as a mixin dependant setup
       - but DEBUG,PRINT and NULL always?
     """
 
-    RCONSOLE = auto()
-    RPRINT = auto()
+    RICH_CONSOLE = auto()
+    RICH_PRINT = auto()
     DEBUG = auto()
     PRINT = auto()
     NULL = auto()
+
+    @classmethod
+    def default(cls) -> PrintMode:  # LATER: this on BaseEnum??
+        return cls.RICH_CONSOLE
 
 
 class PrinterBase(Protocol):
     """Define the Base of the Printer"""
 
-    def __call__(self, target: Any, **kwargs) -> CliDTO:
+    def __call__(self, target: Any, **kwargs) -> Any:
         """Print the target and return the manual"""
 
     info: ProjectInformation
-    # @property
-    # def info(self) -> ProjectInformation: ...
 
     @property
     def project_info(self) -> str:
         """Style the top right title of printer.title Panel"""
 
-    modus: PrintMode = PrintMode.RCONSOLE
+    mode: PrintMode = PrintMode.RICH_CONSOLE
 
     def muted(self) -> Any: ...
     def mute(self) -> None: ...
     def unmute(self) -> None: ...
     def debug(self) -> Any: ...
-    def in_modus(self, modus: PrintMode): ...
+    def in_mode(self, modus: PrintMode): ...
 
 
+# NEXT: resolve this below
 class ColorPrint(Protocol):
     colors: ColorBox  # TODO: stack
 
-    def colorize(self, text: str, color: ColorIdentifier | None) -> str: ...
+    def colorize(self, text: str, color: ColorId | None) -> str: ...
     def normalize(self, target: Any, **kwargs) -> str: ...
 
 
+# REMOVE:??
 class CorePrint(Protocol):
     def render(self, target: CliDTO, **kwargs) -> Richable: ...
     def display(self, target: CliDTO, **kwargs) -> Richable: ...
 
 
+# TASK: Stacking and attach?
 class LayoutPrint(Protocol):
     def panel(self, target: Any, **kwargs) -> None: ...
     def line(self, style: str = "", title: str | None = None) -> None: ...
@@ -179,6 +186,7 @@ class LayoutPrint(Protocol):
     def md(self, text: str, *args, header: int = 0, **kwargs) -> None: ...
 
 
+# TODO: unwrap this functions, attach only function
 class SpecialPrint(Protocol):
     def path_exists_table(
         # self, paths: list[Path], title=None, header="Path"
@@ -205,7 +213,7 @@ class Printer(Protocol):
     """TEMP"""
 
     __call__: Print
-    info: ProjectInformation  # TASK: descriptor?!
+    info: ProjectInformation
 
     # def set_info(self, info: ProjectInformation) -> None:
     #     """Attach Project specific information for Printer layouts"""

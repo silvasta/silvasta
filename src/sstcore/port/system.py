@@ -208,8 +208,9 @@ class BusData:
     use_default_registration: bool = True
 
 
-# LATER: remove
 # LINE: -- tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+# LATER:
+# REMOVE:
 
 
 def _check_toolspec_binder(

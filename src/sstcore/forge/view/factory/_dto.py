@@ -10,14 +10,13 @@ from functools import cached_property
 from types import MappingProxyType
 from typing import Any, Self
 
-from ...port.event.dto import (
+from ....port.event.dto import (
     CliDTO,
     GroupDTO,
     LineDTO,
     LogDTO,
     MarkdownDTO,
     PanelDTO,
-    RuleDTO,
     TableDTO,
 )
 
@@ -31,7 +30,6 @@ class DtoTypes:
     group: type = GroupDTO
     table: type = TableDTO
     markdown: type = MarkdownDTO
-    rule: type = RuleDTO
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,9 +54,9 @@ class DtoFactory:
     def with_policy(self, **policy: Any) -> Self:
         return replace(self, policy=replace(self.policy, **policy))
 
-    @cached_property
-    def log(self) -> LogProducer:
-        return LogProducer(self)
+    # @cached_property
+    # def log(self) -> LogProducer:
+    #     return LogProducer(self)
 
     @cached_property
     def cli(self) -> CliProducer:

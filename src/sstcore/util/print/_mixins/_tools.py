@@ -12,10 +12,11 @@ from rich.tree import Tree
 
 from ....brick.color import colorize
 from ...tree import SimpleTreeNode
-from ._layout import _NoLayoutBase
+
+# NEXT: Refactor: input->DTO->Renderable->launch
 
 
-class ToolMixin(_NoLayoutBase):
+class ToolMixin:
     """Provide specialized Visualizations for debugging and introspection"""
 
     def path_exists_table(

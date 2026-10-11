@@ -5,17 +5,22 @@ Provide Engine for easy access to Rich Console setup
 
 """
 
-from typing import TYPE_CHECKING
-
 from rich.abc import RichRenderable
 from rich.padding import Padding
 
 from ...brick.color import colorize
 from ...port.event import CliRenderable, LogSerializable
 from ...port.event.dto import CliDTO, LogDTO
+from ...port.link import portlink
 from ...port.printer import Print
 
+# NEXT: dispatch!!!
+# NEXT: dispatch!!!
+# NEXT: dispatch!!!
+# NEXT: dispatch!!! but where?
 
+
+@portlink(Print)
 class PrinterCore:
     """Execute the printer()"""
 
@@ -52,8 +57,3 @@ class PrinterCore:
         )
 
         self.console.print(i_hope_it_renders, **kwargs)
-
-
-if TYPE_CHECKING:
-    _instance: Print = PrinterCore()
-    _class: type[Print] = PrinterCore

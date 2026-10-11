@@ -9,26 +9,25 @@ Note:
   - concept will change
 """
 
-from sstcore.port.color import ColorBox, ColorIdentifier
+from sstcore.port.color import ColorBox, ColorId
 
 __all__: list[str] = [
     "ColorBox",
     "NormalizeMixin",
 ]
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rich.console import ConsoleRenderable, RichCast
 
 from ....brick.color import colorize
 from ....brick.color.box import Colors
-from ....port.printer import ColorPrint
-from ....port.view import PydanticModel, Renderable
-from .._base import _BasePrint
+from ....port.calling import PydanticModel
+from ....port.represent import Renderable
 
 
-class NormalizeMixin(_BasePrint):
-    def normalize(self, target: Any) -> Renderable:
+class NormalizeMixin:
+    def normalize(self, target: Any) -> Renderable:  # NEXT: Renderable??
         """Normalize targets into renderable representations."""
         match target:  # TASK: find better check for this group
             case ConsoleRenderable() | RichCast() | str() | PydanticModel():
@@ -41,7 +40,7 @@ class NormalizeMixin(_BasePrint):
                 return str(target)
 
 
-class ColorMixin(_BasePrint):
+class ColorMixin:
     colors: ColorBox
 
     def __init__(self, *args, **kwargs):
@@ -54,17 +53,5 @@ class ColorMixin(_BasePrint):
         return f"{name} v{self.info.version}"
 
     # NEXT: ArgCast Color?
-    def colorize(self, text: str, color: ColorIdentifier) -> str:
+    def colorize(self, text: str, color: ColorId) -> str:
         return self.colors(text, color) if text else ""
-
-
-if TYPE_CHECKING:
-
-    class _Norm(NormalizeMixin, ColorMixin, _BasePrint): ...
-
-    _instance_check: ColorPrint = _Norm()
-    _class_check: type[ColorPrint] = _Norm
-else:
-    from ...brick.none import Ghost
-
-    _Norm = Ghost

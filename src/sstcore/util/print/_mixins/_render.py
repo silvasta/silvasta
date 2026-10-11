@@ -1,10 +1,12 @@
 """
-Transform DTO to Renderable
+Transform DTO to TypeDODO
 
 - CliDTO: Specialized for CLI
 - LogDTO: Intended for Monitor
 
 """
+
+from typing import Any
 
 __all__: list[str] = [
     "RenderMixin",
@@ -22,14 +24,19 @@ from ....port.event.dto import (
     LogDTO,
     MarkdownDTO,
     PanelDTO,
-    Renderable,
-    RuleDTO,
     TableDTO,
 )
 
+# NEXT:
+# NEXT:
+# NEXT:
+type TypeDODO = Any
+
+# NEXT: RichRendering
+
 
 class RenderMixin:
-    def render(self: Printer, dto: CliDTO | LogDTO) -> Renderable:
+    def render(self, dto: CliDTO | LogDTO) -> TypeDODO:
         """Centralized render dispatcher using pattern matching."""
 
         # IDEA: this as singledispatchmethod? probably never fitted that well
@@ -39,8 +46,6 @@ class RenderMixin:
                 return self.render_panel(panel)
             case LineDTO() as line:
                 return self.render_line(line)
-            case RuleDTO() as rule:
-                return self.render_rule(rule)
             case TableDTO() as table:
                 return self.render_table(table)
             case MarkdownDTO() as markdown:
@@ -50,7 +55,7 @@ class RenderMixin:
             case _:
                 raise TypeError(f"No render strategy implemented for {dto}")
 
-    def render_panel(self: Printer, dto: PanelDTO) -> Renderable:
+    def render_panel(self, dto: PanelDTO) -> TypeDODO:
         content: str = self.normalize(dto.text)
         content: str = self.color(content, dto.color)
         title: str | None = (  # TODO: color apply inside PanelDTO?
@@ -70,14 +75,14 @@ class RenderMixin:
             expand=dto.expand,
         )
 
-    def render_line(self: Printer, dto: LineDTO) -> Renderable:
+    def render_line(self, dto: LineDTO) -> TypeDODO:
         text: str = dto.text if dto.text is not None else "─" * 40
         return self.color(text, dto.style)
 
-    def render_rule(self: Printer, dto: RuleDTO) -> Renderable:
+    def render_rule(self, dto: RuleDTO) -> TypeDODO:
         return Rule(style=dto.style, characters=dto.char)
 
-    def render_table(self: Printer, dto: TableDTO) -> Renderable:
+    def render_table(self, dto: TableDTO) -> TypeDODO:
         table = Table(style=dto.style)
 
         # LATER: color layout for header and side title,
@@ -92,14 +97,14 @@ class RenderMixin:
 
         return table
 
-    def render_markdown(self: Printer, dto: MarkdownDTO) -> Renderable:
+    def render_markdown(self, dto: MarkdownDTO) -> TypeDODO:
         content: str = self.normalize(dto.text)
         if dto.header > 0:
             prefix = "#" * dto.header + " "
             return self.color(f"{prefix}{content}", dto.style)
         return self.color(content, dto.style)
 
-    def render_log(self: Printer, log: LogDTO) -> Renderable:
+    def render_log(self, log: LogDTO) -> TypeDODO:
         """Test different Log renderings until final version is found"""
         _log_tests = [  # TESTING:
             _render_log_3,
@@ -109,7 +114,7 @@ class RenderMixin:
         return _log_tests[0](log)
 
 
-def _render_log_1(log: LogDTO) -> Renderable:
+def _render_log_1(log: LogDTO) -> TypeDODO:
     """For the NDJSON log monitor (and optionally for console)."""
     color = {"ERROR": "red", "WARN": "yellow", "INFO": "cyan"}.get(
         log.level.upper(), "blue"
@@ -120,7 +125,7 @@ def _render_log_1(log: LogDTO) -> Renderable:
     return Text.from_markup(text)
 
 
-def _render_log_2(log: LogDTO) -> Renderable:
+def _render_log_2(log: LogDTO) -> TypeDODO:
     """Render dynamic logs  in a clean format"""
     level_colors = {
         "DEBUG": "dim cyan",
@@ -162,7 +167,7 @@ def _render_log_2(log: LogDTO) -> Renderable:
     return tree
 
 
-def _render_log_3(log: LogDTO) -> Renderable:
+def _render_log_3(log: LogDTO) -> TypeDODO:
     """Render a Log DTO beautifully for console monitoring."""
 
     # Color code based on log level

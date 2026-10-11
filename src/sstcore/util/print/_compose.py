@@ -1,31 +1,35 @@
 """
 Compose Printer Essentials, Interchangeables and Optionals
 
-- Dynamically assemble customized Printers with PrintBuilder
+- Dynamically assemble customized Printers with PrinterFactory
 - Provide preconfigured default printer instance
 
 """
 
 __all__: list[str] = [
-    "PrintBuilder",
+    "PrinterFactory",
     "printer",
 ]
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from rich.console import Console
 
 from ...brick.color import colorize
 from ...forge.view import view
+from ...port.link import portlink
 from ...port.printer import Print  # FIX:
 from ...port.shape import Builder
 from . import _mixins
 from ._engine import PrinterCore
 
+# NEXT: different presets? from meta/subinit?
 
+
+@portlink(Builder)
 @dataclass(frozen=True)
-class PrintBuilder[PrinT: Print]:
+class PrinterFactory[PrinT: Print]:
     # NOTE: PrinterFactory was still much better....
     """Configure PrinterMixins and build composed classes"""
 
@@ -93,8 +97,5 @@ class PrintBuilder[PrinT: Print]:
         return cast(typ=PrinT, val=new_cls)
 
 
-printer = PrintBuilder().build(mixins=tuple(view.printer.build()))
-
-if TYPE_CHECKING:
-    _instance_check: Builder = PrintBuilder()
-    _class_check: type[Builder] = PrintBuilder
+# NEXT: proper default, or in __init__??
+printer = PrinterFactory().build(mixins=tuple(view.printer.build()))
