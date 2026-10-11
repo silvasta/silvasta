@@ -31,6 +31,9 @@ FILE_LATEX: set[str] = {".tex", ".cls", ".sty", ".bib"}
 FILE_DOCS: set[str] = {".md", ".rst", ".txt"}
 FILE_CONFIG: set[str] = {".json", ".yaml", ".toml", ".lua"}
 
+# NEXT: integratre:
+IDEA: set[str] = {"___"}
+EXPERIMENT: set[str] = {"____"}
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Shadow Patch
