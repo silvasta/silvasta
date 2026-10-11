@@ -51,7 +51,7 @@ class ValidField[FieldT](WriteField):
 @portlink(attach.TypedDescriptor)
 @portlink(attach.ValidDescriptor)
 class TypedField[FieldT](ValidField[FieldT]):
-    def __init__(self, *args, types: Types[FieldT], **kwargs) -> None:
+    def __init__(self, *args, types: Types[FieldT], **kwargs):
         self.types: Types[FieldT] = types
         super().__init__(*args, **kwargs)
 

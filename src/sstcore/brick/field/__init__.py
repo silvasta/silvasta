@@ -21,7 +21,7 @@ __all__: list[str] = [
     # _decorate
     "FieldDecorator",
     "DecoratedField",
-    # _combine
+    # _combos
     "RequiredField",
     "LazyField",
     "DerivedField",

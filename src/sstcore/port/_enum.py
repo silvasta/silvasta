@@ -4,8 +4,6 @@ Govern the Shape and Structure of the Strict and Reliable Container
                                                  DependencyLevel[0]
 """
 
-from typing import NamedTuple, Self
-
 __all__: list[str] = [
     "SstEnumMeta",
     "EnumRelation",
@@ -22,6 +20,7 @@ __all__: list[str] = [
 
 
 from enum import Enum, EnumMeta
+from typing import NamedTuple, Self
 
 type EnumId[EnumT: Enum] = EnumT | str | int
 

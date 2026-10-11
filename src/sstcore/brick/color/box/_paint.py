@@ -6,18 +6,19 @@ Color Factory
 
 """
 
-from typing import ClassVar
-
 __all__: list[str] = [
     "PaintMill",
     "Paint",
 ]
 
+from typing import ClassVar
 
-from ....port.calling import Colorizing, Stringable
+from ....port.calling import Stringable
 from ....port.color import (
     Color,
     ColorData,
+    Coloring,
+    Colorizing,
     ColorSchema,
     Painter,
     PaintMill,
@@ -52,21 +53,22 @@ class Paint(str):
 @portlink(ColorSchema)
 class ColorPalette:
     colors: TupleVault[str]
-    paints: TupleVault[Painter]
+    paints: TupleVault[Painter]  # LATER: ReadOnlyField?
 
     def __init__(self, data: ColorData):
-        """Prepare painters and loookups"""
+        """Prepare Painters with Lookups"""
+        self.func: Coloring = data.func
         self.colors: TupleVault[str] = TupleVault(data.colors)
         self.paints: TupleVault[Painter] = TupleVault(
-            Paint(color, paint=self.bind(color.value, data))  #
+            Paint(color, paint=self.mount(color.value))  #
             for color in Color
         )
 
-    def bind(self, index: int, data: ColorData, /) -> Colorizing:
+    def mount(self, index: int, /) -> Colorizing:
 
         def colorizing(text: Stringable) -> str:
-            color = self.colors[index]
-            return data.func(text, color)
+            color: str = self.colors[index]
+            return self.func(text, color)
 
         return colorizing
 
@@ -93,4 +95,6 @@ class ColorFactory:
         return self._cache[palette].paints[color.value]
 
     def __len__(self) -> int:
+        # LATER: more statistics function
+        # - maybe __str__, __repr__ or some ColorFactory.show
         return len(self._cache)

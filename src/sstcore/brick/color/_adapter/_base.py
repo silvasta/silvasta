@@ -5,8 +5,6 @@ Create internal Color Schemes and Palettes
 
 """
 
-from src.sstcore.port.calling import Stringable
-
 __all__: list[str] = [
     "ColorBlock",
     "PaletteDTO",
@@ -15,7 +13,6 @@ __all__: list[str] = [
 from dataclasses import dataclass
 from typing import NamedTuple
 
-from ....port.calling import Colorizing
 from ....port.color import Color, ColorData, Coloring
 from ....port.link import portlink
 
@@ -30,12 +27,6 @@ class PaletteDTO:
         print(f"loaded: {self=}")
         if len(self.colors) != len(Color):
             raise ValueError(f"Invalid colors... {self.colors=}, {Color=}")
-
-    def bind(self, index: int, /) -> Colorizing:
-        def colorizing(text: Stringable) -> str:
-            return self.func(text, self.colors[index])
-
-        return colorizing
 
 
 # LATER: something like this

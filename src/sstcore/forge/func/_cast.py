@@ -7,8 +7,9 @@ Cast Function Input to Usable Input
 """
 
 __all__: list[str] = [
-    "ArgCast",
     "ArgCaster",
+    "ArgCast",
+    "castarg",
 ]
 
 
@@ -30,7 +31,7 @@ from typing import (
 class ArgCaster(Protocol):
     """Cast, Coerce, Resolve and or Validate the Function Input"""
 
-    def __call__(
+    def __call__(  # WARN: Parameter.empty fails for Color.resolve?
         self, value: Any, /, *, default: Any = _i.Parameter.empty
     ) -> Any: ...
 
@@ -73,3 +74,6 @@ class ArgCast[**P, R]:
             for meta in reversed(get_args(annotation)[1:])
             if isinstance(meta, ArgCaster) or callable(meta)
         }
+
+
+castarg = ArgCast()

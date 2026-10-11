@@ -70,14 +70,6 @@ class NormalizingMaybe[ExpectedT: Stringable](
     """Forward text after processing and ensuring string(able)"""
 
 
-@runtime_checkable
-class Colorizing(Protocol):
-    def __call__(self, text: Stringable, /) -> str:
-        # IDEA: def __call__(self, text: Stringable) -> Stringable:
-        # - or some other renderable type
-        """Forward text-like object after processing and ensuring string"""
-
-
 #  LINE: -- processing -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 

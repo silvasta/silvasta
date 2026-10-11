@@ -11,8 +11,9 @@ __all__: list[str] = [
     "SafeFunctor",
     "HybridFunctor",
     #
-    "ArgCast",
     "ArgCaster",
+    "ArgCast",
+    "castarg",
 ]
-from ._cast import ArgCast, ArgCaster
+from ._cast import ArgCast, ArgCaster, castarg
 from ._tor import BaseFunctor, HybridFunctor, SafeFunctor

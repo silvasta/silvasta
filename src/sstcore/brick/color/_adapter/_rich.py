@@ -29,7 +29,7 @@ class RichPalette(Palette):
                 return PaletteDTO(func=apply_rich, colors=RICH1)
         return type(self)(0).data()
 
-    @property
+    @property  # LATER: this on base, auto-connecting both
     def adapter(self) -> Adapter:
         return Adapter.ANSI
 

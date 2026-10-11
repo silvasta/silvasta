@@ -1,9 +1,9 @@
 """
 Define the Interface Colors and the Shape of the ColorBox
 
-- Color:   All registered internal Colors       (c-axis of the grid)
-- Adapter: All internal and external Adapters   (a-axis of the grid)
-- Palette: 1-N Palettes all data of the Adapter (p-axis of the grid)
+- Color:   All registered internal Colors      (c-axis of the grid)
+- Adapter: All internal and external Adapters  (a-axis of the grid)
+- Palette: 1-N Palettes with all Adapter data  (p-axis of the grid)
 
 - ColorCoordinate: Navigate inside the 3d ColorGrid
 - ColorId: Valid input types to get Color
@@ -18,20 +18,24 @@ Future Ideas:
                                     DependencyLevel.sstcore.port[6]
 """
 
-from src.sstcore.port.register import TupleRegister
-
 __all__: list[str] = [
     "Color",
     "Adapter",
     "Palette",
+    #
+    "ColorId",
+    "ColorArg",
+    "ColorCoordinate",  # CHECK: unused, needed? remove?
+    #
+    "Colorizing",
+    "Coloring",
+    #
     "ColorData",
+    "ColorSchema",
     #
     "Painter",
     "ColorSchema",
     "PaintMill",
-    #
-    "ColorId",
-    "ColorCoordinate",
     #
     "ColorHub",
     "ColorBox",
@@ -39,15 +43,20 @@ __all__: list[str] = [
 
 
 from enum import auto
-from typing import NamedTuple, Protocol, Self
+from typing import Annotated, NamedTuple, Protocol, Self
 
-from ._enum import EnumId  # 0
-from .calling import Colorizing, Stringable  # 0
-from .solid import BaseEnum  # 1
+from .calling import Stringable  # 0
+from .register import TupleRegister  # 5
+from .solid import BaseEnum, EnumId  # 1
 
 
 class GridIndex(BaseEnum, zero=True, walk=True):
-    """Provide unique Base for Grid-Axes and Grid-Registries"""
+    """
+    Provide unique Base for Grid-Axes and Grid-Registries
+
+    - zero=True -> auto starts numbering at 0 (=self.value)
+    - walk=True -> meta walks mro to check for zero=True
+    """
 
 
 class Color(GridIndex):
@@ -67,10 +76,7 @@ class Color(GridIndex):
     BLACK = auto()
 
 
-type ColorId = EnumId[Color]
-
-
-class Adapter(GridIndex):
+class Adapter(GridIndex):  # LATER: resolve with the palettes
     """Define the extension of Adapter Columns to the ColorGrid"""
 
     RICH = auto()
@@ -84,11 +90,35 @@ class Palette(GridIndex):
 
     def data(self, *_args, **_kwargs) -> ColorData:
         """Provide the pre-processed data for the Factory"""
+        # LATER: move this from all derivatives to some base:
+        # return type(self)(0).data()
         raise NotImplementedError("Provide the related Color Data!")
 
 
+type ColorId = EnumId[Color]
+type ColorArg = Annotated[ColorId, Color.resolve]
+
+
+class ColorCoordinate(NamedTuple):
+    """Define a Point inside the ColorGrid"""
+
+    c: Color
+    a: Adapter
+    p: Palette
+
+
+class Coloring(Protocol):
+    def __call__(self, text: Stringable, color: str, /) -> str:
+        """Transform the Text into a Colored Renderable"""
+
+
+class Colorizing(Protocol):
+    def __call__(self, text: Stringable, /) -> str:
+        """Apply Default or Bound Color to get Colored Renderable"""
+
+
 class ColorData(Protocol):
-    """Incoming Adapter Data ready to produce ColorSchema"""
+    """Required Adapter Data Structure - ready to produce ColorSchema"""
 
     @property
     def func(self) -> Coloring: ...
@@ -96,24 +126,22 @@ class ColorData(Protocol):
     def colors(self) -> tuple[str, ...]: ...
 
 
-class Coloring(Protocol):
-    def __call__(self, text: Stringable, color: str, /) -> str:
-        """Apply handed in Color to Text"""
-
-
 class ColorSchema(Protocol):
-    """Transform the Adapter Data to internal Structure"""
+    """Color Data Structure for Internal Cache"""
+
+    def __init__(self, data: ColorData, /) -> None:
+        """Process the DTO and setup the Schema"""
 
     @property
     def colors(self) -> TupleRegister[str]:
-        """The lookup table for the painters"""
+        """Interchangeable Lookup Table for Paints"""
 
     @property
     def paints(self) -> TupleRegister[Painter]:
-        """The prepared colorizing functions with lookup"""
+        """Fixed Colorizer for Distribution"""
 
-    def bind(self, index: int, data: ColorData, /) -> Colorizing:
-        """Bind Color to internal Coloring"""
+    def mount(self, index: int, /) -> Colorizing:
+        """Bind Color and Coloring-Function to Colorizing Paints"""
 
 
 class Painter(Protocol):
@@ -125,7 +153,7 @@ class Painter(Protocol):
         """Apply the Colorizing function with lookup to ColorTable"""
 
     def __str__(self) -> str:
-        """Return yourself"""
+        """Return yourself (...derive from str)"""
 
 
 class PaintMill(Protocol):
@@ -134,25 +162,22 @@ class PaintMill(Protocol):
     def setup(self, palette: Palette) -> ColorSchema:
         """Produce Numbered Palette of executable Colors out of Raw Data"""
 
-    def paint(self, color: Color, palette: Palette) -> Painter: ...
+    def paint(self, color: Color, palette: Palette) -> Painter:
+        """Provide cached Colorizer for given (c,p)"""
 
 
 class ColorHub(Protocol):
     """Control the RuntimePalette and connect Grid, Factory and Box"""
 
-    def paint(self, color: Color) -> Painter: ...
-    def switch(self, palette: Palette) -> None: ...
+    def paint(self, color: Color) -> Painter:
+        """Fetch cached Colorizer for given Color in active Palette"""
+
+    def switch(self, palette: Palette) -> None:
+        """Install given Palette by Setup or Fetch in Factory"""
+
     @classmethod
     def boot(cls) -> Self:
         """Start without any Configuration"""
-
-
-class ColorCoordinate(NamedTuple):
-    """Define a Point inside the ColorGrid"""
-
-    c: Color
-    a: Adapter
-    p: Palette
 
 
 class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
@@ -163,7 +188,7 @@ class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
         """Configuration access"""
 
     def paint(self, color: ColorId) -> Painter | None:
-        """Map ColorIndex to Painter of active Palette"""
+        """Map ColorIdentifier to Painter of active Palette"""
 
     def __getattr__(self, name: str) -> Painter:
         """Provide Colors on ColorIndex Name and Shortcut"""
