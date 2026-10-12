@@ -19,8 +19,8 @@ __all__: list[str] = [
 ]
 
 
-from enum import Enum, EnumMeta
-from typing import NamedTuple, Self
+from enum import Enum, EnumDict, EnumMeta
+from typing import Any, NamedTuple, Self
 
 type EnumId[EnumT: Enum] = EnumT | str | int
 
@@ -30,7 +30,7 @@ type EnumRelation[T: Enum] = tuple[type[T], T] | tuple[type[T]] | tuple[()]
 
 class SstEnumMeta(EnumMeta):
     """
-    Set Count to Zero
+    Tune Enum Meta with some Features
 
     MEMBER = auto()
 
@@ -40,37 +40,52 @@ class SstEnumMeta(EnumMeta):
 
     Ideas:
     - __bool__: for Options
-    - index: -> int
-    - key: -> str, similar to name
+        EASY: (but how?)
+        - index: -> int
+        - key: -> str, similar to name
     - short: for LOG_AND_CONTINUE  -> "log", maybe as key?
+    - Important: Fallback strategy for Member != auto()!!!
 
-    """  # LATER:  better description
+    """
 
-    _is_zero_indexed: bool = False
     _walk_for_zero: bool = False
+    _zero_indexed: bool = False
 
     @classmethod
-    def __prepare__(_mcls, cls, bases, **kwargs):  # noqa:N804
+    def __prepare__(
+        metacls,  # noqa:N804
+        cls: str,
+        bases: tuple[type, ...],
+        zero=False,
+        walk=False,
+        **kwds,
+    ) -> EnumDict:
+        _ = metacls
 
-        enum_dict = super().__prepare__(cls, bases, **kwargs)
+        enum_dict: EnumDict = super().__prepare__(cls, bases, **kwds)
 
-        if WalkZero.resolve(bases, kwargs).zero:
+        if WalkZero.resolve(walk, zero, bases).zero:
             enum_dict["_generate_next_value_"] = staticmethod(from_zero)
 
         return enum_dict
 
-    def __new__(metacls, cls, bases, classdict, **kwargs):
+    def __new__(
+        metacls,
+        # metacls: type[_typeshed.Self],
+        cls: str,
+        bases: tuple[type, ...],
+        classdict: EnumDict,
+        *,
+        zero=False,
+        walk=False,
+        **kwds: Any,
+    ):  # CHECK: ) -> _typeshed.Self:, with: import _typeshed
         """Destroy all custom kwargs and attach Zero"""
 
-        resolved: WalkZero = WalkZero.resolve(bases, kwargs)
+        resolved: WalkZero = WalkZero.resolve(walk, zero, bases)
 
-        kwargs.pop("zero", None)
-        kwargs.pop("walk", None)
-
-        new_enum_cls = super().__new__(
-            metacls, cls, bases, classdict, **kwargs
-        )
-        new_enum_cls._is_zero_indexed = resolved.zero
+        new_enum_cls = super().__new__(metacls, cls, bases, classdict, **kwds)
+        new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
 
         return new_enum_cls
@@ -111,7 +126,8 @@ class SstEnumMeta(EnumMeta):
 
 
 def from_zero(name, start, count, last_values):
-    """Later: add good doc"""
+    """Set Count to Zero"""
+    _, _, _ = name, start, last_values
     return count
 
 
@@ -120,16 +136,18 @@ class WalkZero(NamedTuple):
     zero: bool
 
     @classmethod
-    def resolve(cls, bases: tuple[type, ...], kwargs: dict) -> Self:
+    def resolve(cls, walk: bool, zero: bool, bases: tuple[type, ...]) -> Self:
         """Resolve inherited walk and zero flags from kwargs and bases"""
-        walk: bool = kwargs.get(
-            "walk", any(getattr(b, "_walk_for_zero", False) for b in bases)
+
+        _walked_walk: bool = walk or any(
+            getattr(base, "_walk_for_zero", False) for base in bases
         )
-        zero: bool = kwargs.get(
-            "zero",
-            walk and any(getattr(b, "_is_zero_indexed", False) for b in bases),
+
+        _zero_or_walked_zero: bool = zero or (
+            walk
+            and any(getattr(base, "_zero_indexed", False) for base in bases)
         )
-        return cls(walk, zero)
+        return cls(_walked_walk, _zero_or_walked_zero)
 
 
 #  LINE: -- views -- -- - -- -- - -- -- - -- -- - -- -- - -- --

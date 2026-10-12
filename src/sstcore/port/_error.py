@@ -11,13 +11,38 @@ Specify SstCoreError before SstError is ready
 # IMPORTANT: Global strategy, sync with sstcore.error
 
 __all__: list[str] = [
+    "EnumError",
+    #
     "FailedDispatchError",
     "FailedHackError",
 ]
 
+from enum import Enum
 from typing import Any
 
 from .raising import SstCoreError
+from .solid import BaseEnum
+
+
+class EnumError(SstCoreError, TypeError):
+    """Temporary Resolve the SstEnumMeta blinding"""
+
+    def __init__(
+        self, member_or_cls: Enum | type[Enum], /, reason="", *args
+    ) -> None:
+        """Forward Args to Exception"""
+        reason: str = reason or "Failed"
+        match BaseEnum.membership(member_or_cls):
+            case ():
+                who = f"Unknown: {member_or_cls=}"
+            case (enum_cls,):
+                self.enum: type[BaseEnum] = enum_cls
+                who = f"BaseEnum: {enum_cls}"
+            case (enum_cls, member):
+                self.enum: type[BaseEnum] = enum_cls
+                self.member: BaseEnum = member
+                who = f"BaseEnum: {enum_cls=}, {member=}"
+        super().__init__(f"{who} | {reason=}", *args)
 
 
 class FailedDispatchError(SstCoreError, NotImplementedError):  # MOVE: ._error?
