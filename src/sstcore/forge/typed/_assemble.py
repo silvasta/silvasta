@@ -15,18 +15,21 @@ __all__: list[str] = [
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from ....brick.labor import clsname
-from ....port.shape import Typer
-from ....port.stacking import StackingCore
-from ..blueprint import StaticFuncMeta, StaticFuncMetaData
-from . import ___typed_well as _w
-from . import _extract as _e
-from . import _render as _r
-from . import _types as _t
-from ._extract import extract_members
-from ._render import render_protocol_stub
+from ...brick.reflect import clsname
+from ...port.annotate import StackAnnotator
+from ...port.annotate import stub_types as _stub
+from ...port.link import portlink
+from ...port.shape import Typer
+from ...port.stacking import StackingCore
+from ..engine import StaticFuncMeta, StaticFuncMetaData
+from . import ___extract as _e
+from . import ___render as _r
+from . import _typed_well as _w
+from .___extract import extract_members
+from .___render import render_protocol_stub
 
 
+@portlink(Typer)
 class ForgeTyper1:
     """
     Functional adapter that bridges protocol extraction to the Typer protocol.
@@ -43,18 +46,18 @@ class ForgeTyper1:
         return render_protocol_stub(source, name=name)
 
     @classmethod
-    def members(cls, source: type) -> list[_t.PublicMember]:
+    def members(cls, source: type) -> list[_stub.PublicMember]:
         """Expose extracted members for downstream consumers (Builder, Meta)."""
         return extract_members(source)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
 ForgeTyperMetaInput = StaticFuncMetaData(
     name=lambda cls: f" 🛠️{clsname(cls)} 🛠️"
 )
 
 
+@portlink(Typer)
 class ForgeTyper2(metaclass=StaticFuncMeta, data=ForgeTyperMetaInput):
     """Façade over the functional stack. Safe to hand to Builder/Meta."""
 
@@ -70,6 +73,7 @@ if TYPE_CHECKING:
 #
 
 
+@portlink(StackAnnotator)
 class StackTyper:
     """Smart generator converting StackingCore instances into typed call-chains."""
 

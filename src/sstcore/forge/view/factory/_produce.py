@@ -5,56 +5,134 @@ CliFactory - Experiment 3
 
 """
 
+import warnings
+from collections.abc import Sequence
 from typing import Any
 
 from ....brick.color.box import Colors
 from ....port.color import ColorBox
-from ....port.event.dto import LineDTO, PanelDTO, TableDTO
+from ....port.event.dto import (
+    GroupDTO,
+    LineDTO,
+    MarkdownDTO,
+    PanelDTO,
+    TableDTO,
+)
+from ....port.represent import CliRenderable
 
 colors: ColorBox = Colors()
 
 
-class TableProducer:
-    """Counterpart to RenderMixin.render_table"""
+def panel(
+    content: CliRenderable | list[CliRenderable],
+    *,
+    title: str | None = None,
+    expand: bool = True,
+    **kwargs: Any,
+) -> PanelDTO:
+    """Create a framed PanelDTO container."""
+    return PanelDTO(content=content, title=title, expand=expand, **kwargs)
 
-    def from_row_dicts(
-        self, rows: dict[str, Any | list[Any]], **kwargs
-    ) -> TableDTO:
-        return TableDTO(
-            content=list(rows.values()), row_names=list(rows.keys()), **kwargs
+
+def panel_ctor(content: Any, title: str | None = None, **kwargs) -> PanelDTO:
+    return PanelDTO(content=content, title=title, **kwargs)
+
+
+def group(*items: CliRenderable) -> GroupDTO:
+    """Create a GroupDTO stacking multiple renderables."""
+    return GroupDTO(content=list(items))
+
+
+def line_ctor(character: str = "─", *, style: str = "cyan") -> LineDTO:  # noqa:N805
+    """Create a horizontal character LineDTO."""
+    return LineDTO(content=character, color=style)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def markdown(
+    text: str, *, header: int = 0, style: str = "white"
+) -> MarkdownDTO:
+    """Create a MarkdownDTO with validated header constraints (H0-H6)."""
+    if not (0 <= header <= 6):
+        warnings.warn(
+            f"Markdown header={header} invalid (expected H0-H6). Defaulting to 0.",
+            stacklevel=2,
         )
-
-    def from_col_dicts(self, cols: dict[str, list[Any]], **kwargs) -> TableDTO:
-        return TableDTO(
-            content=[list(row) for row in zip(*cols.values(), strict=True)],
-            col_names=list(cols.keys()),
-            **kwargs,
-        )
+        header = 0
+    return MarkdownDTO(content=text, header=header, color=style)
 
 
-class LayoutProducer:
-    """Counterpart to RenderMixin.render_panel and render_line"""
-
-    def panel(
-        self, content: Any, title: str | None = None, **kwargs
-    ) -> PanelDTO:
-        return PanelDTO(content=content, title=title, **kwargs)
-
-    def line(
-        self, style: str = "cyan", character: str = "─", **kwargs
-    ) -> LineDTO:
-        return LineDTO(style=style, character=character, **kwargs)
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class CliDtoFactory:
-    """Unified entry point for CLI Layout generation."""
+def table_from_matrix(matrix: list[list[Any]], content: str = "") -> TableDTO:
+    return TableDTO(
+        content=content or "Table From Dicts",
+        matrix=matrix,
+    )
 
-    def __init__(self):
-        self.table = TableProducer()
-        self.layout = LayoutProducer()
+
+def table_from_row_dicts(rows: dict[str, Any | list[Any]]) -> TableDTO:
+    return TableDTO(
+        content="Table From Dicts",
+        matrix=list(rows.values()),
+        row_names=list(rows.keys()),
+    )
 
 
-# Provide a ready-to-use instance
-cli_factory = CliDtoFactory()
+def table_from_rows(
+    rows: dict[str, Any | Sequence[Any]], *, corner: str = ""
+) -> TableDTO:
+    """Transform dict of {row_name: values} into a TableDTO."""
+    matrix: list[list[Any]] = [
+        list(v)
+        if isinstance(v, (list, tuple))  #
+        else [v]
+        for v in rows.values()
+    ]
+    return TableDTO(
+        content="Table From Rows",
+        matrix=matrix,
+        row_names=list(rows.keys()),
+        corner=corner,
+    )
 
-cli_factory.layout.line()
+
+def table_from_cols(
+    cols: dict[str, Sequence[Any]], *, corner: str = ""
+) -> TableDTO:
+    """Transform dict of {col_name: column_values} into a TableDTO (transposed)."""
+
+    return TableDTO(
+        content="Table From Cols",
+        matrix=[list(row) for row in zip(*cols.values(), strict=True)],
+        col_names=list(cols.keys()),
+        corner=corner,
+    )
+
+
+def table_from_records(
+    records: Sequence[dict[str, Any]], headers: list[str] | None = None
+) -> TableDTO:
+    """Transform list of row dicts [{'ColA': 1, 'ColB': 2}] into a TableDTO."""
+    if not records:
+        return TableDTO(content="Table", matrix=[])
+
+    headers: list[str] = headers or list(
+        dict.fromkeys(k for row in records for k in row.keys())
+    )
+    return TableDTO(
+        content="Table from Records",
+        matrix=[[row.get(h, "") for h in headers] for row in records],
+        col_names=headers,
+    )
+
+
+def table_from_col_dicts(cols: dict[str, list[Any]], **kwargs) -> TableDTO:
+    return TableDTO(
+        matrix=[list(row) for row in zip(*cols.values(), strict=True)],
+        col_names=list(cols.keys()),
+        **kwargs,
+    )

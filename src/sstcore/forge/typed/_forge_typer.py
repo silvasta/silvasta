@@ -16,6 +16,8 @@ from typing import Any, get_overloads, get_type_hints
 from ...brick import reflect
 from ...port.annotate import MethodSpec, ProtocolSpec
 from ...port.annotate import stub_types as _stub
+from ...port.link import portlink
+from ...port.shape import Typer
 
 EXCLUDED_DUNDERS: set[str] = {
     "__subclasshook__",
@@ -38,7 +40,10 @@ INCLUDE_DUNDERS: set[str] = {
     "__exit__",
 }
 
+# NEXT: sync with _typed_well
 
+
+@portlink(Typer)
 class ForgeTyper:
     """Synthesize stub definitions from inspected protocols and schemas."""
 

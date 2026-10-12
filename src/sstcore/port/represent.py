@@ -10,13 +10,17 @@ Define the Shape of Views and what they Represent.
 __all__: list[str] = [
     "SstView",
     "SstViewType",
-    "LogSerializable",  # RENAME: LogSerialize??
-    "CliSerializable",  # RENAME: CliSerialize??
+    "CliSerializable",
+    "LogSerializable",
+    "LogStringable",
+    "Stringable",
+    "RichView",
 ]
 from typing import Protocol as _Protocol
+from typing import runtime_checkable as _runtime_checkable
 
 from .calling import Richable as _Richable
-from .event import CliDTO, LogDTO  # TODO: check internal pipeline, dependency
+from .event import CliDTO, LogDTO
 
 type SstViewType = (
     CliSerializable | LogSerializable | LogStringable | Stringable | RichView
@@ -32,26 +36,11 @@ class SstView(_Protocol):  # TODO:
 class SstPropView(_Protocol):
     """Combine all frequently used Views"""
 
-    @property
     def __cli__(self) -> CliSerializable: ...
-    @property
     def __log__(self) -> LogSerializable: ...
-    @property
-    def __repr__(self) -> LogStringable: ...
-    @property
-    def __str__(self) -> Stringable: ...
-    @property
-    def __rich__(self) -> RichView: ...
-
-
-class SstShortView(_Protocol):
-    """Combine all frequently used Views"""
-
-    __cli__: CliSerializable
-    __log__: LogSerializable
-    __repr__: LogStringable
-    __str__: Stringable
-    __rich__: RichView
+    def __repr__(self) -> str: ...
+    def __str__(self) -> str: ...
+    def __rich__(self) -> _Richable: ...
 
 
 class SstFullView(_Protocol):
@@ -74,11 +63,13 @@ class SstFullView(_Protocol):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+@_runtime_checkable
 class CliSerializable(_Protocol):
     def __cli__(self) -> CliDTO:
         """Snapshot the Target for Visualization"""
 
 
+@_runtime_checkable
 class LogSerializable(_Protocol):
     def __log__(self) -> LogDTO:
         """Messaage the Event for Traceability"""

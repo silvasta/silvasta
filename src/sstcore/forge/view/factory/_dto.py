@@ -5,75 +5,17 @@ CliFactory - Experiment 2
 
 """
 
-from dataclasses import dataclass, field, fields, replace
-from functools import cached_property
-from types import MappingProxyType
-from typing import Any, Self
+from dataclasses import dataclass, fields
+from typing import Any
 
-from ....port.event.dto import (
-    CliDTO,
-    EventDTO,
-    GroupDTO,
-    LineDTO,
-    LogDTO,
-    MarkdownDTO,
-    PanelDTO,
-    TableDTO,
-)
+from ....port.event.dto import CliDTO, PanelDTO, TableDTO
 
-
-@dataclass(frozen=True, slots=True)
-class DtoTypes:
-    log: type = LogDTO
-    cli: type = CliDTO
-    panel: type = PanelDTO
-    line: type = LineDTO
-    group: type = GroupDTO
-    table: type = TableDTO
-    markdown: type = MarkdownDTO
-
-
-@dataclass(frozen=True, slots=True)
-class DtoPolicy:
-    strict: bool = False
-    unknown: str = "meta"  # "meta" | "drop" | "error"
-    default_style: str = "cyan"
-    default_level: str = "INFO"
-
-
-@dataclass(frozen=True, slots=True)
-class DtoFactory:
-    types: DtoTypes = field(default_factory=DtoTypes)
-    policy: DtoPolicy = field(default_factory=DtoPolicy)
-    extras: MappingProxyType = field(
-        default_factory=lambda: MappingProxyType({})
-    )
-
-    def use(self, **types: type) -> Self:
-        return replace(self, types=replace(self.types, **types))
-
-    def with_policy(self, **policy: Any) -> Self:
-        return replace(self, policy=replace(self.policy, **policy))
-
-    # @cached_property
-    # def log(self) -> LogProducer:
-    #     return LogProducer(self)
-
-    @cached_property
-    def cli(self) -> CliProducer:
-        return CliProducer(self)
-
-    @cached_property
-    def table(self) -> TableProducer:
-        return TableProducer(self)
-
-    def __call__(self, kind: str, *args: Any, **kwargs: Any) -> EventDTO:
-        return getattr(self, kind)(*args, **kwargs)
+# AI: this was so far not detailed inspected
 
 
 @dataclass(frozen=True, slots=True)
 class CliProducer:
-    root: DtoFactory
+    # root: DtoFactory
 
     def __call__(self, content: Any, **kwargs: Any) -> CliDTO:
         return self._build(self.root.types.cli, content, kwargs)
@@ -107,7 +49,7 @@ class CliProducer:
 
 
 class TableProducer:
-    root: DtoFactory
+    # root: DtoFactory
 
     def __call__(
         self,

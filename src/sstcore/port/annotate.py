@@ -49,7 +49,7 @@ class LazyTyper(Typer, _Protocol):
     """Render the __init__.pyi to automate the Lazy __getattr__ __init__.py"""
 
 
-#  LINE: -- TaskDTO -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- _forge_typer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @dataclass(slots=True, frozen=True)

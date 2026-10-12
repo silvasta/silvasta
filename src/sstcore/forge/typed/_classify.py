@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any
 
-from . import _types as _t
+from ...port.annotate import stub_types as _stub
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +38,7 @@ class MemberKind(Enum):
 
 def classify_member(
     name: str, raw: Any, hints: dict[str, Any]
-) -> _t.AttrKind | None:
+) -> _stub.AttrKind | None:
     match raw:
         case property():
             return "property"

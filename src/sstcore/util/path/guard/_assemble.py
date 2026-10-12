@@ -13,23 +13,23 @@ __all__: list[str] = [
 from collections.abc import Callable
 
 from ....brick.color.box import Colors
-from ....brick.labor import clsname
+from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
-from ....forge.engine.blueprint import StaticFuncMeta, StaticFuncMetaData
+from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.color import ColorBox
 from ....port.files import SyncMode
 from . import _ensure, _field, _operate, _relative
 from ._field import PathGuardField
 from ._input import PathInput, PathSpec
 
-colors: ColorBox = Colors()  # ty:ignore
+colors: ColorBox = Colors()
 
 PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {clsname(cls)} ",
-    # FIX: rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
+    rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
     cli="Safety and Comfort for Path and File System operations",
     # LATER: split by CamelCase (and then colorize)
-    color=2,  # colors, names and even Enums change, but the registry index?
+    color=2,
 )
 
 _example = PathGuardError(PathGuardReason.NO_INIT)

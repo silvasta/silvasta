@@ -23,11 +23,11 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....brick.labor import clsname
+from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
-from ....port.functor import ErrorPolicy
+from ....port.functorial import ErrorPolicy
 from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
 from ._input import PathInput, PathSpec
 
@@ -187,11 +187,7 @@ def hardlink(
     )
 
 
-# AI_IGNORE: no further SyncMode until EoF
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Delete Operations
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Delete Operations -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class DeleteStrategy(SafeFunctor[[Path], bool]):

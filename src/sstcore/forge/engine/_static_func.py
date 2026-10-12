@@ -59,12 +59,10 @@ class StaticFuncMeta(ClsViewBase):
     def toolkit(cls, sort: bool = True) -> list[str]:  # noqa:N805
         """Provide names of all public staticmethods"""
 
-        # TODO: candidate for format.reflect
-        # Parameter:
-        # - public/private
-        # - {static|class}method|property, what else?
-
         names: list[str] = [
+            # TODO: candidate for format.reflect
+            # Parameter: - public/private
+            # - {static|class}method|property, what else?
             name
             for name in dir(cls)
             if not name.startswith("_")

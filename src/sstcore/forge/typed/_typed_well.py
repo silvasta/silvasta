@@ -18,8 +18,6 @@ from collections.abc import Sequence
 from types import FunctionType, UnionType
 from typing import (
     Any,
-    Generic,
-    Protocol,
     Union,
     get_args,
     get_origin,
@@ -29,8 +27,14 @@ from typing import (
 
 from . import _classify as _c
 
-_SKIP_BASES = frozenset({object, Protocol, Generic})
-_KEEP_DUNDER = frozenset({"__call__", "__getitem__", "__iter__", "__len__"})
+INCLUDE_DUNDER = {
+    "__call__",
+    "__getitem__",
+    "__iter__",
+    "__len__",
+}
+
+# NEXT: sync with _forge_typer
 
 
 def format_annotation(hint: object) -> str:
@@ -126,12 +130,13 @@ def protocol_members(cls: type) -> tuple[_c.ProtoMember, ...]:
 
     # EXTRACT:
     for base in reversed(cls.__mro__):
-        if base in _SKIP_BASES:
-            continue
+        # WARN: use iter_...
+        # if base in _SKIP_BASES:
+        #     continue
         for name, raw in base.__dict__.items():
             if name in seen:
                 continue
-            if name.startswith("_") and name not in _KEEP_DUNDER:
+            if name.startswith("_") and name not in INCLUDE_DUNDER:
                 continue
             seen.add(name)
 

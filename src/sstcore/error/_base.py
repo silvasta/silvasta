@@ -11,14 +11,13 @@ __all__: list[str] = [
 
 from typing import Any
 
+from ..brick import reflect
 from ..brick.color.box import Colors
-from ..brick.labor import clsname
-from ..port.color import ColorBox
 from ..port.event.dto import LogDTO, PanelDTO
 from ..port.raising import SstCoreError
-from ..port.view import Renderable
+from ..port.represent import CliRenderable
 
-c: ColorBox = Colors()
+c = Colors()
 
 
 # IDEA: - subclass detection - ghost color box for SstError!
@@ -52,7 +51,7 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
         # - use f-string with length cut, maybe by longest title or default
         # - difficulty: sorting! derived errors want to modify order
 
-        lines: list[Renderable] = [
+        lines: list[CliRenderable] = [
             f"{c.r(self.name)} {self.summary()}",  # ignore empty space
             f"{c.c('args')}    {self.args or 'nothing attached'}",
             f"{c.c('kwargs')}  {self.kwargs or 'nothing attached'}",
@@ -61,13 +60,15 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
         ]
 
         return PanelDTO(
-            content=self._modify_scroll(lines),
+            content=self._modify_scroll(lines),  # ty:ignore FIX:
             title=self.__rich__(),
             frame="red",
             title_align="right",
         )
 
-    def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
+    def _modify_scroll(
+        self, lines: list[CliRenderable]
+    ) -> list[CliRenderable]:
         """Customize Lines displayed inside CLI Panel"""
         return lines
 
@@ -77,12 +78,12 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
         return ""  # WARN: hole for empty? maybe use None
 
     @property
-    def _causing_error(self) -> list[Renderable]:
+    def _causing_error(self) -> list[CliRenderable]:
         """Panel Lines"""
-        scroll_for_error_that_caused_this_error: list[Renderable] = []
+        scroll_for_error_that_caused_this_error: list[CliRenderable] = []
         if reraised_error := (self.__cause__ or self.__context__):
             scroll_for_error_that_caused_this_error += [
-                f"{c.r('ReRaised')} {c.r(clsname(reraised_error))}",
+                f"{c.r('ReRaised')} {c.r(reflect.clsname(reraised_error))}",
                 f"{reraised_error}",
             ]
         return scroll_for_error_that_caused_this_error

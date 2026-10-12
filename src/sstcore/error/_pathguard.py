@@ -21,10 +21,10 @@ from typing import Any
 
 from ..brick.color.box import Colors
 from ..port.color import ColorBox
-from ..port.view import Renderable
+from ..port.represent import CliRenderable
 from ._base import SstError
 
-c: ColorBox = Colors()  # ty:ignore
+c: ColorBox = Colors()
 
 
 class PathGuardError(SstError):
@@ -53,7 +53,9 @@ class PathGuardError(SstError):
     def _short(self):
         return self.reason
 
-    def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
+    def _modify_scroll(
+        self, lines: list[CliRenderable]
+    ) -> list[CliRenderable]:
         """Format PathGuard fail for CLI"""
         return [
             lines[0],
@@ -82,8 +84,3 @@ class PathGuardReason(StrEnum):
     RELATIVE = "No Relative connection inside FileTree"
 
     DECORATOR = "Target Invalid for Hybrid-Decorator"
-
-    # AI: Idea 1:
-    def get_error(
-        self,
-    ): ...

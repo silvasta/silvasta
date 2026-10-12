@@ -20,15 +20,10 @@ __all__: list[str] = [
     "MarkdownDTO",
     "PanelDTO",
     "TableDTO",
-    # views
-    "LogSerializable",
-    "CliRenderable",
 ]
 
 from dataclasses import dataclass as _dataclass
 from dataclasses import field as _field
-
-# TODO: typing as _t...
 from typing import Any as _Any
 from typing import Literal as _Literal
 from typing import Protocol as _Protocol
@@ -38,13 +33,8 @@ from typing import runtime_checkable as _runtime_checkable
 
 from loguru import logger as _logger
 
-from ..calling import Richable as _Richable
 from ..color import Color as _Color
 from ..color import ColorId as _ColorId
-from ..link import portlink
-
-# MOVE: view??
-type _Renderable = str | CliRenderable | _Richable
 
 type DtoNames = _Literal[
     "log",
@@ -134,54 +124,21 @@ class TableDTO(CliDTO, name="table"):
     corner: str = ""
 
 
-# NEXT: move this to forge!
-# NEXT: move this to forge!
-# NEXT: move this to forge!
-# NEXT: move this to forge!
+@_runtime_checkable
+class CliDtoCreator(_Protocol):
+    """Annotate the ability to launch CliDTO units"""
+
+    def __call__(self, cls: type) -> CliDTO:
+        """Produce DTO for... only cls? or general? dispatch?"""
 
 
 class EventDtoFactory(_Protocol):
     """Produce the Default DTOs or their extended Versions"""
 
-    # TASK: refine! parametrize?
-    def log(self) -> type[EventDTO]: ...
-    def cli(self) -> type[EventDTO]: ...
-    def panel(self) -> type[EventDTO]: ...
-    def markdown(self) -> type[EventDTO]: ...
-    def line(self) -> type[EventDTO]: ...
-    def table(self) -> type[EventDTO]: ...
-
-
-@portlink(EventDtoFactory)
-class DtoFactory:  # MOVE: to forge.view?
-    def __init__(self, registry: dict[str, _Any]):
-        self._registry: dict[str, _Any] = registry
-
-    @property
-    def table(self) -> type[TableDTO]:
-        return self._registry["table"]
-
-
-#  LINE: -- RenderProtocols with Runtime check -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@_runtime_checkable
-# MOVE: view??
-class CliRenderable(_Protocol):
-    def __cli__(self) -> CliDTO: ...
-
-
-@_runtime_checkable
-# MOVE: view??
-class LogSerializable(_Protocol):
-    def __log__(self) -> LogDTO: ...
-
-
-@_runtime_checkable
-# MOVE: view??
-class CliDtoCreator(_Protocol):
-    # MOVE: view??
-    """Annotate the ability to launch CliDTO units"""
-
-    def __call__(self, cls: type) -> CliDTO:
-        """Produce DTO for... only cls? or general? dispatch?"""
+    def log(self) -> LogDTO: ...
+    def cli(self) -> CliDTO: ...
+    def panel(self) -> PanelDTO: ...
+    def markdown(self) -> MarkdownDTO: ...
+    def group(self) -> GroupDTO: ...
+    def line(self) -> LineDTO: ...
+    def table(self) -> TableDTO: ...
