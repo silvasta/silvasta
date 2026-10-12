@@ -11,9 +11,9 @@ __all__: list[str] = [
 
 from typing import Any, Literal
 
-from ....brick.vault import TupleVault
-from ....port.link import portlink
-from ....port.register import MixinRegister
+from ...brick.vault import TupleVault
+from ...port.link import portlink
+from ...port.register import MixinRegister
 
 
 @portlink(MixinRegister)

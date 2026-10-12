@@ -1,48 +1,19 @@
 """
-Provide pure functional fragments ready to use or assemble
+Detect (and future) Analyze MRO Inheritance
 
-- Detect, Inspect, Neglect, Modify, whatever...
-
-                                   DependencyLevel.sstcore.brick[0]
-
+                                                 DependencyLevel[0]
 """
 
 __all__: list[str] = [
-    # single
-    "just_return",
-    "validate_signature",
-    # reflect
-    "clsname",
-    "funcname",
-    "reflect",
-    "reflecting",
-    ## subfunctions might be containered
-    "doc",
-    "name",
-    "text",
-    # invoke
-    "invoke",
-    "invoking",
-    ## subfunctions might be containered
-    "rich",
-    "cli",
-    "log",
-    # scan
-    "scan",
-    ## subfunctions might be containered
-    "data",
-    "pydantic",
-    # mutate
-    "transform",
+    "sort_cls_by_name",  # RENAME: (probably all)
+    "all_common_ancestors",
+    "closest_common_ancestor",
+    "get_all_descendants",
 ]
 
-
-from . import _invoke as invoke
-from . import _reflect as reflect
-from . import _scan as scan
-from . import _transform as transform
-from ._collection import just_return
-from ._inspect import validate_signature
-from ._invoke import cli, invoking, log, rich
-from ._reflect import clsname, funcname, name, reflecting, text
-from ._scan import data, pydantic
+from ._mro import (
+    all_common_ancestors,
+    closest_common_ancestor,
+    get_all_descendants,
+    sort_cls_by_name,
+)

@@ -12,9 +12,9 @@ __all__: list[str] = [
 ]
 
 
-from ....port.color import Color, ColorId
-from ....port.link import portlink
-from ....port.shape import Meta, MetaData
+from ...port.color import Color, ColorId
+from ...port.link import portlink
+from ...port.shape import Meta, MetaData
 
 
 @portlink(MetaData)

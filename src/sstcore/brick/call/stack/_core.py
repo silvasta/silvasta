@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, NoReturn, Self
 
 from loguru import logger
 
-from ...port.stacking import (
+from ....port.stacking import (
     Accumulated,
     LayerData,
     LayerMode,

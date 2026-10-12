@@ -52,8 +52,6 @@ def combine_metas(*bases):
 
 
 #  LINE: -- Tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
 if __name__ == "__main__":
 
     class MetaX(type):

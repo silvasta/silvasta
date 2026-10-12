@@ -10,9 +10,9 @@ __all__: list[str] = [
 
 from typing import Any, cast
 
-from ....brick.field import RequiredField
-from ....port.link import portlink
-from ....port.shape import Builder, Mixins
+from ...brick.field import RequiredField
+from ...port.link import portlink
+from ...port.shape import Builder, Mixins
 from . import _mixer as mix
 from ._vault import MixinRegistry
 

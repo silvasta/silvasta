@@ -1,8 +1,8 @@
 from typing import Any, Self, overload
 
-from ....port.link import portlink
-from ....port.shape import Injector
-from ....port.solid import MixinCatalog
+from ...port.link import portlink
+from ...port.shape import Injector
+from ...port.solid import MixinCatalog
 from ._builder import MixinBuilder
 
 __all__: list[str] = [

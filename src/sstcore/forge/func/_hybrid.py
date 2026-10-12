@@ -1,59 +1,87 @@
 """
-Store the logic of the initial pathguard grow
+Implement the Functors for calltions and more
 
-- from func to deco to hybrid to just the hybrid logic
+- Pick and provide the best of OOP/FP
 
 """
 
+__all__: list[str] = [
+    "HybridFunctor",
+]
+
+
 import functools
 from collections.abc import Callable
-from typing import Any, TypedDict, TypeGuard, Unpack
+from typing import Any, Concatenate, NoReturn, TypeGuard, overload
 
-from ...port.raising import SstCoreError
-
-
-class HybridError(TypeError, SstCoreError): ...
-
-
-class HybridPolicy(TypedDict, total=False): ...
+from ...brick.field._strategy import morphing, strategy
+from ...port import functorial
+from ...port.link import portlink
+from ._tor import BaseFunctor
 
 
-# TASK: Parameterization!
+@portlink(functorial.HybridFunctorial)
+class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
+    """Extend Call for Hybrid3 and use Init for Hybrid2"""
 
+    def __init__(self, detect: functorial.Detect[In] | None, **kwargs):
+        if detect is not None:
+            setattr(self, "detect", detect)  # noqa:B010
+        super().__init__(**kwargs)
 
-def hybrid_factory[TargeT, **P, R](
-    logic: Callable[..., R],
-    is_target: Callable[[Any], TypeGuard[TargeT]],
-) -> Callable[..., R]:
-    """Bind the Hybrid construction"""
+    @strategy
+    def detect(self, target: Any, /) -> TypeGuard[In]:
+        """Check if target is direct function call"""
+        raise NotImplementedError("typing.TypeGuard needed to detect!", target)
 
-    def main(target: object = None, **policy: Unpack[HybridPolicy]):
-        """Dispatch target to proper execution"""
+    @strategy
+    def wrap[**Fn](
+        self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[Fn, Out]:
+        """Case 2: Decorator"""
 
-        # LATER: remove 'if ...:__doc__' before usage
+        @functools.wraps(fn)
+        def wrapper(*fn_args: Fn.args, **fn_kwargs: Fn.kwargs) -> Out:
+            return self.call(fn(*fn_args, **fn_kwargs), *args, **kwargs)
 
-        if is_target(target):
-            """# Case 1: Direct Execution (Data provided)"""
-            return logic(target, **policy)
+        return wrapper
 
-        if callable(target):
-            """Case 2: Bare Decorator (Function provided)"""
+    @morphing
+    def bind[**Fn](
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[[Callable[Fn, In]], Callable[Fn, Out]]:
+        """Case 3: Bind additional input to case 2"""
+        return lambda fn: self.wrap(fn, *args, **kwargs)
 
-            @functools.wraps(target)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-                return logic(target(*args, **kwargs), **policy)
+    def reject(self, failed: Any, *args, **kwargs) -> NoReturn:
+        self.emit("Invalid Hybrid Usage", failed, *args, **kwargs)
+        raise TypeError("Invalid Hybrid Usage")
 
-            return wrapper
+    @overload
+    def __call__(
+        self, target: In, /, *args: P.args, **kwargs: P.kwargs
+    ) -> Out: ...
+    @overload
+    def __call__[**Fn](
+        self, target: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[Fn, Out]: ...
+    @overload
+    def __call__(
+        self, /, *args: P.args, **kwargs: P.kwargs
+    ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
+
+    def __call__(
+        self, target: Any = None, /, *args: P.args, **kwargs: P.kwargs
+    ):
+        """Hybrid triple dispatch"""
+
+        if self.detect(target):
+            return self.call(target, *args, **kwargs)
+
+        if callable(target) and target is not type:
+            return self.wrap(target, *args, **kwargs)
 
         if target is None:
-            """Case 3: Parameterized Decorator"""
+            return self.bind(*args, **kwargs)
 
-            def decorator(fn: Callable[P, TargeT]) -> Callable[P, R]:
-                """Recursive call to Case 2"""
-                return main(fn, **policy)
-
-            return decorator
-
-        raise HybridError("Dispatch Failed!", target)  # LATER: better error
-
-    return main
+        self.reject(target)

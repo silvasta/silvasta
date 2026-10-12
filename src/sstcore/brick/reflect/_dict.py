@@ -9,6 +9,8 @@ Directly operate at the targets 'Heart'
 __all__: list[str] = [
     "_dict",
 ]
+
+
 from typing import Any
 
 # TODO: Strategy for __dict__ operations

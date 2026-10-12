@@ -15,10 +15,10 @@ from typing import Any, NoReturn
 
 from loguru import logger
 
-from ....brick.field import MethodFieldEngine, MorphingField, StrategyField
-from ....brick.none import sentinel
-from ....port.link import portlink
-from ....port.shape import Meta, MetaData
+from ...brick.field import MethodFieldEngine, MorphingField, StrategyField
+from ...brick.none import sentinel
+from ...port.link import portlink
+from ...port.shape import Meta, MetaData
 from ._meta_base import SstMeta, SstMetaData
 
 _MISSING = sentinel("MISSING")

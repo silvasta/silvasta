@@ -21,7 +21,7 @@ from ...port.link import portlink
 from ...port.raising import SstCoreError
 from ...port.shape import Builder, Injector
 from ...port.solid import MixinCatalog
-from ..engine.compose import MixinBuilder, MixInjector
+from ..compose import MixinBuilder, MixInjector
 from .catalog import Cli, Log, Repr, Rich, Str
 
 type ViewArg = Cli | Str | Rich | Repr | Log  # MOVE: to view._registry?

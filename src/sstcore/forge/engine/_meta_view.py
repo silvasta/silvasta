@@ -14,14 +14,14 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from ....brick.color.box import Colors
-from ....brick.labor import clsname, just_return
-from ....port import represent
-from ....port.calling import ClassRendering
-from ....port.color import Color, ColorId
-from ....port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
-from ....port.link import portlink
-from ....port.represent import SstView
+from ...brick.color.box import Colors
+from ...brick.labor import clsname, just_return
+from ...port import represent
+from ...port.calling import ClassRendering
+from ...port.color import Color, ColorId
+from ...port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
+from ...port.link import portlink
+from ...port.represent import SstView
 from ._meta_base import SstMeta, SstMetaData
 
 colors = Colors()  # LATER: resolve this somehows
@@ -118,7 +118,7 @@ class ClsViewData(SstMetaData):
 
         def _default_cli(cls) -> CliDTO:
             return PanelDTO(
-                content=content or list(cls.toolkit()),
+                content=content or cls.toolkit(),  # FIX:
                 title=cls.__rich__(),
                 frame=colors.get(self.color),
             )

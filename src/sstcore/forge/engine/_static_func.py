@@ -17,9 +17,9 @@ import inspect
 from types import FunctionType
 from typing import Any
 
-from ....brick.color.box import Colors
-from ....port.link import portlink
-from ....port.shape import Meta, MetaData
+from ...brick.color.box import Colors
+from ...port.link import portlink
+from ...port.shape import Meta, MetaData
 from ._meta_view import ClsViewBase, ClsViewData
 
 colors = Colors()
