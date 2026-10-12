@@ -11,14 +11,14 @@ Show Examples of the painted enumerated tuple str ColorRegistry
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Protocol, reveal_type
+from typing import Protocol
 
 from fire import Fire
 from rich.console import Console
 
 from sstcore.brick.color.box import Colors
 from sstcore.brick.color.box._paint import Paint
-from sstcore.port.color import Color, ColorBox, Painter
+from sstcore.port.color import Color
 
 
 def main():
@@ -40,49 +40,13 @@ def basic():
 
     azure = Paint(Color.AZURE, lambda x: rich_markup(x, "cyan"))
 
-    reveal_type(azure)
-
     _check_type = "yes" if isinstance(azure, str) else "no"
 
     with printy.section("Check Colors"):
         printy(azure(text))
 
-    as_paint: Paint = azure
-    as_painter: Painter = azure
-    as_str: str = azure
-
-    check_as_input_paint(as_paint)
-    check_as_input_paint(as_painter)
-    check_as_input_paint(as_str)
-
-    check_as_input_painter(as_paint)
-    check_as_input_painter(as_painter)
-    check_as_input_painter(as_str)
-
-    check_as_input_str(as_paint)
-    check_as_input_str(as_painter)
-    check_as_input_str(as_str)
-
-    reveal_type(as_str)
-
-
-def box():
-    c: ColorBox = Colors()
-
-    azure = c.azure
-    reveal_type(azure)
-
-    check_as_input_paint(azure)
-    check_as_input_painter(azure)
-    check_as_input_str(azure)
-
-
-#  LINE: -- Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def check_as_input_paint(color: Paint): ...
-def check_as_input_painter(color: Painter): ...
-def check_as_input_str(color: str): ...
+    colors = Colors()
+    colors.paint(3)
 
 
 #  LINE: -- Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --

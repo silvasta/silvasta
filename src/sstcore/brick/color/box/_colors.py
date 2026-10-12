@@ -28,15 +28,11 @@ class Colors:
     def hub(self) -> ColorHub:
         return self._hub
 
-    # AI: here as example, here it is fine with manual resolving
-    # -> in general it would be nice to do it more automatic
-    # - locations that don't know a lot about color cust use @castarg
     def paint(self, color: ColorId) -> Painter:
         color: Color = Color.resolve(color)
         return self._hub.paint(color)
 
-    def __getattr__(self, name: str) -> Painter:
-        # NEXT: use brick.stack
+    def __getattr__(self, name: str) -> Painter:  # NEXT: use brick.stack
         if color := SHORTCUTS.get(name):
             return self.paint(color)
 
