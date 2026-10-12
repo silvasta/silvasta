@@ -10,6 +10,10 @@ Group TypeDefs as Classes and Merge them to Modules
 __all__: list[str] = [
     "Registry",
     "registry_types",
+    "Stack",
+    "stacking_types",
+    "Stub",
+    "stub_types",
 ]
 
 from collections.abc import (
@@ -20,7 +24,7 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
-from typing import Any
+from typing import Any, Literal
 
 
 class Registry:
@@ -78,3 +82,17 @@ class Stack:
 
 
 stacking_types = Stack()
+
+
+class Stub:
+    type ProtoType = type
+    type AttrName = str
+    type RawObject = object
+    type PublicMember = tuple[AttrName, RawObject, AttrKind]
+
+    type AttrKind = Literal["property", "method", "attribute"]
+    type TypeHints = dict[str, Any]
+    type OverLoads = Sequence[Callable[..., Any]]
+
+
+stub_types = Stub()

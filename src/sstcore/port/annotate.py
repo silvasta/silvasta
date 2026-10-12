@@ -7,23 +7,26 @@ Write and Expose the Shape of the Dynamically created Classes
                                     DependencyLevel.sstcore.port[4]
 """
 
+import inspect
+
 __all__: list[str] = [
-    "StubFileGenerator",
     "StackAnnotator",
     "ProtoTyper",
+    #
+    "stub_types",
 ]
 
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass as _dataclass
-from dataclasses import field
-from pathlib import Path
-from typing import Any, ClassVar, Self
+from dataclasses import dataclass, field
+from typing import Any
 from typing import Protocol as _Protocol
 
-from .attach import ConfigDescriptor
+from ._types import stub_types
 from .shape import Typer  # 0
-from .solid import EnumMachine, EnumMode  # 1
+from .solid import EnumMode  # 1
+
+_stub = stub_types
 
 
 class MetaAnnotator(Typer, _Protocol):
@@ -46,33 +49,35 @@ class LazyTyper(Typer, _Protocol):
     """Render the __init__.pyi to automate the Lazy __getattr__ __init__.py"""
 
 
-#  LINE: -- Automat -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class JobKind(EnumMode):
-    STACK = "stack"
-    PROTOCOL = "protocol"
-    MIXIN = "mixin"
-
-
-class StubFileGenerator(EnumMachine):
-    """Execute the Mechanical and Rule based part of the pyi writing"""
-
-    def report(self):  # TODO: think about invisible logging
-        """Precisely record any single step into a structured table"""
-
-
 #  LINE: -- TaskDTO -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@_dataclass(frozen=True)
+@dataclass(slots=True, frozen=True)
+class MethodSpec:
+    name: str
+    signatures: list[inspect.Signature]
+    is_overloaded: bool = False
+
+
+@dataclass(slots=True, frozen=True)
+class ProtocolSpec:
+    name: str
+    attributes: dict[str, type] = field(default_factory=dict)
+    properties: dict[str, type] = field(default_factory=dict)
+    methods: dict[str, MethodSpec] = field(default_factory=dict)
+
+
+#  LINE: -- write.engine1 -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@dataclass(frozen=True)
 class ParamDTO:
     name: str
     annotation: str
     default: str | None = None
 
 
-@_dataclass(frozen=True)
+@dataclass(frozen=True)
 class MethodDTO:
     name: str
     params: list[ParamDTO]
@@ -81,20 +86,7 @@ class MethodDTO:
     is_overload: bool = False
 
 
-#  LINE: -- JobDTO -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class JobDTO1:
-    _registry: ClassVar[dict[str, type[Self]]] = {}
-
-    public: ConfigDescriptor[str]  # read/write с валидацией
-    prefix: ConfigDescriptor[str]
-    package: ConfigDescriptor[str | None]
-    content: ConfigDescriptor[str]  # готовый stub-текст
-    target: ConfigDescriptor[Path]
-
-
-@_dataclass(frozen=True)
+@dataclass(frozen=True)
 class StubJobDTO:
     """The Universal Blueprint for the Writer EnumMachine"""
 
@@ -105,35 +97,16 @@ class StubJobDTO:
     bases: list[str] = field(default_factory=lambda: ["Protocol"])
 
 
-#  LINE: -- StubJob -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- write.jobs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@_dataclass(frozen=True)
-class StubJob1:
-    public: str
-    prefix: str
-    package: str | None = None
+class JobKind(EnumMode):
+    STACK = "stack"
+    PROTOCOL = "protocol"
+    MIXIN = "mixin"
 
 
-@_dataclass(frozen=True, slots=True)
-class StubJob2:
-    """Transport container for a single stub-writing task."""
-
-    public: str  # binding name in __init__.py, e.g. "DTO_STACK"
-    prefix: str  # e.g. "Greeter", "Printer"
-    package: str | None = None  # override; else inferred at write time
-    content: str = ""  # rendered stub text (filled by Typer)
-    target_file: str = ""  # relative path: "_stubs/_random.pyi"
-    overlay: str = ""  # __init__.pyi overlay line, if needed
-
-    def __post_init__(self) -> None:
-        if not self.public:
-            raise ValueError("public must not be empty")
-        if not self.prefix:
-            raise ValueError("prefix must not be empty")
-
-
-@_dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True)
 class StubJob3:
     """Work order for StubFileEnumMachine. No callables, no paths as objects."""
 
@@ -146,8 +119,11 @@ class StubJob3:
     overlay: bool = True
 
 
-@_dataclass(slots=True, frozen=True)
-class StubJobDTO4:
+#  LINE: -- write.engine2 -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@dataclass(slots=True, frozen=True)
+class StubJobDTO4:  # INFO: write.engine2
     """Transport contract defining a single stub generation and write task."""
 
     public_symbol: str  # e.g., 'DTO_STACK'

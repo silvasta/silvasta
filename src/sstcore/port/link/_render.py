@@ -18,7 +18,7 @@ from ..solid import EnumMachine
 from ._define import LinkSpec
 from ._model import Doc, Docs, PlugDoc, PortDoc, SidePolicy
 
-printer: Any = None
+printer: Any = None  # REMOVE:
 
 
 class MergeMachine(EnumMachine):
@@ -112,6 +112,7 @@ class MergeMachine(EnumMachine):
 
 
 def _load_printer():
+    # NEXT: portlog -> writes ndjson -> render from loaded file!
     from rich.console import Console
     from rich.panel import Panel
     from rich.rule import Rule

@@ -51,6 +51,7 @@ type DtoNames = _Literal[
     "cli",
     "panel",
     "markdown",
+    "group",
     "line",
     "table",
 ]
@@ -131,6 +132,12 @@ class TableDTO(CliDTO, name="table"):
     col_names: list[str] = _field(default_factory=list)
     row_names: list[str] = _field(default_factory=list)
     corner: str = ""
+
+
+# NEXT: move this to forge!
+# NEXT: move this to forge!
+# NEXT: move this to forge!
+# NEXT: move this to forge!
 
 
 class EventDtoFactory(_Protocol):

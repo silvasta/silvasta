@@ -20,7 +20,7 @@ __all__: list[str] = [
 
 
 from enum import Enum, EnumDict, EnumMeta
-from typing import Any, NamedTuple, Self
+from typing import Any, NamedTuple, Self, reveal_type
 
 type EnumId[EnumT: Enum] = EnumT | str | int
 
@@ -178,3 +178,37 @@ class EnumRepr2(Enum):
 
 EnumStr = EnumStr2
 EnumRepr = EnumRepr1
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+if __name__ == "__main__":
+    from dataclasses import dataclass  # noqa: E402
+    from enum import Enum  # noqa: E402
+    from typing import ClassVar, Protocol  # noqa: E402
+
+    class HasRouting(Protocol):
+        prefix: str
+        routing_key: str
+
+    @dataclass(frozen=True)
+    class RabbitDTO:
+        prefix: str
+        routing_key: str
+        exchange: str
+
+    class RootEnum(Enum):
+        config: ClassVar[object]  # Generic or broad baseline
+
+        def __init_subclass__(cls, config: object, **kwargs):
+            super().__init_subclass__(**kwargs)
+            cls.config = config
+
+    class QueueEnum(
+        RootEnum, config=RabbitDTO("app.", "orders.#", "amq.direct")
+    ):
+        config: ClassVar[HasRouting]
+
+        ORDERS = "orders"
+
+    reveal_type(QueueEnum.config)
+    print(QueueEnum.config.routing_key)
