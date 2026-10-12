@@ -45,7 +45,7 @@ class FileScan(Protocol):
 
 # TASK: setup that works for all scanner
 class ScanMode(StrEnum):
-    """Govern the exectuion modes of FileScanner"""
+    """Govern the execution modes of FileScanner"""
 
     READ = auto()
     AST = auto()

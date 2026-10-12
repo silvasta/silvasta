@@ -32,7 +32,7 @@ class MixinRegistry[MixinT: type](TupleVault[MixinT]):
 
 @portlink(MixinRegister)
 class DuoRegistry[DuoT: tuple[type, type]](TupleVault[DuoT]):
-    """Hold Mixins and Protocols in Paralell"""
+    """Hold Mixins and Protocols in Parallel"""
 
     def _normalize(self, value: Any) -> DuoT:
         if isinstance(value[0], type) and isinstance(value[1], type):

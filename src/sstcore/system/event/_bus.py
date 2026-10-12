@@ -1,7 +1,7 @@
 """
 Provide Infrastructure for Events
 
-- EventBus: Route Events by name to registred EventHandler
+- EventBus: Route Events by name to registered EventHandler
 - XXX EventHandler: Process Event with optional Error handling
                                                        DependencyLevel[1]
 """

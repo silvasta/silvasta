@@ -1,5 +1,5 @@
 """
-Funcions to Assemble NameSpace for Classes
+Functions to Assemble NameSpace for Classes
 
                             DependencyLevel.sstcore.forge.engine[0]
 """

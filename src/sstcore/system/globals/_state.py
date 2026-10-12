@@ -15,7 +15,7 @@ from ..boot import sst_bus_loader, sst_config_loader, sst_system_loader
 from ..config import ConfigManager
 from ..event import Bus
 
-# LATER: use bus and emit if avaliable?
+# LATER: use bus and emit if available?
 
 
 class _GlobalState(StrEnum):
@@ -86,7 +86,7 @@ class _GlobalState(StrEnum):
 
 @dataclass
 class _Singleton[TypeG: Any]:
-    """Structure the Acces for a global Singleton"""
+    """Structure the Access for a global Singleton"""
 
     state: _GlobalState
     instance: TypeG | None = None

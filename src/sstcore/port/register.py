@@ -83,7 +83,7 @@ class Register[Item, Vault: _reg.Vault](Protocol):
 
 
 class VaultPolicy(PolicyEnum):
-    """On Conflic Strategy - Index and Default start on Zero"""
+    """On Conflict Strategy - Index and Default start on Zero"""
 
     RAISE = auto()
     SKIP = auto()

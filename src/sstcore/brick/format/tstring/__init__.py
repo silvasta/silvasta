@@ -1,7 +1,7 @@
 """
 T-String - check for usage in bus free pipeline
 
-- as it looks it might even replace (huge) parts of other pipelins
+- as it looks it might even replace (huge) parts of other pipelines
 - mix of ergonomic and powerful aspects
 
 """

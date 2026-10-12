@@ -126,7 +126,7 @@ class EasyCatch(EasyBase, id=0, art="D"):
             self.emit(f"Continue... {error=}")
             return True
 
-        # TASK: thi, Never, Nevers is True for top-level handler, other should break trough
+        # TASK: catch all with top-level, let others break trough, relaunch...
         return True  # PARAM: Error Handling
 
 
@@ -305,7 +305,7 @@ class Collect(PortOperator[Collecting], id=5, art="O"):
         self.walk_mro(data, attr, cls=plug, side=SidePolicy.PLUG, nearest=True)
         if self.nearest_target is None:
             self.emit(f"Missing ancestor {plug.__name__} for {attr=}")
-            # IDEA: let it continure, and see what DocMerger prints
+            # IDEA: let it continue, and see what DocMerger prints
         self.walk_mro(data, attr, cls=port, side=SidePolicy.PORT)
         self.emit(f"Extracted __doc__: {len(data)}")
         return data

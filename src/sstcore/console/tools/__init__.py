@@ -1,5 +1,5 @@
 """
-Assemble and Launch Tools combinde from Utils
+Assemble and Launch Tools combined from Utils
 
 - cli_tools: Assemble and Launch Utils
   - folder_scanner: FolderScanner -> Treeselector -> SummaryFile

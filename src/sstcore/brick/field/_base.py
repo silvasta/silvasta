@@ -24,7 +24,7 @@ from typing import Any, Never, Self, overload
 from ...brick.none import sentinel
 from ...port import attach
 from ...port.link import portlink
-from ..labor import reflect
+from .. import reflect
 from ._raise import FieldRaiser
 
 MISSING = sentinel("MISSING")

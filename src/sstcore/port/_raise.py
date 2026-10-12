@@ -1,7 +1,7 @@
 """
 Adapt the SstCoreError to PortLink
 
-- This is intendes as the one and only Raiser Implementation in the port
+- This is intends as the one and only Raiser Implementation in the port
 - Still experimental, like the setups outside the port
 
                                                  DependencyLevel[3]
@@ -9,7 +9,7 @@ Adapt the SstCoreError to PortLink
 
 # TASK: 1 single port implementation of Raiser
 # - create more universal version
-# - imporve internal data pipeline
+# - improve internal data pipeline
 # - maybe keep name: LinkRaiser
 
 __all__: list[str] = [
@@ -85,7 +85,7 @@ class LinkRaiser(Raiser):
 
     @property
     def builtin(self) -> type[Exception] | None:
-        """Find Builtin Exception if registred in Raiser"""
+        """Find Builtin Exception if registered in Raiser"""
         match self:
             case LinkRaiser.RAW:
                 return None

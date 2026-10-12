@@ -1,7 +1,7 @@
 """
 Provide Infrastructure for Events
 
-- EventBus: Route Events by name to registred EventHandler
+- EventBus: Route Events by name to registered EventHandler
 - EventHandler: Process Event with optional Error handling
                                                        DependencyLevel[0]
 """
@@ -41,7 +41,7 @@ def register_default_event_handler(bus: EventBus) -> None:
 
 @dataclass(frozen=True)
 class EventHandler:
-    """Process Events emmited from the bus in observable Environment"""
+    """Process Events emitted from the bus in observable Environment"""
 
     name: str
     func: Callable[[Event], None]

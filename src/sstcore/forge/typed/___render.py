@@ -39,7 +39,7 @@ def render_signature(fn: Any, name: str) -> list[str]:
     targets: _t.OverLoads | list[Any] = overloads or [fn]
 
     for fn_target in targets:
-        # EXTRACT: oveload mechanism
+        # EXTRACT: overload mechanism
         if overloads:
             lines.append("    @overload")
         try:

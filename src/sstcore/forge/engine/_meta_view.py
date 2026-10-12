@@ -73,7 +73,7 @@ class ClsViewBase(SstMeta):
 class ClsViewData(SstMetaData):
     """Base DTO for Class-Level Views."""
 
-    # IMPORTANT: imporve defaults!
+    # IMPORTANT: improve defaults!
 
     name: ClassRendering
     rich: ClassRendering

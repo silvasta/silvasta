@@ -26,13 +26,13 @@ from ._simple import SimpleTreeNode
 @portlink(PathTree)
 @dataclass(frozen=True)
 class PathTreeNode(SimpleTreeNode):
-    """Represent FileTree with Nodes=Folders and Leafs=Files"""
+    """Represent FileTree with Nodes=Folders and Leaves=Files"""
 
     path: Path = field(default_factory=Path)
 
     @property
     def identifier(self):
-        """Try with file system path for uniqness"""
+        """Try with file system path for uniqueness"""
         return self.path
 
     @classmethod

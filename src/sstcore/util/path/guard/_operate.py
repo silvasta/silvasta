@@ -34,7 +34,7 @@ from ._input import PathInput, PathSpec
 
 def check_sync_mode(target: Path, mode: SyncMode) -> Path:
     # AI_FOCUS: something like this, maybe as SyncBase(Enum).check:NotImplementedError?
-    # - probaly to unstable and uncomfortable with the Enum derivative
+    # - probably to unstable and uncomfortable with the Enum derivative
     # Still some shared synergies might be possible to generate:
     # - Maybe a functor base that has the Enum as descriptor
     # - Some other object that holds the Mode/Policy with a shared interface
@@ -45,9 +45,9 @@ def check_sync_mode(target: Path, mode: SyncMode) -> Path:
     # Advantages are the generalized handling and control
     # - still loose enough to allow flexibility and intermediate bases
     # - the port defines the enum and orchestrates a familiar interface
-    # - once immplemented the Enums and Fields can easily adapt to a new setup
-    # Disadvantage are the increased complexity at the root and slighly decreased flexibility
-    # - still I would say after once solving the initial problem, many future problems will not even occure
+    # - once implemented the Enums and Fields can easily adapt to a new setup
+    # Disadvantage are the increased complexity at the root and slightly decreased flexibility
+    # - still I would say after once solving the initial problem, many future problems will not even occur
     """Provide SyncMode Path that is valid to write or Raise"""
 
     if not target.exists():
@@ -116,7 +116,7 @@ def _handle_hardlink(error: Exception, source: Path, target: Path):
             PathGuardReason.HARDLINK,
             source=source,
             target=target,
-            catched=error,
+            caught=error,
         ) from error
     else:
         raise error
@@ -140,7 +140,7 @@ def rotate(
     source_ok: Path = PathSpec.ok(target=source, must_exists=True)
     is_directory: bool = source_ok.is_dir()  # store for reset logic
 
-    transfered: Path = Rotate.synced(
+    transferred: Path = Rotate.synced(
         source=(source_ok), target=PathSpec.ok(target=target), mode=mode
     )
     if reset:
@@ -148,7 +148,7 @@ def rotate(
             source_ok.mkdir()
         else:
             source_ok.touch()
-    return transfered
+    return transferred
 
 
 def copy(

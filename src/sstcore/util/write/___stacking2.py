@@ -4,7 +4,7 @@ Launch the StubFile Writer and Type the Stackings
 uv run -m sstcore.brick.stack._write
 
 """
-# INFO: original brick.stack._wrire
+# INFO: original brick.stack._wire
 
 import itertools
 from collections.abc import Mapping

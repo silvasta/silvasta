@@ -1,7 +1,7 @@
 """
 Provide Schema with defaults
 
-- SstModel: Slighly modified BaseModel with frequently used functions
+- SstModel: Slightly modified BaseModel with frequently used functions
                                                        DependencyLevel[0]
 """
 

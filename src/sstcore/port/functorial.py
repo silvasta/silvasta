@@ -52,7 +52,7 @@ class Functorial[**ArgSpace, SubSetResult](_t.Protocol):
 
 
 class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
-    """Execute Functions in Safe Environement"""
+    """Execute Functions in Safe Environment"""
 
     # catch: _Callable[_t.Concatenate[Exception, ArgSpace], SubSetResult | None]
 

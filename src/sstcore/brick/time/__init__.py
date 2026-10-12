@@ -1,7 +1,7 @@
 """
 Collect helper for time related functions
 
-- stays in fromat due to small size and relevance
+- stays in format due to small size and relevance
                                                           PackageLevel[0]
 """
 

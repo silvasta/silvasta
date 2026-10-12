@@ -38,11 +38,11 @@ from ._base import BaseVault
 
 @portlink(BisectDTO)
 @dataclass
-class BisectDTO[ThreshT: float | int, ObjecT: Any]:
-    """Store threshold for bisectional comparison and corresponing value"""
+class BisectDTO[ThreshT: float | int, ObjectT: Any]:
+    """Store threshold for bisectional comparison and corresponding value"""
 
     threshold: ThreshT
-    value: ObjecT
+    value: ObjectT
 
     @property
     def label(self) -> str:
@@ -138,7 +138,7 @@ class InsertField(BisectMixin, BisectField[BoundaryPolicy]):
         unit: BisectVault,  # TODO: attach self.vault somewhen?
         item: BisectDTO,
     ):
-        """Attach new item, Decide on Tie by interal policy or Raise"""
+        """Attach new item, Decide on Tie by internal policy or Raise"""
 
         match policy:
             case InsertPolicy.RAISE:
@@ -167,7 +167,7 @@ class InsertField(BisectMixin, BisectField[BoundaryPolicy]):
 # @portlink(BisectRegister)
 class BisectVault[KeyT: float | int](BisectMixin, BaseVault[BisectDTO, list]):
     insert_mode = InsertField(InsertPolicy)
-    boundry_mode = BoundaryField(BoundaryPolicy)
+    boundary_mode = BoundaryField(BoundaryPolicy)
 
     def __init__(
         self,
@@ -188,7 +188,7 @@ class BisectVault[KeyT: float | int](BisectMixin, BaseVault[BisectDTO, list]):
     #     type(self).insert_mode.execute(self, item)
     #
     # def compare(self, item):  # IMPORTANT:
-    #     type(self).boundry_mode.execute(self, item)
+    #     type(self).boundary_mode.execute(self, item)
 
     def __contains__(self, target: BisectDTO) -> bool:
         """Check if threshold exists in exactly one O(log(N)) pass"""
@@ -239,7 +239,7 @@ class BisectVault[KeyT: float | int](BisectMixin, BaseVault[BisectDTO, list]):
     ) -> str | None: ...
 
     def __call__(self, thresh: KeyT):
-        """Provide the value corresponing to the matching threshold"""
+        """Provide the value corresponding to the matching threshold"""
 
         if not self.vault:
             message = f"{self} has no member, fill before access!"
@@ -345,7 +345,7 @@ class BisectVault[KeyT: float | int](BisectMixin, BaseVault[BisectDTO, list]):
 #     """
 #     Idea for Extension
 #
-#     - Support ListVault on high troughput
+#     - Support ListVault on high throughput
 #
 #     Could maybe make sense, still low priority now.
 #     """

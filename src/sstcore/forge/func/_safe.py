@@ -26,14 +26,14 @@ type _Catch[**A, R] = Callable[Concatenate[Exception, A], R | None]
 
 @portlink(functorial.SafeFunctorial)
 class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
-    """Protect the Execution, Hanldle Errors, everything able to customize"""
+    """Protect the Execution, Handle Errors, everything able to customize"""
 
     policy = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)
     exit_code = RequiredField(types=int, default=1)
 
     def __init__(self, catch: _Catch[Args, Result] | None = None, **kwargs):
         if catch is not None:
-            # CHECK: if direct assing works at usage!
+            # CHECK: if direct assign works at usage!
             # needed because of confusion below
             setattr(self, "catch", catch)  # noqa:B010
         super().__init__(**kwargs)

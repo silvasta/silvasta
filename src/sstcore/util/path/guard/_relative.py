@@ -35,7 +35,7 @@ def relative_main(
 
     except ValueError as error:
         raise PathGuardError(
-            PathGuardReason.RELATIVE, target=target, root=root, catched=error
+            PathGuardReason.RELATIVE, target=target, root=root, caught=error
         ) from error
 
 

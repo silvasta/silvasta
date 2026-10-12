@@ -1,7 +1,7 @@
 """
 Compose Views at runtime and inject them into target Classes
 
-- ViewBuilder: regular compostion
+- ViewBuilder: regular composition
 - ViewInjector: hybrid decorator
 
 """

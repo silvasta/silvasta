@@ -156,7 +156,7 @@ def safe(method):
 
     @wraps(method)
     def wrapper(self: MultiBaseWorker, *args, **kwargs):
-        # NOTE: handle multple __enter__ before usage
+        # NOTE: handle multiple __enter__ before usage
         with self:
             return method(self, *args, **kwargs)
 
@@ -230,7 +230,7 @@ class _DataProcessor(BaseScopedService):
         if exc_type is None:
             return True
         if issubclass(exc_type, TypeError):
-            print(f"Catched: [{exc_type.__name__}] {exc_val}")
+            print(f"Caught: [{exc_type.__name__}] {exc_val}")
             return True
         return False
 
@@ -271,7 +271,7 @@ def _tests():
         with worker(repeats="3") as w3:
             w3.fail()
     except Exception as error:
-        print(f"Catched: [{type(error).__name__}] {error}")
+        print(f"Caught: [{type(error).__name__}] {error}")
 
     # AI: it looks like the w3 is continuig without problems...
     # - how stable is it to reuse a w* after the with block it was created?

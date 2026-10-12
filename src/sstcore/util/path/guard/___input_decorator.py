@@ -1,5 +1,5 @@
 """
-TODO: Validate PathGuard args before even funcion entry
+TODO: Validate PathGuard args before even function entry
 
 -
 """

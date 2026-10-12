@@ -20,14 +20,14 @@ from typing import Never
 from ...port import attach
 from ...port.attach import Types
 from ...port.link import portlink
-from ..labor import clsname
+from ..reflect import clsname
 from ._base import MISSING, DeleteField, WriteField
 
 
 @portlink(attach.DeleteDescriptor)
-class ResetField[DefaulT](DeleteField):
-    def __init__(self, *args, default: DefaulT, **kwargs) -> None:
-        self.default: DefaulT = default
+class ResetField[DefaultT](DeleteField):
+    def __init__(self, *args, default: DefaultT, **kwargs) -> None:
+        self.default: DefaultT = default
         super().__init__(*args, **kwargs)
 
     def remove(self, unit: object) -> None:

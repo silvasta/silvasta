@@ -201,10 +201,10 @@ type TableInput = dict | list[list] | list[dict]  # NEXT: finish this!
 
 # TODO: unwrap this functions, attach only function
 class SpecialPrint(Protocol):
-    def path_exists_table(  # IDEA: PathDTO? definitely multipe path prints!
+    def path_exists_table(  # IDEA: PathDTO? definitely multiple path prints!
         self, paths: list[Path], **kwargs: Unpack[PanelInput]
     ) -> PanelDTO:
-        """Render Path overview with information about Existance"""
+        """Render Path overview with information about Existence"""
 
     def debug_table(
         self,
@@ -244,4 +244,4 @@ class DataPrinter(SpecialPrint, Printer):
 
 
 class TuiPrinter(Printer):
-    """Future Developement..."""
+    """Future Development..."""

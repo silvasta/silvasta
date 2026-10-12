@@ -48,7 +48,7 @@ class SstFullView(_Protocol):
         """Snapshot the Target for Visualization"""
 
     def __log__(self) -> LogDTO:
-        """Messaage the Event for Traceability"""
+        """Message the Event for Traceability"""
 
     def __repr__(self) -> str:
         """Concate the Event info to long String"""
@@ -72,7 +72,7 @@ class CliSerializable(_Protocol):
 @_runtime_checkable
 class LogSerializable(_Protocol):
     def __log__(self) -> LogDTO:
-        """Messaage the Event for Traceability"""
+        """Message the Event for Traceability"""
 
 
 class LogStringable(_Protocol):

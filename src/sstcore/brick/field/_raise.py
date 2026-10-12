@@ -28,7 +28,7 @@ from typing import Any, Literal, NoReturn, Protocol, Unpack, overload
 
 from ...port import raising
 from ...port.raising import Raiser
-from ..labor import clsname
+from ..reflect import clsname
 
 
 class FieldError(raising.SstCoreError):

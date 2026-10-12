@@ -41,7 +41,7 @@ def raw_content_extractor(path: Path) -> str:
 @dataclass
 class FileScanner:
     """
-    Scan the selected files and extrac the desired content
+    Scan the selected files and extract the desired content
 
     Use any FileExtractor starting from the simple Reader to
     more precise information extracted from Ast.
@@ -82,12 +82,12 @@ class G45FileScanner:
     ast_options: AstOptions = field(default_factory=AstOptions)
     api_style: ApiStyle = ApiStyle.COMPACT
 
-    def splitted_files(self):
+    def split_files(self):
         pass
 
     def file_scan(self) -> Iterator[tuple[str, Path]]:
         extractor = self._extractor()
-        for read_path, show_path in self.splitted_files():
+        for read_path, show_path in self.split_files():
             try:
                 text = extractor(read_path)
             except (UnicodeDecodeError, OSError) as error:
@@ -108,7 +108,7 @@ class G45FileScanner:
         """Optional: trees for TUI / multi-file overview."""
         ext = AstExtractor(self.ast_options, self.api_style)
         trees: list[AstTreeNode] = []
-        for read_path, _show_path in self.splitted_files():
+        for read_path, _show_path in self.split_files():
             if (t := ext.extract_tree(read_path)) is not None:
                 # show_path.name as label if you prefer relative display
                 trees.append(t)

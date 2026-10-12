@@ -14,7 +14,7 @@ _meta_cache: dict[tuple[type, ...], type] = {}
 
 def combine_metas(*bases):
     """
-    Merge metaclass and prevente multiple inheritance conflicts
+    Merge metaclass and prevent multiple inheritance conflicts
 
     Usage: class MyClass(Base1, Base2, metaclass=combine_metas(Base1, Base2)):
     """

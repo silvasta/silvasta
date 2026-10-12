@@ -92,7 +92,7 @@ def _edit_and_save():
         PlugDoc("impl", "format", source=Merge),
     )
 
-    with printer.topic("Transfom PortLinkData"):
+    with printer.topic("Transform PortLinkData"):
         docs_frozen = PortLinkDocs(docs)
         printer.repr(docs_frozen)
         printer.line()

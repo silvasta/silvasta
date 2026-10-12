@@ -152,7 +152,7 @@ class BoundStrategy[**In, Out]:
         return self.func(*args, **kwargs)
 
     def switch(self, new_func: Calling[In, Out]) -> Self:
-        """Swap function while ensuring LSP-consitency"""
+        """Swap function while ensuring LSP-consistency"""
         self.engine.write(self.unit, new_func)
         self.func: Calling[In, Out] = new_func
         self.bind = False

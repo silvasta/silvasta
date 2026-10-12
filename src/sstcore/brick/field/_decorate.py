@@ -16,7 +16,7 @@ from typing import Any, Self
 from ...port import attach
 from ...port.calling import Calling
 from ...port.link import portlink
-from ..labor import reflect
+from .. import reflect
 from ._base import ReadField
 from ._extend import ValidField
 

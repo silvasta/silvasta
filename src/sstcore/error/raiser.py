@@ -63,7 +63,7 @@ class ErrorBuilder:
     # - 1 non-enum part in the chain!!
     @classmethod
     def custom(cls, data: SstErrorData) -> type[SstError]:
-        """Get Custom Exception registred in Raiser"""
+        """Get Custom Exception registered in Raiser"""
         match data.reason:
             case SstRaiser.RAW:
                 return SstError
@@ -85,7 +85,7 @@ class ErrorBuilder:
 
     @classmethod
     def builtin(cls, data: ErrorData) -> type[Exception] | None:
-        """Find Builtin Exception if registred in Raiser"""
+        """Find Builtin Exception if registered in Raiser"""
         match data.reason:
             case SstRaiser.RAW:
                 ...
@@ -107,7 +107,7 @@ class ErrorBuilder:
 
     @classmethod
     def message(cls, data: ErrorData) -> str:
-        """Find Builtin Exception if registred in Raiser"""
+        """Find Builtin Exception if registered in Raiser"""
         # TODO:
         return f"Error in Sst!! ... {data.reason}"
 

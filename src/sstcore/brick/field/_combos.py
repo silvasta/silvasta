@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 from ...port import attach
 from ...port.attach import FieldLoader
-from ..labor import funcname
+from ..reflect import funcname
 from ._base import ReadField, WriteField
 from ._extend import TypedField
 

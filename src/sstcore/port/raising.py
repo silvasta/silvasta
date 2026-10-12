@@ -1,7 +1,7 @@
 """
 Provide Namespace for Exceptions before SstError is ready
 
-- sstcore.error[L2] Avaliable for most of the Library
+- sstcore.error[L2] Available for most of the Library
 - sstcore.brick[L1] Build essential parts of the Errors
 - sstcore. port[L0] Generally No Errors needed...
 
@@ -144,12 +144,12 @@ class Raiser(BaseEnum, zero=True, walk=True):
         return f"{self.name}{front}"
 
     def message(self, data: ErrorData) -> str:
-        """Find Builtin Exception if registred in Raiser"""
+        """Find Builtin Exception if registered in Raiser"""
         return repr(data)
 
     @property
     def bases(self) -> Errors:
-        """Gather the registed Error classes"""
+        """Gather the registered Error classes"""
         sst_error: type[SstCoreError] = self.custom
         exception: type[Exception] | None = self.builtin
         # NOTE: Assuming data has no influence on selection

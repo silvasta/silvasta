@@ -81,7 +81,7 @@ class StackingCore[**In, ValueT, Out](StackingLayer[ValueT], Protocol):
 
     @property
     def call(self) -> StackApplicator[In, ValueT, Out]:  # LATER: field
-        """Collect and Provide Application Funcion"""
+        """Collect and Provide Application Function"""
 
     def merge_layer(self) -> _st.LayerData[ValueT]:
         """Combine multiple StackLayer to Mapping for StackCore"""

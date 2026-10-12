@@ -37,5 +37,5 @@ class SimpleTreeNode:  # NEXT: generate SimpleTree
 
     @property
     def identifier(self):
-        """Provide value that allows identification (No test for uniqness here!)"""
+        """Provide value that allows identification (No test for uniqueness here!)"""
         return self.id

@@ -33,7 +33,7 @@ class Registry:
 
     - Definition: port.register
     - Production: brick.vault
-    - Manufactur: forge.registry (not already exists)
+    - Manufacture: forge.registry (not already exists)
     """
 
     type Key = str

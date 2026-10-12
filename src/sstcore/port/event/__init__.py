@@ -26,4 +26,4 @@ __all__: list[str] = [
 
 
 from ._core import BusRegistration, Event, EventBus, EventHandler
-from .dto import CliDTO, CliRenderable, LogDTO, LogSerializable
+from .dto import CliDTO, LogDTO

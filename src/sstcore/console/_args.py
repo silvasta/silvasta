@@ -1,5 +1,5 @@
 """
-Prepare Argumens and Options for Typer
+Prepare Arguments and Options for Typer
 
 - UNDER CONSTRUCTION!
 

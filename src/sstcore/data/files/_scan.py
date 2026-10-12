@@ -69,7 +69,7 @@ class FileScanMixin:
 
     @classmethod
     def sprout_at(cls, scan_root: Path) -> Self:
-        """Establish Registy at target dir and create with all files scanned"""
+        """Establish Registry at target dir and create with all files scanned"""
         registry: Self = cls(root_dir=scan_root)  # ty:ignore
         registry.attach_local_files()
         return registry

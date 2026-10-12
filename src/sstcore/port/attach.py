@@ -176,7 +176,7 @@ class EventDescriptor[T](_Protocol):
     emit: Emit
 
     def __init__(self, func: Emit) -> None:
-        """Listen to all Chanels and Message to EventBus"""
+        """Listen to all Channels and Message to EventBus"""
 
 
 class ConfigDescriptor[DataT](_Protocol):

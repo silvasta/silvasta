@@ -70,7 +70,7 @@ class
     - Soon: EmitBuilder: will share most of mixins with Printer (like +1 new, -5 old)
 - Now: FileRegistryBuilder: in progress
 - Later: Registry(Injector|Builder) so far they are mixed in like everywhere, could be automated
-- Done: ViewInjector: best example so far (this is like an aggragator)
+- Done: ViewInjector: best example so far (this is like an aggregator)
 
 unit
 - Now: ColorFactory

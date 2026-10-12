@@ -19,7 +19,7 @@ from ._manager import ColorManager
 
 @portlink(ColorBox)
 class Colors:
-    """Assembe and Orchestrate the Color Distribution"""
+    """Assemble and Orchestrate the Color Distribution"""
 
     def __init__(self, manager: ColorHub | None = None) -> None:
         self._hub: ColorHub = manager or ColorManager.boot()

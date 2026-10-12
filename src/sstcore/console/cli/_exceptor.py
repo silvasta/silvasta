@@ -1,5 +1,5 @@
 """
-Exceptor - Massivly launch exceptions for Demo and Developement
+Exceptor - Massivly launch exceptions for Demo and Development
 
 UNDER CONSTRUCTION!
 

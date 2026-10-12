@@ -7,7 +7,7 @@ Three different setups: (any combination is possible)
   - write to logfile.jsonl
 
 - Cache and return the applied setup param and block another setup
-- Provied function to fetch or reset the cached result (*unlock*)
+- Provided function to fetch or reset the cached result (*unlock*)
 
 - Minimal Logging: intended to kill bootstrap noise without complete shutdown
 

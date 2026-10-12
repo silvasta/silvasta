@@ -3,8 +3,8 @@ Ideas how to combine efficiency with elegance
 
 - Expose attributes simply and efficient with __getattr__,
 - Ensure proper type hints, autocomplete and especially:
-  --- Warnings for Bad assinged functions ---
-- Still show a slim and elegant ColorBox implementaion
+  --- Warnings for Bad assigned functions ---
+- Still show a slim and elegant ColorBox implementation
 
 Things to keep in mind:
 - everything stands and falls with the synchronization

@@ -45,7 +45,7 @@ class ConfigField(WriteField):
     config = _ExampleConfig(read_only=False, max_length=None)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # LATER: use config object, more precise  thant this here...
+        # LATER: use config object, more precise  that this here...
         config_kwargs = {k: v for k, v in kwargs.items() if k in self.config}
         super_kwargs = {
             k: v for k, v in kwargs.items() if k not in self.config

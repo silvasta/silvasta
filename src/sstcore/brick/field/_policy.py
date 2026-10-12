@@ -72,7 +72,7 @@ class PolicyField[EnumT: PolicyEnum](PolicyFieldEngine[EnumT], ReadField):
 
 
 class PolicyMatchMixin[FieldT, EnumT: PolicyEnum](ReadField[FieldT]):
-    """Extend the Policy Read Pipelin"""
+    """Extend the Policy Read Pipeline"""
 
     enum_type: EnumT
 

@@ -87,7 +87,7 @@ class PortLinkData:
 
     def __getitem__(self, access: str | type | DocKey) -> list[Doc]:
         # IDEA: Iterator? yield the items?
-        """Centralized and Error free access to key collumns"""
+        """Centralized and Error free access to key columns"""
         match access:
             case str() as attr:
                 return [doc for doc in self if doc.attr == attr]
@@ -144,7 +144,7 @@ class PortLinks(PortLinkData):
             self.fill(doc)
 
     def fill(self, data: Doc | Docs | DocMap, /):
-        """Add new Doc Mapping entires if they are not already covered"""
+        """Add new Doc Mapping entries if they are not already covered"""
         # IDEA: return True, or 1 for addad
         match data:
             case Doc() as doc:
@@ -160,7 +160,7 @@ class PortLinks(PortLinkData):
         # IDEA: return True, or 1 for addad
         """Simple Error free write access"""
         if not value.text:
-            print("EMpty")  # LATER: proper logging of (imposible?) not adds?
+            print("EMpty")  # LATER: proper logging of (impossible?) not adds?
         if access not in self.data:
             self.data[access] = value
 

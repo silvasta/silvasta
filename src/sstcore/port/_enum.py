@@ -20,7 +20,7 @@ __all__: list[str] = [
 
 
 from enum import Enum, EnumDict, EnumMeta
-from typing import Any, NamedTuple, Self, reveal_type
+from typing import Any, NamedTuple, Self
 
 type EnumId[EnumT: Enum] = EnumT | str | int
 
@@ -210,5 +210,4 @@ if __name__ == "__main__":
 
         ORDERS = "orders"
 
-    reveal_type(QueueEnum.config)
     print(QueueEnum.config.routing_key)
