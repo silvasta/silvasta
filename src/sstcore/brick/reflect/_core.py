@@ -14,28 +14,39 @@ __all__: list[str] = [
 ]
 
 
+import sys
 from collections.abc import Sequence
+from types import ModuleType
 from typing import Any
 
-from ._attr import _attr as attr_core
+from . import _attr
 
 
 def clsname(target: Any, /, default="") -> str:
     """Extract name from instance or class"""
     default: str = default or type(target).__name__
-    return attr_core(target, attrs=("__name__",), default=default)
+    return _attr(target, ("__name__",), default)
 
 
 def funcname(target: Any, /, default="Func") -> str:
     """Check attribute list, provide match or default"""
     attrs: Sequence[str] = ("__name__", "__qualname__")
-    return attr_core(target, attrs, default)
+    return _attr(target, attrs, default)
 
 
 def objname(target: Any, /, default: str = "") -> str:
     """Resolves the best identifying name for ANY object"""
-    if name := attr_core(target, ("__qualname__", "__name__")):
+    if name := _attr(target, attrs := ("__qualname__", "__name__")):
         return name
-    return default or attr_core(
-        type(target), "__qualname__", type(target).__name__
-    )
+    return default or _attr(type(target), attrs, type(target).__name__)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class CallableModule(ModuleType):
+    def __call__(self, target: Any, /, default: str = ""):
+        return objname(target, default)
+
+
+sys.modules[__name__].__class__ = CallableModule

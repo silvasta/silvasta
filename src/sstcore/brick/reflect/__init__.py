@@ -37,10 +37,15 @@ __all__: list[str] = [
     "log",
 ]
 
+# IDEA: make __core__ == CallableModule.__call__
+# define it only once, on the module class,
+# - apply it from there :D
+
 from . import _attr as attr
 from . import _invoke as invoke
-from ._attr import _attr, doc, module, name, text
+from ._attr import doc, module, name, text
 from ._check import (
+    AttrFilter,
     is_dunder,
     is_private,
     is_private_not_calling,
@@ -48,7 +53,4 @@ from ._check import (
     is_typing_generic,
 )
 from ._core import clsname, funcname, objname
-
-# TODO: Callable module trick, better for invoke() and invoke.xxx()
-from ._invoke import _invoke
-from ._scan import AttrFilter, data, pydantic
+from ._scan import data, pydantic

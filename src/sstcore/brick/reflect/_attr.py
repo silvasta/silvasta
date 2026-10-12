@@ -12,22 +12,13 @@ __all__: list[str] = [
 ]
 
 
+import sys
 from collections.abc import Sequence
-from typing import Any, overload
+from types import ModuleType
+from typing import Any
 
 
-@overload
-def _attr[T](target: Any, /, attrs: Sequence[str]) -> Any: ...
-@overload
-def _attr[T](target: Any, /, attrs: Sequence[str], default: T) -> T: ...  #
-def _attr[T](
-    target: Any, /, attrs: Sequence[str], default: T | None = None
-) -> Any:
-    """Work trough attrs with getattr and provide first hit or default"""
-    return __core__(target, attrs, default)
-
-
-def __core__(target: Any, attrs: Sequence[str], /, default=None) -> Any:  # noqa:N807
+def __core__(target: Any, attrs: Sequence[str], default=None, /) -> Any:  # noqa:N807
     # LATER: use __core__ for sstcore.forge.blueprint|func
     # - bind heavy static func meta with nested calls
     for attr in attrs:
@@ -39,7 +30,7 @@ def __core__(target: Any, attrs: Sequence[str], /, default=None) -> Any:  # noqa
 
 def doc(target: Any, /, default="") -> str:
     """Extract __doc__ or default to empty string"""
-    return __core__(target, ("__doc__",), default=default)
+    return __core__(target, ("__doc__",), default)
 
 
 def module(target: Any, /, default: str = "NoModule") -> str:
@@ -61,3 +52,14 @@ def text(target: Any, /, attrs: list[str] | None = None) -> str | None:
     """Check if text in attribute list, provide match or None"""
     check_attrs: list[str] = (attrs or []) + ["_text", "text"]
     return __core__(target, check_attrs)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class CallableModule(ModuleType):
+    def __call__(self, target: Any, attrs: Sequence[str], default=None, /):
+        return __core__(target, attrs, default)
+
+
+sys.modules[__name__].__class__ = CallableModule

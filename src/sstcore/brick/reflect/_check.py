@@ -47,7 +47,7 @@ def is_typing_generic(cls: type) -> bool:
     return cls in (object, Protocol, Generic)
 
 
-class AttrFilter(NamedTuple):  # NEXT: build proper filter!
+class AttrFilter(NamedTuple):  # NEXT: build more proper filter!
     """Collect Flags and provide corresponding Filter"""
 
     public: bool = True
