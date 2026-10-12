@@ -9,25 +9,21 @@ __all__: list[str] = [
     "DuoRegistry",
 ]
 
-from typing import Any, Literal, NoReturn
+from typing import Any, Literal
 
 from ....brick.vault import TupleVault
 from ....port.link import portlink
 from ....port.register import MixinRegister
-
-# NEXT: build solid stack
-# NEXT: build solid stack
-# NEXT: build solid stack
 
 
 @portlink(MixinRegister)
 class MixinRegistry[MixinT: type](TupleVault[MixinT]):
     """Gatekeeper for mixin order. Assembly stays in brick.mix / the composer."""
 
-    def _guard_input(self, item: type | Any) -> None | NoReturn:
-        if isinstance(item, type):
-            return
-        raise TypeError("MixinRegistry only accepts classes", item)
+    def _normalize(self, value: Any) -> MixinT:
+        if isinstance(value, type):
+            return super()._normalize(value)
+        raise TypeError("MixinRegistry only accepts classes", value)
 
     @property
     def mixins(self) -> tuple[type, ...]:
@@ -38,13 +34,13 @@ class MixinRegistry[MixinT: type](TupleVault[MixinT]):
 class DuoRegistry[DuoT: tuple[type, type]](TupleVault[DuoT]):
     """Hold Mixins and Protocols in Paralell"""
 
-    def _guard_input(self, item: DuoT | Any) -> None | NoReturn:
-        if isinstance(item[0], type) and isinstance(item[1], type):
-            return
-        raise TypeError("MixinRegistry only accepts classes", item)
+    def _normalize(self, value: Any) -> DuoT:
+        if isinstance(value[0], type) and isinstance(value[1], type):
+            return super()._normalize(value)
+        raise TypeError("MixinRegistry only accepts classes", value)
 
     def _split(self, *, mixin_or_protocol: Literal[0, 1]) -> tuple[type, ...]:
-        return tuple(duo[mixin_or_protocol] for duo in self.items)
+        return tuple(duo[mixin_or_protocol] for duo in self.vault)
 
     @property
     def mixins(self) -> tuple[type, ...]:

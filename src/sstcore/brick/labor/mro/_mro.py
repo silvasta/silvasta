@@ -19,6 +19,7 @@ def sort_cls_by_name(classes: set | list | tuple) -> list[str]:
 
 def all_common_ancestors(cls1, cls2) -> set[type]:
     """Convert MROs to sets and find intersection"""
+
     common: set[type] = set(cls1.__mro__) & set(cls2.__mro__)
     common.discard(object)
     return common
@@ -26,6 +27,7 @@ def all_common_ancestors(cls1, cls2) -> set[type]:
 
 def closest_common_ancestor(cls1: type, cls2: type) -> type | None:
     """Find common ancestor nearest intersection point (interchangeable)"""
+
     if not (common := all_common_ancestors(cls1, cls2)):
         return None
     return min(
@@ -39,7 +41,6 @@ def get_all_descendants(base_cls) -> set[type]:
     descendants: set[type] = set()
 
     # CHECK: if that adds undesired behaviour or safes from cycles
-    # Защита от циклов, хотя в Python MRO их быть не должно
     _idea_visited: set[type] = set()
 
     def walk_subclasses(cls):

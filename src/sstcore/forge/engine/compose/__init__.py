@@ -6,16 +6,14 @@ Class Composition - Assemble the Layouts for Instances
 """
 
 __all__: list[str] = [
-    "mix",  # NEXT: whats that??
     # vault
     "MixinRegistry",
     "DuoRegistry",
     # assembler
-    "MixinComposer",
+    "MixinBuilder",
     "MixInjector",
 ]
 
-from . import _mixer as mix
-from ._compose import MixinComposer
+from ._builder import MixinBuilder
 from ._injector import MixInjector
 from ._vault import DuoRegistry, MixinRegistry

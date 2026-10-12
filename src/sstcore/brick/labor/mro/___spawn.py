@@ -106,7 +106,9 @@ class LexicRegistry[Core: Callable]:
             )
 
 
+# EXTRACT: to some __init_subclass__ module?
 class CategorizedRegistry[Core: Callable]:
+    # EXTRACT: to some __init_subclass__ module?
     """Use parent as key and build Tree like family"""
 
     port_emit: _PortEmit
@@ -156,6 +158,10 @@ class ProcessorBase[Core](Operator, SimpleNamespace):
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+# MOVE: example/tree
+# MOVE: example/tree
+# MOVE: example/tree
 
 
 def main():

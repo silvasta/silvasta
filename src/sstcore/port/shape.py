@@ -120,58 +120,44 @@ class MetaData(Protocol):
 type Mixins = tuple[type, ...]
 
 
-class Builder[BaseT: type](Protocol):  # NEXT: composer finish!
+class Builder[BaseT: type](Protocol):  # LATER: KwargSpace as TypedDict
     """Assemble Mixins dynamically and provide assembled Class"""
 
-    @property
+    @property  # LATER: sort strategy, better than just prepend
     def mixins(self) -> Mixins:
-        # TODO: forward from vault?
         """Provide all selected Mixins"""
 
-    def mix_name(self, name: str = "") -> str:
-        # MOVE: to Registry! new_clsname target_name
-        """Format Name of mixed class"""
+    def clsname(self, name: str = "") -> str:
+        """Generate Name of Mixed Class"""
 
-    def mix(self) -> BaseT:
+    def compose(self, *mixins: type) -> BaseT:
         """Create a purely generic Base Mixin Class"""
 
-    def inject[Target: type](self, cls: Target, **kwargs: Any) -> Target:
+    def inject[Cls: type](self, cls: Cls, /) -> Cls:
         """Inject mixins into an existing Class to form a new Subclass"""
 
-    @overload
-    def compose[TargeT](self, cls: type, mixins: Mixins) -> TargeT: ...
-    @overload
-    def compose(self, mixins: Mixins) -> BaseT: ...
 
-    def compose[TargeT](
-        self, cls: type | None = None, mixins: Mixins | None = None, **kwargs
-    ) -> BaseT | TargeT:
-        """Build new Class from Mixins or Inject to Target for new Subclass"""
-
-
-class Injector[BaseT: type](Protocol):  # NEXT: injector finish!
-    """Decorate Target Class and Inject composed Mixins"""
+class Injector[BaseT: type](Builder, Protocol):
+    """Decorate Cls Class and Inject composed Mixins"""
 
     @overload
-    def __call__[TargeT](self, cls: TargeT, /) -> TargeT: ...
+    def __call__[Cls: type](self, cls: Cls, /) -> Cls: ...
     @overload
-    def __call__(self, /) -> BaseT: ...
-    def __call__(self, cls: type | None = None, /) -> type:
-        """Inject Mixins to Target including changeable Presets"""
+    def __call__[Cls: type](self, cls: Cls, /, *mixins: Any) -> Cls: ...
+    @overload
+    def __call__(self, *mixins: Any) -> Self: ...
 
-    def plus(self) -> Self:  # TODO: input space?
-        # IDEA: as well for builder? at least some?
+    def __call__[Cls: type](
+        self, cls: Cls | None = None, *mixins: type
+    ) -> Any:
+        """Inject Mixins to Cls including changeable Presets"""
+
+    def plus(self, *mixins: Any) -> Self:
+        # TASK: mixins:type? consider enum_catalog, maybe both
         """Update existing Mixin selection"""
 
 
-class Typer[**P](Protocol):  # IMPORTANT: generate stubs
-    # TASK: as soon as AST scanner ready:
-    # - read and understand the composer process
-    #   - the mixins that come in, especially the protocols!
-    # - ast and cst
-    # - write the specific pyi file
-    #   - location and (automatic) updates
-    # - Validation?
+class Typer[**P](Protocol):  # NEXT: generate stubs
     """Supply the Static Type Checker with Information"""
 
     def draw(self, *args: P.args, **kwargs: P.kwargs):

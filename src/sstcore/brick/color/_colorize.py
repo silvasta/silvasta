@@ -18,6 +18,9 @@ __all__: list[str] = [
 ]
 
 # NEXT: make this modular feature stack of ColorBox
+# NEXT: make this modular feature stack of ColorBox
+# NEXT: make this modular feature stack of ColorBox
+# NEXT: make this modular feature stack of ColorBox
 
 
 from collections.abc import Callable
