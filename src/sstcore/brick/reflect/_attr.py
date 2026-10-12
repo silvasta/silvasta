@@ -5,10 +5,6 @@ Inspect arbitrary objects and safely pull out specific attributes
 """
 
 __all__: list[str] = [
-    "clsname",
-    "funcname",
-    #
-    "reflecting",
     "doc",
     "name",
     "text",
@@ -19,25 +15,11 @@ from collections.abc import Sequence
 from typing import Any, overload
 
 
-def clsname(target: Any, /, default="") -> str:
-    """Extract name from instance or class"""
-    default: str = default or type(target).__name__
-    return __core__(target, attrs=("__name__",), default=default)
-
-
-def funcname(target: Any, /, default="Func") -> str:
-    """Check attribute list, provide match or default"""
-    attrs: Sequence[str] = ("__name__", "__qualname__")
-    return __core__(target, attrs, default)
-
-
 @overload
-def reflecting[T](target: Any, /, attrs: Sequence[str]) -> Any: ...
+def _attr[T](target: Any, /, attrs: Sequence[str]) -> Any: ...
 @overload
-def reflecting[T](
-    target: Any, /, attrs: Sequence[str], default: T
-) -> T: ...  #
-def reflecting[T](
+def _attr[T](target: Any, /, attrs: Sequence[str], default: T) -> T: ...  #
+def _attr[T](
     target: Any, /, attrs: Sequence[str], default: T | None = None
 ) -> Any:
     """Work trough attrs with getattr and provide first hit or default"""
@@ -46,6 +28,7 @@ def reflecting[T](
 
 def __core__(target: Any, /, attrs: Sequence[str], default=None) -> Any:  # noqa:N807
     # LATER: use __core__ for sstcore.forge.blueprint|func
+    # - bind heavy static func meta with nested calls
     for attr in attrs:
         if detected := getattr(target, attr, None):
             return detected

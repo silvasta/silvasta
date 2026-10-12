@@ -5,7 +5,6 @@ Invoke - Call the method on the Target
 """
 
 __all__: list[str] = [
-    "invoking",
     "rich",
     "cli",
     "log",
@@ -15,13 +14,17 @@ from collections.abc import Callable
 from typing import Any
 
 
-def invoking(target: Any, /, method: str, *, strict: bool = False) -> Any:
+def _invoke(
+    target: Any, /, method: str, default=None, *, strict: bool = False
+) -> Any:
     """Extract and execute specific method if it exists"""
-    return __core__(target, method, strict=strict)  # LATER: parametrize?
+    return __core__(
+        target, method, default, strict=strict
+    )  # LATER: parametrize?
 
 
 def __core__(  # noqa:N807
-    target: Any, /, method: str, *, strict: bool = False, default=None
+    target: Any, /, method: str, default=None, *, strict: bool = False
 ) -> Any:  # LATER: use __core__ for sstcore.forge.blueprint|func
     try:
         extracted: Callable = getattr(target, method)
@@ -35,7 +38,7 @@ def __core__(  # noqa:N807
 
 def _represent(target: Any, /, method: str, *, strict: bool) -> Any:
     """Provide invoked value or default to str(target)"""
-    return __core__(target, method=method, strict=strict, default=str(target))
+    return __core__(target, method=method, default=str(target), strict=strict)
 
 
 def rich(target: Any, /, *, strict: bool = False) -> Any:

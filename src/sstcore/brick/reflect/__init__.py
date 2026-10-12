@@ -11,30 +11,40 @@ __all__: list[str] = [
     # reflect
     "clsname",
     "funcname",
-    "reflect",
-    "reflecting",
-    ## subfunctions might be containered
+    "is_private",
+    "is_dunder",
+    "is_protocol",
+    "is_private_not_calling",
+    "is_typing_generic",
+    # scan
+    "data",
+    "pydantic",
+    "AttrFilter"
+    # attr
+    "attr",
+    "_attr",
     "doc",
     "name",
     "text",
     # invoke
     "invoke",
-    "invoking",
-    ## subfunctions might be containered
+    "_invoke",
     "rich",
     "cli",
     "log",
-    # scan
-    "scan",
-    ## subfunctions might be containered
-    "data",
-    "pydantic",
 ]
 
-
+from . import _attr as attr  # noqa: F401
 from . import _invoke as invoke
-from . import _reflect as reflect
-from . import _scan as scan
-from ._invoke import cli, invoking, log, rich
-from ._reflect import clsname, funcname, name, reflecting, text
-from ._scan import data, pydantic
+from ._attr import _attr
+from ._core import (
+    clsname,
+    funcname,
+    is_private_not_calling,
+    is_protocol,
+    is_typing_generic,
+)
+from ._invoke import _invoke
+from ._scan import AttrFilter, data, pydantic  # noqa: F401
+
+# TODO: Callable module trick, better for invoke() and invoke.xxx()

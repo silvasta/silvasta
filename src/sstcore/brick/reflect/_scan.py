@@ -7,9 +7,6 @@ Inspect arbitrary objects and safely pull out specific attributes
 __all__: list[str] = [  # NEXT: module name, scan, detect?
     "data",
     "pydantic",
-    #
-    "is_private",
-    "is_dunder",
     "AttrFilter",
 ]
 
@@ -18,11 +15,7 @@ from collections.abc import Callable
 from typing import Any, NamedTuple
 
 from ...port.calling import PydanticModel
-
-# IDEA: scan even deeper:
-# scan.data(target) -> vars(target), filtered
-# scan.full(target) -> dir(target), filtered
-# - maybe with some (guarded) extraction
+from ._core import is_dunder, is_private
 
 
 def data(
@@ -49,7 +42,10 @@ def data(
     }
 
 
-#  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+# IDEA: scan even deeper:
+# scan.data(target) -> vars(target), filtered
+# scan.full(target) -> dir(target), filtered
+# - maybe with some (guarded) extraction
 
 
 def pydantic(
@@ -65,19 +61,6 @@ def pydantic(
     else:
         # LATER: raise or: return data(_target, exclude) ??
         raise ValueError("Target is not BaseModel!")
-
-
-#  LINE: -- Filter and Flags for Attrs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def is_private(_attr: str) -> bool:
-    # LATER: str|list[str]->bool|list[bool]
-    return _attr.startswith("_")
-
-
-def is_dunder(_attr: str) -> bool:
-    # LATER: str|list[str]->bool|list[bool]
-    return _attr.startswith("__") and _attr.endswith("__")
 
 
 class AttrFilter(NamedTuple):

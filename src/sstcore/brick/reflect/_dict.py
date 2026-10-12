@@ -20,6 +20,7 @@ from typing import Any
 # - [key](=..) (hard)
 # - analyze
 # - filter
+# NEXT: check port.link._operator
 
 
 def _dict(_target: Any, *, key: str) -> Any:
