@@ -12,6 +12,7 @@ from typing import Any, Self
 
 from ....port.event.dto import (
     CliDTO,
+    EventDTO,
     GroupDTO,
     LineDTO,
     LogDTO,

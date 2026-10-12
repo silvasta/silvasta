@@ -41,7 +41,7 @@ class CliDtoFactory(metaclass=StaticFuncMeta, data=CliDtoFactoryMetaInput):
     """Toolkit for constructing normalized CliDTO items."""
 
     def panel(
-        content: Renderable | list[Renderable],
+        content: Renderable | list[Renderable],  # noqa:N805
         *,
         title: str | None = None,
         expand: bool = True,
@@ -54,12 +54,15 @@ class CliDtoFactory(metaclass=StaticFuncMeta, data=CliDtoFactoryMetaInput):
         """Create a GroupDTO stacking multiple renderables."""
         return GroupDTO(content=list(items))
 
-    def line(character: str = "─", *, style: str = "cyan") -> LineDTO:
+    def line(character: str = "─", *, style: str = "cyan") -> LineDTO:  # noqa:N805
         """Create a horizontal character LineDTO."""
         return LineDTO(content=character, color=style)
 
     def markdown(
-        text: str, *, header: int = 0, style: str = "white"
+        text: str,  # noqa:N805
+        *,
+        header: int = 0,
+        style: str = "white",  # noqa:N805
     ) -> MarkdownDTO:
         """Create a MarkdownDTO with validated header constraints (H0-H6)."""
         if not (0 <= header <= 6):
@@ -71,7 +74,7 @@ class CliDtoFactory(metaclass=StaticFuncMeta, data=CliDtoFactoryMetaInput):
         return MarkdownDTO(content=text, header=header, color=style)
 
     def table_from_rows(
-        rows: dict[str, Any | Sequence[Any]],
+        rows: dict[str, Any | Sequence[Any]],  # noqa:N805
         *,
         corner: str = "",
     ) -> TableDTO:
@@ -87,7 +90,7 @@ class CliDtoFactory(metaclass=StaticFuncMeta, data=CliDtoFactoryMetaInput):
         )
 
     def table_from_cols(
-        cols: dict[str, Sequence[Any]],
+        cols: dict[str, Sequence[Any]],  # noqa:N805
         *,
         corner: str = "",
     ) -> TableDTO:
@@ -100,7 +103,7 @@ class CliDtoFactory(metaclass=StaticFuncMeta, data=CliDtoFactoryMetaInput):
         )
 
     def table_from_records(
-        records: Sequence[dict[str, Any]],
+        records: Sequence[dict[str, Any]],  # noqa:N805
         headers: list[str] | None = None,
     ) -> TableDTO:
         """Transform list of row dicts [{'ColA': 1, 'ColB': 2}] into a TableDTO."""
