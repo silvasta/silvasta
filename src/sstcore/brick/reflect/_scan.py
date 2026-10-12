@@ -64,6 +64,7 @@ def pydantic(
 
 
 class AttrFilter(NamedTuple):
+    # NEXT: build proper filter!
     """Collect Flags and provide corresponding Filter"""
 
     public: bool = True

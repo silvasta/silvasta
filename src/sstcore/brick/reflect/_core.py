@@ -21,27 +21,27 @@ __all__: list[str] = [
 from collections.abc import Sequence
 from typing import Any, Generic, Protocol
 
-from ._attr import _attr
+from ._attr import _attr as attr_core
 
 
 def clsname(target: Any, /, default="") -> str:
     """Extract name from instance or class"""
     default: str = default or type(target).__name__
-    return _attr(target, attrs=("__name__",), default=default)
+    return attr_core(target, attrs=("__name__",), default=default)
 
 
 def funcname(target: Any, /, default="Func") -> str:
     """Check attribute list, provide match or default"""
     attrs: Sequence[str] = ("__name__", "__qualname__")
-    return _attr(target, attrs, default)
+    return attr_core(target, attrs, default)
 
 
-def is_private(_attr: str) -> bool:  # LATER: str|list[str]->bool|list[bool]
-    return _attr.startswith("_")
+def is_private(attr: str, /) -> bool:
+    return attr.startswith("_")
 
 
-def is_dunder(_attr: str) -> bool:  # LATER: str|list[str]->bool|list[bool]
-    return _attr.startswith("__") and _attr.endswith("__")
+def is_dunder(attr: str, /) -> bool:
+    return attr.startswith("__") and attr.endswith("__")
 
 
 def is_protocol(cls: type) -> bool:
@@ -53,8 +53,7 @@ def is_protocol(cls: type) -> bool:
     )
 
 
-def is_private_not_calling(attr: str) -> bool:
-    # TODO: resolve by AttrFilter?
+def is_private_not_calling(attr: str) -> bool:  # TODO: resolve by AttrFilter?
     exclude: set[str] = {"__call__", "__getitem__"}
     return attr.startswith("_") and attr not in exclude
 

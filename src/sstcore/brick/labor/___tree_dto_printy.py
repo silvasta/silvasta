@@ -15,22 +15,9 @@ from typing import Any, Protocol, Self
 
 from rich.tree import Tree
 
-from ....port.link._render import _load_printer
-
-
-class SimpleTree(Protocol):
-    """Protocol for any hierarchical tree node."""
-
-    @property
-    def name(self) -> str: ...
-    @property
-    def id(self) -> str | None: ...
-    @property
-    def display_label(self) -> str: ...
-    @property
-    def identifier(self) -> Any: ...
-    @property
-    def branches(self) -> Sequence[SimpleTree]: ...
+from ...port.link import portlink
+from ...port.link._render import _load_printer
+from ...port.tree import SimpleTree
 
 
 @dataclass(frozen=True)
@@ -53,8 +40,7 @@ class SimpleTreeNode:
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
+@portlink(SimpleTree)
 @dataclass(frozen=True)
 class MroTreeNode1(SimpleTreeNode):
     """Represent an Inheritance Tree, annotated with MRO order.G3"""
@@ -106,6 +92,7 @@ class MroTreeNode1(SimpleTreeNode):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+@portlink(SimpleTree)
 @dataclass(frozen=True)
 class TypeTreeNode(SimpleTreeNode):
     origin: type = field(compare=False, default=object)
@@ -141,6 +128,7 @@ class TypeTreeNode(SimpleTreeNode):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+@portlink(SimpleTree)
 @dataclass(frozen=True, slots=True)
 class MroTreeNode2:
     """One class in a display tree. Not a lookup cursor."""
@@ -180,6 +168,7 @@ def _is_protocol(cls: type) -> bool:
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+@portlink(SimpleTree)
 @dataclass(frozen=True)
 class SubclassTreeNode(SimpleTreeNode):
     """Represent an Inheritance Graph walking downwards via __subclasses__."""
