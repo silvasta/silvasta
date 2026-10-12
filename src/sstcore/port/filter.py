@@ -22,6 +22,7 @@ __all__: list[str] = [
     "FilterArgs",
 ]
 
+from collections.abc import Set
 from enum import IntEnum, auto
 from pathlib import Path
 from typing import Protocol, Self, overload
@@ -109,3 +110,12 @@ class FilterArgs(IntEnum):  # IDEA: FilterData -> FilterInput??
 
     def __call__(self) -> FilterSpec:
         raise FailedHackError("Import sstcore.util.filter to attach args")
+
+
+class NameGate(Protocol):
+    """Exclude wins, include overrides kind, else visibility bitmask"""
+
+    include: Set[str]
+    exclude: Set[str]
+
+    def __call__(self, name: str, /) -> bool: ...
