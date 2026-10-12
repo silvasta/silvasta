@@ -4,28 +4,28 @@ Central hub for all stub generation.
 Run with: uv run -m sstcore.util.write.stub
 """
 
-from typing import Protocol
-
-import importlib
 import inspect
 import itertools
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol
 
 from ...brick.labor import funcname
+from ...brick.time import day_count_plus
 from ...port.shape import Typer
 from ...port.stacking import StackingCore
-from ...util.path.guard import PathGuard   # your existing tool
-from ...brick.time import day_count_plus
+from ...util.path.guard import PathGuard  # your existing tool
 
 
 class StubGenerator(Protocol):
     """All future stub generators implement this."""
+
     @classmethod
     def draw(cls, name: str, source: Any, **kwargs: Any) -> str: ...
     @classmethod
-    def write_for(cls, name: str, source: Any, target_package: Any, **kwargs: Any) -> Path: ...
+    def write_for(
+        cls, name: str, source: Any, target_package: Any, **kwargs: Any
+    ) -> Path: ...
 
 
 class StackStubGenerator:
@@ -35,7 +35,7 @@ class StackStubGenerator:
     def draw(cls, name: str, core: StackingCore, **kwargs: Any) -> str:
         return cls._generate_fluent_stubs(
             class_prefix=name,
-            group_mappings=core.schema(),          # added to StackCore (see below)
+            group_mappings=core.schema(),  # added to StackCore (see below)
             call_signature=cls._extract_signature(core.call),
         )
 
@@ -44,7 +44,8 @@ class StackStubGenerator:
         cls,
         name: str,
         core: StackingCore,
-        target_package: Any,          # str | ModuleType | Path
+        resolve_stub_dir,
+        target_package: Any,  # str | ModuleType | Path
         subdir: str = "_stubs",
         dry_run: bool = False,
         **kwargs: Any,
@@ -54,7 +55,7 @@ class StackStubGenerator:
         content = cls.draw(name, core, **kwargs)
 
         header = f"""# Auto-generated from StackStubGenerator on {day_count_plus()}.
-# Source: {core.name if hasattr(core, 'name') else type(core).__name__}
+# Source: {core.name if hasattr(core, "name") else type(core).__name__}
 # DO NOT EDIT. Change the StackDefinition / layers instead.
 
 \"\"\"Fluent interface stubs for {name}.\"\"\"
@@ -76,7 +77,9 @@ from typing import Any
         return target_file
 
     @staticmethod
-    def _generate_fluent_stubs(...) -> str:
+    def _generate_fluent_stubs(
+        group_mappings, _generate_class_name, class_prefix
+    ) -> str:
         # Your original logic (cleaned up — sorted keys, better class naming if desired)
         # I kept the power-set of *layers* (Repeats/Greeting/Formatter) because it correctly models SINGLE vs MULTI locking.
         groups = sorted(group_mappings.keys())
@@ -96,12 +99,12 @@ from typing import Any
             for g in sorted(available):
                 next_state = current | {g}
                 next_cls = _generate_class_name(next_state, class_prefix)
-                for attr in sorted(group_mappings[g]):   # deterministic order
+                for attr in sorted(group_mappings[g]):  # deterministic order
                     lines.append("    @property")
                     lines.append(f"    def {attr}(self) -> {next_cls}: ...")
                     has_props = True
 
-            lines.append(f"    {call_signature}")
+            # lines.append(f"    {call_signature}")
             if not has_props:
                 lines.append("    pass")
             lines.append("")
@@ -109,7 +112,7 @@ from typing import Any
         return "\n".join(lines)
 
     @staticmethod
-    def _extract_signature(func: Callable) -> str:
+    def _extract_signature(func: Callable, _render_param) -> str:
         """Fixed — no more '-> : str:' bug."""
         sig = inspect.signature(func)
         params = list(sig.parameters.values())
@@ -140,20 +143,35 @@ from typing import Any
 
 
 # Central orchestration (easy to call from console.tools later)
-def generate_stubs_for_package(target_package: Any = "sstcore.brick.stack", dry_run: bool = False) -> list[Path]:
+def generate_stubs_for_package(
+    target_package: Any = "sstcore.brick.stack", dry_run: bool = False
+) -> list[Path]:
     """One place to control all stub generation for a package."""
     from ...brick.stack import ANSI_STACK, DTO_STACK, STRING_STACK
 
     generator = StackStubGenerator
     paths = []
-    paths.append(generator.write_for("Greeter", DTO_STACK, target_package, dry_run=dry_run))
-    paths.append(generator.write_for("Printer", ANSI_STACK, target_package, dry_run=dry_run))
-    paths.append(generator.write_for("Text", STRING_STACK, target_package, dry_run=dry_run))
+    paths.append(
+        generator.write_for(
+            "Greeter", DTO_STACK, target_package, dry_run=dry_run
+        )
+    )
+    paths.append(
+        generator.write_for(
+            "Printer", ANSI_STACK, target_package, dry_run=dry_run
+        )
+    )
+    paths.append(
+        generator.write_for(
+            "Text", STRING_STACK, target_package, dry_run=dry_run
+        )
+    )
     return paths
 
 
 if __name__ == "__main__":
     import sstcore.brick.stack as stack_pkg
+
     generate_stubs_for_package(stack_pkg, dry_run=False)
 
 
