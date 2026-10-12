@@ -19,28 +19,57 @@ from ...port.annotate import stub_types as _stub
 from ...port.link import portlink
 from ...port.shape import Typer
 
-EXCLUDED_DUNDERS: set[str] = {
-    "__subclasshook__",
-    "__init__",
-    "__new__",
-    "__annotations__",
-    "__dict__",
-    "__weakref__",
-    "__doc__",
-    "__module__",
-    "_is_protocol",
-    "_is_runtime_protocol",
-}
+PROTO_FILTER = reflect.AttrFilter.protocol(
+    exclude={
+        "__subclasshook__",
+        "__init__",
+        "__new__",
+        "__annotations__",
+        "__dict__",
+        "__weakref__",
+        "__doc__",
+        "__module__",
+        "_is_protocol",
+        "_is_runtime_protocol",
+    },
+)
 
-INCLUDE_DUNDERS: set[str] = {
-    "__call__",
-    "__getitem__",
-    "__iter__",
-    "__enter__",
-    "__exit__",
-}
 
 # NEXT: sync with _typed_well
+
+
+def format_clsname(target: _stub.ProtoType, name: str | None = None, /) -> str:
+    return name or target.__name__
+
+
+def iter_mro(target: _stub.ProtoType) -> Iterator[_stub.ProtoType]:
+    for base in reversed(target.__mro__):
+        if reflect.is_typing_generic(base):
+            continue
+        yield base
+
+
+def iter_dict(base: _stub.ProtoType, seen) -> Iterator[tuple[str, Any]]:
+    for name, member in base.__dict__.items():
+        if name in seen or PROTO_FILTER(name):
+            continue
+        seen.add(name)
+        yield name, member
+
+
+def handle_callable(name, member) -> MethodSpec:
+    if overloads := get_overloads(member):
+        return MethodSpec(
+            name=name,
+            signatures=[inspect.signature(fn) for fn in overloads],
+            is_overloaded=True,
+        )
+    else:
+        return MethodSpec(
+            name=name,
+            signatures=[inspect.signature(member)],
+            is_overloaded=False,
+        )
 
 
 @portlink(Typer)
@@ -75,48 +104,6 @@ class ForgeTyper:
         )
         lines: list[str] = stub_protocol(composite, target_name)
         return "\n".join(lines)
-
-
-def format_clsname(target: _stub.ProtoType, name: str | None = None, /) -> str:
-    return name or target.__name__
-
-
-def exclude_attr(name: str) -> bool:
-    if name in INCLUDE_DUNDERS:
-        return False
-    if name in EXCLUDED_DUNDERS:
-        return True
-    return reflect.is_private(name)
-
-
-def iter_mro(target: _stub.ProtoType) -> Iterator[_stub.ProtoType]:
-    for base in reversed(target.__mro__):
-        if reflect.is_typing_generic(base):
-            continue
-        yield base
-
-
-def iter_dict(base: _stub.ProtoType, seen) -> Iterator[tuple[str, Any]]:
-    for name, member in base.__dict__.items():
-        if name in seen or exclude_attr(name):
-            continue
-        seen.add(name)
-        yield name, member
-
-
-def handle_callable(name, member) -> MethodSpec:
-    if overloads := get_overloads(member):
-        return MethodSpec(
-            name=name,
-            signatures=[inspect.signature(fn) for fn in overloads],
-            is_overloaded=True,
-        )
-    else:
-        return MethodSpec(
-            name=name,
-            signatures=[inspect.signature(member)],
-            is_overloaded=False,
-        )
 
 
 def handle_property(name, member, hints):

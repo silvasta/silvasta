@@ -7,22 +7,29 @@ Directly operate at the targets 'Heart'
 """
 
 __all__: list[str] = [
-    "_dict",
+    "full",
 ]
 
 
+import sys
+from types import ModuleType
 from typing import Any
 
-# TODO: Strategy for __dict__ operations
-# - consider as well __slots__
-# components:
-# - get/set (soft)
-# - [key](=..) (hard)
-# - analyze
-# - filter
 # NEXT: check port.link._operator
 
 
-def _dict(_target: Any, *, key: str) -> Any:
-    """Direct __dict__ access"""
-    return _target.__dict__[key]
+class CallableDictModule(ModuleType):
+    def __call__(self, target: Any, key: str, /):
+        """Direct __dict__ access"""
+        return target.__dict__[key]
+
+
+def full(target, /) -> list[Any]:
+    self: Any = None  # FIX:
+    return [
+        CallableDictModule.__call__(self, target, key)
+        for key in target.__dict__().items()
+    ]
+
+
+sys.modules[__name__].__class__ = CallableDictModule

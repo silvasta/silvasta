@@ -29,7 +29,9 @@ from .. import reflect
 from ..call import castarg
 from .box import Colors
 
-c = Colors()
+colors = Colors()
+
+_x: list[Any] = reflect.dict.full(colors)
 
 
 @castarg
@@ -49,9 +51,11 @@ def modules(
     module: str = reflect.attr.module(target, default="builtins")
     _raw_project, *_raw_modules = module.split(".")
 
-    project: str = c(_raw_project, project_color)
-    modules: list[str] = [c(module, module_color) for module in _raw_modules]
-    cls_or_instance = f"{c(reflect.objname(target), target_color)}"
+    project: str = colors(_raw_project, project_color)
+    modules: list[str] = [
+        colors(module, module_color) for module in _raw_modules
+    ]
+    cls_or_instance = f"{colors(reflect.objname(target), target_color)}"
 
     return ".".join((project, *modules, cls_or_instance))
 
@@ -60,10 +64,10 @@ def path(target: Path) -> str:
     """Make folder parts blue and file name colored by type or white"""
 
     if str(target).endswith("/") or (not target.suffix and not target.name):
-        return c.blue(str(target).rstrip("/") + "/")
+        return colors.blue(str(target).rstrip("/") + "/")
 
     if target.parent != Path(".") and target.parent != Path(""):
-        parent_part: str = c.blue(f"{target.parent}/")
+        parent_part: str = colors.blue(f"{target.parent}/")
         file_part: str = file_by_type(target)
         return f"{parent_part}{file_part}"
 
@@ -71,20 +75,20 @@ def path(target: Path) -> str:
 
 
 FILE_COLORS: dict[str, Callable[[str], str]] = {
-    ".py": c.slate,
-    ".rs": c.slate,
+    ".py": colors.slate,
+    ".rs": colors.slate,
     # Configs
-    ".json": c.white,
-    ".log": c.white,
+    ".json": colors.white,
+    ".log": colors.white,
     #
-    ".yaml": c.yellow,
-    ".yml": c.yellow,
-    ".md": c.carbon,
+    ".yaml": colors.yellow,
+    ".yml": colors.yellow,
+    ".md": colors.carbon,
     # Images / Media
-    ".png": c.purple,
-    ".jpg": c.purple,
-    ".jpeg": c.purple,
-    ".gif": c.purple,
+    ".png": colors.purple,
+    ".jpg": colors.purple,
+    ".jpeg": colors.purple,
+    ".gif": colors.purple,
 }
 
 

@@ -25,20 +25,22 @@ from . import _attr
 def clsname(target: Any, /, default="") -> str:
     """Extract name from instance or class"""
     default: str = default or type(target).__name__
-    return _attr(target, ("__name__",), default)
+    return _attr(target, ("__name__",), default)  # ty:ignore
 
 
 def funcname(target: Any, /, default="Func") -> str:
     """Check attribute list, provide match or default"""
     attrs: Sequence[str] = ("__name__", "__qualname__")
-    return _attr(target, attrs, default)
+    return _attr(target, attrs, default)  # ty:ignore
 
 
 def objname(target: Any, /, default: str = "") -> str:
     """Resolves the best identifying name for ANY object"""
-    if name := _attr(target, attrs := ("__qualname__", "__name__")):
+    if name := _attr(target, attrs := ("__qualname__", "__name__")):  # ty:ignore
         return name
-    return default or _attr(type(target), attrs, type(target).__name__)
+    if type_name := _attr(type(target), attrs):  # ty:ignore
+        return type_name
+    return default or type(target).__name__
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
