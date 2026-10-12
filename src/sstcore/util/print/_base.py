@@ -9,26 +9,12 @@ from collections.abc import Generator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Any
 
-from rich.console import Console
-
+from ...brick.color.box._colors import Colors
 from ...brick.field import RequiredField
 from ...port.config import ProjectInformation
 from ...port.link import portlink
 from ...port.printer import Print, PrinterBase, PrintMode
 from ..path import ProjectInfo
-
-
-class PrinterInfo:
-    """Collect toml info and show in Panel"""
-
-    info: RequiredField[ProjectInformation] = RequiredField(types=ProjectInfo)
-    # CHECK: ProjectInformation=Protocol, ProjectInfo=dataclass, when usw what?
-
-    @property
-    def project_info(self) -> str:
-        """Override in ColorMixin"""
-        return f"{self.info.name} v{self.info.version}"
-        # TASK: do this with ProjectInfo.__str__ (.__rich__ for color?)
 
 
 class PrinterModus:
@@ -61,16 +47,22 @@ class PrinterModus:
             self.modus: PrintMode = before
 
 
-# NEXT: Figure out proper base
-
-
 @portlink(Print)
 @portlink(PrinterBase)
-class PrinterBase(PrinterModus, PrinterInfo):
+class PrinterBase(PrinterModus):
     """Provide Base with Rich Console and Theme setup"""
 
-    def __init__(self):
-        self.console = Console()
+    info: RequiredField[ProjectInformation] = RequiredField(types=ProjectInfo)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.colors = Colors()
+
+    @property
+    def project_info(self) -> str:
+        name: str = self.colors.azure(self.info.name)
+        # LATER: do this with __str__ or __rich__ for color
+        return f"{name} v{self.info.version}"
 
     def __call__(self, target: Any, *more, **kwargs) -> None:
         match self.modus:

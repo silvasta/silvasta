@@ -31,6 +31,7 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
         return {}
 
     def _as_vault(self, data: Any) -> dict[K, Item]:
+        # NEXT: remove cast?
         if data is None:
             return {}
         if isinstance(data, Mapping):

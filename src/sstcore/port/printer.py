@@ -4,6 +4,13 @@ print
                                     DependencyLevel.sstcore.port[9]
 """
 
+from pathlib import Path
+
+from rich.box import Box
+
+from src.sstcore.port.event.dto import LineDTO, MarkdownDTO, PanelDTO
+from src.sstcore.port.tree import SimpleTree
+
 __all__: list[str] = [
     "Print",
     "PrintMode",
@@ -18,13 +25,13 @@ __all__: list[str] = [
 
 from enum import auto
 from string.templatelib import Template
-from typing import Any, Literal, TypedDict, Unpack
+from typing import Any, TypedDict, Unpack
 from typing import Protocol as Protocol
 
 from .calling import Richable
-from .color import Color, ColorBox, ColorId
+from .color import ColorBox, ColorId
 from .config import ProjectInformation
-from .event.dto import CliDTO  # 7
+from .event.dto import CliDTO, _AlignMethod
 from .represent import CliRenderable  # 8
 from .solid import EnumMode
 
@@ -35,14 +42,12 @@ class StdPrintInput(TypedDict, total=False):
 
 
 class SstPrintInput(TypedDict, total=False):
+    content: str
     color: ColorId
 
 
 class PrintInput(StdPrintInput, SstPrintInput):
     """Define the Input Space of the Printers Print"""
-
-
-x = PrintInput(color=Color.AZURE)
 
 
 class Print(Protocol):
@@ -53,35 +58,13 @@ class Print(Protocol):
     ) -> Any: ...
 
 
-# NEXT: TemplateEngine! Including Log/Cli,...?
 class TemplatePrint(Protocol):
+    # TASK: TemplateEngine! Including Log/Cli,...?
     def __call__(self, target: Template, /, **kwargs) -> CliDTO: ...
 
 
-# NEXT: specify steps to mouth
-class _PrintReadyForEngine(Protocol):
-    """Define the Normalized Call to the Printer Engine"""
-
-    def __call__(
-        self,
-        target: CliRenderable,
-        /,
-        *more: CliRenderable,
-        **spec: Unpack[PrintInput],
-    ) -> CliDTO: ...
-
-
-class PrintMode(EnumMode):
-    """
-    Define the Execution Mode
-
-    NEXT:
-    NEXT:
-    NEXT:
-    - SPLIT??? Adapter and Mode?
-      - e.g. rich as adapter maybe even as a mixin dependant setup
-      - but DEBUG,PRINT and NULL always?
-    """
+class PrintMode(EnumMode):  # NEXT: - SPLIT??? Adapter and Mode?
+    """Define the Execution Mode"""
 
     RICH_CONSOLE = auto()
     RICH_PRINT = auto()
@@ -100,9 +83,10 @@ class PrinterBase(Protocol):
     def __call__(self, target: Any, **kwargs) -> Any:
         """Print the target and return the manual"""
 
+    colors: ColorBox  # TODO: stack
     info: ProjectInformation
 
-    @property
+    @property  # TODO: __str__==info.plain, otherwise __rich__
     def project_info(self) -> str:
         """Style the top right title of printer.title Panel"""
 
@@ -115,105 +99,149 @@ class PrinterBase(Protocol):
     def in_mode(self, modus: PrintMode): ...
 
 
-# NEXT: resolve this below
-class ColorPrint(Protocol):
-    colors: ColorBox  # TODO: stack
-
-    def colorize(self, text: str, color: ColorId | None) -> str: ...
-    def normalize(self, target: Any, **kwargs) -> str: ...
+class PrintNormalizer(Protocol):
+    def normalize(self, target: Any, **kwargs) -> str:
+        """Ensure Input is useable to build DTOs"""
 
 
-# REMOVE:??
-class CorePrint(Protocol):
-    def render(self, target: CliDTO, **kwargs) -> Richable: ...
-    def display(self, target: CliDTO, **kwargs) -> Richable: ...
+class PrintFactory(Protocol):
+    def produce(self, target: Any, **kwargs) -> CliDTO:
+        """Transform Input into CliDTOs"""
 
 
-# TASK: Stacking and attach?
+class PrintRender(Protocol):
+    def render(self, target: CliDTO, **kwargs) -> CliRenderable:
+        """Transform CliDTOs into Renderables"""
+
+
+class PrintRichRender(Protocol):
+    def render(self, target: CliDTO, **kwargs) -> Richable:
+        """Transform CliDTOs into Rich Renderables"""
+
+
+class TitleInput(TypedDict, total=False):
+    title: str | None
+    text_color: ColorId
+    title_color: ColorId
+    title_align: _AlignMethod
+
+
+class HeaderInput(TitleInput, total=False):
+    color: ColorId  # frame
+
+
+class PanelInput(HeaderInput, total=False):
+    header: str | None
+
+
 class LayoutPrint(Protocol):
-    def panel(self, target: Any, **kwargs) -> None: ...
-    def line(self, style: str = "", title: str | None = None) -> None: ...
-    def lines(
-        self,
-        # lines: list,
-        # style: str = "cyan",
-        # title: str | None = None,
-        # header: str | None = None,
-    ) -> None: ...
-    def lines_with_len(
-        # self, name: str, lines: list, style: str = "cyan"
-    ) -> None: ...
-    # box
-    def box(
-        self,
-        target: Any,
-        # frame: str = "",
-        # box: Box = ...,
-    ) -> None: ...
+    def line(self, **kwargs: Unpack[SstPrintInput]) -> CliDTO:
+        """Render Single Line with or without Content"""
+
+    # IDEA: lines as *line?
+    def lines(self, lines: list, **kwargs: Unpack[PanelInput]) -> LineDTO:
+        """Render Multiple Lines from Iterable"""
+
+    def lines_with_len(  # IDEA: this as additional hit
+        self, lines: list, name: str, **kwargs: Unpack[PanelInput]
+    ) -> None:
+        """Simple Helper - Check usage! still useful?"""
+
+    def panel(self, content: Any, **kwargs) -> CliDTO:
+        """Render Multiple Lines from Iterable"""
+
+    def box(self, content: Any, frame: str = "", box: Box = ...) -> PanelDTO:
+        """Check Difference to Panel"""
+
+    # TODO:
     # def box_top(self, target: Any, frame: str = "") -> None: ...
     # def box_bottom(self, target: Any, frame: str = "") -> None: ...
-    def mini_box(
-        self,
-        target: Any,
-        frame: str = "",
-        mode: Literal["up", "down", "both"] = "both",
-    ) -> None: ...
-    def corner(
-        self,
-        target: Any,
-        # frame: str = "",
-        # box: Box = ...,
-    ) -> None: ...
-    def header(
-        # self,
-        # text: Any,
-        # frame: str = "cyan",
-        # **kwargs,
-    ) -> None: ...
-    def title(
-        self,
-        text: Any,
-        # title: str = "",
-        # title_align: AlignMethod = "right",
-        **kwargs,
-    ) -> None: ...
-    # def success(self, text: Any) -> None: ...
-    # def danger(self, text: Any) -> None: ...
-    # def warn(self, text: Any) -> None: ...
-    # def special(self, text: Any) -> None: ...
-    def dip(self, head: str, text: str, color: str) -> None: ...
+    # TODO: box.top
+    # TODO: box.bottom
+    # TODO: box.mini
+    # TODO: box.mini.up
+    # TODO: box.mini.down
+    # TODO: box.mini.both
+    # TODO: box.corner
+    # def mini_box( self, target: Any, frame: str = "",
+    #     mode: Literal["up", "down", "both"] = "both",) -> None: ...
+    # def corner( self, target: Any, # frame: str = "", # box: Box = ...,) -> None: ...
 
-    def md(self, text: str, *args, header: int = 0, **kwargs) -> None: ...
+    def header(self, content: Any, **kwargs: Unpack[HeaderInput]) -> PanelDTO:
+        """Define Single Slim Panel"""
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def title(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
+        """Single Slim Panel with Semantic Coloring"""
+
+    def success(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
+        """Single Slim Panel with Semantic Coloring"""
+
+    def danger(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
+        """Single Slim Panel with Semantic Coloring"""
+
+    def warn(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
+        """Single Slim Panel with Semantic Coloring"""
+
+    def special(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
+        """Single Slim Panel with Semantic Coloring"""
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def dip(self, head: str, text: str, color: str) -> PanelDTO:
+        """Special Title with Nose of Text in Frame Color"""
+
+    def md(self, text: str, *args, header: int = 0, **kwargs) -> MarkdownDTO:
+        """Render Markdown"""
+
+
+type TableInput = dict | list[list] | list[dict]  # NEXT: finish this!
 
 
 # TODO: unwrap this functions, attach only function
 class SpecialPrint(Protocol):
-    def path_exists_table(
-        # self, paths: list[Path], title=None, header="Path"
-    ) -> None: ...
-    def dict_table(
+    def path_exists_table(  # IDEA: PathDTO? definitely multipe path prints!
+        self, paths: list[Path], **kwargs: Unpack[PanelInput]
+    ) -> PanelDTO:
+        """Render Path overview with information about Existance"""
+
+    def debug_table(
         self,
-        # target: dict,
-        # header="Dict Inspection",
-        # show_type: bool | tuple[bool, bool] = (True, True),
-        # style="green",
-    ): ...
-    def tree_graph(
+        target: TableInput,
+        header="Dict Inspection",
+        show_type: bool | tuple[bool, bool] = (True, True),
+        style="green",
+    ):
+        """Print colored Dict with Type Information of Key and Value"""
+
+    def tree(  # IDEA: TreeDTO? or just SimpleTree(Node)?
         self,
-        # simple_tree: SimpleTreeNode,
-        # max_depth: int | None = None,
-        # root: str = "bold magenta",
-        # node: str = "by_level",
-        # guide: str = "bold white",
-        # hide_root=False,
-    ) -> None: ...
+        tree: SimpleTree,
+        max_depth: int | None = None,
+        root: str = "bold magenta",
+        node: str = "by_level",
+        guide: str = "bold white",
+        hide_root=False,
+    ) -> None:
+        """Visual Representation of the SimpleTreeNode"""
 
 
-class Printer(Protocol):
-    """TEMP"""
+class BasePrinter(PrintRender, PrintFactory, PrintNormalizer, PrinterBase):
+    """Define Minimal functionality to Operate"""
 
-    __call__: Print
-    info: ProjectInformation
 
-    # def set_info(self, info: ProjectInformation) -> None:
-    #     """Attach Project specific information for Printer layouts"""
+class RichPrinter(PrintRichRender, BasePrinter):
+    """Define Minimal functionality to handle Rich"""
+
+
+class Printer(LayoutPrint, RichPrinter):
+    """Define Minimal functionality for Optimal Workflow"""
+
+
+class DataPrinter(SpecialPrint, Printer):
+    """Define Minimal functionality for Optimal Workflow"""
+
+
+class TuiPrinter(Printer):
+    """Future Developement..."""

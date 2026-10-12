@@ -10,8 +10,8 @@ from rich.console import RichCast
 from rich.table import Table
 from rich.tree import Tree
 
-from ....brick.color import colorize
-from ...tree import SimpleTreeNode
+from ...brick.color import colorize
+from ..tree import SimpleTreeNode
 
 # NEXT: Refactor: input->DTO->Renderable->launch
 

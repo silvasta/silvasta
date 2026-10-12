@@ -6,6 +6,7 @@ Provide Engine for easy access to Rich Console setup
 """
 
 from rich.abc import RichRenderable
+from rich.console import Console
 from rich.padding import Padding
 
 from ...brick.color import colorize
@@ -14,15 +15,13 @@ from ...port.event.dto import CliDTO, LogDTO
 from ...port.link import portlink
 from ...port.printer import Print
 
-# NEXT: dispatch!!!
-# NEXT: dispatch!!!
-# NEXT: dispatch!!!
-# NEXT: dispatch!!! but where?
-
 
 @portlink(Print)
 class PrinterCore:
     """Execute the printer()"""
+
+    def __init__(self):
+        self.console = Console()
 
     def __call__(self, target, **kwargs):
         """Single entry point for printing logic"""

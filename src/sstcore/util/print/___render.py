@@ -13,7 +13,8 @@ __all__: list[str] = [
 ]
 
 from rich.panel import Panel
-from rich.rule import Rule
+
+# CHECK: from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
@@ -79,8 +80,8 @@ class RenderMixin:
         text: str = dto.text if dto.text is not None else "─" * 40
         return self.color(text, dto.style)
 
-    def render_rule(self, dto: RuleDTO) -> TypeDODO:
-        return Rule(style=dto.style, characters=dto.char)
+    # def render_rule(self, dto: RuleDTO) -> TypeDODO:
+    #     return Rule(style=dto.style, characters=dto.char)
 
     def render_table(self, dto: TableDTO) -> TypeDODO:
         table = Table(style=dto.style)

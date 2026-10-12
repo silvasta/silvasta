@@ -12,7 +12,9 @@ Rendering Protocols with Runtime check
 """
 
 __all__: list[str] = [
-    "CliDtoCreator",
+    "EventDTO",
+    "DtoNames",
+    #
     "LogDTO",
     "CliDTO",
     "GroupDTO",
@@ -20,6 +22,8 @@ __all__: list[str] = [
     "MarkdownDTO",
     "PanelDTO",
     "TableDTO",
+    #
+    "CliDtoCreator",
 ]
 
 from dataclasses import dataclass as _dataclass

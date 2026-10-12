@@ -12,7 +12,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from ...brick.labor import clsname, funcname
+from ...brick.reflect import clsname, funcname
 from ...port import functorial
 from ...port.link import portlink
 from ..engine import FunctorMeta, FunctorMetaData

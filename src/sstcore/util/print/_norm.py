@@ -9,10 +9,7 @@ Note:
   - concept will change
 """
 
-from sstcore.port.color import ColorBox, ColorId
-
 __all__: list[str] = [
-    "ColorBox",
     "NormalizeMixin",
 ]
 from pathlib import Path
@@ -20,14 +17,13 @@ from typing import Any
 
 from rich.console import ConsoleRenderable, RichCast
 
-from ....brick.color import colorize
-from ....brick.color.box import Colors
-from ....port.calling import PydanticModel
-from ....port.represent import Renderable
+from ...brick.color import colorize
+from ...port.calling import PydanticModel
+from ...port.represent import CliRenderable
 
 
 class NormalizeMixin:
-    def normalize(self, target: Any) -> Renderable:  # NEXT: Renderable??
+    def normalize(self, target: Any) -> CliRenderable:  # NEXT: CliRenderable??
         """Normalize targets into renderable representations."""
         match target:  # TASK: find better check for this group
             case ConsoleRenderable() | RichCast() | str() | PydanticModel():
@@ -38,20 +34,3 @@ class NormalizeMixin:
                 return colorize.path(path)
             case _:
                 return str(target)
-
-
-class ColorMixin:
-    colors: ColorBox
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.colors: ColorBox = Colors()
-
-    @property
-    def project_info(self) -> str:
-        name: str = self.colors.azure(self.info.name)
-        return f"{name} v{self.info.version}"
-
-    # NEXT: ArgCast Color?
-    def colorize(self, text: str, color: ColorId) -> str:
-        return self.colors(text, color) if text else ""
