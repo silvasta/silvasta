@@ -40,6 +40,8 @@ from ._attr import _attr
 from ._core import (
     clsname,
     funcname,
+    is_dunder,
+    is_private,
     is_private_not_calling,
     is_protocol,
     is_typing_generic,

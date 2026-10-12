@@ -10,14 +10,8 @@ from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Protocol, Self
 
-from ....brick.labor.mro.___mrotree import (
-    MroTreeNode1,
-    MroTreeNode2,
-    SubclassTreeNode,
-    TypeTreeNode,
-)
-from ....port._raise import LinkRaiser
-from ....port.link._model import (
+from ...port._raise import LinkRaiser
+from ...port.link._model import (
     Docs,
     PlugDoc,
     PortDoc,
@@ -26,7 +20,13 @@ from ....port.link._model import (
     PortLinks,
     SidePolicy,
 )
-from ....port.link._render import printer
+from ...port.link._render import printer
+from .___mrotree import (
+    MroTreeNode1,
+    MroTreeNode2,
+    SubclassTreeNode,
+    TypeTreeNode,
+)
 
 
 class SpawnOperator[Core: Callable]:

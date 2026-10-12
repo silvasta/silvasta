@@ -11,8 +11,6 @@ Rendering Protocols with Runtime check
                               DependencyLevel.sstcore.port.event[0]
 """
 
-from src.sstcore.port.link import portlink
-
 __all__: list[str] = [
     "CliDtoCreator",
     "LogDTO",
@@ -43,6 +41,7 @@ from loguru import logger as _logger
 from ..calling import Richable as _Richable
 from ..color import Color as _Color
 from ..color import ColorId as _ColorId
+from ..link import portlink
 
 # MOVE: view??
 type _Renderable = str | CliRenderable | _Richable

@@ -24,6 +24,19 @@ __all__: list[str] = [
 import re as _re
 
 
+def _format_name(clsname: str) -> str:  # TODO:
+    """PascalCase to snake_case, dependency-free"""
+    if not clsname:
+        raise ValueError("Got empty class name")
+    result: list[str] = [clsname[0].lower()]
+    for c in clsname[1:]:
+        if c.islower():
+            result.append(c)
+        else:
+            result.append(f"_{c.lower()}")
+    return "".join(result)
+
+
 def to_snake(text: str) -> str:
     # LATER: extract pattern like:
     # SNAKE = r"XXX"
