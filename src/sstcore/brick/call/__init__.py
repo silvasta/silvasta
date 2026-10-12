@@ -3,7 +3,8 @@ brick.call
 
 - Callable Fragments
 - Func input ensured
-
+                                                        reflect(+1)
+                              DependencyLevel.sstcore.brick.call[1]
 """
 
 __all__: list[str] = [

@@ -7,41 +7,26 @@ Define the Shape of the Stacking Pipeline
 """
 
 __all__: list[str] = [
-    # define
-    "Map",
-    "StackData",
-    "LayerData",
-    "Accumulated",
-    "LayerMode",
-    # stack
     "StackingLayer",
     "StackingCore",
-    "StackApplicator",
+    # run
     "StackingState",
     "RunningStack",
+    # definitions
+    "LayerMode",
+    "StackApplicator",
+    "stacking_types",
 ]
 
-# LATER: make all imports _private
-from collections.abc import (
-    Callable,
-    ItemsView,
-    Iterator,
-    KeysView,
-    Mapping,
-    ValuesView,
-)
+
+# TASK: make all imports _private
+from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 from enum import Enum, auto
 from typing import Any, Protocol, Self, runtime_checkable
 
-type Map[ValueT] = Mapping[str, ValueT]
-type StackData[ValueT] = ValueT | Callable[..., ValueT]
-type LayerData[ValueT] = Map[StackData[ValueT]]
+from ._types import stacking_types
 
-type Accumulated[ValueT] = dict[str, list[ValueT]]
-
-
-def test() -> Map:
-    raise NotImplementedError
+_st = stacking_types
 
 
 class LayerMode(Enum):
@@ -50,6 +35,17 @@ class LayerMode(Enum):
     SINGLE = auto()
     MULTI = auto()
     COMBO = auto()
+
+
+@runtime_checkable
+class StackApplicator[**In, ValueT, Out](Protocol):
+    def __call__(
+        self,
+        state: _st.Accumulated[ValueT],
+        *args: In.args,
+        **kwargs: In.kwargs,
+    ) -> Out:
+        """Generate Result from collected Stacks applied to Input"""
 
 
 class StackingLayer[ValueT](Protocol):
@@ -73,33 +69,25 @@ class StackingCore[**In, ValueT, Out](StackingLayer[ValueT], Protocol):
     """The Executing Core - Connect Layers and Runtime State"""
 
     @property
-    def layers(self) -> Map[StackingLayer[ValueT]]:  # LATER: field
+    def layers(self) -> _st.Map[StackingLayer[ValueT]]:  # LATER: field
         """Store Mapping with Source Layer"""
 
     def schema(self) -> dict[str, list[str]]:
         """Generate Layer Mapping as SSoT for Stub typing"""
 
     @property
-    def source_map(self) -> Map[str]:  # LATER: field
+    def source_map(self) -> _st.Map[str]:  # LATER: field
         """Store Mapping linking Attributes back to Source Layer"""
 
     @property
     def call(self) -> StackApplicator[In, ValueT, Out]:  # LATER: field
         """Collect and Provide Application Funcion"""
 
-    def merge_layer(self) -> LayerData[ValueT]:
+    def merge_layer(self) -> _st.LayerData[ValueT]:
         """Combine multiple StackLayer to Mapping for StackCore"""
 
     def __getattr__(self, name: str) -> RunningStack:
         """Launch Initial State for repeated Access"""
-
-
-@runtime_checkable
-class StackApplicator[**In, ValueT, Out](Protocol):
-    def __call__(
-        self, state: Accumulated[ValueT], *args: In.args, **kwargs: In.kwargs
-    ) -> Out:
-        """Generate Result from collected Stacks applied to Input"""
 
 
 class StackingState[ValueT](Protocol):

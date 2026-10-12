@@ -65,3 +65,16 @@ class Registry:
 
 
 registry_types = Registry()
+
+
+class Stack:
+    """Types for Stacking Pipeline"""
+
+    type Map[ValueT] = Mapping[str, ValueT]
+    type StackData[ValueT] = ValueT | Callable[..., ValueT]
+    type LayerData[ValueT] = Stack.Map[Stack.StackData[ValueT]]
+
+    type Accumulated[ValueT] = dict[str, list[ValueT]]
+
+
+stacking_types = Stack()

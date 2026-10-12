@@ -1,7 +1,7 @@
 """
 Implement the Components for the Dot-Accessed Stacking
 
-                                   DependencyLevel.sstcore.brick[1]
+                              DependencyLevel.sstcore.brick.call[0]
 """
 
 __all__: list[str] = [
@@ -10,11 +10,8 @@ __all__: list[str] = [
     "StackCore",
     "StackState",
     "StackRunner",
-    # examples
-    "ANSI_STACK",
-    "DTO_STACK",
-    "STRING_STACK",
 ]
 
-from .___example import ANSI_STACK, DTO_STACK, STRING_STACK
-from ._core import StackBase, StackCore, StackLayer, StackRunner, StackState
+from ._base import StackBase, StackLayer
+from ._core import StackCore
+from ._run import StackRunner, StackState
