@@ -1,33 +1,35 @@
 """
 Compose Views at runtime and inject them into target Classes
 
-- Work as Function, Decorator and with Args
+- ViewBuilder: regular compostion
+- ViewInjector: hybrid decorator
+
 """
 
 __all__: list[str] = [
     "ViewBuilder",
+    "ViewInjector",
 ]
+
 
 from dataclasses import dataclass, replace
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Self, cast, overload
+from typing import Any, Self
 
 from ...brick.none import ViewSentinel
-from ...brick.views import Cli, Log, Repr, Rich, Str
-from ...port.register import MixinRegister
-from ...port.shape import Builder
+from ...port.link import portlink
+from ...port.raising import SstCoreError
+from ...port.shape import Builder, Injector
+from ...port.solid import MixinCatalog
+from ..engine.compose import MixinBuilder, MixInjector
+from .catalog import Cli, Log, Repr, Rich, Str
 
-# FIX:
-from ..engine import combine_mixins
-
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
+type ViewArg = Cli | Str | Rich | Repr | Log  # MOVE: to view._registry?
 
 
-@dataclass(frozen=True)  # TODO: needed?
-class ViewBuilder[ViewBase: type]:
+@portlink(Builder)
+@dataclass(frozen=True)
+class ViewBuilder[ViewBase: type](MixinBuilder):
     """Configure ViewMixin sets and build composed classes"""
 
     cli: Cli = Cli.OFF
@@ -46,115 +48,36 @@ class ViewBuilder[ViewBase: type]:
         """Provide all attached ViewRegistry member"""
         return (self.cli, self.log, self.repr, self.string, self.rich)
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Builder(Protocol)
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-
-    def mix_name(self, name="") -> str:
-        return f"{name}View" if name else "ViewBase"
-
     @cached_property
     def mixins(self) -> tuple[type, ...]:
-        """Provide all selected internal Mixins in a stable order"""
         return tuple(
             mixin
             for category in self.all_enums()
             if (mixin := category.mixin) is not ViewSentinel
         )
 
-    def mix(  # REFACTOR:
-        self,
-        name="",
-        format_name=True,
-        extras: dict | None = None,
-        *,
-        mixins: tuple[type, ...] = (),
-        prepend: bool = True,
-    ) -> ViewBase:
-        """Assemble selected Mixins to ViewBase"""
-        clsname: str = self.mix_name(name) if format_name else name or "View"
-        bases: tuple[type, ...] = combine_mixins(
-            self.mixins, mixins, prepend=prepend
-        )
-        new_cls: type = type(clsname, bases, extras or {})
-
-        return cast(typ=ViewBase, val=new_cls)
-
-    def inject[Target: type](  # REFACTOR:
-        self,
-        cls: Target,
-        /,
-        *mixins: type,
-        prepend: bool = True,
-    ) -> Target:
-        """Compose selected Mixins and Inject to new Subclass of Target"""
-
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        # NEXT: functions like this could be placed in sstcore.forge._fragments
-        # TASK: this method looks for example way to heavy for the registry,
-        # - maybe this method with others in a BuilderBox inside brick
-        # - ViewBuilder takes the functions from there and the mixins from registry
-        # STRATEGY: decompose, put in catalog, select any desired combination, assemble
-        if not (bases := combine_mixins(self.mixins, mixins, prepend=prepend)):
-            return cls
-
-        # EXTRACT: to forge.mix
-        namespace: dict[str, Any] = {
-            "__module__": cls.__module__,
-            "__qualname__": cls.__qualname__,
-            "__view_spec__": self,
-        }
-        if hasattr(cls, "model_config"):  # Pydantic support
-            namespace["model_config"] = getattr(cls, "model_config", {})
-
-        new_cls: type = type(cls.__name__, (*bases, cls), namespace)
-
-        if hasattr(new_cls, "model_rebuild"):  # Pydantic rebuild hook
-            new_cls.model_rebuild()
-
-        return cast(typ=Target, val=new_cls)
-
-    @overload
-    def compose[MixInjected](
-        self,
-        cls: type,
-    ) -> MixInjected: ...
-    @overload
-    def compose(
-        self,
-        cls: None,
-    ) -> ViewBase: ...
-
-    def compose[
-        MixInjected: type
-    ](  # # TODO: maybe insert here mixed proto? for cast?
-        self,
-        cls: type | None = None,
-        *,
-        mixins: tuple[type, ...] = (),
-        data: MixinRegister[MixInjected],
-    ) -> ViewBase | MixInjected:
-        """Build new Class from Mixins or Inject to Target for new Subclass"""
-
-        # AI: it makes no sense to insert mixins and data together,
-        # at least 1 should be already attached before,
-        # anyway I hope the idea is clear how to handle the registry:
-        # - use it like a mobile jukebox, handing around, butten pressed for some action
-        if mixins:
-            data.add(mixins)
-
-        if cls is None:
-            # REMOVE: here is the composition, mixin handles container, maybe sort
-            return data.build()
-        else:
-            return data.inject()
+    @property
+    def _topic_name(self) -> str:
+        return "View"
 
 
-if TYPE_CHECKING:
-    _instance_check: Builder = ViewBuilder()
-    _class_check: type[Builder] = ViewBuilder
+@portlink(Injector)
+@dataclass(frozen=True)
+class ViewInjector[MixT: type](MixInjector, ViewBuilder):
+    """view Distributor: Inject or Build with Preset Views or Modify"""
+
+    # LATER: accept as well "free" mixins, without ViewCatalog coupling
+
+    def plus(self, *mixins: ViewArg) -> Self:
+        """Update existing View spec and return new specialized Injector"""
+
+        selected_views: dict[str, ViewArg] = {}
+
+        for item in mixins:
+            MixinCatalog.resolve(item)
+            if item.category in selected_views:
+                # LATER: on fail? maybe skip, definitely other error!
+                raise SstCoreError(f"{item}: Duplicated! {selected_views=}")
+            selected_views[item.category] = item
+
+        return self.evolve(**selected_views)

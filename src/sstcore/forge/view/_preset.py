@@ -5,30 +5,16 @@ Collect and combine default Views
 
 """
 
-# LATER: this thing will get very long...
-# - defaults for regular classes
-# - attach typing, e.g. by ViewBuilder[MergedProtocol]
-
 __all__: list[str] = [
     "ViewPresets",
 ]
 
-from ...brick.views import Cli, Log, Repr, Rich, Str
-from ._compose import ViewBuilder
-
-# from ._inject import ViewInjector
-
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
+from ._compose import ViewInjector
+from .catalog import Cli, Log, Repr, Rich, Str
 
 
-class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
-    pydantic = ViewBuilder(
-        # FIX: ViewInjector??
+class ViewPresets:
+    pydantic = ViewInjector(
         cli=Cli.TABLE,
         string=Str.NAME,
         rich=Rich.MODULE,
@@ -36,7 +22,7 @@ class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
         log=Log.DATA,
     )
 
-    printer = ViewBuilder(
+    printer = ViewInjector(
         cli=Cli.HEADER,
         string=Str.MODULE,
         rich=Rich.SHORT,
@@ -44,14 +30,15 @@ class ViewPresets:  # WARN: return type?? ViewInjector needed? Self?
         log=Log.DEBUG,
     )
 
-    safe_typer = ViewBuilder(
+    safe_typer = ViewInjector(
         cli=Cli.PANEL,
         string=Str.SHORT,
         rich=Rich.MODULE,
         repr=Repr.DEBUG,
         log=Log.DEBUG,
     )
-    functor = ViewBuilder(
+
+    functor = ViewInjector(
         cli=Cli.PANEL,
         string=Str.NAME,
         rich=Rich.MODULE,

@@ -17,9 +17,9 @@ __all__: list[str] = [
 
 from pathlib import Path
 
-from ...port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
-from ..color import colorize
-from ..labor import invoke, reflect, scan, transform
+from ....brick.color import colorize
+from ....brick.labor import invoke, reflect, scan, transform
+from ....port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
 
 
 class MarkdownMixin:

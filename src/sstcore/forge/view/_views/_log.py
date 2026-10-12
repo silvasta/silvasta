@@ -13,8 +13,8 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ...port.event.dto import LogDTO
-from ..labor import scan
+from ....brick.labor import scan
+from ....port.event.dto import LogDTO
 
 
 class LogDataMixin:

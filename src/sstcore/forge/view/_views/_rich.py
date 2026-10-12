@@ -15,14 +15,11 @@ __all__: list[str] = [
 ]
 
 
-from ...port.color import ColorBox
-from ..color import colorize
-from ..color.box import Colors
-from ..labor import reflect
+from ....brick.color import colorize
+from ....brick.color.box import Colors
+from ....brick.labor import reflect
 
 colors = Colors()
-_c: ColorBox
-# colors: ColorBox = Colors()
 
 
 class SimpleRichNameMixin:
