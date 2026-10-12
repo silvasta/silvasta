@@ -149,7 +149,7 @@ class Painter(Protocol):
     _paint: Colorizing
     """Lookup the current color code and paint"""
 
-    def __call__(self, text: Stringable) -> str:
+    def __call__(self, text: Stringable, /) -> str:
         """Apply the Colorizing function with lookup to ColorTable"""
 
     def __str__(self) -> str:
@@ -187,11 +187,11 @@ class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     def hub(self) -> ColorHub:
         """Configuration access"""
 
-    def paint(self, color: ColorId) -> Painter | None:
+    def paint(self, color: ColorId, /) -> Painter | None:
         """Map ColorIdentifier to Painter of active Palette"""
 
     def __getattr__(self, name: str) -> Painter:
         """Provide Colors on ColorIndex Name and Shortcut"""
 
-    def __call__(self, text: Stringable, color: ColorId) -> str:
+    def __call__(self, text: Stringable, color: ColorId, /) -> str:
         """Find Color by Identifier and return painted text"""

@@ -36,10 +36,10 @@ class ArgCaster(Protocol):
     ) -> Any: ...
 
 
-class ArgCast[**P, R]:
+class ArgCast:
     """Execute Caster on Function Signature"""
 
-    def __call__(self, func: Callable[P, R]) -> Callable[P, R]:
+    def __call__[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
         """Compile CastMap as plan for Casting"""
 
         if not (plan := self.plan(func)):

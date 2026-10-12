@@ -11,19 +11,22 @@ __all__: list[str] = [
     # reflect
     "clsname",
     "funcname",
+    "objname",
+    # scan
+    "data",
+    "pydantic",
+    # check
+    "AttrFilter",
     "is_private",
     "is_dunder",
     "is_protocol",
     "is_private_not_calling",
     "is_typing_generic",
-    # scan
-    "data",
-    "pydantic",
-    "AttrFilter"
     # attr
     "attr",
     "_attr",
     "doc",
+    "module",
     "name",
     "text",
     # invoke
@@ -34,19 +37,18 @@ __all__: list[str] = [
     "log",
 ]
 
-from . import _attr as attr  # noqa: F401
+from . import _attr as attr
 from . import _invoke as invoke
-from ._attr import _attr
-from ._core import (
-    clsname,
-    funcname,
+from ._attr import _attr, doc, module, name, text
+from ._check import (
     is_dunder,
     is_private,
     is_private_not_calling,
     is_protocol,
     is_typing_generic,
 )
-from ._invoke import _invoke
-from ._scan import AttrFilter, data, pydantic  # noqa: F401
+from ._core import clsname, funcname, objname
 
 # TODO: Callable module trick, better for invoke() and invoke.xxx()
+from ._invoke import _invoke
+from ._scan import AttrFilter, data, pydantic

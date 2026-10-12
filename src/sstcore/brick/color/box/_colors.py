@@ -28,7 +28,7 @@ class Colors:
     def hub(self) -> ColorHub:
         return self._hub
 
-    def paint(self, color: ColorId) -> Painter:
+    def paint(self, color: ColorId, /) -> Painter:
         color: Color = Color.resolve(color)
         return self._hub.paint(color)
 
@@ -41,5 +41,5 @@ class Colors:
 
         raise AttributeError(f"{self} Missing Attribute: '{name}'!")
 
-    def __call__(self, text: Stringable, color: ColorId) -> str:
+    def __call__(self, text: Stringable, color: ColorId, /) -> str:
         return self.paint(color)(text)

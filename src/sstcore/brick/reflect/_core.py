@@ -10,16 +10,12 @@ Inspect arbitrary objects and safely pull out specific attributes
 __all__: list[str] = [
     "clsname",
     "funcname",
-    "is_private",
-    "is_dunder",
-    "is_protocol",
-    "is_private_not_calling",
-    "is_typing_generic",
+    "objname",
 ]
 
 
 from collections.abc import Sequence
-from typing import Any, Generic, Protocol
+from typing import Any
 
 from ._attr import _attr as attr_core
 
@@ -36,27 +32,10 @@ def funcname(target: Any, /, default="Func") -> str:
     return attr_core(target, attrs, default)
 
 
-def is_private(attr: str, /) -> bool:
-    return attr.startswith("_")
-
-
-def is_dunder(attr: str, /) -> bool:
-    return attr.startswith("__") and attr.endswith("__")
-
-
-def is_protocol(cls: type) -> bool:
-    """Check type first to avoid TypeError on second call"""
-    return (
-        isinstance(cls, type)
-        and issubclass(cls, Protocol)
-        and getattr(cls, "_is_protocol", False)
+def objname(target: Any, /, default: str = "") -> str:
+    """Resolves the best identifying name for ANY object"""
+    if name := attr_core(target, ("__qualname__", "__name__")):
+        return name
+    return default or attr_core(
+        type(target), "__qualname__", type(target).__name__
     )
-
-
-def is_private_not_calling(attr: str) -> bool:  # TODO: resolve by AttrFilter?
-    exclude: set[str] = {"__call__", "__getitem__"}
-    return attr.startswith("_") and attr not in exclude
-
-
-def is_typing_generic(cls: type) -> bool:
-    return cls in (object, Protocol, Generic)

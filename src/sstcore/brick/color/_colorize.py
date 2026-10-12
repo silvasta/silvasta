@@ -18,26 +18,27 @@ __all__: list[str] = [
 ]
 
 # NEXT: make this modular feature stack of ColorBox
-# NEXT: make this modular feature stack of ColorBox
-# NEXT: make this modular feature stack of ColorBox
-# NEXT: make this modular feature stack of ColorBox
 
 
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ...port.color import ColorBox
+from ...port.color import ColorArg
+from .. import reflect
+from ..call import castarg
 from .box import Colors
 
-c: ColorBox = Colors()
+c = Colors()
 
 
+@castarg
 def modules(
-    obj: Any,
-    project_color: str = "cyan",
-    module_color: str = "green",
-    target_color: str = "special",
+    target: Any,
+    /,
+    project_color: ColorArg = "azure",
+    module_color: ColorArg = "green",
+    target_color: ColorArg = "purple",
 ) -> str:
     """
     Colorize modules paths down to Object definition and up to Root
@@ -45,15 +46,14 @@ def modules(
     - Process class <- map instances, handle as well functions!
     """
 
-    target: type = obj if hasattr(obj, "__name__") else type(obj)
-    raw_project, *raw_modules = target.__module__.split(".")
-    # INFO: len(modules) can be 0, consider for further color splits
+    module: str = reflect.attr.module(target, default="builtins")
+    _raw_project, *_raw_modules = module.split(".")
 
-    project: str = c(raw_project, project_color)
-    modules: list[str] = [c(module, module_color) for module in raw_modules]
-    cls_or_instance = f"{c(target.__name__, target_color)}"
+    project: str = c(_raw_project, project_color)
+    modules: list[str] = [c(module, module_color) for module in _raw_modules]
+    cls_or_instance = f"{c(reflect.objname(target), target_color)}"
 
-    return ".".join([project, *modules, cls_or_instance])
+    return ".".join((project, *modules, cls_or_instance))
 
 
 def path(target: Path) -> str:
@@ -64,35 +64,33 @@ def path(target: Path) -> str:
 
     if target.parent != Path(".") and target.parent != Path(""):
         parent_part: str = c.blue(f"{target.parent}/")
-        file_part: str = _color_file_by_type(target)
+        file_part: str = file_by_type(target)
         return f"{parent_part}{file_part}"
 
-    return _color_file_by_type(target)
+    return file_by_type(target)
 
 
 FILE_COLORS: dict[str, Callable[[str], str]] = {
-    # # TODO:
-    # # Code
-    # ".py": c.white,
-    # ".rs": c.white,
-    # # Configs
-    # ".json": c.white,
-    # ".log": c.white,
-    # #
-    # ".yaml": c.yellow,
-    # ".yml": c.yellow,
-    # ".md": c.cyan,
-    # # Images / Media
-    # ".png": c.magenta,
-    # ".jpg": c.magenta,
-    # ".jpeg": c.magenta,
-    # ".gif": c.magenta,
+    ".py": c.slate,
+    ".rs": c.slate,
+    # Configs
+    ".json": c.white,
+    ".log": c.white,
+    #
+    ".yaml": c.yellow,
+    ".yml": c.yellow,
+    ".md": c.carbon,
+    # Images / Media
+    ".png": c.purple,
+    ".jpg": c.purple,
+    ".jpeg": c.purple,
+    ".gif": c.purple,
 }
 
 
-def _color_file_by_type(file_path: Path) -> str:
+def file_by_type(file_path: Path, /) -> str:
     """Colors the filename based on its suffix, defaulting to white."""
-    suffix = file_path.suffix.lower()
-    if color_func := FILE_COLORS.get(suffix):  # TODO: c.white)
+    suffix: str = file_path.suffix.lower()
+    if color_func := FILE_COLORS.get(suffix):
         return color_func(file_path.name)
     return file_path.name

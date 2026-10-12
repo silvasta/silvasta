@@ -46,7 +46,7 @@ class Paint(str):
     def __repr__(self) -> str:
         return f"{self}[{self.color!r}]"
 
-    def __call__(self, text: Stringable) -> str:
+    def __call__(self, text: Stringable, /) -> str:
         return self._paint(text)
 
 

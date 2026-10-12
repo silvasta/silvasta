@@ -8,6 +8,7 @@ __all__: list[str] = [
     "doc",
     "name",
     "text",
+    "module",
 ]
 
 
@@ -26,7 +27,7 @@ def _attr[T](
     return __core__(target, attrs, default)
 
 
-def __core__(target: Any, /, attrs: Sequence[str], default=None) -> Any:  # noqa:N807
+def __core__(target: Any, attrs: Sequence[str], /, default=None) -> Any:  # noqa:N807
     # LATER: use __core__ for sstcore.forge.blueprint|func
     # - bind heavy static func meta with nested calls
     for attr in attrs:
@@ -39,6 +40,13 @@ def __core__(target: Any, /, attrs: Sequence[str], default=None) -> Any:  # noqa
 def doc(target: Any, /, default="") -> str:
     """Extract __doc__ or default to empty string"""
     return __core__(target, ("__doc__",), default=default)
+
+
+def module(target: Any, /, default: str = "NoModule") -> str:
+    """Safely extract __module__ from functions, classes, or instances."""
+    if module_name := __core__(target, ("__module__",)):
+        return module_name
+    return __core__(type(target), ("__module__",), default)
 
 
 def name(target: Any, /, attrs: list[str] | None = None, default=" 󰂒 ") -> str:

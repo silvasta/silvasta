@@ -7,15 +7,14 @@ Inspect arbitrary objects and safely pull out specific attributes
 __all__: list[str] = [  # NEXT: module name, scan, detect?
     "data",
     "pydantic",
-    "AttrFilter",
 ]
 
 
 from collections.abc import Callable
-from typing import Any, NamedTuple
+from typing import Any
 
 from ...port.calling import PydanticModel
-from ._core import is_dunder, is_private
+from ._check import AttrFilter
 
 
 def data(
@@ -61,39 +60,3 @@ def pydantic(
     else:
         # LATER: raise or: return data(_target, exclude) ??
         raise ValueError("Target is not BaseModel!")
-
-
-class AttrFilter(NamedTuple):
-    # NEXT: build proper filter!
-    """Collect Flags and provide corresponding Filter"""
-
-    public: bool = True
-    private: bool = False
-    dunder: bool = False
-
-    def get_filter(self) -> Callable[[str], bool]:
-        """Separate by public/private/dunder with dunder not in private"""
-        match self.public, self.private, self.dunder:
-            case (False, False, False):
-                raise ValueError("All flags set zero! No result!")
-
-            case (False, False, True):
-                return lambda attr: is_dunder(attr)
-
-            case (False, True, False):
-                return lambda attr: is_private(attr) and not is_dunder(attr)
-
-            case (False, True, True):
-                return lambda attr: is_private(attr)
-
-            case (True, False, False):
-                return lambda attr: not is_private(attr)
-
-            case (True, False, True):
-                return lambda attr: is_dunder(attr) or not is_private(attr)
-
-            case (True, True, False):
-                return lambda attr: not is_dunder(attr)
-
-            case (True, True, True):
-                return lambda _attr: True
