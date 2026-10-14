@@ -18,31 +18,39 @@ from inspect import Parameter, Signature, _ParameterKind, signature
 from typing import Any, Self
 
 from ...port import attach
-from ...port.calling import Calling
 from ...port.link import portlink
+from .. import reflect
 from ._decorate import DecoratedField
 from ._extend import ResetField
 
 
-def strategy[F: Callable[..., Any]](func: F) -> F:
+def strategy[**In, Out](func: Callable[In, Out]) -> attach.Calling[In, Out]:
     """Mark the Field for StrategyField assembling"""
-    func.__field_kind__ = StrategyField  # type: ignore
+    func.__field_kind__ = StrategyField
+    # AI: following warning:
+    # └╴󰌠  _strategy.py  2
+    #   ├╴  Return type does not match returned value: expected `Calling[In@strategy, Out@strategy]`, found `(**In@strategy) -> Out@strategy`
+    #   │    info: type `(**In@strategy) -> Out@strategy` is not assignable to protocol `Calling[In@strategy, Out@strategy]`
+    #   │    info: └── protocol member `__field_kind__` is not defined on type `(**In@strategy) -> Out@strategy` ty (invalid-return-type) [30, 12]
+    #   └╴  Do not call `setattr` with a constant attribute value. It is not any safer than normal property access.
+    #        help: Replace `setattr` with assignment Ruff (B010) [29, 5]
     return func
 
 
-def morphing[F: Callable[..., Any]](func: F) -> F:
+def morphing[**In, Out](func: Callable[In, Out]) -> attach.Calling[In, Out]:
     """Mark the Field for MorphingField assembling"""
-    func.__field_kind__ = MorphingField  # type: ignore
-    return func
+    # AI: maybe just like this? ty:ignore is basically the same as typing.cast
+    func.__field_kind__ = MorphingField  # ty: ignore
+    return func  # ty: ignore
 
 
 @portlink(attach.DecoDescriptor)
 class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
-    """Base Engine for dynamic Calling fields."""
+    """Base Engine for dynamic Callable fields."""
 
     def __init__(
         self,
-        func: Calling[In, Out],
+        func: Callable[In, Out],
         *args: Any,
         bind_to_self: bool = False,
         **kwargs: Any,
@@ -56,7 +64,7 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
                 func, bind_to_self=bind_to_self
             )
 
-    def write(self, unit: object, value: Calling[In, Out]) -> None:
+    def write(self, unit: object, value: Callable[In, Out]) -> None:
         """Store an instance override as (func, bind=False).
 
         Replacements match the *public* signature, so they are not bound
@@ -77,7 +85,7 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
             raise self.raiser.Function(self, unit, "Missing target_func")
         return BoundStrategy(self, unit, _func, bind=_bind)
 
-    def switch(self, func: Calling[In, Out]) -> Self:
+    def switch(self, func: Callable[In, Out]) -> Self:
         """Modify the Class-Level baseline strategy."""
         self.bind(func)
         return self
@@ -88,8 +96,8 @@ class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
     """Forces the override to match the default function's signature."""
 
     def validate(
-        self, unit: object, value: Calling[In, Out]
-    ) -> Calling[In, Out]:
+        self, unit: object, value: Callable[In, Out]
+    ) -> Callable[In, Out]:
         """Enforce strict signature rules for instance-level overrides."""
 
         if not callable(value):
@@ -108,20 +116,20 @@ class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
 class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
     """Allows swapping methods with arbitrary new signatures."""
 
-    def morph(self, func: Calling[..., Any]) -> Self:
+    def morph(self, func: Callable[..., Any]) -> Self:
         # LATER: check [B=In&Any,S=Out&|&&|Any]
         """Unsafe Function Exchange on the Class Level."""
         self.bind(func)
         return self
 
-    def _write(self, unit: object, value: Calling[..., Any]) -> None:
-        # IMPORTANT: is this needed (as MorphingField.write), wired proper otherwise???
-        """Instance override; signature is not a contract."""
-        _value = self.validate(unit, value)
-        self._set_val(unit, (_value, False))
+    # IMPORTANT: is this needed (as MorphingField.write), wired proper otherwise???
+    # def _write(self, unit: object, value: Callable[..., Any]) -> None:
+    #     """Instance override; signature is not a contract."""
+    #     _value = self.validate(unit, value)
+    #     self._set_val(unit, (_value, False))
 
-    def validate(self, unit: object, value: Calling) -> Calling:
-        """Permit arbitrary Callings."""
+    def validate(self, unit: object, value: Callable) -> Callable:
+        """Permit arbitrary Callables."""
         if not callable(value):
             raise self.raiser.Function(self, unit, value=value)
         return value
@@ -134,31 +142,33 @@ class BoundStrategy[**In, Out]:
         self,
         engine: MethodFieldEngine[In, Out],
         unit: object,
-        func: Calling[In, Out],
+        func: Callable[In, Out],
         bind: bool = True,
     ):
         self.engine: MethodFieldEngine[In, Out] = engine
         self.unit: Any = unit
-        self.func: Calling[In, Out] = func
+        self.func: Callable[In, Out] = func
         self.bind: bool = bind
 
     @property
     def __name__(self) -> str:
-        return self.func.__name__
+        return reflect.funcname(self.func)
 
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         if self.bind:
             return self.func(self.unit, *args, **kwargs)
         return self.func(*args, **kwargs)
 
-    def switch(self, new_func: Calling[In, Out]) -> Self:
+    def switch(self, new_func: Callable[In, Out]) -> Self:
         """Swap function while ensuring LSP-consistency"""
         self.engine.write(self.unit, new_func)
-        self.func: Calling[In, Out] = new_func
+        self.func: Callable[In, Out] = new_func
         self.bind = False
         return self
 
-    def morph[**Bound, Opened](self, new_func: Calling[Bound, Opened]) -> Self:
+    def morph[**Bound, Opened](
+        self, new_func: Callable[Bound, Opened]
+    ) -> Self:
         """Swap function while ignoring LSP-violatons"""
         if not isinstance(self.engine, MorphingField):  # CHECK: needed?
             raise self.engine.raiser.Function(
@@ -168,7 +178,7 @@ class BoundStrategy[**In, Out]:
                 value=new_func,
             )
         self.engine.write(self.unit, new_func)  # ty:ignore
-        self.func: Calling[Bound, Opened] = new_func
+        self.func: Callable[Bound, Opened] = new_func
         self.bind = False  # CHECK:
         return self
 

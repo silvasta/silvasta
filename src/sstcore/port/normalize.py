@@ -24,6 +24,36 @@ __all__: list[str] = [
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, overload
+from typing import runtime_checkable as _runtime_checkable
+
+from .calling import _Stringable
+
+#  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@_runtime_checkable
+class Normalizing(Protocol):
+    # TODO: check where used/needed
+    def __call__(self, text: Any) -> _Stringable:
+        """Forward text-like object after processing and ensuring string"""
+
+
+@_runtime_checkable
+class Sanitize[ExpectedT, UnexpectedT, TargeT](Protocol):
+    # TODO: check where used/needed
+    def __call__(self, target: ExpectedT | UnexpectedT) -> TargeT:
+        """Forward object after processing and ensuring types"""
+
+
+@_runtime_checkable
+class NormalizingMaybe[ExpectedT: _Stringable](
+    Sanitize[ExpectedT, Any, _Stringable], Protocol
+):
+    # TODO: check where used/needed
+    """Forward text after processing and ensuring string(able)"""
+
+
+#  LINE: -- ParsedName Normalizing Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class NamingPattern(Protocol):

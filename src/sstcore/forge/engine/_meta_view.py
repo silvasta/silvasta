@@ -14,8 +14,9 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
+from ...brick.call import just_return
 from ...brick.color.box import Colors
-from ...brick.labor import clsname, just_return
+from ...brick.reflect import clsname
 from ...port import represent
 from ...port.calling import ClassRendering
 from ...port.color import Color, ColorId
@@ -24,11 +25,11 @@ from ...port.link import portlink
 from ...port.represent import SstView
 from ._meta_base import SstMeta, SstMetaData
 
-colors = Colors()  # LATER: resolve this somehows
+colors = Colors()
 
 
 @portlink(SstView)
-@portlink(represent.SstFullView)
+@portlink(represent.SstView)
 class ClsViewBase(SstMeta):
     """Provide all Views for Classes"""
 
@@ -120,7 +121,7 @@ class ClsViewData(SstMetaData):
             return PanelDTO(
                 content=content or cls.toolkit(),  # FIX:
                 title=cls.__rich__(),
-                frame=colors.get(self.color),
+                frame=Color.resolve(self.color),
             )
 
         return _default_cli

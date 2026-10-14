@@ -9,12 +9,12 @@ __all__: list[str] = [
     "DecoratedField",
 ]
 
+from collections.abc import Callable
 from inspect import Signature, signature
 from types import MethodType
 from typing import Any, Self
 
 from ...port import attach
-from ...port.calling import Calling
 from ...port.link import portlink
 from .. import reflect
 from ._base import ReadField
@@ -32,12 +32,12 @@ class FieldDecorator[**In, Out](ValidField):
       - the other is to modify the callable itself (with/without decorator?)
     """
 
-    target_func: Calling[In, Out] | None = None
+    target_func: Callable[In, Out] | None = None
     signature: Signature | None = None
 
     def __init__(
         self,
-        func: Calling[In, Out] | None = None,
+        func: Callable[In, Out] | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -46,7 +46,7 @@ class FieldDecorator[**In, Out](ValidField):
         if func is not None:
             self.bind(func)
 
-    def __call__(self, func: Calling[In, Out]) -> Self:
+    def __call__(self, func: Callable[In, Out]) -> Self:
         """Invoked only when used as @Field(args) (with parens)."""
         self.bind(func)
         return self
@@ -54,12 +54,12 @@ class FieldDecorator[**In, Out](ValidField):
     def __str__(self):
         return f"{self.target_func}[{self.signature}]"
 
-    def bind(self, func: Calling) -> None:
+    def bind(self, func: Callable) -> None:
 
         if not callable(func):
             raise TypeError(f"Target must be callable, got {type(func)}")
 
-        self.target_func: Calling[In, Out] = func
+        self.target_func: Callable[In, Out] = func
         self.signature: Signature = signature(func)
 
         default_doc = f"Bound Function by {self}"
@@ -67,8 +67,8 @@ class FieldDecorator[**In, Out](ValidField):
         self.public_name: str = reflect.funcname(func)  # TODO: default value?
 
     def validate(
-        self, unit: object, value: Calling[In, Out]
-    ) -> Calling[In, Out]:
+        self, unit: object, value: Callable[In, Out]
+    ) -> Callable[In, Out]:
         """Finish the loop and return the value"""
 
         if not callable(value):
@@ -82,11 +82,11 @@ class FieldDecorator[**In, Out](ValidField):
 
 @portlink(attach.DecoDescriptor)
 class DecoratedField[**In, Out](
-    ReadField[Calling[In, Out]], FieldDecorator[In, Out]
+    ReadField[Callable[In, Out]], FieldDecorator[In, Out]
 ):
     """FieldDecorator with default ReadField for direct usage"""
 
-    def read(self, unit: object) -> Calling[In, Out]:
+    def read(self, unit: object) -> Callable[In, Out]:
         if self._has_val(unit):
             return self._get_val(unit)
 

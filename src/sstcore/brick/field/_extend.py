@@ -18,7 +18,6 @@ __all__: list[str] = [
 from typing import Never
 
 from ...port import attach
-from ...port.attach import Types
 from ...port.link import portlink
 from ..reflect import clsname
 from ._base import MISSING, DeleteField, WriteField
@@ -49,18 +48,17 @@ class ValidField[FieldT](WriteField):
 
 
 @portlink(attach.TypedDescriptor)
-@portlink(attach.ValidDescriptor)
-class TypedField[FieldT](ValidField[FieldT]):
-    def __init__(self, *args, types: Types[FieldT], **kwargs):
-        self.types: Types[FieldT] = types
+class TypedField[AnnoT](ValidField[AnnoT]):
+    def __init__(self, *args, types: type[AnnoT] | tuple[type, ...], **kwargs):
+        self.types: type[AnnoT] | tuple[type, ...] = types
         super().__init__(*args, **kwargs)
 
-    def raise_on_typing(self, unit: object, value: FieldT) -> Never:
+    def raise_on_typing(self, unit: object, value: AnnoT) -> Never:
         # TODO: raiser, Validation error or new typed error
         _m = f"{self.name(unit)} expected {self.types!r}, got {clsname(value)}"
         raise TypeError(_m)
 
-    def validate(self, unit: object, value: FieldT) -> FieldT:
+    def validate(self, unit: object, value: AnnoT) -> AnnoT:
         if not isinstance(value, self.types):
             self.raise_on_typing(unit, value)
         return super().validate(unit, value)

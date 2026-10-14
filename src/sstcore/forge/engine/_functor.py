@@ -41,6 +41,7 @@ class FunctorMeta(SstMeta):
         data: FunctorMetaData,
     ):
         for key, value in list(namespace.items()):
+            # TODO: check with port.attach.Calling
             field_kind: Any | type[MethodFieldEngine] = getattr(
                 value, "__field_kind__", None
             )
@@ -63,6 +64,7 @@ def _install(namespace, bases, name, field_cls, default, /):
     if isinstance(existing, MethodFieldEngine):
         return
 
+    # TODO: check with port.attach.Calling
     field_kind: Any | None = getattr(existing, "__field_kind__", None)
     if field_kind is not None and not isinstance(existing, MethodFieldEngine):
         namespace[name] = field_kind(existing, bind_to_self=True)
