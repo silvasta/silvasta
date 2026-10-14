@@ -21,7 +21,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Protocol, Self
 
-from .calling import Stringable
+from .calling import _Stringable
 
 
 # NEXT: runtime_checkable?? (for Printer)
@@ -116,7 +116,7 @@ class Names(Protocol):
     @property
     def plot_dir(self) -> str: ...
 
-    def summary_file(self, day: Stringable = "", suffix: str = "md") -> str:
+    def summary_file(self, day: _Stringable = "", suffix: str = "md") -> str:
         """Define the Name Schema for the Scanner Summary File"""
 
     @property

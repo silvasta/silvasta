@@ -1,8 +1,8 @@
 """
 Define the Event DTOs for Log and Print
 
-- LogDTO  Intended for __log__ and processed by Loguru.logger
-- CliDTO: Intended for __cli__ and processed by printer
+- CliDTO: CliRenderable snapshot with __cli__ to Printer
+- LogDTO: LogSerializable message with __log__ to Loguru
 
 Rendering Protocols with Runtime check
 - LogSerializable
@@ -13,49 +13,44 @@ Rendering Protocols with Runtime check
 
 __all__: list[str] = [
     "EventDTO",
-    "DtoNames",
-    #
     "LogDTO",
     "CliDTO",
-    "GroupDTO",
-    "LineDTO",
+    "EventDtoFactory",
+    "DtoNames",
+    # cli extensions
     "MarkdownDTO",
     "PanelDTO",
+    "LineDTO",
+    "GroupDTO",  # CHECK:
     "TableDTO",
-    #
-    "CliDtoCreator",
 ]
 
-from dataclasses import dataclass as _dataclass
-from dataclasses import field as _field
-from typing import Any as _Any
-from typing import Literal as _Literal
-from typing import Protocol as _Protocol
-from typing import Self as _Self
-from typing import dataclass_transform as _dataclass_transform
-from typing import runtime_checkable as _runtime_checkable
+import dataclasses as _dc
+import typing as _typing  # LATER: import _Any directly?
+from collections.abc import Iterable as _Iterable
 
 from loguru import logger as _logger
 
+from .._types import _Richable
 from ..color import Color as _Color
 from ..color import ColorId as _ColorId
 
-type DtoNames = _Literal[
+type DtoNames = _typing.Literal[
     "log",
     "cli",
     "panel",
     "markdown",
-    "group",
+    "group",  # CHECK:
     "line",
     "table",
 ]
 
 
-@_dataclass_transform(kw_only_default=True)
+@_typing.dataclass_transform(kw_only_default=True)
 class EventDTO:
     """Base class for all DTOs. Automatically makes subclasses dataclasses."""
 
-    _registry: dict[str, type[_Self]] = {}
+    _registry: dict[str, type[_typing.Self]] = {}
 
     def __init_subclass__(cls, name: DtoNames, kw_only=True, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -64,7 +59,25 @@ class EventDTO:
             _logger.info(f"Replacing: {name=},{replaced=}")
         cls._registry[name] = cls
 
-        _dataclass(kw_only=kw_only, **kwargs)(cls)
+        _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
+
+
+#  LINE: -- Factory -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class EventDtoFactory(_typing.Protocol):
+    """Produce the Default DTOs or their extended Versions"""
+
+    def log(self) -> LogDTO: ...
+    def cli(self) -> CliDTO: ...
+    def panel(self) -> PanelDTO: ...
+    def markdown(self) -> MarkdownDTO: ...
+    def group(self) -> GroupDTO: ...  # CHECK:
+    def line(self) -> LineDTO: ...
+    def table(self) -> TableDTO: ...
+
+
+#  LINE: -- Main branches -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class LogDTO(EventDTO, name="log"):
@@ -72,32 +85,59 @@ class LogDTO(EventDTO, name="log"):
 
     message: str
     level: str = "INFO"
-    metrics: dict[str, _Any] = _field(default_factory=dict)
-    extra: dict[str, _Any] = _field(default_factory=dict)
+    metrics: dict[str, _typing.Any] = _dc.field(default_factory=dict)
+    extra: dict[str, _typing.Any] = _dc.field(default_factory=dict)
 
 
 class CliDTO(EventDTO, name="cli", kw_only=False):
     """Root of the Cli Pipeline"""
 
-    content: str
+    # NEXT: check what content actually needs
+    # - rich preferably just as extension
+    # - maybe resolve GroupDTO with that
+    #   -> handled in renderer to rich.Group (or any other adapter)
+    content: _CliRenderable | _Iterable[_CliRenderable]
     color: _ColorId = _Color.AZURE
     indent: int = 0
-    meta: dict[str, _Any] = _field(default_factory=dict)
+    meta: dict[str, _typing.Any] = _dc.field(default_factory=dict)
 
 
-_AlignMethod = _Literal["left", "center", "right"]
+#  LINE: -- Views (exposed in port.represent) -- -- - -- -- - -- -- - -- -- - --
+
+
+@_typing.runtime_checkable
+class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
+    def __cli__(self) -> CliDTO_covariant:
+        """Snapshot the Target for Visualization"""
+
+
+@_typing.runtime_checkable
+class _LogSerializable(_typing.Protocol):
+    def __log__(self) -> LogDTO:
+        """Message the Event for Traceability"""
+
+
+_CliRenderable = _CliSerializable | _Richable  # NOTE: | str included _Richable
+
+
+#  LINE: -- CliDTO extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+_AlignMethod = _typing.Literal["left", "center", "right"]
 
 
 class PanelDTO(CliDTO, name="panel"):
-    # TODO: assemble stack with color+attribute
-    color: str = "bold white"
-    frame: str = _Color(value=2).name
+    # NEXT: compare with printer TypedDict kwargs,
+    # -> remove as much as possible here
+    # only the actual panel info, maybe some rendering hints
+    frame: _Color = _Color.AZURE
+    text_color: _Color = _Color.WHITE
     title: str | None = None
     # TASK: filter out the to much render information
     title_align: _AlignMethod = "right"
     expand: bool = True
     padding: tuple = (0, 1)
-    metrics: dict[str, _Any] = _field(default_factory=dict)
+    metrics: dict[str, _typing.Any] = _dc.field(default_factory=dict)
 
 
 class MarkdownDTO(CliDTO, name="markdown"):
@@ -108,6 +148,19 @@ class LineDTO(CliDTO, name="line"): ...
 
 
 class GroupDTO(CliDTO, name="group"):
+    # INFO: never used in sstcore, used in sachmis:
+    # def __cli__(self) -> CliDTO:
+    #     return GroupDTO(
+    #         items=[
+    #             PanelDTO(text=str(self), title=self.arbo_location()),
+    #             MarkdownDTO(text=self.content), ] ,)
+    # INFO: sachmis usage 2/2:
+    # def __cli__(self) -> CliDTO:
+    #     return GroupDTO(
+    #         items=[
+    #             PanelDTO(text=str(self), title=self.arbo_location()),
+    #             MarkdownDTO(text=self.content),
+    #             TableDTO.from_col_dicts(cols=self.usage), ],)
     """Stack multiple renderable Views"""
 
 
@@ -122,27 +175,7 @@ class TableDTO(CliDTO, name="table"):
 
     """
 
-    matrix: list[list[_Any]]
-    col_names: list[str] = _field(default_factory=list)
-    row_names: list[str] = _field(default_factory=list)
+    matrix: list[list[_typing.Any]]
+    col_names: list[str] = _dc.field(default_factory=list)
+    row_names: list[str] = _dc.field(default_factory=list)
     corner: str = ""
-
-
-@_runtime_checkable
-class CliDtoCreator(_Protocol):
-    """Annotate the ability to launch CliDTO units"""
-
-    def __call__(self, cls: type) -> CliDTO:
-        """Produce DTO for... only cls? or general? dispatch?"""
-
-
-class EventDtoFactory(_Protocol):
-    """Produce the Default DTOs or their extended Versions"""
-
-    def log(self) -> LogDTO: ...
-    def cli(self) -> CliDTO: ...
-    def panel(self) -> PanelDTO: ...
-    def markdown(self) -> MarkdownDTO: ...
-    def group(self) -> GroupDTO: ...
-    def line(self) -> LineDTO: ...
-    def table(self) -> TableDTO: ...

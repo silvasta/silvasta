@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any
 
-from ..calling import Stringable
+from ..calling import _Stringable
 from ..solid import EnumMachine
 from ._define import LinkSpec
 from ._model import Doc, Docs, PlugDoc, PortDoc, SidePolicy
@@ -126,7 +126,7 @@ def _load_printer():
                 self.console = Console()
             self.console.print(*args, **kwargs)
 
-        def lines(self, target: Iterable[Stringable], /):
+        def lines(self, target: Iterable[_Stringable], /):
             match target:
                 case dict():
                     _lines = (f"{k}: {v}" for k, v in target.items())

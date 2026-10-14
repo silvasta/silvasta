@@ -20,7 +20,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Protocol
 
-from .calling import Stringable  # 0
+from .calling import _Stringable  # 0
 from .filter import PathFiltering  # 4
 from .tree import PathTree  # 0
 
@@ -39,7 +39,7 @@ class FolderScan(Protocol):
 class FileScan(Protocol):
     """Define the Shape of the File extraction Engine"""
 
-    def __call__(self, path: Path) -> Stringable:
+    def __call__(self, path: Path) -> _Stringable:
         """Provide str or container object that produces str"""
 
 

@@ -24,7 +24,36 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
-from typing import Any, Literal
+from typing import Any, Literal, Protocol, runtime_checkable
+
+#  LINE: -- Port internal views (exposed in port.represent) -- -- - -- -- - --
+
+
+@runtime_checkable
+class _Stringable(Protocol):
+    def __str__(self) -> str: ...
+
+
+@runtime_checkable
+class _LogStringable(Protocol):
+    def __repr__(self) -> str:
+        """Concate the Event info directly into a (usually very) long String"""
+
+
+@runtime_checkable
+class _RichView(Protocol):
+    def __rich__(self): ...
+
+
+@runtime_checkable
+class _RichConsolable(Protocol):
+    def __rich_console__(self):
+        """Just extend the Renderable type"""
+
+
+_Richable = _RichView | _RichConsolable | str
+
+#  LINE: -- Collected Definitions of: type ... = ... -- -- - -- -- - -- -- - --
 
 
 class Registry:

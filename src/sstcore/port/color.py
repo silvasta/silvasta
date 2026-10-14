@@ -45,7 +45,7 @@ __all__: list[str] = [
 from enum import auto
 from typing import Annotated, NamedTuple, Protocol, Self
 
-from .calling import Stringable  # 0
+from .calling import _Stringable  # 0
 from .register import TupleRegister  # 5
 from .solid import BaseEnum, EnumId  # 1
 
@@ -108,12 +108,12 @@ class ColorCoordinate(NamedTuple):
 
 
 class Coloring(Protocol):
-    def __call__(self, text: Stringable, color: str, /) -> str:
+    def __call__(self, text: _Stringable, color: str, /) -> str:
         """Transform the Text into a Colored Renderable"""
 
 
 class Colorizing(Protocol):
-    def __call__(self, text: Stringable, /) -> str:
+    def __call__(self, text: _Stringable, /) -> str:
         """Apply Default or Bound Color to get Colored Renderable"""
 
 
@@ -149,7 +149,7 @@ class Painter(Protocol):
     _paint: Colorizing
     """Lookup the current color code and paint"""
 
-    def __call__(self, text: Stringable, /) -> str:
+    def __call__(self, text: _Stringable, /) -> str:
         """Apply the Colorizing function with lookup to ColorTable"""
 
     def __str__(self) -> str:
@@ -193,5 +193,5 @@ class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     def __getattr__(self, name: str) -> Painter:
         """Provide Colors on ColorIndex Name and Shortcut"""
 
-    def __call__(self, text: Stringable, color: ColorId, /) -> str:
+    def __call__(self, text: _Stringable, color: ColorId, /) -> str:
         """Find Color by Identifier and return painted text"""

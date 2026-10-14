@@ -34,6 +34,11 @@ class EventHandler(Protocol):
         """Process emitted Events dispatched by the Bus"""
 
 
+# TASK: Functor as direct input instead of func?
+# - check when func is ever needed
+# NEXT: check where to convert!
+
+
 class EventBus(Protocol):
     """Enable decoupled state propagation for synchronous Events"""
 

@@ -6,8 +6,6 @@ Provide Infrastructure for Events
                                                        DependencyLevel[0]
 """
 
-from typing import TYPE_CHECKING
-
 __all__: list[str] = [
     "EventHandler",
     # presets
@@ -25,6 +23,7 @@ from loguru import logger
 
 from ...port.event import Event, EventBus
 from ...port.event import EventHandler as EventHandler_
+from ...port.link import portlink
 from ...util.log import handle_log_event
 from ...util.print import printer
 
@@ -39,6 +38,7 @@ def register_default_event_handler(bus: EventBus) -> None:
     bus.subscribe_all(TELEMETRY_HANDLER)
 
 
+@portlink(EventHandler_)  # TODO: resolve name conflict
 @dataclass(frozen=True)
 class EventHandler:
     """Process Events emitted from the bus in observable Environment"""
@@ -102,7 +102,3 @@ TELEMETRY_HANDLER = EventHandler(
     func=telemetry,
     fail_loud=False,
 )
-
-if TYPE_CHECKING:
-    _instance_check: EventHandler_ = EventHandler("dummy", lambda _e: None)
-    _class_check: type[EventHandler_] = EventHandler

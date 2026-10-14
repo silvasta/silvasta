@@ -17,7 +17,7 @@ __all__: list[str] = [
 from collections.abc import Iterable
 from typing import Any, Protocol
 
-from ..calling import Stringable
+from ..calling import _Stringable
 
 
 class DunderStore(Protocol):
@@ -27,11 +27,11 @@ class DunderStore(Protocol):
 
 class DunderFormatMixin:
     @staticmethod
-    def format(item: Stringable, /) -> str:
+    def format(item: _Stringable, /) -> str:
         return f"__{DunderFormatMixin.extract(item)}__"
 
     @staticmethod
-    def extract(item: Stringable, /) -> str:
+    def extract(item: _Stringable, /) -> str:
         return str(item).strip("_")
 
 

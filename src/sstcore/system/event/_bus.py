@@ -14,7 +14,7 @@ import fnmatch
 from functools import lru_cache
 from typing import TYPE_CHECKING, Self, Unpack
 
-from ...brick.labor import clsname
+from ...brick.reflect import clsname
 from ...port.event import Event, EventBus, EventHandler
 from ...port.event.name import CoreEvent, EventName, EventPattern
 from ...port.link import portlink
@@ -73,6 +73,9 @@ class Bus:
 
         return tuple(dict.fromkeys(matched_handlers))
 
+    # IMPORTANT: @portlink(BusLoader)
+    # TASK: portlink.func?
+    # - this but for methods instead of classes!
     @classmethod
     def ready(cls, **data: Unpack[BusInput]) -> Self:
 

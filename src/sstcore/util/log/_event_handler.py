@@ -13,9 +13,16 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 
 from ...port.event import Event, EventHandler
-from ...port.event.dto import LogDTO, LogSerializable
+from ...port.event.dto import LogDTO
+from ...port.link import portlink
+from ...port.represent import LogSerializable
+
+_ = portlink
 
 
+# IMPORTANT: @portlink(EventHandler)
+# TASK: portlink.func?
+# - this but for methods instead of classes!
 def handle_log_event(event: Event) -> None:  # TODO: this directly with Functor
     """Process payload['log'] only; no-op for every other event."""
 
