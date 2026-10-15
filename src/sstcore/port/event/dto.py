@@ -17,6 +17,7 @@ __all__: list[str] = [
     "LogDTO",
     "DtoNames",
     "EventDtoFactory",
+    "CliData",
     # cli extensions
     "MarkdownDTO",
     "PanelDTO",
@@ -25,7 +26,6 @@ __all__: list[str] = [
 ]
 
 import dataclasses as _dc
-import enum as _e
 import typing as _typing
 from collections.abc import Callable as _Callable
 from typing import Any as _Any
@@ -33,19 +33,32 @@ from typing import Unpack as _Unpack
 
 from loguru import logger as _logger
 
+from ...brick.call import castarg
 from .._types import _RichView, _Stringable
 from .._types import event_types as _dto
 from ..color import Color as _Color
 from ..color import ColorArg as _ColorArg
-from ..solid import BoxOption as _BoxOption
+from . import _param as _p
+
+type DtoNames = _typing.Literal[
+    "log",
+    "cli",
+    #
+    "panel",
+    "markdown",
+    "line",
+    "table",
+    #
+    "ctor",
+]
 
 
 @_typing.dataclass_transform(kw_only_default=True)
-class EventDTO:
+class EventDTOBase:
     """Base class for all DTOs. Automatically makes subclasses dataclasses."""
 
     _registry: dict[str, type[_typing.Self]] = {}  # LATER: ClsRegistry
-    name: _typing.ClassVar[DtoNames]  # AI: does this work?
+    name: _typing.ClassVar[DtoNames]
 
     def __init_subclass__(cls, name: DtoNames, kw_only=True, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -54,30 +67,86 @@ class EventDTO:
             _logger.info(f"Replacing: {name=},{replaced=}")
 
         cls._registry[name] = cls
-        cls.name: DtoNames = name  # AI: does this work?
+        cls.name = name
 
         _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
 
     def __str__(self):
         return f"{type(self).__name__}[{self.name}]"
 
+
+class EventDTO(EventDTOBase, name="ctor"):
     @classmethod
-    def create(cls): ...  # AI_QUESTION: useful over multiple derivatives?
+    def create(cls, *args, **kwargs) -> _typing.Self:
+        """Resolve ParamData Structure and Produce latest registered DTO"""
+        target_cls: type[_typing.Self] = cls._registry.get(cls.name, cls)
+        sanitized: dict[str, _Any] = target_cls._sanitize_kwargs(**kwargs)
+        return target_cls(*args, **sanitized)
+
+    @classmethod
+    @castarg
+    def _sanitize_kwargs(
+        cls, **kwargs: _Unpack[_AllDtoSpecs]
+    ) -> dict[str, _Any]:
+        """Pack nested ParamData and resolve Annotated types"""
+        return _p.sanitize_specs(
+            fields={field.name for field in _dc.fields(class_or_instance=cls)},
+            **kwargs,
+        )
 
 
-type DtoNames = _typing.Literal[
-    "log",
-    "cli",
-    "panel",
-    "markdown",
-    "line",
-    "table",
-]
+class EventDtoFactory(_typing.Protocol):
+    """Produce the Default DTOs or their extended Versions"""
 
-type _CliData = _CliSerializable | _RichView | str
-type _Content[Value: _CliData | _dto.Tuple[_CliData]] = _dto.Tuple[Value]
-type _Vec = _Content[_CliData]
-type _Grid = _Content[_dto.Tuple[_CliData]]
+    def log(self, message: str, /, **kw: _Unpack[LogSpec]) -> LogDTO: ...
+    def cli(self, content: _Content, /, **kw: _Unpack[CliSpec]) -> CliDTO: ...
+    def panel(
+        self, *content: CliData, **kw: _Unpack[PanelSpec]
+    ) -> PanelDTO: ...
+    def md(
+        self, content: _Stringable, /, **kw: _Unpack[MdSpec]
+    ) -> MarkdownDTO: ...
+    def line(self, *content: CliData, **kw: _Unpack[LineSpec]) -> LineDTO: ...
+    def table(
+        self, content: _Grid, /, **kw: _Unpack[TableSpec]
+    ) -> TableDTO: ...
+
+
+#  LINE: -- Log -- -- - -- -- - -- -- - -- -- - --
+
+
+class LogDTO(EventDTO, name="log", kw_only=False):
+    """Root (and only Member) of the Log Pipeline"""
+
+    message: str
+    level: str = "INFO"
+    metrics: _dto.Map = _dc.field(default_factory=dict)
+    extra: _dto.Map = _dc.field(default_factory=dict)
+
+
+class LogSpec(_typing.TypedDict, total=False):
+    level: str
+    metrics: _dto.Map
+    extra: _dto.Map
+
+
+#  LINE: -- Cli -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class CliDTO[Content = _Content](EventDTO, name="cli", kw_only=False):
+    """Root of the Cli Pipeline"""
+
+    content: Content
+    color: _Color = _Color.AZURE  # Main Color
+    infos: _dto.Map = _dc.field(default_factory=dict)
+
+
+class CliSpec(_typing.TypedDict, total=False):
+    color: _ColorArg
+    infos: _dto.Map
+
+
+#  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @_typing.runtime_checkable
@@ -92,191 +161,37 @@ class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
         """Snapshot the Target for Visualization"""
 
 
-#  LINE: -- Factory -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+type CliData = _CliSerializable | _RichView | str
 
-
-class EventDtoFactory(_typing.Protocol):
-    """Produce the Default DTOs or their extended Versions"""
-
-    def log(self, message: str, /, **kw: _Unpack[LogSpec]) -> LogDTO: ...
-    def cli(self, content: _Content, /, **kw: _Unpack[CliSpec]) -> CliDTO: ...
-    def panel(
-        self, *content: _CliData, **kw: _Unpack[PanelSpec]
-    ) -> PanelDTO: ...
-    def markdown(
-        self, content: _Stringable, /, **kw: _Unpack[MdSpec]
-    ) -> MarkdownDTO: ...
-    def line(self, *content: _CliData, **kw: _Unpack[LineSpec]) -> LineDTO: ...
-    def table(
-        self, content: _Grid, /, **kw: _Unpack[TableSpec]
-    ) -> TableDTO: ...
-
-
-#  LINE: -- Log -- -- - -- -- - -- -- - -- -- - --
-
-
-class LogDTO(EventDTO, name="log"):
-    """Root (and only Member) of the Log Pipeline"""
-
-    message: str
-    level: str = "INFO"
-    metrics: _dto.Map = _dc.field(default_factory=dict)
-    extra: _dto.Map = _dc.field(default_factory=dict)
-
-
-class LogSpec(_typing.TypedDict):
-    level: str
-    metrics: _dto.Map
-    extra: _dto.Map
-
-
-#  LINE: -- Cli -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class CliDTO[
-    Content = _Content,
-](EventDTO, name="cli", kw_only=False):
-    """Root of the Cli Pipeline"""
-
-    content: Content
-    color: _Color = _Color.AZURE  # Main Color
-    infos: _dto.Map = _dc.field(default_factory=dict)
-
-
-class CliSpec(_typing.TypedDict):
-    # AI: is Annotaded fine on TypedDict?
-    # INFO: type _ColorArg = Annotated[ColorId, Color.resolve]
-    color: _ColorArg
-    infos: _dto.Map
-
-
-#  LINE: -- Param -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class Boxes(_BoxOption):
-    CORNER = _e.auto()
-    ROUND = _e.auto()
-    UP = _e.auto()
-    DOWN = _e.auto()
-    MINI = _e.auto()
-    MINI_UP = _e.auto()
-    MINI_DOWN = _e.auto()
-    OPEN = _e.auto()
-
-
-@_typing.dataclass_transform(kw_only_default=True)
-class ParamData:
-    """Base for stacked configuration dataclasses (FrameData, HeaderData, etc.)."""
-
-    def __init_subclass__(cls, kw_only: bool = True, **kwargs: _Any):
-        super().__init_subclass__(**kwargs)
-        _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
-
-
-def _param_field[T](factory: _Callable[[], _Any], /) -> T:
-    """Helper to provide a default base ParamData factory for a generic field T."""
-    return _dc.field(default_factory=factory)
-
-
-class FrameData(ParamData):
-    """The Box around the Renderable - supplies Content and Frame"""
-
-    topic: str | None = ""
-    topic_color: _Color = _Color.WHITE
-    box: Boxes = Boxes.CORNER
-
-
-class FrameSpec(_typing.TypedDict, total=False):
-    """Define the Border of one Header or Main Content"""
-
-    topic: str
-    topic_color: _ColorArg
-    box: Boxes
-
-
-class HeaderData[
-    F: FrameData = FrameData,
-](ParamData):
-    """
-    Explain:
-
-    X --- --- --- --- --- --- --- --- --- --- [ topic: FileScan ] --- X
-    | title: Frame with Title on top of the Content                   |
-    X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
-    | content: ...                 (maybe double line for transition) |
-    |          ...                                                    |
-
-    - No Header for title = None
-    - Mirror main frame topic for frame.topic = "", empty for None
-    """
-
-    title: str | None = None
-    frame: F = _param_field(FrameData)
-
-
-class HeaderBaseSpec(_typing.TypedDict, total=False):
-    title: str
-
-
-class HeaderFrameSpec(_typing.TypedDict, total=False):
-    """Test"""
-
-    header_topic: str
-    header_topic_color: _ColorArg
-    header_box: Boxes | None  # None = Same as Main Content
-
-
-class HeaderSpec(HeaderBaseSpec, HeaderFrameSpec):
-    """Combine Header with Frame Args"""
-
+type _Content[Value: CliData | _dto.Tuple[CliData]] = _dto.Tuple[Value]
+type _Vec = _Content[CliData]
+type _Grid = _Content[_dto.Tuple[CliData]]
 
 #  LINE: -- Panel -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# AI_FOCUS: Example starts here
-class PanelDTO[
-    H: HeaderData[_Any] = HeaderData[FrameData],
-    F: FrameData = FrameData,
-](CliDTO[_Vec], name="panel"):
+class PanelDTO(CliDTO[_Vec], name="panel"):
     """Store Data to Render in Box"""
 
-    header: H = _param_field(HeaderData)
-    frame: F = _param_field(FrameData)
+    header: _p.HeaderData = _dc.field(default_factory=_p.HeaderData)
+    frame: _p.FrameData = _dc.field(default_factory=_p.FrameData)
 
 
-# AI: Idea 1
-class _PanelDTO[H: HeaderData, F: FrameData](CliDTO[_Vec], name="panel"):
-    """Store Data to Render in Box"""
-
-    header: HeaderData[F]
-    frame: F
-
-
-# AI: Idea 2
-class _PanelDTO(CliDTO[_Vec], name="panel"):
-    """Store Data to Render in Box"""
-
-    header: HeaderData
-    frame: FrameData
-
-
-class PanelSpec(HeaderSpec, FrameSpec):
+class PanelSpec(CliSpec, _p.HeaderSpec, _p.FrameSpec, total=False):
     """Box-Like"""
 
 
 #  LINE: -- Markdown --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class MarkdownDTO[
-    F: FrameData = FrameData,
-](CliDTO[tuple[_CliData]], name="markdown"):
+class MarkdownDTO(CliDTO[tuple[CliData]], name="markdown"):
     """Store one Formatted Markdown DataPoint"""
 
-    frame: F = _param_field(FrameData)
+    frame: _p.FrameData = _dc.field(default_factory=_p.FrameData)
     maxlen: int = 400
 
 
-class MdSpec(FrameSpec):
+class MdSpec(CliSpec, _p.FrameSpec, total=False):
     """Markdown"""
 
     maxlen: int
@@ -285,31 +200,25 @@ class MdSpec(FrameSpec):
 #  LINE: -- Line --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class LineDTO[
-    H: HeaderData = HeaderData,
-](CliDTO[_Vec], name="line"):
+class LineDTO(CliDTO[_Vec], name="line"):
     """Store Lines for Sequential unboxed Rendering"""
 
-    header: H = _param_field(HeaderData)
+    header: _p.HeaderData = _dc.field(default_factory=_p.HeaderData)
     stat: _Callable[[_Vec], str] | None = lambda lines: (
         f"Total Lines: {len(lines)}"
     )
 
 
-class LineSpec(HeaderSpec):
+class LineSpec(CliSpec, _p.HeaderSpec, total=False):
     """Line and Lines"""
 
-    maxlen: int
     stat: _Callable[[_Vec], str]
 
 
 #  LINE: -- Table --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class TableDTO[
-    H: HeaderData[_Any] = HeaderData[FrameData],
-    F: FrameData = FrameData,
-](CliDTO[_Grid], name="table"):
+class TableDTO(CliDTO[_Grid], name="table"):
     """
     Store Table Data in Grid of Rows and Columns
 
@@ -328,13 +237,17 @@ class TableDTO[
     row_names: _Content[str] = _dc.field(default_factory=tuple)
     corner: str = ""
 
-    header: H = _param_field(HeaderData)
-    frame: F = _param_field(FrameData)
+    header: _p.HeaderData = _dc.field(default_factory=_p.HeaderData)
+    frame: _p.FrameData = _dc.field(default_factory=_p.FrameData)
 
 
-class TableSpec(HeaderSpec, FrameSpec):
+class TableSpec(CliSpec, _p.HeaderSpec, _p.FrameSpec, total=False):
     """Line and Lines"""
 
     col_names: _Content[str]
     row_names: _Content[str]
     corner: str
+
+
+class _AllDtoSpecs(TableSpec, MdSpec, LineSpec, LogSpec, total=False):
+    """Combined spec space so @castarg discovers all Annotated casters once."""

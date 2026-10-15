@@ -27,8 +27,6 @@ class Event:
 
 
 class EventHandling(Protocol):
-    # TASK: Functor as direct input instead of func?
-    # - check when func is ever needed
     def __call__(self, event: Event) -> None:
         """Process emitted Events dispatched by the Bus"""
 
