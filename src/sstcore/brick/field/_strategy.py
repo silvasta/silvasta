@@ -7,7 +7,9 @@ Exchange Callables on Classes
 
 __all__: list[str] = [
     "StrategyField",
+    # "strategy",
     "MorphingField",
+    # "morphing",
     #
     "MethodFieldEngine",
     "BoundStrategy",
@@ -15,7 +17,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 from inspect import Parameter, Signature, _ParameterKind, signature
-from typing import Any, Self
+from typing import Any, Concatenate, Self, overload
 
 from ...port import attach
 from ...port.link import portlink
@@ -23,25 +25,18 @@ from .. import reflect
 from ._decorate import DecoratedField
 from ._extend import ResetField
 
-
-def strategy[**In, Out](func: Callable[In, Out]) -> attach.Calling[In, Out]:
-    """Mark the Field for StrategyField assembling"""
-    func.__field_kind__ = StrategyField
-    # AI: following warning:
-    # └╴󰌠  _strategy.py  2
-    #   ├╴  Return type does not match returned value: expected `Calling[In@strategy, Out@strategy]`, found `(**In@strategy) -> Out@strategy`
-    #   │    info: type `(**In@strategy) -> Out@strategy` is not assignable to protocol `Calling[In@strategy, Out@strategy]`
-    #   │    info: └── protocol member `__field_kind__` is not defined on type `(**In@strategy) -> Out@strategy` ty (invalid-return-type) [30, 12]
-    #   └╴  Do not call `setattr` with a constant attribute value. It is not any safer than normal property access.
-    #        help: Replace `setattr` with assignment Ruff (B010) [29, 5]
-    return func
-
-
-def morphing[**In, Out](func: Callable[In, Out]) -> attach.Calling[In, Out]:
-    """Mark the Field for MorphingField assembling"""
-    # AI: maybe just like this? ty:ignore is basically the same as typing.cast
-    func.__field_kind__ = MorphingField  # ty: ignore
-    return func  # ty: ignore
+# REMOVE: when replacement looks proper
+# def strategy[Owner, **In, Out](
+#     func: Callable[Concatenate[Owner, In], Out],
+# ) -> attach.CallingDescriptor[In, Out]:
+#     """Attach StrategyField to a method, stripping `self` for bound calls."""
+#     return StrategyField(func, bind_to_self=True)
+# REMOVE: when replacement looks proper
+# def morphing[Owner, **In, Out](
+#     func: Callable[Concatenate[Owner, In], Out],
+# ) -> attach.MorphingDescriptor[In, Out]:
+#     """Attach MorphingField to a method, stripping `self` for bound calls."""
+#     return MorphingField(func, bind_to_self=True)
 
 
 @portlink(attach.DecoDescriptor)
@@ -50,41 +45,36 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
 
     def __init__(
         self,
-        func: Callable[In, Out],
+        func: Callable[..., Out] | None = None,
         *args: Any,
-        bind_to_self: bool = False,
+        bind_to_self: bool = True,  # Default True for class methods!
         **kwargs: Any,
     ):
-        """Map func to DecoratedField.target_func"""
         self.bind_to_self: bool = bind_to_self
-        default: Any = kwargs.pop("default", (func, bind_to_self))
-        super().__init__(func, *args, default=default, **kwargs)
-        if func is not None and self.signature is not None:
-            self.signature: Signature = _extract_signature(
-                func, bind_to_self=bind_to_self
+        super().__init__(func, *args, **kwargs)
+
+    def bind(self, func: Callable[..., Out]) -> None:
+        super().bind(func)
+        if self.signature is not None:
+            self.signature = _extract_signature(
+                func, bind_to_self=self.bind_to_self
             )
 
     def write(self, unit: object, value: Callable[In, Out]) -> None:
-        """Store an instance override as (func, bind=False).
-
-        Replacements match the *public* signature, so they are not bound
-        to the unit. The 2-tuple is the same shape as the field default
-        `(target_func, binds_instance)` that reset writes back.
-        """
+        """Store an instance override directly as a callable (never bound to self)."""
         _value = self.validate(unit, value)
-        # TASK: unsure if the tuple with the bool belongs to unit.__dict__
-        # - when it is anyway False, why storing this information?
-        self._set_val(unit, (_value, False))
+        self._set_val(unit, _value)
 
     def read(self, unit: object) -> BoundStrategy[In, Out]:
         if self._has_val(unit):
-            _func, _bind = self._get_val(unit)
-        elif self.target_func is not None:
-            _func, _bind = self.target_func, self.bind_to_self
-        else:
-            raise self.raiser.Function(self, unit, "Missing target_func")
-        return BoundStrategy(self, unit, _func, bind=_bind)
+            return BoundStrategy(self, unit, self._get_val(unit), bind=False)
+        if self.target_func is not None:
+            return BoundStrategy(
+                self, unit, self.target_func, bind=self.bind_to_self
+            )
+        raise self.raiser.Function(self, unit, "Missing target_func")
 
+    # AI: still needed?
     def switch(self, func: Callable[In, Out]) -> Self:
         """Modify the Class-Level baseline strategy."""
         self.bind(func)
@@ -94,6 +84,36 @@ class MethodFieldEngine[**In, Out](DecoratedField[In, Out], ResetField):
 @portlink(attach.CallingDescriptor)
 class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
     """Forces the override to match the default function's signature."""
+
+    # AI_QUESTION: is this needed here at this level??
+    @overload
+    def __init__(
+        self,
+        func: Callable[Concatenate[Any, In], Out],
+        *args: Any,
+        bind_to_self: bool = True,
+        **kwargs: Any,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        func: None = None,
+        *args: Any,
+        bind_to_self: bool = True,
+        **kwargs: Any,
+    ) -> None: ...
+    def __init__(
+        self,
+        func: Callable[..., Out] | None = None,
+        *args: Any,
+        bind_to_self: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(func, *args, bind_to_self=bind_to_self, **kwargs)
+
+    # def __call__(self, func: Callable[Concatenate[Any, In], Out]) -> Self:
+    #     self.bind(func)
+    #     return self
 
     def validate(
         self, unit: object, value: Callable[In, Out]
@@ -117,19 +137,12 @@ class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
     """Allows swapping methods with arbitrary new signatures."""
 
     def morph(self, func: Callable[..., Any]) -> Self:
-        # LATER: check [B=In&Any,S=Out&|&&|Any]
         """Unsafe Function Exchange on the Class Level."""
         self.bind(func)
         return self
 
-    # IMPORTANT: is this needed (as MorphingField.write), wired proper otherwise???
-    # def _write(self, unit: object, value: Callable[..., Any]) -> None:
-    #     """Instance override; signature is not a contract."""
-    #     _value = self.validate(unit, value)
-    #     self._set_val(unit, (_value, False))
-
     def validate(self, unit: object, value: Callable) -> Callable:
-        """Permit arbitrary Callables."""
+        """Permit arbitrary Callables"""
         if not callable(value):
             raise self.raiser.Function(self, unit, value=value)
         return value
@@ -154,11 +167,13 @@ class BoundStrategy[**In, Out]:
     def __name__(self) -> str:
         return reflect.funcname(self.func)
 
+    # AI: check still proper?
     def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out:
         if self.bind:
             return self.func(self.unit, *args, **kwargs)
         return self.func(*args, **kwargs)
 
+    # AI: check still needed?
     def switch(self, new_func: Callable[In, Out]) -> Self:
         """Swap function while ensuring LSP-consistency"""
         self.engine.write(self.unit, new_func)
@@ -184,9 +199,7 @@ class BoundStrategy[**In, Out]:
 
 
 #  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-#  MOVE: -- probably to brick.labor.***
-
-#  NEXT: combine with brick.labor._inspect
+#  MOVE: -- probably to brick.call._inspect
 
 
 def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:

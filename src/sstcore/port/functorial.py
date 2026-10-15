@@ -22,6 +22,8 @@ __all__: list[str] = [
     "Functorial",
     "SafeFunctorial",
     "ErrorPolicy",
+    "HybridFunctorial",
+    "Detect",
 ]
 
 import typing as _t
@@ -70,7 +72,11 @@ class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
         """Establish the Frame for Safe Execution"""
 
     def catch(
-        self, error: Exception, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
+        self,
+        error: Exception,
+        /,
+        *args: ArgSpace.args,
+        **kwargs: ArgSpace.kwargs,
     ) -> SubSetResult | None | _t.NoReturn:
         """Handle Function fail by Policy"""
 
@@ -102,10 +108,8 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
     ) -> _Callable[Fn, Out]:
         """Wire the Target ready to drop in"""
 
-    def bind[**Fn](
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> _Callable[[_Callable[Fn, In]], _Callable[Fn, Out]]:
-        """Bind the Target with additional ArgSpaceeter"""
+    def bind(self, *args: P.args, **kwargs: P.kwargs) -> BoundWrapper[In, Out]:
+        """Bind the Target with additional Parameters"""
 
     def reject(self, fail: _t.Any, *args, **kwargs) -> _t.NoReturn:
         """Handle Target that failed in Dispatch"""
@@ -121,7 +125,7 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
     @_t.overload
     def __call__(
         self, /, *args: P.args, **kwargs: P.kwargs
-    ) -> _Callable[[_Callable[..., In]], _Callable[..., Out]]: ...
+    ) -> BoundWrapper[In, Out]: ...
     def __call__(
         self, target: _t.Any = None, /, *args: P.args, **kwargs: P.kwargs
     ):
@@ -131,3 +135,9 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
         - Case 2: decorat target function
         - Case 3: bind param to decorator
         """
+
+
+class BoundWrapper[In, Out](_t.Protocol):
+    def __call__[**Fn](
+        self, fn: _Callable[Fn, In], /
+    ) -> _Callable[Fn, Out]: ...

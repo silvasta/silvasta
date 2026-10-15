@@ -11,11 +11,9 @@ __all__: list[str] = [
     "FunctorMetaData",
 ]
 
-from typing import Any, NoReturn
+from typing import Any
 
-from loguru import logger
-
-from ...brick.field import MethodFieldEngine, MorphingField, StrategyField
+from ...brick.field import MethodFieldEngine
 from ...brick.none import sentinel
 from ...port.link import portlink
 from ...port.shape import Meta, MetaData
@@ -40,62 +38,51 @@ class FunctorMeta(SstMeta):
         namespace: dict[str, Any],
         data: FunctorMetaData,
     ):
-        for key, value in list(namespace.items()):
-            # TODO: check with port.attach.Calling
-            field_kind: Any | type[MethodFieldEngine] = getattr(
-                value, "__field_kind__", None
-            )
-            if field_kind is not None and not isinstance(
-                value,
-                MethodFieldEngine,  # CHECK: againg in _install??
-            ):
-                namespace[key] = field_kind(value, bind_to_self=True)
 
-        _install(namespace, bases, "call", StrategyField, _default_call)
-        _install(namespace, bases, "catch", MorphingField, _default_catch)
-        _install(namespace, bases, "emit", MorphingField, _default_emit)
-
+        sync_inherited_strategy_fields(namespace, bases)
         return super().__new__(mcs, name, bases, namespace, data)
 
 
-def _install(namespace, bases, name, field_cls, default, /):
-    existing = namespace.get(name, _MISSING)
+def sync_inherited_strategy_fields(
+    namespace: dict[str, Any],
+    bases: tuple[type, ...],
+    /,
+) -> None:
+    """
+    Ensure Functor Strategies
 
-    if isinstance(existing, MethodFieldEngine):
-        return
-
-    # TODO: check with port.attach.Calling
-    field_kind: Any | None = getattr(existing, "__field_kind__", None)
-    if field_kind is not None and not isinstance(existing, MethodFieldEngine):
-        namespace[name] = field_kind(existing, bind_to_self=True)
-        return
-
-    if callable(existing):
-        namespace[name] = field_cls(existing, bind_to_self=True)
-        return
+    1. Discover all `MethodFieldEngine` descriptors in the MRO of `bases`.
+    2. If a subclass overrode the slot with a plain callable `def fn(self):`,
+       wrap it in the parent's `MethodFieldEngine` type (`StrategyField` / `MorphingField`).
+    3. If the subclass did not override it, clone the descriptor so class-level
+       `.switch()` / `.morph()` mutations on the subclass do not bleed into the base class.
+    """
+    inherited_engines: dict[str, MethodFieldEngine] = {}
 
     for base in bases:
-        attr: Any = base.__dict__.get(name)
-        if isinstance(attr, MethodFieldEngine):
-            namespace[name] = field_cls(
-                attr.target_func, bind_to_self=attr.bind_to_self
+        for parent in base.__mro__:
+            if parent is object:
+                continue
+            for attr_name, attr_val in parent.__dict__.items():
+                if attr_name not in inherited_engines and isinstance(
+                    attr_val, MethodFieldEngine
+                ):
+                    inherited_engines[attr_name] = attr_val
+
+    for field_name, parent_engine in inherited_engines.items():
+        existing = namespace.get(field_name, _MISSING)
+
+        if isinstance(existing, MethodFieldEngine):
+            continue
+
+        if callable(existing):
+            namespace[field_name] = type(parent_engine)(
+                existing, bind_to_self=True
             )
-            return
-        if callable(attr):
-            namespace[name] = field_cls(attr, bind_to_self=True)
-            return
+            continue
 
-    namespace[name] = field_cls(default, bind_to_self=True)
-
-
-def _default_call(self, *args, **kwargs):
-    raise AttributeError("Functor is Missing: [ _call_ ]!", self, args, kwargs)
-
-
-def _default_catch(self, error: Exception, *_, **__) -> Any | NoReturn:
-    logger.critical(f"{self} failed: {error}")
-    raise error
-
-
-def _default_emit(self, *args, **kwargs) -> None:  # MOVE: global meta defaults
-    logger.debug(*args, sender=str(self), **kwargs)
+        if existing is _MISSING and parent_engine.target_func is not None:
+            namespace[field_name] = type(parent_engine)(
+                parent_engine.target_func,
+                bind_to_self=parent_engine.bind_to_self,
+            )

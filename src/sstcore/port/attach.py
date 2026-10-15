@@ -17,7 +17,6 @@ __all__: list[str] = [
     "LazyDescriptor",
     "FieldLoader",
     "CallingDescriptor",
-    "Calling",
     #
     "EventDescriptor",
     "ConfigDescriptor",
@@ -140,21 +139,11 @@ class CallingDescriptor[**In, Out](
         """Install new LSP conform Method"""
 
 
-class MorphingDescriptor(CallingDescriptor, _t.Protocol):
+class MorphingDescriptor[**In, Out](CallingDescriptor[In, Out], _t.Protocol):
     """Switch Callable Attribute (Method) with less Rules"""
 
     def morph(self, func: _Callable) -> _t.Self:
         """Install new Method with possible LSP Violation"""
-
-
-@_t.runtime_checkable
-class Calling[**In, Out](_t.Protocol):
-    # LATER: check name, although attach.Calling (when used like this) quite good
-    """Define a Callable marked as Field"""
-
-    __field_kind__: type[CallingDescriptor[In, Out]]
-
-    def __call__(self, *args: In.args, **kwargs: In.kwargs) -> Out: ...
 
 
 #  LINE: -- Next Steps -- -- - -- -- - -- -- - -- -- - -- -- - -- --

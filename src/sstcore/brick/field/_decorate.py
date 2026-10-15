@@ -12,7 +12,7 @@ __all__: list[str] = [
 from collections.abc import Callable
 from inspect import Signature, signature
 from types import MethodType
-from typing import Any, Self
+from typing import Any, Concatenate, Self
 
 from ...port import attach
 from ...port.link import portlink
@@ -46,7 +46,9 @@ class FieldDecorator[**In, Out](ValidField):
         if func is not None:
             self.bind(func)
 
-    def __call__(self, func: Callable[In, Out]) -> Self:
+    def __call__[**NewIn, NewOut](
+        self, func: Callable[Concatenate[Any, NewIn], NewOut]
+    ) -> Self:
         """Invoked only when used as @Field(args) (with parens)."""
         self.bind(func)
         return self

@@ -14,7 +14,7 @@ import functools
 from collections.abc import Callable
 from typing import Any, Concatenate, NoReturn, TypeGuard, overload
 
-from ...brick.field._strategy import morphing, strategy
+from ...brick.field import MorphingField, StrategyField
 from ...port import functorial
 from ...port.link import portlink
 from ._tor import BaseFunctor
@@ -26,15 +26,15 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
 
     def __init__(self, detect: functorial.Detect[In] | None, **kwargs):
         if detect is not None:
-            setattr(self, "detect", detect)  # noqa:B010
+            self.detect = detect
         super().__init__(**kwargs)
 
-    @strategy
+    @StrategyField  # AI: unsure which will end up as default, bind_to_self=True|False
     def detect(self, target: Any, /) -> TypeGuard[In]:
         """Check if target is direct function call"""
         raise NotImplementedError("typing.TypeGuard needed to detect!", target)
 
-    @strategy
+    @StrategyField(bind_to_self=True)
     def wrap[**Fn](
         self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[Fn, Out]:
@@ -46,7 +46,7 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
 
         return wrapper
 
-    @morphing
+    @MorphingField(bind_to_self=True)
     def bind[**Fn](
         self, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[[Callable[Fn, In]], Callable[Fn, Out]]:

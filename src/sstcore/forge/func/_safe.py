@@ -15,7 +15,7 @@ from collections.abc import Callable
 from typing import Concatenate, NoReturn
 
 from ...brick.field import PolicyField, RequiredField
-from ...brick.field._strategy import strategy
+from ...brick.field._strategy import StrategyField
 from ...port import functorial
 from ...port.functorial import ErrorPolicy
 from ...port.link import portlink
@@ -33,9 +33,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
 
     def __init__(self, catch: _Catch[Args, Result] | None = None, **kwargs):
         if catch is not None:
-            # CHECK: if direct assign works at usage!
-            # needed because of confusion below
-            setattr(self, "catch", catch)  # noqa:B010
+            self.catch = catch
         super().__init__(**kwargs)
 
     def safe(
@@ -44,11 +42,11 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
         try:
             return self(*args, **kwargs)
         except Exception as error:
-            self.catch(error, *args, **kwargs)
+            return self.catch(error, *args, **kwargs)
 
-    @strategy
+    @StrategyField
     def catch(
-        self, error: Exception, *args: Args.args, **kwargs: Args.kwargs
+        self, error: Exception, /, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | None | NoReturn:
         """Execute pure Policy if catch is not defined"""
         self.emit(

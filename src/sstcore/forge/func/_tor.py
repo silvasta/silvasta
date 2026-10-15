@@ -12,6 +12,9 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
+from loguru import logger
+
+from ...brick.field import MorphingField, StrategyField
 from ...brick.reflect import clsname, funcname
 from ...port import functorial
 from ...port.link import portlink
@@ -24,8 +27,8 @@ FunctorInput = FunctorMetaData()
 class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
     """Ensure Requirements and close MRO forwarding"""
 
-    call: Callable[Args, Result]
-    emit: functorial._FuncEmit
+    # call: Callable[Args, Result]
+    # emit: functorial._FuncEmit
 
     def __init__(
         self,
@@ -48,3 +51,13 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
 
     def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         return self.call(*args, **kwargs)
+
+    @StrategyField(bind_to_self=True)
+    def call(self, *args, **kwargs):
+        raise AttributeError(
+            "Functor is Missing: [ _call_ ]!", self, args, kwargs
+        )
+
+    @MorphingField(bind_to_self=True)
+    def emit(self, *args, **kwargs) -> None:  # MOVE: global meta defaults
+        logger.debug(*args, sender=str(self), **kwargs)
