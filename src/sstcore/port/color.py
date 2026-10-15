@@ -45,7 +45,7 @@ __all__: list[str] = [
 from enum import auto
 from typing import Annotated, NamedTuple, Protocol, Self
 
-from .calling import _Stringable  # 0
+from ._types import _Stringable  # 0
 from .register import TupleRegister  # 5
 from .solid import BaseEnum, EnumId  # 1
 

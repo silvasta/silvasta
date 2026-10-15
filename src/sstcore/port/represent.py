@@ -12,10 +12,10 @@ __all__: list[str] = [
     "Stringable",
     "LogStringable",
     "LogSerializable",
-    "CliSerializable",
+    "CliRenderable",
     "RichView",
     # checks
-    "CliRenderable",
+    "CliSerializable",
     "is_cli_renderable",
     "Richable",
     "RichConsolable",
@@ -37,12 +37,13 @@ from ._types import _RichView as RichView
 from ._types import _Stringable as Stringable
 from .event.dto import CliDTO as _CliDTO
 from .event.dto import LogDTO as _LogDTO
+
+# from .event.dto import _CliSerializable as CliSerializable
 from .event.dto import _CliRenderable as CliRenderable
-from .event.dto import _CliSerializable as CliSerializable
 from .event.dto import _LogSerializable as LogSerializable
 from .link import portlink as _portlink
 
-type SstViewType = CliSerializable | LogSerializable  # LATER: add TuiViewtype
+type SstViewType = CliRenderable | LogSerializable  # LATER: add TuiViewtype
 
 
 class SstView(_typing.Protocol):
@@ -71,7 +72,7 @@ class SstView(_typing.Protocol):
 class _ViewDummy(
     Stringable,
     LogSerializable,
-    CliSerializable,
+    CliRenderable,
     LogStringable,
     RichView,
 ):  # LATER: actually needed? will dunder ever change? maybe hide somehow below
@@ -81,14 +82,21 @@ class _ViewDummy(
 #  LINE: -- Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def is_cli_renderable(obj: object) -> _typing.TypeIs[CliRenderable]:
+# IDEA: 3 - assemble type union later, here in port.represent,
+# -> use idea 1|2 for port.event.dto but this here for exposing
+CliSerializable = CliRenderable | Stringable | RichView
+
+
+def is_cli_renderable(target: _typing.Any, /) -> _typing.TypeIs[CliRenderable]:
+    # NEXT: check if this is Renderable or Serializable...
+    # - maybe use both? 1 for decide on rendering, 1 for decide on factory?
     """Static and Dynamic Check that narrows Type to CliRenderable"""
-    return isinstance(obj, (CliSerializable, RichView, RichConsolable, str))
+    return isinstance(target, (CliRenderable, RichView, RichConsolable, str))
 
 
-def is_richable(obj: object) -> _typing.TypeIs[Richable]:
+def is_richable(target: _typing.Any, /) -> _typing.TypeIs[Richable]:
     """Static and Dynamic Check that narrows Type to Rich Renderable"""
-    return isinstance(obj, (RichView, RichConsolable, str))
+    return isinstance(target, (RichView, RichConsolable, str))
 
 
 @_typing.runtime_checkable
@@ -99,9 +107,9 @@ class PydanticModel(_typing.Protocol):
     def model_dump(self) -> dict[str, _typing.Any]: ...
 
 
-def is_basemodel(obj: object) -> _typing.TypeIs[PydanticModel]:
+def is_basemodel(target: _typing.Any, /) -> _typing.TypeIs[PydanticModel]:
     """Static and Dynamic Check that narrows to minimal pydantic.BaseModel"""
-    return isinstance(obj, (PydanticModel))
+    return isinstance(target, (PydanticModel))
 
 
 #  LINE: -- MetaView - Operations on Classes (forge.engine)  -- -- - -- ---

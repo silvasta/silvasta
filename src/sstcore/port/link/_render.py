@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any
 
-from ..calling import _Stringable
+from .._types import _Stringable
 from ..solid import EnumMachine
 from ._define import LinkSpec
 from ._model import Doc, Docs, PlugDoc, PortDoc, SidePolicy

@@ -6,18 +6,15 @@ Define the Structure of the Event Data and Pipeline
 
 __all__: list[str] = [
     "Event",
-    "EventHandler",
     "EventBus",
+    "EventHandling",
     "BusRegistration",
 ]
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol, Self
 
 from .name import EventName, EventPattern
-
-type BusRegistration = Callable[[EventBus], None]
 
 
 @dataclass(frozen=True)
@@ -29,26 +26,28 @@ class Event:
     payload: dict[str, Any] = field(default_factory=dict)
 
 
-class EventHandler(Protocol):
+class EventHandling(Protocol):
+    # TASK: Functor as direct input instead of func?
+    # - check when func is ever needed
     def __call__(self, event: Event) -> None:
         """Process emitted Events dispatched by the Bus"""
 
 
-# TASK: Functor as direct input instead of func?
-# - check when func is ever needed
-# NEXT: check where to convert!
+class BusRegistration(Protocol):
+    def __call__(self, bus: EventBus) -> None:
+        """Subscribe EventHandling by EventName or Wildcard to EventBus"""
 
 
 class EventBus(Protocol):
     """Enable decoupled state propagation for synchronous Events"""
 
-    def emit(self, event_name: EventName, sender: str, **payload: Any) -> None:
+    def emit(self, event: EventName, sender: str, /, **payload: Any) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
-    def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
+    def subscribe(self, name: EventPattern, handler: EventHandling) -> None:
         """Attach handler as subscriber to specific event"""
 
-    def subscribe_all(self, handler: EventHandler) -> None:
+    def subscribe_all(self, handler: EventHandling) -> None:
         """Attach global handler as subscriber to all events"""
 
     @classmethod

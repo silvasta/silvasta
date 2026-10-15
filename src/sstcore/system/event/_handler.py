@@ -1,8 +1,8 @@
 """
 Provide Infrastructure for Events
 
-- EventBus: Route Events by name to registered EventHandler
 - EventHandler: Process Event with optional Error handling
+
                                                        DependencyLevel[0]
 """
 
@@ -21,15 +21,14 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from ...port.event import Event, EventBus
-from ...port.event import EventHandler as EventHandler_
+from ...port.event import Event, EventBus, EventHandling
 from ...port.link import portlink
 from ...util.log import handle_log_event
 from ...util.print import printer
 
 
 def register_default_event_handler(bus: EventBus) -> None:
-    # REMOVE: replace by Register
+    # TASK: Replace by Registry - EventRegistry including Wildcard!
     """Attach EventHandler to EventBus by EventName or EventPattern"""
 
     bus.subscribe("*", CLI_HANDLER)  # payload has cli=...
@@ -38,9 +37,10 @@ def register_default_event_handler(bus: EventBus) -> None:
     bus.subscribe_all(TELEMETRY_HANDLER)
 
 
-@portlink(EventHandler_)  # TODO: resolve name conflict
+@portlink(EventHandling)
 @dataclass(frozen=True)
 class EventHandler:
+    # TASK: replace by Functor
     """Process Events emitted from the bus in observable Environment"""
 
     name: str
@@ -50,7 +50,6 @@ class EventHandler:
     def __str__(self) -> str:
         return f"EventHandler[{self.name}]"
 
-    # REMOVE: replace by Functor
     def __call__(self, event: Event) -> None:
         """Execute handler function and manage fail if flag is set"""
         try:
@@ -63,6 +62,7 @@ class EventHandler:
             logger.debug(f"Traceback for {self}:", exc_info=True)
 
 
+# MOVE: util.print?
 def handle_cli_event(event: Event) -> None:
     # TODO: hand in printer from bootstrap
     """Bridge __cli__ events from the EventBus to the Printer"""
@@ -86,7 +86,7 @@ CLI_HANDLER = EventHandler(
 )
 
 
-# MOVE: util.log
+# MOVE: util.log?
 def telemetry(event: Event):
     logger.debug(  # WARN: is this to JSON???
         "Event: {event_name} | sender={sender} | keys={keys}",

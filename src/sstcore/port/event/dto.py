@@ -11,36 +11,36 @@ Rendering Protocols with Runtime check
                               DependencyLevel.sstcore.port.event[0]
 """
 
+from pathlib import Path
+
 __all__: list[str] = [
     "EventDTO",
-    "LogDTO",
     "CliDTO",
-    "EventDtoFactory",
+    "LogDTO",
     "DtoNames",
+    "EventDtoFactory",
     # cli extensions
     "MarkdownDTO",
     "PanelDTO",
     "LineDTO",
-    "GroupDTO",  # CHECK:
     "TableDTO",
 ]
 
 import dataclasses as _dc
-import typing as _typing  # LATER: import _Any directly?
-from collections.abc import Iterable as _Iterable
+import typing as _typing
+from collections.abc import Mapping as _Mapping
+from typing import Any as _Any
 
 from loguru import logger as _logger
 
-from .._types import _Richable
+from .._types import _RichView, _Stringable
 from ..color import Color as _Color
-from ..color import ColorId as _ColorId
 
 type DtoNames = _typing.Literal[
     "log",
     "cli",
     "panel",
     "markdown",
-    "group",  # CHECK:
     "line",
     "table",
 ]
@@ -50,16 +50,20 @@ type DtoNames = _typing.Literal[
 class EventDTO:
     """Base class for all DTOs. Automatically makes subclasses dataclasses."""
 
-    _registry: dict[str, type[_typing.Self]] = {}
+    _registry: dict[str, type[_typing.Self]] = {}  # LATER: ClassRegister
 
     def __init_subclass__(cls, name: DtoNames, kw_only=True, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        if replaced := cls._registry.get(name):  # TODO: (port-)emit?
+        if replaced := cls._registry.get(name):
             _logger.info(f"Replacing: {name=},{replaced=}")
         cls._registry[name] = cls
+        cls.name: DtoNames = name  # AI: does this work?
 
         _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
+
+    def __str__(self):
+        return f"{type(self).__name__}[{self.name}]"  # AI: does this work?
 
 
 #  LINE: -- Factory -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -72,12 +76,17 @@ class EventDtoFactory(_typing.Protocol):
     def cli(self) -> CliDTO: ...
     def panel(self) -> PanelDTO: ...
     def markdown(self) -> MarkdownDTO: ...
-    def group(self) -> GroupDTO: ...  # CHECK:
     def line(self) -> LineDTO: ...
     def table(self) -> TableDTO: ...
 
 
-#  LINE: -- Main branches -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Log -- -- - -- -- - -- -- - -- -- - --
+
+
+@_typing.runtime_checkable
+class _LogSerializable[LogDTO_covariant: LogDTO = LogDTO](_typing.Protocol):
+    def __log__(self) -> LogDTO_covariant:
+        """Message the Event for Traceability"""
 
 
 class LogDTO(EventDTO, name="log"):
@@ -85,97 +94,149 @@ class LogDTO(EventDTO, name="log"):
 
     message: str
     level: str = "INFO"
-    metrics: dict[str, _typing.Any] = _dc.field(default_factory=dict)
-    extra: dict[str, _typing.Any] = _dc.field(default_factory=dict)
+    metrics: _Map = _dc.field(default_factory=dict)
+    extra: _Map = _dc.field(default_factory=dict)
 
 
-class CliDTO(EventDTO, name="cli", kw_only=False):
-    """Root of the Cli Pipeline"""
-
-    # NEXT: check what content actually needs
-    # - rich preferably just as extension
-    # - maybe resolve GroupDTO with that
-    #   -> handled in renderer to rich.Group (or any other adapter)
-    content: _CliRenderable | _Iterable[_CliRenderable]
-    color: _ColorId = _Color.AZURE
-    indent: int = 0
-    meta: dict[str, _typing.Any] = _dc.field(default_factory=dict)
-
-
-#  LINE: -- Views (exposed in port.represent) -- -- - -- -- - -- -- - -- -- - --
+#  LINE: -- Cli -- -- - -- -- - -- -- - -- -- - --
 
 
 @_typing.runtime_checkable
-class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
+class _CliRenderable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
     def __cli__(self) -> CliDTO_covariant:
         """Snapshot the Target for Visualization"""
 
 
-@_typing.runtime_checkable
-class _LogSerializable(_typing.Protocol):
-    def __log__(self) -> LogDTO:
-        """Message the Event for Traceability"""
+# IDEA: 1 - avoid _CliRenderable in type union
+_CliSerializable = _Stringable | _RichView
+
+# IDEA: 2 - use type alias
+type _CliSerializing = _CliRenderable | _Stringable | _RichView
+
+# NOTE: anyway use Stringable! render handles this and drastically increases incoming selection
 
 
-_CliRenderable = _CliSerializable | _Richable  # NOTE: | str included _Richable
+type _Map[Value = _Any] = _Mapping[str, Value]  # MOVE: port._types
+type _Vec[Value: _CliSerializing = _CliSerializing] = tuple[Value]
 
 
-#  LINE: -- CliDTO extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class CliDTO[
+    Content = _Vec,
+](
+    EventDTO,
+    name="cli",
+    kw_only=False,
+):
+    """Root of the Cli Pipeline"""
+
+    content: Content
+    color: _Color = _Color.AZURE  # Main Color
+    data: _Map = _dc.field(default_factory=dict)
 
 
-_AlignMethod = _typing.Literal["left", "center", "right"]
+@_dc.dataclass(kw_only=True)
+class _HeaderMixin[
+    Header: tuple,
+]:
+    """Slim optional Frame with Title on top of the Content"""
+
+    title: str | None = None  # intended as text inside the header
+    header: Header = _dc.field(default_factory=tuple)
 
 
-class PanelDTO(CliDTO, name="panel"):
-    # NEXT: compare with printer TypedDict kwargs,
-    # -> remove as much as possible here
-    # only the actual panel info, maybe some rendering hints
-    frame: _Color = _Color.AZURE
-    text_color: _Color = _Color.WHITE
-    title: str | None = None
-    # TASK: filter out the to much render information
-    title_align: _AlignMethod = "right"
-    expand: bool = True
-    padding: tuple = (0, 1)
-    metrics: dict[str, _typing.Any] = _dc.field(default_factory=dict)
+# IDEA: make them as well EventDTO, but without Factory and Rendering
+# - just track them in a hidden registry part, update them?
+# ok.. might be difficult to mix that proper into the target DTO
+# -> maybe easier to update the MixinParam and inject the NamedTuple
 
 
-class MarkdownDTO(CliDTO, name="markdown"):
-    header: int = 0
+@_dc.dataclass(kw_only=True)
+class _FrameMixin[
+    Frame: FrameParam = FrameParam,
+]:
+    """The Box around the Renderable"""
+
+    frame: Frame = _dc.field(default_factory=tuple)
 
 
-class LineDTO(CliDTO, name="line"): ...
+class FrameParam(_typing.NamedTuple): ...
 
 
-class GroupDTO(CliDTO, name="group"):
-    # INFO: never used in sstcore, used in sachmis:
-    # def __cli__(self) -> CliDTO:
-    #     return GroupDTO(
-    #         items=[
-    #             PanelDTO(text=str(self), title=self.arbo_location()),
-    #             MarkdownDTO(text=self.content), ] ,)
-    # INFO: sachmis usage 2/2:
-    # def __cli__(self) -> CliDTO:
-    #     return GroupDTO(
-    #         items=[
-    #             PanelDTO(text=str(self), title=self.arbo_location()),
-    #             MarkdownDTO(text=self.content),
-    #             TableDTO.from_col_dicts(cols=self.usage), ],)
-    """Stack multiple renderable Views"""
+class PanelDTO[
+    Content = _Vec,
+    Frame: FrameParam = FrameParam,
+    Header: tuple = tuple,
+](
+    _FrameMixin[Frame],
+    _HeaderMixin[Header],
+    CliDTO[Content],
+    name="panel",
+):
+    """Store Data to Render in Box"""
+
+    topic: str | None = None  # upper title inside frame-line
 
 
-class TableDTO(CliDTO, name="table"):
+class MarkdownDTO[
+    Content = _Stringable,
+    Frame: FrameParam = FrameParam,
+](
+    _FrameMixin[Frame],
+    CliDTO[Content],
+    name="markdown",
+):
+    """Store formatted Markdown Data"""
+
+
+class LineDTO[
+    Content = _Vec,
+    Header: tuple = tuple,
+](
+    CliDTO[Content],
+    _HeaderMixin[Header],
+    name="line",
+):
+    """Store Multiple or Singe Line or simple Rule"""
+
+
+class TableDTO[
+    Content = _Vec[_Vec],
+    Frame: FrameParam = FrameParam,
+    Header: tuple = tuple,
+](
+    CliDTO[Content],
+    _FrameMixin[Frame],
+    _HeaderMixin[Header],
+    name="table",
+):
     """
-    Store Table Data as List of Rows containing Lists of Values
+    Store Table Data as Rows containing (splitted) Columns
 
-     - [1:][1:] Main content
-     - [ 0][1:] Header: col_names
-     - [1:][ 0] Sidebar: row_names
-     - [ 0][ 0] Top-left element
-
+     - [ 0][ 0] corner
+     - [ 0][1:] col_names
+     - [1:][ 0] row_names
+     - [1:][1:] content
     """
 
-    matrix: list[list[_typing.Any]]
-    col_names: list[str] = _dc.field(default_factory=list)
-    row_names: list[str] = _dc.field(default_factory=list)
+    col_names: _Vec[str] = _dc.field(default_factory=tuple)
+    row_names: _Vec[str] = _dc.field(default_factory=tuple)
     corner: str = ""
+
+
+if __name__ == "__main__":
+
+    class HeaderSpec(_typing.NamedTuple):
+        topic: str
+        title_color: _Color
+        topic_color: _Color
+
+    class FrameSpec(FrameParam):
+        box: str
+        title_color: _Color
+        topic_color: _Color
+
+    content: list[Path] = [Path.cwd(), Path.cwd(), Path.cwd()]  # not tuple?
+    test: PanelDTO[_Stringable, FrameSpec, HeaderSpec] = PanelDTO(content)
+
+    _typing.reveal_type(test.frame.box)  # AI: code runs until here
+    _typing.reveal_type(test.header.title_color)

@@ -28,11 +28,10 @@ from string.templatelib import Template
 from typing import Any, TypedDict, Unpack
 from typing import Protocol as Protocol
 
-from .calling import Richable
 from .color import ColorBox, ColorId
 from .config import ProjectInformation
-from .event.dto import CliDTO, _AlignMethod
-from .represent import CliRenderable  # 8
+from .event.dto import CliDTO
+from .represent import CliRenderable, Richable
 from .solid import EnumMode
 
 
@@ -123,7 +122,7 @@ class TitleInput(TypedDict, total=False):
     title: str | None
     text_color: ColorId
     title_color: ColorId
-    title_align: _AlignMethod
+    # title_align: _AlignMethod
 
 
 class HeaderInput(TitleInput, total=False):
@@ -231,15 +230,15 @@ class BasePrinter(PrintRender, PrintFactory, PrintNormalizer, PrinterBase):
     """Define Minimal functionality to Operate"""
 
 
-class RichPrinter(PrintRichRender, BasePrinter):
+class RichPrinter(PrintRichRender, BasePrinter):  # ty:ignore
     """Define Minimal functionality to handle Rich"""
 
 
-class Printer(LayoutPrint, RichPrinter):
+class Printer(LayoutPrint, RichPrinter):  # ty:ignore
     """Define Minimal functionality for Optimal Workflow"""
 
 
-class DataPrinter(SpecialPrint, Printer):
+class DataPrinter(SpecialPrint, Printer):  # ty:ignore
     """Define Minimal functionality for Optimal Workflow"""
 
 

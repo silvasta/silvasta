@@ -21,7 +21,7 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Protocol, Self
 
-from .calling import _Stringable
+from ._types import _Stringable
 
 
 # NEXT: runtime_checkable?? (for Printer)

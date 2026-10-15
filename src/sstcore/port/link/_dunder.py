@@ -17,7 +17,7 @@ __all__: list[str] = [
 from collections.abc import Iterable
 from typing import Any, Protocol
 
-from ..calling import _Stringable
+from .._types import _Stringable
 
 
 class DunderStore(Protocol):

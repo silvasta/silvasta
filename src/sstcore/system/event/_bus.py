@@ -1,8 +1,8 @@
 """
 Provide Infrastructure for Events
 
-- EventBus: Route Events by name to registered EventHandler
-- XXX EventHandler: Process Event with optional Error handling
+- EventBus: Route Events by name to registered EventHandling
+- XXX EventHandling: Process Event with optional Error handling
                                                        DependencyLevel[1]
 """
 
@@ -15,7 +15,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Self, Unpack
 
 from ...brick.reflect import clsname
-from ...port.event import Event, EventBus, EventHandler
+from ...port.event import Event, EventBus, EventHandling
 from ...port.event.name import CoreEvent, EventName, EventPattern
 from ...port.link import portlink
 from ...port.system import BusData, BusInput, BusLoader
@@ -25,23 +25,23 @@ from ._handler import register_default_event_handler
 @portlink(EventBus)
 class Bus:
     def __init__(self) -> None:
-        self._subscribers: dict[EventPattern, list[EventHandler]] = {}
-        self._global_subscribers: list[EventHandler] = []
+        self._subscribers: dict[EventPattern, list[EventHandling]] = {}
+        self._global_subscribers: list[EventHandling] = []
 
-    def emit(self, event_name: EventName, sender: str, **payload) -> None:
+    def emit(self, event: EventName, /, sender: str, **payload) -> None:
 
-        event = Event(name=event_name, sender=sender, payload=payload)
+        core_event = Event(name=event, sender=sender, payload=payload)
 
         for handler in self._global_subscribers:
-            handler(event)
+            handler(core_event)
 
-        for handler in self._match_subscribers(event_name):
-            handler(event)
+        for handler in self._match_subscribers(event):
+            handler(core_event)
 
-    def subscribe(self, name: EventPattern, handler: EventHandler) -> None:
+    def subscribe(self, name: EventPattern, handler: EventHandling) -> None:
         self._subscribers.setdefault(name, []).append(handler)
 
-    def subscribe_all(self, handler: EventHandler) -> None:
+    def subscribe_all(self, handler: EventHandling) -> None:
         self._global_subscribers.append(handler)
 
     @property
@@ -59,15 +59,15 @@ class Bus:
         return f"{self}(  {self.n_global_handler} 󰌌 {self.n_handler} 󰍹 )"
 
     def _match_subscribers(
-        self, event_name: EventName
-    ) -> tuple[EventHandler, ...]:
+        self, event: EventName
+    ) -> tuple[EventHandling, ...]:
         """Filter subscribers by event name and wildcard pattern"""
 
         subscribers: tuple[EventPattern, ...] = tuple(self._subscribers.keys())
 
-        matched_handlers: list[EventHandler] = [
+        matched_handlers: list[EventHandling] = [
             handler
-            for pattern in _get_patterns(event_name, subscribers)
+            for pattern in _get_patterns(event, subscribers)
             for handler in self._subscribers[pattern]
         ]
 
@@ -89,8 +89,8 @@ class Bus:
             spec.bus_registration(bus)
 
         bus.emit(
-            event_name=CoreEvent.BUS_DIAG,
-            sender="BusSetup",
+            CoreEvent.BUS_DIAG,
+            sender=f"{bus}",
             log="EventBus setup complete",
         )
         return bus
@@ -98,13 +98,13 @@ class Bus:
 
 @lru_cache(maxsize=256)
 def _get_patterns(
-    event_name: EventName, active_patterns: tuple[EventPattern, ...]
+    event: EventName, active_patterns: tuple[EventPattern, ...]
 ) -> tuple[EventPattern, ...]:  # tuple for lru_cache (immutable)
     """Match pattern and cache results decoupled from the Bus"""
     return tuple(
         pattern
         for pattern in active_patterns
-        if fnmatch.fnmatch(event_name, pattern)
+        if fnmatch.fnmatch(event, pattern)
     )
 
 

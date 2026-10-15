@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Protocol, overload
 from typing import runtime_checkable as _runtime_checkable
 
-from .calling import _Stringable
+from ._types import _Stringable
 
 #  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

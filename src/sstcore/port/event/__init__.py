@@ -2,7 +2,7 @@
 Define the Structure of the Event Data and Pipeline
 
 - Event: The Definition
-- EventHandler:
+- EventHandling:
 - EventName: Base to derive for Event naming
 
                                     DependencyLevel.sstcore.port[7]
@@ -11,10 +11,10 @@ Define the Structure of the Event Data and Pipeline
 
 __all__: list[str] = [
     "Event",
-    "EventHandler",
+    "EventHandling",
     "EventBus",
     "BusRegistration",
 ]
 
 
-from ._core import BusRegistration, Event, EventBus, EventHandler
+from ._core import BusRegistration, Event, EventBus, EventHandling

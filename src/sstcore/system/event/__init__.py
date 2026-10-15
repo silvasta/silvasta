@@ -16,4 +16,5 @@ __all__: list[str] = [
 
 
 from .___emit2 import EmitCore, LogEmitter
-from ._bus import Bus, EventHandler
+from ._bus import Bus
+from ._handler import EventHandler

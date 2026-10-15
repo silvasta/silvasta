@@ -16,8 +16,8 @@ __all__: list[str] = [
 import sys
 from typing import Any
 
-from ...port.calling import Richable
 from ...port.event.dto import CliDTO, LogDTO
+from ...port.represent import Richable
 
 
 class ViewSentinel:

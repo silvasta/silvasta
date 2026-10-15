@@ -20,8 +20,8 @@ from ....port.event.dto import (
 from ...func import SafeFunctor
 
 
-class DtoRenderer(SafeFunctor):
-    """Visualize the DTO - handle variations"""
+class DtoProducer(SafeFunctor):
+    """Assemble the DTO - handle variations"""
 
     dto_name: DtoNames
     base_dto: type[EventDTO]
@@ -30,71 +30,71 @@ class DtoRenderer(SafeFunctor):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class LogDTORenderer(DtoRenderer):
-    """Render ..."""
+class LogDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "log"
     base_dto: type[LogDTO] = LogDTO
 
     def call(self) -> LogDTO:
-        """Main Layout"""
+        """Main CTOR"""
 
 
-class CliDTORenderer(DtoRenderer):
-    """Render ..."""
+class CliDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "cli"
     base_dto: type[CliDTO] = CliDTO
 
     def call(self) -> CliDTO:
-        """Main Layout"""
+        """Main CTOR"""
 
 
-class PanelDTORenderer(DtoRenderer):
-    """Render ..."""
+class PanelDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "panel"
     base_dto: type[PanelDTO] = PanelDTO
 
     def call(self) -> PanelDTO:
-        """Main Layout"""
+        """Main CTOR"""
 
 
-class MarkdownDTORenderer(DtoRenderer):
-    """Render ..."""
+class MarkdownDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "markdown"
     base_dto: type[MarkdownDTO] = MarkdownDTO
 
     def call(self) -> MarkdownDTO:
-        """Main Layout"""
+        """Main CTOR"""
 
 
-class GroupDTORenderer(DtoRenderer):
-    """Render ..."""
+class GroupDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "group"
     base_dto: type[GroupDTO] = GroupDTO
 
     def call(self) -> GroupDTO:
-        """Main Layout"""
+        """Main CTOR"""
 
 
-class LineDTORenderer(DtoRenderer):
-    """Render ..."""
+class LineDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "line"
     base_dto: type[LineDTO] = LineDTO
 
     def call(self) -> LineDTO:
-        """Main Layout"""
+        """Main CTOR"""
 
 
-class TableDTORenderer(DtoRenderer):
-    """Render ..."""
+class TableDTOProducer(DtoProducer):
+    """Create ..."""
 
     dto_name: DtoNames = "table"
     base_dto: type[TableDTO] = TableDTO
 
     def call(self) -> TableDTO:
-        """Main Layout"""
+        """Main CTOR"""
