@@ -10,21 +10,43 @@ __all__: list[str] = [
     "dto_factory",
 ]
 
-from typing import Any
+from typing import Any, reveal_type
 
 from ....brick.color.box import Colors
 from ....port.event.dto import EventDTO, EventDtoFactory
 from ....port.link import portlink
+from ._produce import (
+    CliDtoProducer,
+    LineDtoProducer,
+    LogDtoProducer,
+    MarkdownDtoProducer,
+    PanelDtoProducer,
+    TableDtoProducer,
+)
 
 colors = Colors()
 
-REGISTRY: dict[str, type[EventDTO]] = EventDTO._registry
+REGISTRY: dict[str, type[Any]] = EventDTO._registry
+
+cli = CliDtoProducer(REGISTRY)
 
 
 @portlink(EventDtoFactory)
 class DtoFactory:
     def __init__(self, registry: dict[str, Any]):
         self._registry: dict[str, Any] = registry
+        self.log: LogDtoProducer = LogDtoProducer(registry)
+        self.cli = CliDtoProducer(registry)
+        self.panel = PanelDtoProducer(registry)
+        self.md = MarkdownDtoProducer(registry)
+        self.line = LineDtoProducer(registry)
+        self.table = TableDtoProducer(registry)
 
 
 dto_factory = DtoFactory(EventDTO._registry)
+
+log_dto = dto_factory.log("My first log message")
+cli_dto = dto_factory.cli()
+
+reveal_type(dto_factory.table())
+reveal_type(dto_factory.table.from_cols(cols={}))

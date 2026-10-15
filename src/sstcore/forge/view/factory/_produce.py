@@ -1,138 +1,121 @@
 """
-CliFactory - Experiment 3
+Prepare Functors, 1 per DTO
 
-- Tiny but by far the besgt so far!
+- add optional safe mode
+- handle stacked functions
 
 """
 
-import warnings
+__all__: list[str] = [
+    "LogDtoProducer",
+    "CliDtoProducer",
+    "PanelDtoProducer",
+    "MarkdownDtoProducer",
+    "LineDtoProducer",
+    "TableDtoProducer",
+]
+
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Unpack
 
-from ....brick.color.box import Colors
-from ....port.color import ColorBox
+from ....port._types import event_types as _dto
 from ....port.event.dto import (
-    GroupDTO,
+    CliData,
+    CliDTO,
+    CliSpec,
+    DtoNames,
+    EventDTO,
     LineDTO,
+    LineSpec,
+    LogCtor,
+    LogDTO,
+    LogSpec,
     MarkdownDTO,
+    MdSpec,
     PanelDTO,
-    TableDTO,
+    PanelSpec,
+    TableSpec,
 )
-from ....port.represent import CliRenderable
-
-colors: ColorBox = Colors()
-
-
-def panel(
-    content: CliRenderable | list[CliRenderable],
-    *,
-    title: str | None = None,
-    expand: bool = True,
-    **kwargs: Any,
-) -> PanelDTO:
-    """Create a framed PanelDTO container."""
-    return PanelDTO(content=content, title=title, expand=expand, **kwargs)
+from ....port.represent import Stringable
+from ...func import SafeFunctor
+from ._table import TableViewDTO
 
 
-def panel_ctor(content: Any, title: str | None = None, **kwargs) -> PanelDTO:
-    return PanelDTO(content=content, title=title, **kwargs)
+class DtoProducer[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
+    """Assemble the DTO - handle variations"""
+
+    dto_name: DtoNames
+
+    def __init__(self, registry: _dto.Map[type[DTO]], **kwargs):  # DTO:Any
+        self._registry: _dto.Map[type[DTO]] = registry
+        super().__init__(**kwargs)
+
+    @property
+    def dto_cls(self) -> type[DTO]:
+        return self._registry[self.dto_name]
+
+    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def group(*items: CliRenderable) -> GroupDTO:
-    """Create a GroupDTO stacking multiple renderables."""
-    return GroupDTO(content=list(items))
+_ = LogCtor
 
 
-def line_ctor(character: str = "─", *, style: str = "cyan") -> LineDTO:  # noqa:N805
-    """Create a horizontal character LineDTO."""
-    return LineDTO(content=character, color=style)
+# FIX: how to insert the **Args proper??
+# - this is like the key for perfect typing
+class LogDtoProducer(DtoProducer[LogDTO]):
+    dto_name: DtoNames = "log"
+
+    def call(self, message: str, /, **kw: Unpack[LogSpec]) -> LogDTO:
+        return self.dto_cls.create(message=message, **kw)
+
+    # __call__ = call
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class CliDtoProducer(DtoProducer[CliDTO]):
+    dto_name: DtoNames = "cli"
+
+    def call(
+        self, content: Sequence[CliData], /, **kw: Unpack[CliSpec]
+    ) -> CliDTO:
+        return self.dto_cls.create(content, **kw)
 
 
-def markdown(
-    text: str, *, header: int = 0, style: str = "white"
-) -> MarkdownDTO:
-    """Create a MarkdownDTO with validated header constraints (H0-H6)."""
-    if not (0 <= header <= 6):
-        warnings.warn(
-            f"Markdown header={header} invalid (expected H0-H6). Defaulting to 0.",
-            stacklevel=2,
-        )
-        header = 0
-    return MarkdownDTO(content=text, header=header, color=style)
+class PanelDtoProducer(DtoProducer[PanelDTO]):
+    dto_name: DtoNames = "panel"
+
+    def call(self, *content: CliData, **kw: Unpack[PanelSpec]) -> PanelDTO:
+        return self.dto_cls.create(*content, **kw)
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class MarkdownDtoProducer(DtoProducer[MarkdownDTO]):
+    """Create ..."""
+
+    dto_name: DtoNames = "markdown"
+
+    def call(
+        self, content: Stringable, /, **kw: Unpack[MdSpec]
+    ) -> MarkdownDTO:
+        return self.dto_cls.create(content, **kw)
 
 
-def table_from_matrix(matrix: list[list[Any]], content: str = "") -> TableDTO:
-    return TableDTO(
-        content=content or "Table From Dicts",
-        matrix=matrix,
-    )
+class LineDtoProducer(DtoProducer[LineDTO]):
+    """Create ..."""
+
+    dto_name: DtoNames = "line"
+
+    def call(self, *content: CliData, **kw: Unpack[LineSpec]) -> LineDTO:
+        return self.dto_cls.create(content, **kw)
 
 
-def table_from_row_dicts(rows: dict[str, Any | list[Any]]) -> TableDTO:
-    return TableDTO(
-        content="Table From Dicts",
-        matrix=list(rows.values()),
-        row_names=list(rows.keys()),
-    )
+class TableDtoProducer(DtoProducer[TableViewDTO]):
+    dto_name: DtoNames = "table"
 
+    def call(
+        self, content: tuple[tuple[CliData]], /, **kw: Unpack[TableSpec]
+    ) -> TableViewDTO:
+        return self.dto_cls.create(content, **kw)
 
-def table_from_rows(
-    rows: dict[str, Any | Sequence[Any]], *, corner: str = ""
-) -> TableDTO:
-    """Transform dict of {row_name: values} into a TableDTO."""
-    matrix: list[list[Any]] = [
-        list(v)
-        if isinstance(v, (list, tuple))  #
-        else [v]
-        for v in rows.values()
-    ]
-    return TableDTO(
-        content="Table From Rows",
-        matrix=matrix,
-        row_names=list(rows.keys()),
-        corner=corner,
-    )
-
-
-def table_from_cols(
-    cols: dict[str, Sequence[Any]], *, corner: str = ""
-) -> TableDTO:
-    """Transform dict of {col_name: column_values} into a TableDTO (transposed)."""
-
-    return TableDTO(
-        content="Table From Cols",
-        matrix=[list(row) for row in zip(*cols.values(), strict=True)],
-        col_names=list(cols.keys()),
-        corner=corner,
-    )
-
-
-def table_from_records(
-    records: Sequence[dict[str, Any]], headers: list[str] | None = None
-) -> TableDTO:
-    """Transform list of row dicts [{'ColA': 1, 'ColB': 2}] into a TableDTO."""
-    if not records:
-        return TableDTO(content="Table", matrix=[])
-
-    headers: list[str] = headers or list(
-        dict.fromkeys(k for row in records for k in row.keys())
-    )
-    return TableDTO(
-        content="Table from Records",
-        matrix=[[row.get(h, "") for h in headers] for row in records],
-        col_names=headers,
-    )
-
-
-def table_from_col_dicts(cols: dict[str, list[Any]], **kwargs) -> TableDTO:
-    return TableDTO(
-        matrix=[list(row) for row in zip(*cols.values(), strict=True)],
-        col_names=list(cols.keys()),
-        **kwargs,
-    )
+    def from_cols(
+        self, cols: dict[str, Sequence[Any]], *, corner: str = ""
+    ) -> TableViewDTO:
+        return self.dto_cls.table_from_cols(cols, corner=corner)
