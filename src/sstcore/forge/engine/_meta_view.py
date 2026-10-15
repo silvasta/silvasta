@@ -18,7 +18,7 @@ from ...brick.call import just_return
 from ...brick.color.box import Colors
 from ...brick.reflect import clsname
 from ...port import represent
-from ...port.calling import ClassRendering
+from ...port.calling import ClsRendering
 from ...port.color import Color, ColorId
 from ...port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
 from ...port.link import portlink
@@ -76,27 +76,27 @@ class ClsViewData(SstMetaData):
 
     # IMPORTANT: improve defaults!
 
-    name: ClassRendering
-    rich: ClassRendering
+    name: ClsRendering
+    rich: ClsRendering
     cli: CliDtoCreator
 
     def __init__(
         self,
-        name: ClassRendering | str = "",
-        rich: ClassRendering | str = "",
+        name: ClsRendering | str = "",
+        rich: ClsRendering | str = "",
         cli: CliDtoCreator | str = "",
         color: ColorId = Color.AZURE,
     ):
-        self.name: ClassRendering = (
+        self.name: ClsRendering = (
             name
-            if isinstance(name, ClassRendering)
+            if isinstance(name, ClsRendering)
             else just_return(name)
             if name
             else self._default_name
         )
-        self.rich: ClassRendering = (
+        self.rich: ClsRendering = (
             rich
-            if isinstance(rich, ClassRendering)
+            if isinstance(rich, ClsRendering)
             else just_return(rich)
             if rich
             else self._default_rich

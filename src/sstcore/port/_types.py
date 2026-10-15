@@ -14,6 +14,7 @@ __all__: list[str] = [
     "stacking_types",
     "Stub",
     "stub_types",
+    "event_types",
 ]
 
 from collections.abc import (
@@ -50,8 +51,6 @@ class _RichConsolable(Protocol):
     def __rich_console__(self):
         """Just extend the Renderable type"""
 
-
-_Richable = _RichView | _RichConsolable | str
 
 #  LINE: -- Collected Definitions of: type ... = ... -- -- - -- -- - -- -- - --
 
@@ -125,3 +124,11 @@ class Stub:
 
 
 stub_types = Stub()
+
+
+class EventTypes:
+    type Map[Value] = Mapping[str, Value]  # MOVE: port._types
+    type Tuple[T] = tuple[T, ...]
+
+
+event_types = EventTypes()

@@ -165,7 +165,6 @@ class ConfigLoader[P: Paths, S: Settings](Protocol):
 
 class ConfigInput[P: Paths, S: Settings](TypedDict, total=False):
     settings_cls: type[S]
-    # AI: why here not None? why not everywhere or nowhere?
     paths_cls: type[P]
     setting_file: Path | None
     project_name: str | None

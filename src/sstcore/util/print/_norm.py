@@ -18,8 +18,7 @@ from typing import Any
 from rich.console import ConsoleRenderable, RichCast
 
 from ...brick.color import colorize
-from ...port.calling import PydanticModel
-from ...port.represent import CliRenderable
+from ...port.represent import CliRenderable, PydanticModel
 
 
 class NormalizeMixin:

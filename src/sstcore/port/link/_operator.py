@@ -52,9 +52,9 @@ class EasyNote(SimpleNamespace):
         (self._emit or self.port_emit)(*args, sender=self, **kwargs)
 
     @staticmethod
-    def port_emit(*args, **kwargs):  # TODO: simple logger
+    def port_emit(*_args, **kwargs):  # TODO: simple logger
         _sender = kwargs.pop("sender", None)
-        print(f"{_sender=}", *args, **kwargs)  # PARAM: debug toggle
+        # print(f"{_sender=}", *_args, **kwargs)  # PARAM: debug toggle
         pass
 
     def __str__(self):

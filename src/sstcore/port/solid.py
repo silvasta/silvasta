@@ -94,8 +94,12 @@ class EnumOption(EnumZero):
     """Multiple Selections - Always 1 default (on zero)"""
 
 
-class PrintOption(EnumOption):
+class PrintOption(EnumZero, walk=True):
     """(Randomly) toggle views until it looks nice"""
+
+
+class BoxOption(EnumZero, walk=True):
+    """Select the Box for the Viz"""
 
 
 class EnumCatalog(BaseEnum):

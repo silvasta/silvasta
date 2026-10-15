@@ -230,15 +230,15 @@ class BasePrinter(PrintRender, PrintFactory, PrintNormalizer, PrinterBase):
     """Define Minimal functionality to Operate"""
 
 
-class RichPrinter(PrintRichRender, BasePrinter):  # ty:ignore
+class RichPrinter(PrintRichRender, BasePrinter):
     """Define Minimal functionality to handle Rich"""
 
 
-class Printer(LayoutPrint, RichPrinter):  # ty:ignore
+class Printer(LayoutPrint, RichPrinter):
     """Define Minimal functionality for Optimal Workflow"""
 
 
-class DataPrinter(SpecialPrint, Printer):  # ty:ignore
+class DataPrinter(SpecialPrint, Printer):
     """Define Minimal functionality for Optimal Workflow"""
 
 
