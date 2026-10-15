@@ -22,7 +22,7 @@ from ._extend import ValidField
 
 
 @portlink(attach.DecoDescriptor)
-class FieldDecorator[**In, Out](ValidField):
+class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
     """
     Decorate Method with or without Args
 
@@ -49,7 +49,7 @@ class FieldDecorator[**In, Out](ValidField):
     def __call__[**NewIn, NewOut](
         self, func: Callable[Concatenate[Any, NewIn], NewOut]
     ) -> Self:
-        """Invoked only when used as @Field(args) (with parens)."""
+        """Invoke only when used as hybrid decorator with args:= @Field(args)"""
         self.bind(func)
         return self
 
@@ -66,7 +66,10 @@ class FieldDecorator[**In, Out](ValidField):
 
         default_doc = f"Bound Function by {self}"
         self.__doc__: str = reflect.doc(func, default=default_doc)
-        self.public_name: str = reflect.funcname(func)  # TODO: default value?
+
+        if not hasattr(self, "public_name"):  # LATER: ensure NamedField works
+            self.public_name: str = reflect.funcname(func)
+            self.private_name: str = f"_{self.public_name}"
 
     def validate(
         self, unit: object, value: Callable[In, Out]
@@ -76,9 +79,6 @@ class FieldDecorator[**In, Out](ValidField):
         if not callable(value):
             raise self.raiser.Function(self, unit, value=value)
 
-        if self._has_val(unit):
-            raise self.raiser.WriteExists(self, unit, value=value)
-
         return super().validate(unit, value)
 
 
@@ -87,6 +87,13 @@ class DecoratedField[**In, Out](
     ReadField[Callable[In, Out]], FieldDecorator[In, Out]
 ):
     """FieldDecorator with default ReadField for direct usage"""
+
+    def validate(
+        self, unit: object, value: Callable[In, Out]
+    ) -> Callable[In, Out]:
+        if self._has_val(unit):
+            raise self.raiser.WriteExists(self, unit, value=value)
+        return super().validate(unit, value)
 
     def read(self, unit: object) -> Callable[In, Out]:
         if self._has_val(unit):

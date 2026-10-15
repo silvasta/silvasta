@@ -15,21 +15,21 @@ from collections.abc import Callable
 from typing import Any, Concatenate, NoReturn, TypeGuard, overload
 
 from ...brick.field import MorphingField, StrategyField
-from ...port import functorial
+from ...port.functorial import BoundWrapper, Detect, HybridFunctorial
 from ...port.link import portlink
 from ._tor import BaseFunctor
 
 
-@portlink(functorial.HybridFunctorial)
+@portlink(HybridFunctorial)
 class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     """Extend Call for Hybrid3 and use Init for Hybrid2"""
 
-    def __init__(self, detect: functorial.Detect[In] | None, **kwargs):
+    def __init__(self, detect: Detect[In] | None = None, **kwargs) -> None:
         if detect is not None:
             self.detect = detect
         super().__init__(**kwargs)
 
-    @StrategyField  # AI: unsure which will end up as default, bind_to_self=True|False
+    @StrategyField(bind_to_self=True)
     def detect(self, target: Any, /) -> TypeGuard[In]:
         """Check if target is direct function call"""
         raise NotImplementedError("typing.TypeGuard needed to detect!", target)
@@ -47,9 +47,7 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
         return wrapper
 
     @MorphingField(bind_to_self=True)
-    def bind[**Fn](
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> Callable[[Callable[Fn, In]], Callable[Fn, Out]]:
+    def bind(self, *args: P.args, **kwargs: P.kwargs) -> BoundWrapper[In, Out]:
         """Case 3: Bind additional input to case 2"""
         return lambda fn: self.wrap(fn, *args, **kwargs)
 
@@ -68,7 +66,7 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     @overload
     def __call__(
         self, /, *args: P.args, **kwargs: P.kwargs
-    ) -> Callable[[Callable[..., In]], Callable[..., Out]]: ...
+    ) -> BoundWrapper[In, Out]: ...
 
     def __call__(
         self, target: Any = None, /, *args: P.args, **kwargs: P.kwargs

@@ -10,13 +10,16 @@ __all__: list[str] = [
     "ReadDescriptor",
     "WriteDescriptor",
     "DeleteDescriptor",
-    "Descriptor",
+    "DecoDescriptor",
     #
     "ValidDescriptor",
     "TypedDescriptor",
     "LazyDescriptor",
     "FieldLoader",
+    "PolicyDescriptor",
+    "MatchingDescriptor",
     "CallingDescriptor",
+    "MorphingDescriptor",
     #
     "EventDescriptor",
     "ConfigDescriptor",
@@ -149,6 +152,23 @@ class MorphingDescriptor[**In, Out](CallingDescriptor[In, Out], _t.Protocol):
 #  LINE: -- Next Steps -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+class EventDescriptor[T](_t.Protocol):
+    emit: _Emit
+
+    def __init__(self, func: _Emit) -> None:
+        """Listen to all Channels and Message to EventBus"""
+
+
+class ConfigDescriptor[DataT](_t.Protocol):
+    def update(self, **config: DataT) -> _t.Any:
+        """Modify Configuration and change Behaviour"""
+
+    config: DataT  # NOTE: check _ExampleConfig in brick.field
+
+
+#  LINE: -- Transition -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 class Transition[T](_t.Protocol):  # LATER: move to state transition
     def __call__(self, unit: object, current: T, next: T, **kwargs) -> _t.Any:
         """Calculate Actions depending on the State Pair"""
@@ -164,17 +184,3 @@ class TransitionDescriptor[T: _Enum](TypedDescriptor[T], _t.Protocol):
 
 class StateDescriptor[T: _Enum](TransitionDescriptor[T]):
     """Govern the Lifecycle of the State"""
-
-
-class EventDescriptor[T](_t.Protocol):
-    emit: _Emit
-
-    def __init__(self, func: _Emit) -> None:
-        """Listen to all Channels and Message to EventBus"""
-
-
-class ConfigDescriptor[DataT](_t.Protocol):
-    def update(self, **config: DataT) -> _t.Any:
-        """Modify Configuration and change Behaviour"""
-
-    config: DataT  # NOTE: check _ExampleConfig in brick.field

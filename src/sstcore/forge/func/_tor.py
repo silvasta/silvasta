@@ -27,9 +27,6 @@ FunctorInput = FunctorMetaData()
 class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
     """Ensure Requirements and close MRO forwarding"""
 
-    # call: Callable[Args, Result]
-    # emit: functorial._FuncEmit
-
     def __init__(
         self,
         call: Callable[Args, Result] | None = None,

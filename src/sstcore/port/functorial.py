@@ -20,10 +20,16 @@ Extensions:
 
 __all__: list[str] = [
     "Functorial",
+    #
     "SafeFunctorial",
+    "Catch",
     "ErrorPolicy",
+    #
     "HybridFunctorial",
     "Detect",
+    "Wrap",
+    "Bind",
+    "BoundWrapper",
 ]
 
 import typing as _t
@@ -53,10 +59,15 @@ class Functorial[**ArgSpace, SubSetResult](_t.Protocol):
     ) -> SubSetResult: ...
 
 
+#  LINE: -- Safe -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
     """Execute Functions in Safe Environment"""
 
-    # catch: _Callable[_t.Concatenate[Exception, ArgSpace], SubSetResult | None]
+    @property
+    def catch(self) -> Catch[ArgSpace, SubSetResult]:
+        """Handle Function fail by Policy"""
 
     @property
     def policy(self) -> ErrorPolicy:
@@ -71,7 +82,9 @@ class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
     ) -> SubSetResult | None | _t.NoReturn:
         """Establish the Frame for Safe Execution"""
 
-    def catch(
+
+class Catch[**ArgSpace, SubSetResult](_t.Protocol):
+    def __call__(
         self,
         error: Exception,
         /,
@@ -92,23 +105,19 @@ class ErrorPolicy(_PolicyEnum):
 #  LINE: -- Hybrid -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Detect[In](_t.Protocol):
-    def __call__(self, target: _t.Any) -> _t.TypeGuard[In]:
-        """Identify the Target - fulfils Type?"""
-
-
 class HybridFunctorial[In, Out, **P](_t.Protocol):
     """Decorate Functions, Methods or direct Calls"""
 
-    def detect(self, target: _t.Any, /) -> _t.TypeGuard[In]:
+    @property
+    def detect(self) -> Detect[In]:
         """Identify direct call or function"""
 
-    def wrap[**Fn](
-        self, fn: _Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
-    ) -> _Callable[Fn, Out]:
+    @property
+    def wrap(self) -> Wrap[In, Out, P]:
         """Wire the Target ready to drop in"""
 
-    def bind(self, *args: P.args, **kwargs: P.kwargs) -> BoundWrapper[In, Out]:
+    @property
+    def bind(self) -> Bind[In, Out, P]:
         """Bind the Target with additional Parameters"""
 
     def reject(self, fail: _t.Any, *args, **kwargs) -> _t.NoReturn:
@@ -118,14 +127,17 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
     def __call__(
         self, target: In, /, *args: P.args, **kwargs: P.kwargs
     ) -> Out: ...
+
     @_t.overload
     def __call__[**Fn](
         self, target: _Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
     ) -> _Callable[Fn, Out]: ...
+
     @_t.overload
     def __call__(
         self, /, *args: P.args, **kwargs: P.kwargs
     ) -> BoundWrapper[In, Out]: ...
+
     def __call__(
         self, target: _t.Any = None, /, *args: P.args, **kwargs: P.kwargs
     ):
@@ -135,6 +147,25 @@ class HybridFunctorial[In, Out, **P](_t.Protocol):
         - Case 2: decorat target function
         - Case 3: bind param to decorator
         """
+
+
+class Detect[In](_t.Protocol):
+    def __call__(self, target: _t.Any, /) -> _t.TypeGuard[In]:
+        """Identify the Target - fulfils Type?"""
+
+
+class Wrap[In, Out, **P](_t.Protocol):
+    def __call__[**Fn](
+        self, fn: _Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
+    ) -> _Callable[Fn, Out]:
+        """Wire the Target ready to drop in"""
+
+
+class Bind[In, Out, **P](_t.Protocol):
+    def __call__(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> BoundWrapper[In, Out]:
+        """Bind the Target with additional Parameters"""
 
 
 class BoundWrapper[In, Out](_t.Protocol):

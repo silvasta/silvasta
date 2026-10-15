@@ -11,29 +11,25 @@ __all__: list[str] = [
 
 
 import sys
-from collections.abc import Callable
-from typing import Concatenate, NoReturn
+from typing import NoReturn
 
 from ...brick.field import PolicyField, RequiredField
 from ...brick.field._strategy import StrategyField
-from ...port import functorial
-from ...port.functorial import ErrorPolicy
+from ...port.functorial import Catch, ErrorPolicy, SafeFunctorial
 from ...port.link import portlink
 from ._tor import BaseFunctor
 
-type _Catch[**A, R] = Callable[Concatenate[Exception, A], R | None]
 
-
-@portlink(functorial.SafeFunctorial)
+@portlink(SafeFunctorial)
 class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
     """Protect the Execution, Handle Errors, everything able to customize"""
 
     policy = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)
-    exit_code = RequiredField(types=int, default=1)
+    exit_code: RequiredField[int] = RequiredField(types=int, default=1)
 
-    def __init__(self, catch: _Catch[Args, Result] | None = None, **kwargs):
+    def __init__(self, catch: Catch[Args, Result] | None = None, **kwargs):
         if catch is not None:
-            self.catch = catch
+            self.catch: Catch[Args, Result] = catch
         super().__init__(**kwargs)
 
     def safe(
@@ -44,7 +40,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
         except Exception as error:
             return self.catch(error, *args, **kwargs)
 
-    @StrategyField
+    @StrategyField(bind_to_self=True)
     def catch(
         self, error: Exception, /, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | None | NoReturn:

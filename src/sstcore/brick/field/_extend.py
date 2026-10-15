@@ -37,9 +37,10 @@ class ResetField[DefaultT](DeleteField):
 
 
 @portlink(attach.ValidDescriptor)
-class ValidField[FieldT](WriteField):
+class ValidField[FieldT](WriteField[FieldT]):
     def validate(self, unit: object, value: FieldT) -> FieldT:
         """Finish the loop and return the value"""
+        _ = unit
         return value
 
     def write(self, unit: object, value: FieldT) -> None:
