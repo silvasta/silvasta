@@ -4,11 +4,11 @@ Define the Arguments and Parameter for the DTO Pipeline
 -
 """
 
-__all__: list[str] = [
-    "Boxes",
+__all__: list[str] = [  # AI_QUESTION: where to expose this?
     "ParamData",
     "FrameData",
     "FrameSpec",
+    "Boxes",
     "HeaderData",
     "HeaderBaseSpec",
     # cli extensions

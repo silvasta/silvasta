@@ -11,7 +11,8 @@ __all__: list[str] = [
 from collections.abc import Sequence
 from typing import Any, Self
 
-from ....port.event.dto import CliData, HeaderData, TableDTO
+from ....port.event._param import HeaderData
+from ....port.event.dto import CliData, TableDTO
 
 
 class TableViewDTO(TableDTO, name="table"):

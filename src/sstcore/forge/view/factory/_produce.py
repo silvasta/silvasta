@@ -27,11 +27,10 @@ from ....port.event.dto import (
     EventDTO,
     LineDTO,
     LineSpec,
-    LogCtor,
     LogDTO,
     LogSpec,
     MarkdownDTO,
-    MdSpec,
+    MarkdownSpec,
     PanelDTO,
     PanelSpec,
     TableSpec,
@@ -54,14 +53,10 @@ class DtoProducer[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
     def dto_cls(self) -> type[DTO]:
         return self._registry[self.dto_name]
 
-    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-_ = LogCtor
-
-
-# FIX: how to insert the **Args proper??
-# - this is like the key for perfect typing
 class LogDtoProducer(DtoProducer[LogDTO]):
     dto_name: DtoNames = "log"
 
@@ -80,6 +75,9 @@ class CliDtoProducer(DtoProducer[CliDTO]):
         return self.dto_cls.create(content, **kw)
 
 
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 class PanelDtoProducer(DtoProducer[PanelDTO]):
     dto_name: DtoNames = "panel"
 
@@ -93,7 +91,7 @@ class MarkdownDtoProducer(DtoProducer[MarkdownDTO]):
     dto_name: DtoNames = "markdown"
 
     def call(
-        self, content: Stringable, /, **kw: Unpack[MdSpec]
+        self, content: Stringable, /, **kw: Unpack[MarkdownSpec]
     ) -> MarkdownDTO:
         return self.dto_cls.create(content, **kw)
 

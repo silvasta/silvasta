@@ -5,9 +5,9 @@ Prepare for any EventDTO
 
 """
 
-__all__: list[str] = [
+__all__: list[str] = [  # AI_QUESTION: here probably not too much?
     "dto_factory",
-    # TODO: all producer
+    # TODO: all producer? Upgraded DTOs?
 ]
 
 from ._factory import dto_factory

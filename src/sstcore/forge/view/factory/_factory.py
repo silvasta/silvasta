@@ -30,6 +30,16 @@ REGISTRY: dict[str, type[Any]] = EventDTO._registry
 
 cli = CliDtoProducer(REGISTRY)
 
+# AI_TASK: how to improve this factory a little bit?
+# - the signatures in the EventDtoFactory needs probably to be changed,
+#   currently they reflect too much the need of the data structure
+# - The goal is to make this a comfortable, user friendly interface
+# - The Stubwriter is not already ready for the Stackingcore,
+#   still, some first ideas how to mount this would be nice.
+# -> check brick.call.stack and come up with ideas how to wire this
+# - for the status here, maybe some @property that return the Producer?
+# -> suggest some quick improvement for the setup here
+
 
 @portlink(EventDtoFactory)
 class DtoFactory:

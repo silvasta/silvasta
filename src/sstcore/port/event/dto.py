@@ -12,17 +12,26 @@ Rendering Protocols with Runtime check
 """
 
 __all__: list[str] = [
-    "EventDTO",
-    "CliDTO",
-    "LogDTO",
     "DtoNames",
+    "EventDTOBase",
+    "EventDTO",
     "EventDtoFactory",
+    # main dtos
+    "LogDTO",
+    "LogSpec",
+    "CliDTO",
+    "CliSpec",
     "CliData",
     # cli extensions
-    "MarkdownDTO",
     "PanelDTO",
+    "PanelSpec",
+    "MarkdownDTO",
+    "MarkdownSpec",
     "LineDTO",
+    "LineSpec",
     "TableDTO",
+    "TableSpec",
+    "AllDtoSpecs",
 ]
 
 import dataclasses as _dc
@@ -86,7 +95,7 @@ class EventDTO(EventDTOBase, name="ctor"):
     @classmethod
     @castarg
     def _sanitize_kwargs(
-        cls, **kwargs: _Unpack[_AllDtoSpecs]
+        cls, **kwargs: _Unpack[AllDtoSpecs]
     ) -> dict[str, _Any]:
         """Pack nested ParamData and resolve Annotated types"""
         return _p.sanitize_specs(
@@ -104,7 +113,7 @@ class EventDtoFactory(_typing.Protocol):
         self, *content: CliData, **kw: _Unpack[PanelSpec]
     ) -> PanelDTO: ...
     def md(
-        self, content: _Stringable, /, **kw: _Unpack[MdSpec]
+        self, content: _Stringable, /, **kw: _Unpack[MarkdownSpec]
     ) -> MarkdownDTO: ...
     def line(self, *content: CliData, **kw: _Unpack[LineSpec]) -> LineDTO: ...
     def table(
@@ -191,7 +200,7 @@ class MarkdownDTO(CliDTO[tuple[CliData]], name="markdown"):
     maxlen: int = 400
 
 
-class MdSpec(CliSpec, _p.FrameSpec, total=False):
+class MarkdownSpec(CliSpec, _p.FrameSpec, total=False):
     """Markdown"""
 
     maxlen: int
@@ -249,5 +258,5 @@ class TableSpec(CliSpec, _p.HeaderSpec, _p.FrameSpec, total=False):
     corner: str
 
 
-class _AllDtoSpecs(TableSpec, MdSpec, LineSpec, LogSpec, total=False):
+class AllDtoSpecs(TableSpec, MarkdownSpec, LineSpec, LogSpec, total=False):
     """Combined spec space so @castarg discovers all Annotated casters once."""
