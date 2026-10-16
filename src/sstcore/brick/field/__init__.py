@@ -36,6 +36,8 @@ __all__: list[str] = [
     "MorphingField",
     "MethodFieldEngine",
     "BoundStrategy",
+    # functor
+    "FunctorField",
     # _raise
     "FieldError",
     "FieldErrorInput",
@@ -67,6 +69,7 @@ from ._extend import (
     TypedField,
     ValidField,
 )
+from ._functor import FunctorField
 from ._policy import (
     MatchPolicyField,
     PolicyField,

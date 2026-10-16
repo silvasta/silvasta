@@ -26,30 +26,32 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
 
     def __init__(self, detect: Detect[In] | None = None, **kwargs) -> None:
         if detect is not None:
-            self.detect = detect
+            self._detect = detect
         super().__init__(**kwargs)
 
     @StrategyField(bind_to_self=True)
-    def detect(self, target: Any, /) -> TypeGuard[In]:
+    def _detect(self, target: Any, /) -> TypeGuard[In]:
         """Check if target is direct function call"""
         raise NotImplementedError("typing.TypeGuard needed to detect!", target)
 
     @StrategyField(bind_to_self=True)
-    def wrap[**Fn](
+    def _wrap[**Fn](
         self, fn: Callable[Fn, In], /, *args: P.args, **kwargs: P.kwargs
     ) -> Callable[Fn, Out]:
         """Case 2: Decorator"""
 
         @functools.wraps(fn)
         def wrapper(*fn_args: Fn.args, **fn_kwargs: Fn.kwargs) -> Out:
-            return self.call(fn(*fn_args, **fn_kwargs), *args, **kwargs)
+            return self._call(fn(*fn_args, **fn_kwargs), *args, **kwargs)
 
         return wrapper
 
     @MorphingField(bind_to_self=True)
-    def bind(self, *args: P.args, **kwargs: P.kwargs) -> BoundWrapper[In, Out]:
+    def _bind(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> BoundWrapper[In, Out]:
         """Case 3: Bind additional input to case 2"""
-        return lambda fn: self.wrap(fn, *args, **kwargs)
+        return lambda fn: self._wrap(fn, *args, **kwargs)
 
     def reject(self, failed: Any, *args, **kwargs) -> NoReturn:
         self.emit("Invalid Hybrid Usage", failed, *args, **kwargs)
@@ -73,13 +75,13 @@ class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
     ):
         """Hybrid triple dispatch"""
 
-        if self.detect(target):
+        if self._detect(target):
             return self.call(target, *args, **kwargs)
 
         if callable(target) and target is not type:
-            return self.wrap(target, *args, **kwargs)
+            return self._wrap(target, *args, **kwargs)
 
         if target is None:
-            return self.bind(*args, **kwargs)
+            return self._bind(*args, **kwargs)
 
         self.reject(target)

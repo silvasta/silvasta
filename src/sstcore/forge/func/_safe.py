@@ -29,7 +29,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
 
     def __init__(self, catch: Catch[Args, Result] | None = None, **kwargs):
         if catch is not None:
-            self.catch: Catch[Args, Result] = catch
+            self._catch: Catch[Args, Result] = catch
         super().__init__(**kwargs)
 
     def safe(
@@ -38,14 +38,14 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
         try:
             return self(*args, **kwargs)
         except Exception as error:
-            return self.catch(error, *args, **kwargs)
+            return self._catch(error, *args, **kwargs)
 
     @StrategyField(bind_to_self=True)
-    def catch(
+    def _catch(
         self, error: Exception, /, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | None | NoReturn:
         """Execute pure Policy if catch is not defined"""
-        self.emit(
+        self._emit(
             f"{self} failed: {error}", level="CRITICAL", param=(args, kwargs)
         )
         match self.policy:

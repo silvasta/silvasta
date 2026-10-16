@@ -5,6 +5,8 @@ Implement the Functors for calltions and more
 
 """
 
+from typing import Any, Self
+
 __all__: list[str] = [
     "BaseFunctor",
 ]
@@ -35,26 +37,45 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
     ):  # LATER: __init_subclass__ from here?
 
         if call is not None:
-            self.call: Callable[Args, Result] = call
+            self._call: Callable[Args, Result] = call
 
-        name: str = name or funcname(self.call, default=f"{clsname(self)}Unit")
+        name: str = name or funcname(
+            self._call, default=f"{clsname(self)}Unit"
+        )
         self.__name__: str = name
         self.__qualname__: str = name
 
         if kwargs:
-            self.emit(f"Undestroyed kwargs: {kwargs!r}")
+            self._emit(f"Undestroyed kwargs: {kwargs!r}")
 
         super().__init__()
 
     def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
-        return self.call(*args, **kwargs)
+        return self._call(*args, **kwargs)
 
     @StrategyField(bind_to_self=True)
-    def call(self, *args: Args.args, **kwargs: Args.kwargs):
+    def _call(self, *args: Args.args, **kwargs: Args.kwargs):
         raise AttributeError(
             "Functor is Missing: [ _call_ ]!", self, args, kwargs
         )
 
     @MorphingField(bind_to_self=True)
-    def emit(self, *args, **kwargs) -> None:  # MOVE: global meta defaults
+    def _emit(self, *args, **kwargs) -> None:  # MOVE: global meta defaults
         logger.debug(*args, sender=str(self), **kwargs)
+
+    @classmethod
+    def __mount__(
+        cls, _host: Any, /, *, name: str = "", **kwargs: Any
+    ) -> Self:
+        return cls(name=name, **kwargs)
+
+
+def test(): ...
+
+
+def _plug(x: BaseFunctor):
+    x._call = test
+
+
+def _port(x: functorial.Functorial):
+    x._call = test

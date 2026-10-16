@@ -46,17 +46,39 @@ class _FuncEmit(_t.Protocol):  # REMOVE: when replacement arrives
 class Functorial[**ArgSpace, SubSetResult](_t.Protocol):
     """Define the Basic Requirements for any Functor"""
 
-    call: _Callable[ArgSpace, SubSetResult]
     __name__: str
     __qualname__: str
 
+    _call: _Callable[ArgSpace, SubSetResult]  # CHECK:
+
+    # @property
+    # def _call(self) -> _Callable[ArgSpace, SubSetResult]:
+    #     """Provide the underlying strategy callable (read-only in Protocol)"""
+
     @property
-    def emit(self) -> _FuncEmit:
+    def _emit(self) -> _FuncEmit:
         """Provide default message sending"""
 
     def __call__(
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
     ) -> SubSetResult: ...
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class MountableFunctor[  # LATER: merge into Functorial??
+    HostT = _t.Any,
+    **ArgSpace = ...,
+    SubSetResult = _t.Any,
+](Functorial[ArgSpace, SubSetResult], _t.Protocol):
+    """Contract for Functors that can be mounted onto a Host class via FunctorField."""
+
+    @classmethod
+    def __mount__(
+        cls, host: HostT, /, *, name: str = "", **kwargs: _t.Any
+    ) -> _t.Self:
+        """Create and configure a functor instance bound to `host`."""
 
 
 #  LINE: -- Safe -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -65,9 +87,10 @@ class Functorial[**ArgSpace, SubSetResult](_t.Protocol):
 class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
     """Execute Functions in Safe Environment"""
 
-    @property
-    def catch(self) -> Catch[ArgSpace, SubSetResult]:
-        """Handle Function fail by Policy"""
+    _catch: Catch[ArgSpace, SubSetResult]
+    # @property  # CHECK:
+    # def catch(self) -> Catch[ArgSpace, SubSetResult]:
+    #     """Handle Function fail by Policy"""
 
     @property
     def policy(self) -> ErrorPolicy:
@@ -77,7 +100,7 @@ class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
     def exit_code(self) -> int:
         """The sys.exit(Value)"""
 
-    def safe(
+    def safe(  # public
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
     ) -> SubSetResult | None | _t.NoReturn:
         """Establish the Frame for Safe Execution"""
@@ -108,19 +131,22 @@ class ErrorPolicy(_PolicyEnum):
 class HybridFunctorial[In, Out, **P](_t.Protocol):
     """Decorate Functions, Methods or direct Calls"""
 
-    @property
-    def detect(self) -> Detect[In]:
-        """Identify direct call or function"""
+    _detect: Detect[In]
+    # @property  # CHECK:
+    # def detect(self) -> Detect[In]:
+    #     """Identify direct call or function"""
 
-    @property
-    def wrap(self) -> Wrap[In, Out, P]:
-        """Wire the Target ready to drop in"""
+    _wrap: Wrap[In, Out, P]
+    # @property  # CHECK:
+    # def wrap(self) -> Wrap[In, Out, P]:
+    #     """Wire the Target ready to drop in"""
 
-    @property
-    def bind(self) -> Bind[In, Out, P]:
-        """Bind the Target with additional Parameters"""
+    _bind: Bind[In, Out, P]
+    # @property  # CHECK:
+    # def bind(self) -> Bind[In, Out, P]:
+    #     """Bind the Target with additional Parameters"""
 
-    def reject(self, fail: _t.Any, *args, **kwargs) -> _t.NoReturn:
+    def _reject(self, fail: _t.Any, *args, **kwargs) -> _t.NoReturn:
         """Handle Target that failed in Dispatch"""
 
     @_t.overload

@@ -156,8 +156,9 @@ class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
 type CliData = _CliSerializable | _RichView | str
 
 type _Content[Value: CliData | _dto.Tuple[CliData]] = _dto.Tuple[Value]
+type _C = _Content[_dto.Tuple[CliData]]  # CHECK: remove
 type _Vec = _Content[CliData]
-type _Grid = _Content[_dto.Tuple[CliData]]
+type _Grid = tuple[tuple[CliData, ...], ...]
 
 #  LINE: -- Panel -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
