@@ -1,9 +1,18 @@
 """
-Store the logic of the initial pathguard grow
+Show the Full Stack of the Hybrid Decorator Pipeline
 
-- from func to deco to hybrid to just the hybrid logic
+- Case 1: is_target -> Direct Function Execution: logic(*args,*kwargs)
+- Case 2: callable(target) -> Bare Decorator: @logic on top of any function
+- Case 3: None -> Parametrized Decorator: @logic(**kwargs) bind param in-place
+
+- hybrid_factory: binds all together with injectable logic and target detection
 
 """
+
+__all__: list[str] = [
+    "hybrid_factory",
+]
+
 
 import functools
 from collections.abc import Callable
@@ -28,16 +37,12 @@ def hybrid_factory[TargeT, **P, R](
     """Bind the Hybrid construction"""
 
     def main(target: object = None, **policy: Unpack[HybridPolicy]):
-        """Dispatch target to proper execution"""
-
-        # LATER: remove 'if ...:__doc__' before usage
+        """Dispatch target to corresponding Execution pattern"""
 
         if is_target(target):
-            """# Case 1: Direct Execution (Data provided)"""
             return logic(target, **policy)
 
         if callable(target):
-            """Case 2: Bare Decorator (Function provided)"""
 
             @functools.wraps(target)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
