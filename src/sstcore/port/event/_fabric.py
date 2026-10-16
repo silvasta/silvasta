@@ -23,6 +23,23 @@ from .._types import _Stringable
 from . import dto
 
 
+class EventDtoFactory(Protocol):
+    """Define the Producers that Deliver the DTOs"""
+
+    @property
+    def log(self) -> LogDelivering: ...
+    @property
+    def cli(self) -> CliDelivering: ...
+    @property
+    def panel(self) -> PanelDelivering: ...
+    @property
+    def md(self) -> MarkdownDelivering: ...
+    @property
+    def line(self) -> LineDelivering: ...
+    @property
+    def table(self) -> TableDelivering: ...
+
+
 class LogDelivering(Protocol):
     def __call__(
         self, message: str, /, **kw: Unpack[dto.LogSpec]
@@ -58,21 +75,7 @@ class TableDelivering(Protocol):
         self, content: dto._Grid, /, **kw: Unpack[dto.TableSpec]
     ) -> dto.TableDTO: ...
 
+    # TODO: remaining methods (from forge.view.factory._table)
     def from_cols(
         self, cols: dict[str, Sequence[Any]], *, corner: str = ""
     ) -> dto.TableDTO: ...
-
-
-class EventDtoFactory(Protocol):
-    @property
-    def log(self) -> LogDelivering: ...
-    @property
-    def cli(self) -> CliDelivering: ...
-    @property
-    def panel(self) -> PanelDelivering: ...
-    @property
-    def md(self) -> MarkdownDelivering: ...
-    @property
-    def line(self) -> LineDelivering: ...
-    @property
-    def table(self) -> TableDelivering: ...

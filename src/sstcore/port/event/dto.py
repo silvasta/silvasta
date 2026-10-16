@@ -13,7 +13,7 @@ Rendering Protocols with Runtime check
 
 __all__: list[str] = [
     "EventDTO",
-    "EventDtoBase",
+    "BaseEventDTO",
     "DtoNames",
     "DtoTable",
     "DtoRegistry",
@@ -51,15 +51,15 @@ from ..color import Color as _Color
 from ..color import ColorArg as _ColorArg
 from . import _param as _p
 
-type DtoTable[T: EventDtoBase] = _Mapping[str, type[T]]
-type DtoRegistry[T: EventDtoBase] = dict[str, type[T]]
+type DtoTable[T: BaseEventDTO] = _Mapping[str, type[T]]
+type DtoRegistry[T: BaseEventDTO] = dict[str, type[T]]
 type DtoNames = _typing.Literal[
     "log", "cli", "panel", "markdown", "line", "table", "ctor"
 ]
 
 
 @_typing.dataclass_transform(kw_only_default=True)
-class EventDtoBase:
+class BaseEventDTO:
     """Establish DTO Registry and auto-transform all Member to DataClass"""
 
     @property  # CHECK: is this useful on any DTO instance? maybe remove
@@ -84,7 +84,7 @@ class EventDtoBase:
         return f"{type(self).__name__}[{self.name}]"
 
 
-class EventDTO(EventDtoBase, name="ctor"):
+class EventDTO(BaseEventDTO, name="ctor"):
     @classmethod
     def create(cls, *args, **kwargs) -> _typing.Self:
         """Resolve ParamData Structure and Produce latest registered DTO"""

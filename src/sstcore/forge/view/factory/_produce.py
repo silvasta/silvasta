@@ -113,6 +113,7 @@ class TableDtoProducer(DtoProducer[TableViewDTO]):
     ) -> TableViewDTO:
         return self.dto_cls.create(content, **kw)
 
+    # TODO: remaining methods (from forge.view.factory._table)
     def from_cols(
         self, cols: dict[str, Sequence[Any]], *, corner: str = ""
     ) -> TableViewDTO:
