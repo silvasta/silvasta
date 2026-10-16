@@ -50,7 +50,7 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
         return self.call(*args, **kwargs)
 
     @StrategyField(bind_to_self=True)
-    def call(self, *args, **kwargs):
+    def call(self, *args: Args.args, **kwargs: Args.kwargs):
         raise AttributeError(
             "Functor is Missing: [ _call_ ]!", self, args, kwargs
         )

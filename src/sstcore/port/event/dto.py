@@ -12,10 +12,11 @@ Rendering Protocols with Runtime check
 """
 
 __all__: list[str] = [
-    "DtoNames",
-    "EventDTOBase",
     "EventDTO",
-    "EventDtoFactory",
+    "EventDtoBase",
+    "DtoNames",
+    "DtoTable",
+    "DtoRegistry",
     # main dtos
     "LogDTO",
     "LogSpec",
@@ -37,36 +38,35 @@ __all__: list[str] = [
 import dataclasses as _dc
 import typing as _typing
 from collections.abc import Callable as _Callable
+from collections.abc import Mapping as _Mapping
 from typing import Any as _Any
 from typing import Unpack as _Unpack
 
 from loguru import logger as _logger
 
 from ...brick.call import castarg
-from .._types import _RichView, _Stringable
+from .._types import _RichView
 from .._types import event_types as _dto
 from ..color import Color as _Color
 from ..color import ColorArg as _ColorArg
 from . import _param as _p
 
+type DtoTable[T: EventDtoBase] = _Mapping[str, type[T]]
+type DtoRegistry[T: EventDtoBase] = dict[str, type[T]]
 type DtoNames = _typing.Literal[
-    "log",
-    "cli",
-    #
-    "panel",
-    "markdown",
-    "line",
-    "table",
-    #
-    "ctor",
+    "log", "cli", "panel", "markdown", "line", "table", "ctor"
 ]
 
 
 @_typing.dataclass_transform(kw_only_default=True)
-class EventDTOBase:
-    """Base class for all DTOs. Automatically makes subclasses dataclasses."""
+class EventDtoBase:
+    """Establish DTO Registry and auto-transform all Member to DataClass"""
 
-    _registry: dict[str, type[_typing.Self]] = {}  # LATER: ClsRegistry
+    @property  # CHECK: is this useful on any DTO instance? maybe remove
+    def registry(self) -> DtoTable:
+        return self._registry
+
+    _registry: DtoRegistry = {}  # LATER: ClsRegistry
     name: _typing.ClassVar[DtoNames]
 
     def __init_subclass__(cls, name: DtoNames, kw_only=True, **kwargs):
@@ -84,7 +84,7 @@ class EventDTOBase:
         return f"{type(self).__name__}[{self.name}]"
 
 
-class EventDTO(EventDTOBase, name="ctor"):
+class EventDTO(EventDtoBase, name="ctor"):
     @classmethod
     def create(cls, *args, **kwargs) -> _typing.Self:
         """Resolve ParamData Structure and Produce latest registered DTO"""
@@ -102,23 +102,6 @@ class EventDTO(EventDTOBase, name="ctor"):
             fields={field.name for field in _dc.fields(class_or_instance=cls)},
             **kwargs,
         )
-
-
-class EventDtoFactory(_typing.Protocol):
-    """Produce the Default DTOs or their extended Versions"""
-
-    def log(self, message: str, /, **kw: _Unpack[LogSpec]) -> LogDTO: ...
-    def cli(self, content: _Content, /, **kw: _Unpack[CliSpec]) -> CliDTO: ...
-    def panel(
-        self, *content: CliData, **kw: _Unpack[PanelSpec]
-    ) -> PanelDTO: ...
-    def md(
-        self, content: _Stringable, /, **kw: _Unpack[MarkdownSpec]
-    ) -> MarkdownDTO: ...
-    def line(self, *content: CliData, **kw: _Unpack[LineSpec]) -> LineDTO: ...
-    def table(
-        self, content: _Grid, /, **kw: _Unpack[TableSpec]
-    ) -> TableDTO: ...
 
 
 #  LINE: -- Log -- -- - -- -- - -- -- - -- -- - --

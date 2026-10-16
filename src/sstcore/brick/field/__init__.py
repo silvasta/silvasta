@@ -11,7 +11,7 @@ __all__: list[str] = [
     "NamedField",
     "BaseField",
     "WriteField",
-    "NoWriteField",
+    "ReadOnlyField",
     "ReadField",
     "DeleteField",
     # _extend
@@ -48,8 +48,8 @@ from ._base import (
     BaseField,
     DeleteField,
     NamedField,
-    NoWriteField,
     ReadField,
+    ReadOnlyField,
     WriteField,
 )
 from ._combos import (

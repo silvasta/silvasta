@@ -14,7 +14,10 @@ __all__: list[str] = [
     "EventHandling",
     "EventBus",
     "BusRegistration",
+    #
+    "EventDtoFactory",
 ]
 
 
 from ._core import BusRegistration, Event, EventBus, EventHandling
+from ._fabric import EventDtoFactory

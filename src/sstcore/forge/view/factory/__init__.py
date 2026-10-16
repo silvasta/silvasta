@@ -5,9 +5,27 @@ Prepare for any EventDTO
 
 """
 
-__all__: list[str] = [  # AI_QUESTION: here probably not too much?
+__all__: list[str] = [
     "dto_factory",
-    # TODO: all producer? Upgraded DTOs?
+    "DtoFactory",
+    # functors
+    "LogDtoProducer",
+    "CliDtoProducer",
+    "PanelDtoProducer",
+    "MarkdownDtoProducer",
+    "LineDtoProducer",
+    "TableDtoProducer",
+    # updated dtos
+    "TableViewDTO",
 ]
 
-from ._factory import dto_factory
+from ._factory import DtoFactory, dto_factory
+from ._produce import (
+    CliDtoProducer,
+    LineDtoProducer,
+    LogDtoProducer,
+    MarkdownDtoProducer,
+    PanelDtoProducer,
+    TableDtoProducer,
+)
+from ._table import TableViewDTO  # ensure module loaded

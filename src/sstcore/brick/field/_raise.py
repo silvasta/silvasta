@@ -52,7 +52,7 @@ class FieldError(raising.SstCoreError):
 class FieldErrorInput[FieldT, UnitT: Any](raising.ErrorInput, total=False):
     """Define the Kwarg Space of the Error pipeline"""
 
-    attr: str
+    attr: str  # REMOVE: this is basically field.public_name??
     owner: type | None
     value: UnitT | Any
 
@@ -62,7 +62,7 @@ class FieldErrorData[FieldT, UnitT](raising.ErrorData):
 
     field: FieldT | None = None
     instance: UnitT | None = None
-    attr: str = ""
+    attr: str = ""  # REMOVE: this is basically field.public_name??
     owner: type | None = None
     value: FieldT | Any = None
 
@@ -161,8 +161,8 @@ class FieldRaiseCall(Protocol):  # TASK: think about parametrization
     def __call__(
         self,
         field,
+        instance: Any,
         /,
-        instance,
         text: str = "",
         *args,
         mode: Literal["dto"],
@@ -173,8 +173,8 @@ class FieldRaiseCall(Protocol):  # TASK: think about parametrization
     def __call__(
         self,
         field,
+        instance: Any,
         /,
-        instance,
         text: str = "",
         *args,
         mode: Literal["exception"] = "exception",
@@ -185,8 +185,8 @@ class FieldRaiseCall(Protocol):  # TASK: think about parametrization
     def __call__(
         self,
         field,
+        instance: Any,
         /,
-        instance,
         text: str = "",
         *args,
         mode: Literal["raise"],

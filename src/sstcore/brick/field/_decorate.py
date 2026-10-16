@@ -100,9 +100,9 @@ class DecoratedField[**In, Out](
             return self._get_val(unit)
 
         if self.target_func is None:
-            raise self.raiser.Function(
-                self, unit, "Missing target_func to bind."
-            )
+            text = "Missing target_func to bind."
+            raise self.raiser.Function(self, unit, text)
+
         bound_method = MethodType(self.target_func, unit)
         self.write(unit, bound_method)
 

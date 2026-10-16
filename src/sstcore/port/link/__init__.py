@@ -82,6 +82,7 @@ class PortLink:
         """Merge docstrings and enforce static type check"""
 
         def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
+            """Catch all __doc__ merge issues and always return original Cls"""
 
             with PortOperator(spec=self.spec) as operator:
                 with operator.spawn.reflect(mode="hard") as _reflector:

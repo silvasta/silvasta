@@ -6,6 +6,8 @@ Prepare Functors, 1 per DTO
 
 """
 
+from src.sstcore.brick.field._strategy import StrategyField
+
 __all__: list[str] = [
     "LogDtoProducer",
     "CliDtoProducer",
@@ -16,38 +18,34 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Sequence
-from typing import Any, Unpack
+from typing import TYPE_CHECKING, Any, Self, Unpack
 
-from ....port._types import event_types as _dto
-from ....port.event.dto import (
-    CliData,
-    CliDTO,
-    CliSpec,
-    DtoNames,
-    EventDTO,
-    LineDTO,
-    LineSpec,
-    LogDTO,
-    LogSpec,
-    MarkdownDTO,
-    MarkdownSpec,
-    PanelDTO,
-    PanelSpec,
-    TableSpec,
-)
+from ....brick.field._functor import MountableFunctor
+from ....port import functorial
+from ....port.event import dto
+from ....port.link import portlink
 from ....port.represent import Stringable
 from ...func import SafeFunctor
 from ._table import TableViewDTO
 
 
-class DtoProducer[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
+@portlink(MountableFunctor)
+@portlink(functorial.Functorial)
+class DtoProducer[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
     """Assemble the DTO - handle variations"""
 
-    dto_name: DtoNames
+    dto_name: dto.DtoNames
 
-    def __init__(self, registry: _dto.Map[type[DTO]], **kwargs):  # DTO:Any
-        self._registry: _dto.Map[type[DTO]] = registry
+    def __init__(self, registry: dto.DtoTable[DTO], **kwargs):  # DTO:Any
+        self._registry: dto.DtoTable[DTO] = registry
         super().__init__(**kwargs)
+
+    @classmethod
+    def __mount__(cls, host: Any, name: str) -> Self:
+        # IDEA: put this on BaseFunctor with just:
+        # return cls(*args,**kwargs)
+        # -> any Functor can then be mounted, use it with FuncorField!
+        return cls(registry=host._registry, name=name)
 
     @property
     def dto_cls(self) -> type[DTO]:
@@ -57,59 +55,80 @@ class DtoProducer[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class LogDtoProducer(DtoProducer[LogDTO]):
-    dto_name: DtoNames = "log"
+@portlink(MountableFunctor)
+class LogDtoProducer(DtoProducer[dto.LogDTO]):
+    dto_name: dto.DtoNames = "log"
 
-    def call(self, message: str, /, **kw: Unpack[LogSpec]) -> LogDTO:
+    # @StrategyField  # REMOVE: after implementation finished
+    def call(self, message: str, /, **kw: Unpack[dto.LogSpec]) -> dto.LogDTO:
         return self.dto_cls.create(message=message, **kw)
 
-    # __call__ = call
+    if TYPE_CHECKING:
+        __call__ = call
 
 
-class CliDtoProducer(DtoProducer[CliDTO]):
-    dto_name: DtoNames = "cli"
+@portlink(functorial.Functorial)
+@portlink(MountableFunctor)
+class CliDtoProducer(DtoProducer[dto.CliDTO]):
+    dto_name: dto.DtoNames = "cli"
 
-    def call(
-        self, content: Sequence[CliData], /, **kw: Unpack[CliSpec]
-    ) -> CliDTO:
+    def __call__(  # IDEA:
+        self, content: Sequence[dto.CliData], /, **kw: Unpack[dto.CliSpec]
+    ) -> dto.CliDTO:
         return self.dto_cls.create(content, **kw)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class PanelDtoProducer(DtoProducer[PanelDTO]):
-    dto_name: DtoNames = "panel"
+@portlink(MountableFunctor)
+class PanelDtoProducer(DtoProducer[dto.PanelDTO]):
+    dto_name: dto.DtoNames = "panel"
 
-    def call(self, *content: CliData, **kw: Unpack[PanelSpec]) -> PanelDTO:
+    @StrategyField  # REMOVE: after implementation finished
+    def call(
+        self, *content: dto.CliData, **kw: Unpack[dto.PanelSpec]
+    ) -> dto.PanelDTO:
         return self.dto_cls.create(*content, **kw)
 
+    if TYPE_CHECKING:
+        __call__ = call
 
-class MarkdownDtoProducer(DtoProducer[MarkdownDTO]):
+
+@portlink(MountableFunctor)
+class MarkdownDtoProducer(DtoProducer[dto.MarkdownDTO]):
     """Create ..."""
 
-    dto_name: DtoNames = "markdown"
+    dto_name: dto.DtoNames = "markdown"
 
+    @StrategyField  # REMOVE: after implementation finished
     def call(
-        self, content: Stringable, /, **kw: Unpack[MarkdownSpec]
-    ) -> MarkdownDTO:
+        self, content: Stringable, /, **kw: Unpack[dto.MarkdownSpec]
+    ) -> dto.MarkdownDTO:
         return self.dto_cls.create(content, **kw)
 
 
-class LineDtoProducer(DtoProducer[LineDTO]):
+class LineDtoProducer(DtoProducer[dto.LineDTO]):
     """Create ..."""
 
-    dto_name: DtoNames = "line"
+    dto_name: dto.DtoNames = "line"
 
-    def call(self, *content: CliData, **kw: Unpack[LineSpec]) -> LineDTO:
+    @StrategyField  # REMOVE: after implementation finished
+    def call(
+        self, *content: dto.CliData, **kw: Unpack[dto.LineSpec]
+    ) -> dto.LineDTO:
         return self.dto_cls.create(content, **kw)
 
 
 class TableDtoProducer(DtoProducer[TableViewDTO]):
-    dto_name: DtoNames = "table"
+    dto_name: dto.DtoNames = "table"
 
+    @StrategyField  # REMOVE: after implementation finished
     def call(
-        self, content: tuple[tuple[CliData]], /, **kw: Unpack[TableSpec]
+        self,
+        content: tuple[tuple[dto.CliData]],
+        /,
+        **kw: Unpack[dto.TableSpec],
     ) -> TableViewDTO:
         return self.dto_cls.create(content, **kw)
 

@@ -37,10 +37,10 @@ from .solid import PolicyEnum as _PolicyEnum
 class Descriptor[T](_t.Protocol):
     """Define the Base Contract for any Field"""
 
-    def __set_name__(self, owner: type, name: str) -> None: ...
-
     public_name: str
     private_name: str
+
+    def __set_name__(self, owner: type, name: str) -> None: ...
 
 
 #  LINE: -- Level 1 -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -108,7 +108,7 @@ class LazyDescriptor[T](Descriptor[T], _t.Protocol):
     loader: FieldLoader
 
 
-class FieldLoader[T](_Callable, _t.Protocol):
+class FieldLoader[T](_Callable, _t.Protocol):  # MOVE: generalize?
     def __call__(self, _: _t.Any, /) -> T:
         """Execute with exactly the attached Instance as Input"""
 

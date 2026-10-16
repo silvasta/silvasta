@@ -18,15 +18,17 @@ __all__: list[str] = [
     "Forward",
 ]
 
-from typing import TYPE_CHECKING, Any
 
 from ...port import attach
 from ...port.attach import FieldLoader
+from ...port.link import portlink
 from ..reflect import funcname
 from ._base import ReadField, WriteField
 from ._extend import TypedField
 
 
+@portlink(attach.WriteDescriptor)
+@portlink(attach.ValidDescriptor)
 class RequiredField[FieldT](ReadField[FieldT], TypedField[FieldT]):
     """
     Annotate empty Field ready to fill before first access
@@ -42,6 +44,9 @@ class RequiredField[FieldT](ReadField[FieldT], TypedField[FieldT]):
     """
 
 
+@portlink(attach.LazyDescriptor)
+@portlink(attach.ReadDescriptor)
+@portlink(attach.WriteDescriptor)
 class LazyField[T](WriteField, ReadField[T]):
     """
     Load and cache value on first read access
@@ -62,6 +67,7 @@ class LazyField[T](WriteField, ReadField[T]):
         return super().read(unit)
 
 
+@portlink(attach.ReadDescriptor)
 class DerivedField[T](ReadField[T]):
     """
     Calculate view on every access without maintaining state
@@ -85,7 +91,8 @@ class DerivedField[T](ReadField[T]):
         return self.derived(unit)
 
 
-class Forward[T](ReadField[T]):  # NOTE: this name is perfect
+@portlink(attach.ReadDescriptor)
+class Forward[T](ReadField[T]):
     """
     Forward attribute from inner component
 
@@ -106,13 +113,3 @@ class Forward[T](ReadField[T]):  # NOTE: this name is perfect
     def read(self, unit: object) -> T:
         target: object = getattr(unit, self.target_attr)
         return getattr(target, self.method_name)
-
-
-if TYPE_CHECKING:
-    _collected: type[attach.LazyDescriptor[Any]] = LazyField
-    _collected: type[attach.ReadDescriptor] = LazyField
-    _collected: type[attach.WriteDescriptor] = LazyField
-    _derived: type[attach.ReadDescriptor[Any]] = DerivedField
-    _forwarded: type[attach.ReadDescriptor[Any]] = Forward
-    _injected: type[attach.WriteDescriptor] = RequiredField
-    _injected: type[attach.ValidDescriptor] = RequiredField

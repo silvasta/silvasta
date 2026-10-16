@@ -4,7 +4,7 @@ Define the Atomic Components of the Fields
 - NamedField: root
 
 - WriteField: __set__
-- NoWriteField: raise
+- ReadOnlyField: raise
 - ReadField: __get__
 - DeleteField: __del__
                                                  DependencyLevel[1]
@@ -14,7 +14,7 @@ __all__: list[str] = [
     "NamedField",
     "BaseField",
     "WriteField",
-    "NoWriteField",
+    "ReadOnlyField",
     "ReadField",
     "DeleteField",
 ]
@@ -28,6 +28,9 @@ from .. import reflect
 from ._raise import FieldRaiser
 
 MISSING = sentinel("MISSING")
+
+_ = Self  # REMOVE: when __get__ is done
+_ = overload  # REMOVE: when __get__ is done
 
 
 @portlink(attach.Descriptor)
@@ -46,6 +49,10 @@ class NamedField:
 
     def name(self, unit: object) -> str:
         return f"{reflect.clsname(unit)}.{self.public_name}"
+
+
+# TASK: easy export of Field attributes for Raiser
+# - provide some mapping with all possible specs
 
 
 @portlink(attach.Descriptor)
@@ -83,11 +90,12 @@ class WriteField[FieldT](BaseField):
         self._set_val(unit, value)
 
 
-class NoWriteField(BaseField):
-    def __set__(self, unit: object, reject: object) -> Never:
-        raise self.raiser.ReadOnly(
-            self, unit, attr=self.public_name, value=reject
-        )
+class ReadOnlyField(BaseField):
+    def __set__(self, unit: object, reject: Never) -> Never:
+        raise self.raiser.ReadOnly(self, unit, value=reject)
+
+    def __delete__(self, unit: object) -> Never:
+        raise self.raiser.ReadOnly(self, unit, attr=self.public_name)
 
 
 @portlink(attach.ReadDescriptor)
@@ -97,10 +105,10 @@ class ReadField[FieldT](BaseField):
     @overload
     def __get__(self, unit: object, owner: type | None) -> FieldT: ...
     def __get__(
-        self, unit: object | None, _owner: type | None = None
+        self, unit: object | None, owner: type | None = None
     ) -> FieldT | Self:
         """Dispatch by Caller: unit=instance or owner=type(instance)"""
-
+        _ = owner
         return self if unit is None else self.read(unit)
 
     def read(self, unit: object) -> FieldT:
