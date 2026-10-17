@@ -7,8 +7,7 @@ Assemble Setup with all Sst(Core)Errors
 
 """
 
-# IMPORTANT:
-# STRATEGY: sstco
+# IMPORTANT: outdatet, rebuild!
 
 __all__: list[str] = [
     "SstRaiserCall",
@@ -65,7 +64,7 @@ class ErrorBuilder:
     def custom(cls, data: SstErrorSpec) -> type[SstError]:
         """Get Custom Exception registered in Raiser"""
         match data.reason:
-            case SstRaiser.RAW:
+            case SstRaiser.Zero:
                 return SstError
 
             case SstRaiser.Dispatch:
@@ -88,7 +87,7 @@ class ErrorBuilder:
     def builtin(cls, data: ErrorSpec) -> type[Exception] | None:
         """Find Builtin Exception if registered in Raiser"""
         match data.reason:
-            case SstRaiser.RAW:
+            case SstRaiser.Zero:
                 ...
             case SstRaiser.Dispatch:
                 # TODO: check all internal errors:
@@ -115,7 +114,7 @@ class ErrorBuilder:
 
 
 class SstRaiser(Raiser):
-    RAW = auto()
+    Zero = auto()
 
     Dispatch = auto()
     TuiSelector = auto()
@@ -140,5 +139,5 @@ class SstError(SstError):
         self.message: str = message
         self.doc_text: str | None = text
         self.kwargs: dict = kwargs
-        self.panic: SstRaiser = panic or SstRaiser.RAW
+        self.panic: SstRaiser = panic or SstRaiser.Zero
         super().__init__(*args)

@@ -38,12 +38,15 @@ class NamedField:
         """Close the chain: super()"""
 
     def __set_name__(self, owner: type, name: str) -> None:
-        _owner = owner
+        _owner = owner  # CHECK: Raiser here inside fails, never used?
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
-    def name(self, unit: object) -> str:
-        return f"{reflect.clsname(unit)}.{self.public_name}"
+    def __str__(self):
+        return f"{reflect.clsname(self)}[({self.public_name})]"
+
+    def name(self, unit_or_cls: Any, /) -> str:
+        return f"{reflect.clsname(unit_or_cls)}.{self.public_name}"
 
 
 # TASK: easy export of Field attributes for Raiser

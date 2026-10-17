@@ -78,7 +78,7 @@ class FileScanner:
 class G45FileScanner:
     files: list[Path]
     local_root: Path
-    scan_mode: ScanModeG45 = ScanModeG45.RAW
+    scan_mode: ScanModeG45 = ScanModeG45.Zero
     ast_options: AstOptions = field(default_factory=AstOptions)
     api_style: ApiStyle = ApiStyle.COMPACT
 
@@ -99,7 +99,7 @@ class G45FileScanner:
 
     def _extractor(self) -> FileExtractor:
         match self.scan_mode:
-            case ScanModeG45.RAW:
+            case ScanModeG45.Zero:
                 return raw_content_extractor
             case ScanModeG45.API:
                 return AstExtractor(self.ast_options, self.api_style)
@@ -153,7 +153,7 @@ class AstScanner:
 # sketch — typer/argparse/click, whatever you use
 def scan(
     root: Path,
-    mode: ScanMode = ScanMode.RAW,
+    mode: ScanMode = ScanMode.Zero,
     api_style: ApiStyle = ApiStyle.COMPACT,
     public_only: bool = True,
     include_docs: bool = True,

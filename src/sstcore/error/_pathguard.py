@@ -20,11 +20,10 @@ from enum import StrEnum
 from typing import Any
 
 from ..brick.color.box import Colors
-from ..port.color import ColorBox
 from ..port.represent import CliRenderable
 from ._base import SstError
 
-c: ColorBox = Colors()
+c = Colors()
 
 
 class PathGuardError(SstError):

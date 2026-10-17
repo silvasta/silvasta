@@ -18,16 +18,7 @@ __all__: list[str] = [
 ]
 
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Literal,
-    Never,
-    NoReturn,
-    Self,
-    TypedDict,
-    Unpack,
-    overload,
-)
+from typing import Any, Never, Self, TypedDict, Unpack
 
 from .solid import BaseEnum
 
@@ -58,14 +49,15 @@ class SstCoreError(Exception):
 
 
 @dataclass(frozen=True)
-class ErrorDTO[ErrorT: Exception]:
+class ErrorDTO:
     """Define the Boundary of the Outgoing Message"""
 
-    error: type[ErrorT]
+    error: type[SstCoreError]
     message: str = ""
     args: tuple[Any, ...] = ()
 
-    def __call__(self, *args) -> ErrorT:
+    def __call__(self, *args) -> SstCoreError:
+        # IMPORTANT: wire pipeline Raiser->DTO->Error proper!
         return self.error(self.message, *self.args, *args)
 
     def fire(self, *args) -> Never:
@@ -73,8 +65,14 @@ class ErrorDTO[ErrorT: Exception]:
 
 
 class ErrorInput(TypedDict, total=False):
+    # IDEA: create better pairs, improve:
+    # - expected={"policy": PolicyEnum},
+    # - received={"policy": policy},
+    #   -> only 1 key for 2 values needed, avoid duplication and mismatches!
+    # - Build some kind of ErrorComparisonRegistry that accepts[ManyInput]
     """Define the Kwarg Space of the Error Pipeline"""
 
+    text: str
     expected: dict
     received: dict
 
@@ -84,11 +82,13 @@ class ErrorSpec:
     """Define the Arg Space of the Internal Pipeline"""
 
     reason: Raiser
-
+    text: str = ""
     expected: dict[str, Any] | None = None
     received: dict[str, Any] | None = None
 
     extra: dict[str, Any] | None = None  # CHECK: can here something change?
+
+    __pos_fields__: tuple[str, ...] = ()
 
     def __str__(self):
         return f"{type(self).__name__}[{self.reason}]"
@@ -105,8 +105,14 @@ class ErrorSpec:
 
         items: dict[str, Any] = {}
         extra: dict[str, Any] = {}
-        if args:
-            extra["args"] = args
+
+        pos_names: tuple[str, ...] = cls.__pos_fields__
+
+        for name, val in zip(pos_names, args, strict=False):
+            items[name] = val
+
+        if len(args) > len(pos_names):
+            extra["args"] = args[len(pos_names) :]
 
         _valid_fields = cls.__dataclass_fields__.keys()
 
@@ -116,26 +122,47 @@ class ErrorSpec:
             else:
                 extra[key] = value
 
-        return cls(reason, extra=extra, **items)
+        return cls(reason=reason, extra=extra or None, **items)
 
 
 class Raiser(BaseEnum, zero=True, walk=True):
     """Assemble all data and throw it with panic"""
 
+    def __call__(
+        self, *args: Any, **kwargs: Unpack[ErrorInput]
+    ) -> SstCoreError:
+        """Generate the DTO and instantiate the Exception"""
+        return self.dto(*args, **kwargs)()
+
+    def fire(self, *args: Any, **kwargs: Unpack[ErrorInput]) -> Never:
+        """Generate the DTO, assemble and directly throw the Exception"""
+        self.dto(*args, **kwargs).fire()
+
+    def dto(self, *args: Any, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
+        """Sanitize the Input, compose Error and Message and create the DTO"""
+        data: ErrorSpec = self.spec.absorb(self, *args, **kwargs)
+        error: type[SstCoreError] = self.compose()
+        message: str = f"{self.message(data)} {data.text}".strip()
+        return ErrorDTO(error, message=message, args=args)
+
     @property
-    def data(self) -> type[ErrorSpec]:
+    def spec(self) -> type[ErrorSpec]:
+        """Keep and Provide the internal Error Data Specification"""
         return ErrorSpec
 
     @property
     def custom(self) -> type[SstCoreError]:
+        """Provide the custom Error defined for Topic and Raiser"""
         return SstCoreError
 
     @property
     def builtin(self) -> type[Exception] | None:
+        """Provide the builtin Error related to active Raiser"""
         return Exception
 
     @property
     def error_name(self) -> str:
+        """Format the Name of the Error"""
         match len(bases := self.bases):
             case 1:
                 front = f"{bases[0].__name__}"
@@ -144,72 +171,18 @@ class Raiser(BaseEnum, zero=True, walk=True):
         return f"{self.name}{front}"
 
     def message(self, data: ErrorSpec) -> str:
-        """Find Builtin Exception if registered in Raiser"""
+        """Format the Message of the Error"""
         return repr(data)
 
     @property
     def bases(self) -> Errors:
-        """Gather the registered Error classes"""
+        """Distribute the registered Errors [1 SstCoreError, 0|1 Exception]"""
         sst_error: type[SstCoreError] = self.custom
         exception: type[Exception] | None = self.builtin
-        # NOTE: Assuming data has no influence on selection
         return (sst_error,) if exception is None else (sst_error, exception)
 
     def compose(self) -> type[SstCoreError]:
-        """Mix builtin Exception into the custom Error"""
+        """Mix custom Error (MRO-left) to Builtin Exception"""
         bases: Errors = self.bases
         name: str = self.error_name
         return type(name, bases, {})
-
-    @overload
-    def __call__(
-        self,
-        text: str = "",
-        /,
-        *args,
-        mode: Literal["dto"],
-        **kwargs: Unpack[ErrorInput],
-    ) -> ErrorDTO: ...
-
-    @overload
-    def __call__(
-        self,
-        text: str = "",
-        /,
-        *args,
-        mode: Literal["exception"] = "exception",
-        **kwargs: Unpack[ErrorInput],
-    ) -> Exception: ...
-
-    @overload
-    def __call__(
-        self,
-        text: str = "",
-        /,
-        *args,
-        mode: Literal["raise"],
-        **kwargs: Unpack[ErrorInput],
-    ) -> NoReturn: ...
-
-    def __call__(  # TASK: think about parametrization
-        self,
-        text="",
-        /,
-        *args,
-        mode: Literal["dto", "exception", "raise"] = "exception",
-        **kwargs: Unpack[ErrorInput],
-    ) -> ErrorDTO | Exception | NoReturn:
-        """Generate the DTO and immediately instantiate the Exception"""
-
-        data: ErrorSpec = self.data.absorb(self, *args, **kwargs)
-        error: type[SstCoreError] = self.compose()
-        message: str = f"{self.message(data)} {text}".strip()
-        _dto = ErrorDTO(error, message=message, args=args)
-
-        match mode:
-            case "dto":
-                return _dto
-            case "exception":
-                return _dto(*args)
-            case "raise":
-                return _dto.fire(*args)

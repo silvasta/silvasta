@@ -45,7 +45,7 @@ class PortLinkError(raising.SstCoreError):
         self.attr: str | None = attr
         self.source: type | None = source
         self.kwargs: dict = kwargs
-        self.panic: LinkRaiser = panic or LinkRaiser.RAW
+        self.panic: LinkRaiser = panic or LinkRaiser.Zero
         super().__init__(*args)
 
 
@@ -64,7 +64,7 @@ class PortErrorSpec(raising.ErrorSpec):
 
 
 class LinkRaiser(Raiser):
-    RAW = auto()
+    Zero = auto()
 
     MissingPlug = auto()
     PipeLine = auto()
@@ -87,7 +87,7 @@ class LinkRaiser(Raiser):
     def builtin(self) -> type[Exception] | None:
         """Find Builtin Exception if registered in Raiser"""
         match self:
-            case LinkRaiser.RAW:
+            case LinkRaiser.Zero:
                 return None
 
             case LinkRaiser.MissingPlug:
@@ -117,7 +117,7 @@ class LinkRaiser(Raiser):
         # TASK: improve!!
 
         match self:
-            case LinkRaiser.RAW:
+            case LinkRaiser.Zero:
                 return super().message(data)
 
             case LinkRaiser.MissingPlug:

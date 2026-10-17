@@ -68,7 +68,7 @@ class AstKind(StrEnum):
 
 
 class ScanModeG45(StrEnum):
-    RAW = auto()
+    Zero = auto()
     API = auto()
 
 

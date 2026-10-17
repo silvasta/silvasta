@@ -36,13 +36,11 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         default: PolicyEnum | UNSET = UNSET,
         **kwargs,
     ):
-
         match PolicyEnum.membership(policy):
             case ():
                 raise self.raiser.Validation(
                     self,
-                    None,  # AI: here the UNSET would make way more sense!
-                    message="Derive from PolicyEnum!",
+                    text="Derive from PolicyEnum!",
                     expected={"policy": PolicyEnum},
                     received={"policy": policy},
                 )

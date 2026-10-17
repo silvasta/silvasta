@@ -2,19 +2,17 @@
 Adapt the SstCoreError to the Fields and implement Raiser
 
 - class FieldRaiser(Raiser, zero=True)
-    0 Zero = auto()
-    1 WriteExists = auto()
-    2 ReadMissing = auto()
-    3 ReadOnly = auto()
-    4 Validation = auto()
-    5 Function = auto()
-    6 Signature = auto()
-    7 Transition = auto()
+    0 Zero        => SstCoreError default setup
+    1 WriteExists => todo
+    2 ReadMissing =>
+    3 ReadOnly    =>
+    4 Validation  =>
+    5 Function    =>
+    6 Signature   =>
+    7 Transition  =>
 
                                                  DependencyLevel[0]
 """
-
-from dataclasses import dataclass
 
 __all__: list[str] = [
     "FieldError",
@@ -25,8 +23,9 @@ __all__: list[str] = [
 ]
 
 
+from dataclasses import dataclass
 from enum import auto
-from typing import Any, Literal, NoReturn, Protocol, Unpack, overload
+from typing import Any, Protocol, Unpack
 
 from ...brick.none._sentinel import UNSET
 from ...port import raising
@@ -35,47 +34,72 @@ from ...port.raising import Raiser
 from ..reflect import clsname
 
 
-class FieldError[FieldT: Descriptor](raising.SstCoreError):
+class FieldError(raising.SstCoreError):
     """Custom Exception for Field Operations"""
 
     def __init__(
         self,
         message: str,
-        # AI: here it makes sense to avoid erasure of parametrized type
-        field: FieldT | UNSET = UNSET,
+        field: Descriptor | None = None,
         *args,
-        # AI: for the enum below it just doesn't help in the best case
-        panic: FieldRaiser | None = None,
-        **kwargs: Any,
+        panic: FieldRaiser | UNSET = UNSET,
+        **kwargs: Unpack[FieldErrorInput],
     ):
         self.message: str = message
-        self.field: FieldT | UNSET = field
-        self.kwargs: dict = kwargs
-        self.panic: FieldRaiser = panic or FieldRaiser.Zero
+        self.field: Descriptor | None = field
+        self.kwargs: FieldErrorInput = kwargs
+        self.panic: FieldRaiser | UNSET = panic
         super().__init__(*args)
 
 
-class FieldErrorInput[FieldT, UnitT: Any](raising.ErrorInput, total=False):
+class FieldErrorInput[UnitT: Any](raising.ErrorInput, total=False):
     """Define the Kwarg Space of the Error pipeline"""
 
-    attr: str  # REMOVE: ?? this is basically field.public_name
     owner: type | None
-    value: UnitT | Any
+    value: UnitT | UNSET
 
 
 @dataclass(frozen=True, kw_only=True)
-class FieldErrorSpec[FieldT, UnitT](raising.ErrorSpec):
+class FieldErrorSpec[UnitT](raising.ErrorSpec):
     """Define the Arg Space of the Internal Pipeline"""
 
-    # AI: in the dto it feels safe enough without
-    # - i mean when i start at one, why not the others?
-    # - finally using it for everything was not the point
-    # explain how to handle this, before it overboards
-    field: FieldT | None = None
-    instance: UnitT | None = None
-    attr: str = ""  # REMOVE: ?? this is basically field.public_name
+    __pos_fields__ = ("field", "unit")
+
+    field: Descriptor | None = None
+    unit: UnitT | UNSET = UNSET
     owner: type | None = None
-    value: FieldT | Any = None
+    value: Any | UNSET = UNSET
+
+    def attr(self) -> Any | None:
+        return None if self.field is None else self.field.public_name
+
+    def __str__(self) -> str:
+        """Find best Combination of available Nameable parts"""
+        if self.field is not None:
+            if self.unit is not UNSET:
+                return self.field.name(self.unit)
+            if self.owner is not None:
+                return self.field.name(self.owner)
+            return f"{self.field}"
+        if self.unit is not UNSET:
+            return f"{type(self.unit).__name__}[{self.unit}]"
+        if self.owner is not None:
+            return f"{self.owner.__name__}[...]"
+        return f"{type(self).__name__}::UnNamed"
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class FieldRaiseCall(Protocol):
+    def __call__(
+        self,
+        field: Descriptor | None = None,
+        unit: Any | UNSET = UNSET,
+        /,
+        *args: Any,
+        **kwargs: Unpack[FieldErrorInput],
+    ) -> FieldError: ...
 
 
 class FieldRaiser(Raiser, zero=True):
@@ -92,7 +116,7 @@ class FieldRaiser(Raiser, zero=True):
     __call__: FieldRaiseCall
 
     @property
-    def data(self) -> type[FieldErrorSpec]:
+    def spec(self) -> type[FieldErrorSpec]:
         """Override to map to specific raising.ErrorSpec"""
         return FieldErrorSpec
 
@@ -135,93 +159,33 @@ class FieldRaiser(Raiser, zero=True):
         assert isinstance(data, FieldErrorSpec), (
             f"Expected Fieldraising.ErrorSpec, got {type(data)}"
         )
-        name: str = data.attr or "Unknown"
-        field: Any = data.field
-        value: Any = data.value
+        field: Descriptor | None = data.field
+        value: Any | UNSET = data.value
 
         match self:
             case FieldRaiser.Zero:
                 return super().message(data)
 
             case FieldRaiser.WriteExists:
-                return f"{name}: {self.name} already Exists! {field}"
+                return f"{data}: {self.name} already Exists! ({field})"
 
             case FieldRaiser.ReadMissing:
-                return f"{name}: {self.name} is Missing! {field}"
+                return f"{data}: {self.name} is Missing! ({field})"
 
             case FieldRaiser.ReadOnly:
-                return f"{name}: {self.name} is not Writable! reject={value}"
+                return f"{data}: {self.name} is not Writable! rejected={value}"
 
-            case FieldRaiser.Validation:
-                return f"{name}: expected {value}, got {clsname(value) if value else 'None'}"
+            case FieldRaiser.Validation:  # TODO: this, and all others
+                received: str = "UNSET" if value is UNSET else clsname(value)
+                return f"{data}: expected {value=}, got {received=}"
 
             case FieldRaiser.Function:
                 return f"Not Callable, {value=}! {self.name}"
 
             case FieldRaiser.Signature:
-                return f"{name}: expected {field=}, but got {value=}"
+                return f"{data}: expected {field=}, but got {value=}"
 
             case FieldRaiser.Transition:
-                return f"Failed transfer for {name}: {field}"
+                return f"Failed transfer for {data}: {field}"
 
         return f"Issue with match in Self.message: {self=}"
-
-
-class FieldRaiseCall(Protocol):  # LATER: think about parametrization
-    # AI: here is actually the most difficult point:
-    # - first: why is it needed or not
-    # - second: how to do it proper in the overload?
-    # - Third: killer criterium, how to actually get a real Field into the parametrization?
-    #   - beside the less precise port Descriptors here probably better suited:
-    #     - BaseField(NamedField): with attrs like default|frozen
-    #     - NamedField: with public_name/private_name/name
-    #   - when the dependency issue can be resolved and the parametrization is useful:
-    #     - extend Descriptor protocol by the desired params
-    #     - Read/Write makes no sense, type is narrowed inside but widened outside
-    #       - meaning a field that has no 100% match can either not enter properly or not operate inside without warnings
-
-    # AI_TASK: briefly analyze if the effort is worth the result
-
-    @overload
-    def __call__(
-        self,
-        field,
-        instance: Any,  # LATER: senti?
-        /,
-        text: str = "",
-        *args,
-        mode: Literal["dto"],
-        **kwargs: Unpack[FieldErrorInput],
-    ) -> raising.ErrorDTO: ...
-
-    @overload
-    def __call__(
-        self,
-        field,
-        instance: Any,  # LATER: senti?
-        /,
-        text: str = "",
-        *args,
-        mode: Literal["exception"] = "exception",
-        **kwargs: Unpack[FieldErrorInput],
-    ) -> Exception: ...
-
-    @overload
-    def __call__(
-        self,
-        field,
-        instance: Any,  # LATER: senti?
-        /,
-        text: str = "",
-        *args,
-        mode: Literal["raise"],
-        **kwargs: Unpack[FieldErrorInput],
-    ) -> NoReturn: ...
-
-    def __call__(
-        self,
-        text: str = "",
-        *args,
-        mode: Literal["dto", "exception", "raise"] = "exception",
-        **kwargs: Unpack[FieldErrorInput],
-    ) -> raising.ErrorDTO | Exception | NoReturn: ...
