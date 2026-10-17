@@ -79,7 +79,7 @@ class ErrorInput(TypedDict, total=False):
     received: dict
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # CHECK: dataclass from __subclass_int__?
 class ErrorSpec:
     """Define the Arg Space of the Internal Pipeline"""
 

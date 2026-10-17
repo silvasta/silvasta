@@ -1,18 +1,20 @@
 """
 Adapt the SstCoreError to the Fields and implement Raiser
 
-- FieldRaiser(Raiser)
-  - WriteExists = auto()
-  - ReadMissing = auto()
-  - ReadOnly = auto()
-  - Validation = auto()
-  - Function = auto()
-  - Signature = auto()
-  - Transition = auto()
-    RAW = auto()
+- class FieldRaiser(Raiser, zero=True)
+    0 Zero = auto()
+    1 WriteExists = auto()
+    2 ReadMissing = auto()
+    3 ReadOnly = auto()
+    4 Validation = auto()
+    5 Function = auto()
+    6 Signature = auto()
+    7 Transition = auto()
 
                                                  DependencyLevel[0]
 """
+
+from dataclasses import dataclass
 
 __all__: list[str] = [
     "FieldError",
@@ -26,49 +28,58 @@ __all__: list[str] = [
 from enum import auto
 from typing import Any, Literal, NoReturn, Protocol, Unpack, overload
 
+from ...brick.none._sentinel import UNSET
 from ...port import raising
+from ...port.attach import Descriptor
 from ...port.raising import Raiser
 from ..reflect import clsname
 
 
-class FieldError(raising.SstCoreError):
+class FieldError[FieldT: Descriptor](raising.SstCoreError):
     """Custom Exception for Field Operations"""
 
     def __init__(
         self,
         message: str,
-        field: object,
+        # AI: here it makes sense to avoid erasure of parametrized type
+        field: FieldT | UNSET = UNSET,
         *args,
+        # AI: for the enum below it just doesn't help in the best case
         panic: FieldRaiser | None = None,
         **kwargs: Any,
     ):
         self.message: str = message
-        self.field: object = field
+        self.field: FieldT | UNSET = field
         self.kwargs: dict = kwargs
-        self.panic: FieldRaiser = panic or FieldRaiser.RAW
+        self.panic: FieldRaiser = panic or FieldRaiser.Zero
         super().__init__(*args)
 
 
 class FieldErrorInput[FieldT, UnitT: Any](raising.ErrorInput, total=False):
     """Define the Kwarg Space of the Error pipeline"""
 
-    attr: str  # REMOVE: this is basically field.public_name??
+    attr: str  # REMOVE: ?? this is basically field.public_name
     owner: type | None
     value: UnitT | Any
 
 
+@dataclass(frozen=True, kw_only=True)
 class FieldErrorSpec[FieldT, UnitT](raising.ErrorSpec):
     """Define the Arg Space of the Internal Pipeline"""
 
+    # AI: in the dto it feels safe enough without
+    # - i mean when i start at one, why not the others?
+    # - finally using it for everything was not the point
+    # explain how to handle this, before it overboards
     field: FieldT | None = None
     instance: UnitT | None = None
-    attr: str = ""  # REMOVE: this is basically field.public_name??
+    attr: str = ""  # REMOVE: ?? this is basically field.public_name
     owner: type | None = None
     value: FieldT | Any = None
 
 
 class FieldRaiser(Raiser, zero=True):
-    RAW = auto()
+    Zero = auto()
 
     WriteExists = auto()
     ReadMissing = auto()
@@ -94,7 +105,7 @@ class FieldRaiser(Raiser, zero=True):
     def builtin(self) -> type[Exception] | None:
         """Override to map to builtin Exceptions"""
         match self:
-            case FieldRaiser.RAW:
+            case FieldRaiser.Zero:
                 return None
 
             case FieldRaiser.WriteExists:
@@ -129,7 +140,7 @@ class FieldRaiser(Raiser, zero=True):
         value: Any = data.value
 
         match self:
-            case FieldRaiser.RAW:
+            case FieldRaiser.Zero:
                 return super().message(data)
 
             case FieldRaiser.WriteExists:
@@ -156,12 +167,26 @@ class FieldRaiser(Raiser, zero=True):
         return f"Issue with match in Self.message: {self=}"
 
 
-class FieldRaiseCall(Protocol):  # TASK: think about parametrization
+class FieldRaiseCall(Protocol):  # LATER: think about parametrization
+    # AI: here is actually the most difficult point:
+    # - first: why is it needed or not
+    # - second: how to do it proper in the overload?
+    # - Third: killer criterium, how to actually get a real Field into the parametrization?
+    #   - beside the less precise port Descriptors here probably better suited:
+    #     - BaseField(NamedField): with attrs like default|frozen
+    #     - NamedField: with public_name/private_name/name
+    #   - when the dependency issue can be resolved and the parametrization is useful:
+    #     - extend Descriptor protocol by the desired params
+    #     - Read/Write makes no sense, type is narrowed inside but widened outside
+    #       - meaning a field that has no 100% match can either not enter properly or not operate inside without warnings
+
+    # AI_TASK: briefly analyze if the effort is worth the result
+
     @overload
     def __call__(
         self,
         field,
-        instance: Any,
+        instance: Any,  # LATER: senti?
         /,
         text: str = "",
         *args,
@@ -173,7 +198,7 @@ class FieldRaiseCall(Protocol):  # TASK: think about parametrization
     def __call__(
         self,
         field,
-        instance: Any,
+        instance: Any,  # LATER: senti?
         /,
         text: str = "",
         *args,
@@ -185,7 +210,7 @@ class FieldRaiseCall(Protocol):  # TASK: think about parametrization
     def __call__(
         self,
         field,
-        instance: Any,
+        instance: Any,  # LATER: senti?
         /,
         text: str = "",
         *args,

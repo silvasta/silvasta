@@ -14,12 +14,12 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any
 
 from ...port import attach
 from ...port.link import portlink
 from ...port.solid import EnumId, PolicyEnum
-from ._base import MISSING, ReadField
+from ..none import UNSET
+from ._base import ReadField
 from ._extend import TypedField
 
 
@@ -33,7 +33,7 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         policy: type[EnumT] | EnumT,
         /,
         *args,
-        default: PolicyEnum | Any = MISSING,
+        default: PolicyEnum | UNSET = UNSET,
         **kwargs,
     ):
 
@@ -41,20 +41,20 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
             case ():
                 raise self.raiser.Validation(
                     self,
-                    instance=None,
+                    None,  # AI: here the UNSET would make way more sense!
                     message="Derive from PolicyEnum!",
                     expected={"policy": PolicyEnum},
                     received={"policy": policy},
                 )
             case (enum_cls,):
                 self.enum_type: type[EnumT] = enum_cls
-                _extracted_default = self.enum_type.resolve(0, default=MISSING)
+                _extracted_default = self.enum_type.resolve(0, default=UNSET)
 
             case (enum_cls, enum_unit):
                 self.enum_type: type[EnumT] = enum_cls
                 _extracted_default = enum_unit
 
-        if default is MISSING and _extracted_default is not MISSING:
+        if default is UNSET and _extracted_default is not UNSET:
             default: EnumT = _extracted_default  # UnboundError impossible?
 
         super().__init__(

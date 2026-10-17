@@ -27,7 +27,6 @@ from ._base import ReadField, WriteField
 from ._extend import TypedField
 
 
-@portlink(attach.WriteDescriptor)
 @portlink(attach.ValidDescriptor)
 class RequiredField[FieldT](ReadField[FieldT], TypedField[FieldT]):
     """
@@ -45,8 +44,6 @@ class RequiredField[FieldT](ReadField[FieldT], TypedField[FieldT]):
 
 
 @portlink(attach.LazyDescriptor)
-@portlink(attach.ReadDescriptor)
-@portlink(attach.WriteDescriptor)
 class LazyField[T](WriteField, ReadField[T]):
     """
     Load and cache value on first read access

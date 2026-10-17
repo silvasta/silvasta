@@ -20,7 +20,7 @@ from typing import Never
 from ...port import attach
 from ...port.link import portlink
 from ..reflect import clsname
-from ._base import MISSING, DeleteField, WriteField
+from ._base import UNSET, DeleteField, WriteField
 
 
 @portlink(attach.DeleteDescriptor)
@@ -30,7 +30,7 @@ class ResetField[DefaultT](DeleteField):
         super().__init__(*args, **kwargs)
 
     def remove(self, unit: object) -> None:
-        if self.default is not MISSING:
+        if self.default is not UNSET:
             self._set_val(unit, self.default)
         else:
             super().remove(unit)

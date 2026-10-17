@@ -21,16 +21,11 @@ __all__: list[str] = [
 
 from typing import Any, Never, Self, overload
 
-from ...brick.none import sentinel
+from ...brick.none import UNSET
 from ...port import attach
 from ...port.link import portlink
 from .. import reflect
 from ._raise import FieldRaiser
-
-MISSING = sentinel("MISSING")
-
-_ = Self  # REMOVE: when __get__ is done
-_ = overload  # REMOVE: when __get__ is done
 
 
 @portlink(attach.Descriptor)
@@ -60,7 +55,7 @@ class BaseField(NamedField):
     """Provide Utils for all Fields"""
 
     def __init__(
-        self, *args, default: Any = MISSING, frozen: bool = False, **kwargs
+        self, *args, default: Any = UNSET, frozen: bool = False, **kwargs
     ):
         self.default = default
         self.frozen: bool = frozen
@@ -91,8 +86,9 @@ class WriteField[FieldT](BaseField):
 
 
 class ReadOnlyField(BaseField):
-    def __set__(self, unit: object, reject: Never) -> Never:
-        raise self.raiser.ReadOnly(self, unit, value=reject)
+    # FIX: block read and delete field
+    def __set__(self, unit: object, value: Never) -> Never:
+        raise self.raiser.ReadOnly(self, unit, value=value)
 
     def __delete__(self, unit: object) -> Never:
         raise self.raiser.ReadOnly(self, unit, attr=self.public_name)
@@ -113,7 +109,7 @@ class ReadField[FieldT](BaseField):
 
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
-            if self.default is not MISSING:
+            if self.default is not UNSET:
                 return self.default
             raise self.raiser.ReadMissing(self, unit)
         return self._get_val(unit)

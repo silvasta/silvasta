@@ -34,11 +34,14 @@ from .event.emit import Emit as _Emit
 from .solid import PolicyEnum as _PolicyEnum
 
 
-class Descriptor[T](_t.Protocol):
+class Descriptor(_t.Protocol):
     """Define the Base Contract for any Field"""
 
     public_name: str
     private_name: str
+
+    def name(self, unit_or_cls: _t.Any, /) -> str:
+        """UnitName.attr_name"""
 
     def __set_name__(self, owner: type, name: str) -> None: ...
 
@@ -101,7 +104,7 @@ class TypedDescriptor[T](ValidDescriptor[T], _t.Protocol):
         """Confirm the Type while attaching"""
 
 
-class LazyDescriptor[T](Descriptor[T], _t.Protocol):
+class LazyDescriptor[T](Descriptor, _t.Protocol):
     def __init__(self, loader: FieldLoader) -> None:
         """Prepare Attribute for load on first call"""
 
