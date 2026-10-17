@@ -16,7 +16,9 @@ from typing import Literal
 
 type Level = Literal[1, 2, 3, 4]
 
-# NEXT: absorb with brick.field._strategy (bottom)
+# NEXT: absorb inspection/signature/typehint logic:
+# - brick.field._strategy (bottom)
+# - brick.call._cast iter_type_hints
 
 
 def validate_signature(

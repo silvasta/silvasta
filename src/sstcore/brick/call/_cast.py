@@ -10,10 +10,44 @@ What is the meaning of "cast" in this context?
 
 """
 
+# TASK: Registry
+# - no import of sstcore.brick.vault.* as core of registry here!
+# - assemble in sstcore.forge.func, maybe with additional later on registration
+# - use a new data type that allows for standardized Type handling:
+#   - something like a toggle for sure, some statistics
+# - registry:
+#   - ensures or warns for (not) loaded entries
+#   - shows explanation short and clear or detailed on request
+# - overall ensure that nothing is casted that is not wanted,
+#   and as many options are easily selectable as possible
+
+# IDEA: make each item a Rule:
+# - each Rule has a name, a field in Spec and Input and a resolver
+# - maybe even as some IntFlag that can be switched fast
+
+# TASK: Components
+# - CastInput: TypedDict kwargs
+# - CastSpec: holds validation and confirmed data of 1 interception
+#   data-structure ideas:
+#     - (auto-)dataclass with normalize/validate(/sanitize)
+#     - registry with flags: each flag corresponds to 1 casting rule
+# - ArgCaster: the loop function:
+#   - executes (spec-)validation or regular function, mapped in ArgCast
+#   - maybe some caching, preparing new values from ArgCast for CastSpec
+
+# TASK: Main
+# - ArgCast: orchestrate plan generation, global registry and decorator
+#   - keep plan extendable by subclasses but with guided execution
+#   - use BisectRegistry for different changeable levels of casting
+#     - maybe CasterRegistry containing FlagRuleRegistries per topic
+# - later: check all hybrid combinations of cls, unit, even meta
+
 __all__: list[str] = [
-    "ArgCaster",
     "ArgCast",
+    "ArgCasting",
     "castarg",
+    "CastPlan",
+    "iter_type_hints",
 ]
 
 
@@ -24,53 +58,44 @@ from collections.abc import Callable, Iterator
 from inspect import BoundArguments, Parameter, Signature
 from typing import Annotated, Any, Protocol, Unpack
 
+from ...brick.none import UNSET
 
-@_t.runtime_checkable
-class ArgCaster(Protocol):
-    """Check if target can be used for ArgCast pipeline"""
-
-    def __call__[T](
-        self, value: _Coerce[T], /, *, default: _Optional[T] = Parameter.empty
-    ) -> T:
-        """Cast, Coerce, Resolve and or Validate the Function Input"""
-
-
-type _Coerce[T] = T | Any
-type _Optional[T] = T | type[Parameter.empty]
-type _CastPlan = dict[str, ArgCaster]
+x: UNSET
 
 
 class ArgCast:
     """Cast Arguments in Function Signature"""
 
     pass_defaults: bool = True
-    type_registry: dict[type, ArgCaster] = {}  # CHECK: on class or unit?
-    # LATER: define {Path:...} and apply in __call__ or new ArgCast.merge_plan
+    type_registry: dict[type, ArgCasting] = {}  # CHECK: on class or unit?
+    # LATER: develop registry in forge.func with brick.vault.* + brick.call.*
 
     def __init__(
-        self, *, pass_defaults: bool | None = None, **overrides: ArgCaster
+        self, *, pass_defaults: bool | None = None, **overrides: ArgCasting
     ) -> None:
         if pass_defaults is not None:
             self.pass_defaults: bool = pass_defaults
-        self.overrides: _CastPlan = overrides
+        self.overrides: CastPlan = overrides
 
     def __call__[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
         """Compile CastPlan once at Startup for continuous Execution"""
 
-        if not (plan := self.walk_plan(func) | self.overrides):
+        plan: CastPlan = self.walk_plan(func) | self.overrides
+
+        if not plan:
             return func
 
-        sig: Signature = _inspect.signature(func)
+        signature: Signature = _inspect.signature(func)
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
 
-            bound: BoundArguments = sig.bind(*args, **kwargs)
+            bound: BoundArguments = signature.bind(*args, **kwargs)
 
             if self.pass_defaults:
                 bound.apply_defaults()
 
-            _cast_param_spec(plan, bound, sig)
+            _cast_param_spec(plan, bound, signature)
             _cast_typed_dict(plan, bound)
 
             return func(*bound.args, **bound.kwargs)
@@ -78,54 +103,66 @@ class ArgCast:
         return wrapper
 
     @staticmethod
-    def walk_plan(target: Callable[..., Any] | type[Any], /) -> _CastPlan:
+    def walk_plan(target: Callable[..., Any] | type[Any], /) -> CastPlan:
         """
         Map all Signatures to their Annotated resolver
 
         - reversed: first Caster overwrites any subsequent ones
         """
-        return {
+        return {  # LATER: decompose fragments and assemble, eg PathSpec
             name: caster
-            for name, annotation in _iter_type_hints(target)
+            for name, annotation in iter_type_hints(target)
             if _t.get_origin(annotation) is Annotated
             for caster in reversed(_t.get_args(annotation)[1:])
-            if isinstance(caster, ArgCaster)
+            if isinstance(caster, ArgCasting)
         }
-
-    def _walk_plan(
-        self, target: Callable[..., Any] | type[Any], /
-    ) -> _CastPlan:
-        """Map Signatures to Annotated resolver or type_registry fallback"""
-
-        plan: _CastPlan = {}  # NEXT: plan register? add new checks easily
-
-        for name, annotation in _iter_type_hints(target):
-            if _t.get_origin(annotation) is Annotated:
-                # extract caster for Annotated params
-                for caster in reversed(_t.get_args(annotation)[1:]):
-                    if isinstance(caster, ArgCaster):
-                        plan[name] = caster
-
-                # extract Annotated params without caster but registry entry
-                if name not in plan:
-                    base_type = _t.get_args(annotation)[0]
-                    if base_type in self.type_registry:
-                        plan[name] = self.type_registry[base_type]
-
-            # extract regular annotations without caster but registry entry
-            elif annotation in self.type_registry:
-                plan[name] = self.type_registry[annotation]
-
-        return plan
 
 
 castarg = ArgCast()  # TARGET: main result for export
 
 
+type CastPlan = dict[str, ArgCasting]
+type _Coerce[T] = T | Any
+type _Optional[T] = T | type[Parameter.empty]
+
+
+@_t.runtime_checkable
+class ArgCasting(Protocol):
+    """Check if target can be used for ArgCast pipeline"""
+
+    def __call__[T](
+        self,
+        target: _Coerce[T],
+        /,
+        *,
+        # LATER: check if this will ever be changed by ArgCast during runtime
+        # - if this is changed, why not others? Functor pattern with mutable config
+        # - if this always runs in a loop without any external access, delete, add on subclass or so
+        #   - or keep for pure functions that don't have other storage?
+        default: _Optional[T] = Parameter.empty,
+    ) -> T:
+        """Cast, Coerce, Resolve and or Validate the Function Input"""
+
+
+def iter_type_hints(target: Callable | type, /) -> Iterator[tuple[str, Any]]:
+    # MOVE: _inspect?
+    """Yield (name, annotation) and if needed unpacke TypedDict"""
+
+    for name, hint in _t.get_type_hints(target, include_extras=True).items():
+        if name == "return":  # reject annotation of return type for casting
+            continue
+
+        if _t.get_origin(hint) is Unpack:
+            yield from iter_type_hints(_t.get_args(hint)[0])
+
+        else:
+            yield name, hint
+
+
 #  LINE: -- Helpers -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def _cast_param_spec(plan: _CastPlan, bound: BoundArguments, sig: Signature):
+def _cast_param_spec(plan: CastPlan, bound: BoundArguments, sig: Signature, /):
     """Cast regular Positional and Keyword Arguments"""
 
     for name in plan.keys() & bound.arguments.keys():
@@ -141,23 +178,9 @@ def _cast_param_spec(plan: _CastPlan, bound: BoundArguments, sig: Signature):
         )
 
 
-def _cast_typed_dict(plan: _CastPlan, bound: BoundArguments):
+def _cast_typed_dict(plan: CastPlan, bound: BoundArguments):
     """Unpack and Cast TypedDict inside bound.kwargs"""
 
     if kw := bound.kwargs:
         for key in plan.keys() & kw.keys():
             kw[key] = plan[key](kw[key])
-
-
-def _iter_type_hints(target: Callable | type, /) -> Iterator[tuple[str, Any]]:
-    """Yield (name, annotation) and if needed unpacke TypedDict"""
-
-    for name, hint in _t.get_type_hints(target, include_extras=True).items():
-        if name == "return":  # reject annotation of return type for casting
-            continue
-
-        if _t.get_origin(hint) is Unpack:
-            yield from _iter_type_hints(_t.get_args(hint)[0])
-
-        else:
-            yield name, hint

@@ -29,7 +29,7 @@ class FunctorMetaData(SstMetaData):
 
 @portlink(Meta)
 class FunctorMeta(SstMeta):
-    """Create Blueprint for Active Functorials"""
+    """Create the Skeleton for dynamic and flexibel Functorials"""
 
     def __new__(
         mcs,
@@ -49,13 +49,13 @@ def sync_inherited_strategy_fields(
     /,
 ) -> None:
     """
-    Ensure Functor Strategies
+    Ensure all Strategy- and MorphingFields are mounted on Functor
 
-    1. Discover all `MethodFieldEngine` descriptors in the MRO of `bases`.
-    2. If a subclass overrode the slot with a plain callable `def fn(self):`,
-       wrap it in the parent's `MethodFieldEngine` type (`StrategyField` / `MorphingField`).
-    3. If the subclass did not override it, clone the descriptor so class-level
-       `.switch()` / `.morph()` mutations on the subclass do not bleed into the base class.
+    - Discover all MethodField Descriptors in bases by walking the MRO
+    - Wrap with plain callable overridden slots into the corresponding Fields
+    - Otherwise Clone Descriptors to avoid that mutations bleed into the Base
+      - switch() and morph() should not change class-level attributes
+
     """
     inherited_engines: dict[str, MethodFieldEngine] = {}
 

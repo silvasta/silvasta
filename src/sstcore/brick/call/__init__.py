@@ -12,10 +12,10 @@ __all__: list[str] = [
     "validate_signature",
     #
     "ArgCast",
-    "ArgCaster",
+    "ArgCasting",
     "castarg",
 ]
 
-from ._cast import ArgCast, ArgCaster, castarg
+from ._cast import ArgCast, ArgCasting, castarg
 from ._inspect import validate_signature
 from ._some import just_return
