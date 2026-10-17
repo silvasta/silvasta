@@ -10,9 +10,9 @@ __all__: list[str] = [
 ]
 
 
-from ....port.calling import Stringable
 from ....port.color import Color, ColorBox, ColorHub, ColorId, Painter
 from ....port.link import portlink
+from ....port.represent import Stringable
 from .._mappings import SHORTCUTS
 from ._manager import ColorManager
 

@@ -1,18 +1,24 @@
 """
 File System Operations
 
-- Transfer
-- Delete
+- Transfer: from source to target
+- Delete: from target to ...
+
                          DependencyLevel.sstcore.util.path.guard[3]
 """
 
-__all__: list[str] = [  # TODO:
-    # transfer operations
+# IMPORTANT: Ensure PathArg is annotated for any Path in .__init__.pyi
+
+__all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
+    "TransferStrategy",
+    "check_sync_mode",
+    "DeleteStrategy",
+    # transfer
     "rotate",
     "copy",
     "hardlink",
     "symlink",
-    # delete operations
+    # delete
     "remove",
     "trash",
     "prune",
@@ -28,48 +34,33 @@ from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
-from ._ensure import _ensure_dir_logic, _get_unique_candidate, find_sequence
-from ._input import PathInput, PathSpec
+from . import _ensure
+from ._input import PathArg, ResolvedSource, SourcePath, TargetPath, castpath
 
 
-def check_sync_mode(target: Path, mode: SyncMode) -> Path:
-    # AI_FOCUS: something like this, maybe as SyncBase(Enum).check:NotImplementedError?
-    # - probably to unstable and uncomfortable with the Enum derivative
-    # Still some shared synergies might be possible to generate:
-    # - Maybe a functor base that has the Enum as descriptor
-    # - Some other object that holds the Mode/Policy with a shared interface
-    # IDEA: how to implement this:
-    # - the descriptor ensures some common empty Enum, others derive and add Member
-    # - the Enums are the Sync/Registry/Whatever-Mode
-    # - the wrapper class with the derived enum is the Sync/Registry/Whatever-Policy
-    # Advantages are the generalized handling and control
-    # - still loose enough to allow flexibility and intermediate bases
-    # - the port defines the enum and orchestrates a familiar interface
-    # - once implemented the Enums and Fields can easily adapt to a new setup
-    # Disadvantage are the increased complexity at the root and slightly decreased flexibility
-    # - still I would say after once solving the initial problem, many future problems will not even occur
+def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
     """Provide SyncMode Path that is valid to write or Raise"""
 
     if not target.exists():
-        return _ensure_dir_logic(target.parent)
+        return _ensure._dir_logic(target.parent)
 
     match mode:
         case SyncMode.OVERRIDE:
             return target
 
         case SyncMode.INCREMENT:
-            return _get_unique_candidate(path=target, ensure_parent=True)
+            return _ensure._unique_candidate(path=target, ensure_parent=True)
 
         case SyncMode.IGNORE:
             raise PathGuardError(PathGuardReason.SYNC, target=target)
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-### Transfer Operations
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+#  LINE: -- Functors -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class TransferStrategy(SafeFunctor[[Path, Path], Path]):
+    """Execute Transfer Operation in Safe Environment"""
+
     def __init__(self, **kwargs):
         kwargs.setdefault("error_policy", ErrorPolicy.RE_RAISE)
         super().__init__(**kwargs)
@@ -81,31 +72,39 @@ class TransferStrategy(SafeFunctor[[Path, Path], Path]):
         return self(source, check_sync_mode(target, mode))
 
 
+class DeleteStrategy(SafeFunctor[[Path], bool]):
+    """Execute Delete Operation in Safe Environment"""
+
+    def on_error(self, error: Exception, target: PathArg) -> bool:
+        # LATER: add some nice views! maybe to intermediate PathStrategy?
+        logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
+        return False
+
+
+#  LINE: -- Function Primitives -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+#  INFO: -- transfer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 def _rotate(source: Path, target: Path) -> Path:
+    """Move Source to Target and if reset: Create empty File or Dir"""
     return source.rename(target)
 
 
-Rotate: TransferStrategy = TransferStrategy(
-    name="PathGuard - Rotate", func=_rotate
-)
-
-
 def _copy(source: Path, target: Path) -> Path:
+    """Copy Source to Target"""
     return source.copy(target)
 
 
-Copy = TransferStrategy(name="PathGuard - Copy", func=_copy)
-
-
 def _symlink(source: Path, target: Path) -> Path:
+    """Create Absolute Symlink at Target Pointing to Source"""
     target.symlink_to(source)
     return target
 
 
-Symlink = TransferStrategy(name="PathGuard - Simlink", func=_symlink)
-
-
 def _hardlink(source: Path, target: Path) -> Path:
+    """Create Hardlink at Target Pointing to Source"""
     target.hardlink_to(source)
     return target
 
@@ -122,91 +121,7 @@ def _handle_hardlink(error: Exception, source: Path, target: Path):
         raise error
 
 
-Hardlink = TransferStrategy(
-    name="PathGuard - Hardlink",
-    func=_hardlink,
-    catch=_handle_hardlink,
-)
-
-
-def rotate(
-    source: PathInput,
-    target: PathInput,
-    mode: SyncMode = SyncMode.INCREMENT,
-    reset: bool = False,
-) -> Path:
-    """Move Source to Target and if reset: Create empty File or Dir"""
-
-    source_ok: Path = PathSpec.ok(target=source, must_exists=True)
-    is_directory: bool = source_ok.is_dir()  # store for reset logic
-
-    transferred: Path = Rotate.synced(
-        source=(source_ok), target=PathSpec.ok(target=target), mode=mode
-    )
-    if reset:
-        if is_directory:
-            source_ok.mkdir()
-        else:
-            source_ok.touch()
-    return transferred
-
-
-def copy(
-    source: PathInput, target: PathInput, mode: SyncMode = SyncMode.INCREMENT
-) -> Path:
-    """Copy Source to Target"""
-
-    return Rotate.synced(
-        source=PathSpec.ok(target=source, must_exists=True),
-        target=PathSpec.ok(target=target),
-        mode=mode,
-    )
-
-
-def symlink(
-    source: PathInput, target: PathInput, mode: SyncMode = SyncMode.INCREMENT
-) -> Path:
-    """Create Absolute Symlink at Target Pointing to Source"""
-
-    return Symlink.synced(
-        source=PathSpec.ok(target=source, must_exists=True, resolve=True),
-        target=PathSpec.ok(target=target),
-        mode=mode,
-    )
-
-
-def hardlink(
-    source: PathInput, target: PathInput, mode: SyncMode = SyncMode.INCREMENT
-) -> Path:
-    """Create Hardlink at Target Pointing to Source"""
-
-    return Hardlink.synced(
-        source=PathSpec.ok(target=source, must_exists=True),
-        target=PathSpec.ok(target=target),
-        mode=mode,
-    )
-
-
-#  LINE: -- Delete Operations -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class DeleteStrategy(SafeFunctor[[Path], bool]):
-    """Execute Delete Operation in Safe Environment"""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def clear(self, target: PathInput) -> bool:  # LATER: pass parsed PathInput
-        try:
-            target_ok: Path = PathSpec.ok(target, must_exists=True)
-        except PathGuardError as error:
-            self.emit(f"Failed to parse input: {error}", error=error)
-        return self.safe(target_ok) is not None  # TEST:
-
-    def on_error(self, error: Exception, target: PathInput) -> bool:
-        # LATER: funcname(self)??
-        logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
-        return False
+#  INFO: -- delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def _remove(path: Path) -> None:
@@ -224,6 +139,33 @@ def _trash(path: Path):
     send2trash(path)
 
 
+#  LINE: -- Functor Instanciation -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+#  INFO: -- transfer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+Symlink = TransferStrategy(
+    name="PathGuard - Simlink",
+    func=_symlink,
+)
+Copy = TransferStrategy(
+    name="PathGuard - Copy",
+    func=_copy,
+)
+Rotate: TransferStrategy = TransferStrategy(
+    name="PathGuard - Rotate", func=_rotate
+)
+Hardlink = TransferStrategy(
+    name="PathGuard - Hardlink",
+    func=_hardlink,
+    catch=_handle_hardlink,
+)
+
+
+#  INFO: -- delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 Remove = DeleteStrategy(
     name="PathGuard - Remove",
     func=_remove,
@@ -234,22 +176,85 @@ Trash = DeleteStrategy(
 )
 
 
-def remove(target: PathInput) -> bool:
+#  LINE: -- Assemble -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+#  INFO: -- transfer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@castpath
+def rotate(
+    source: SourcePath,
+    target: TargetPath,
+    mode: SyncMode = SyncMode.INCREMENT,
+    reset: bool = False,  # LATER: accept default file
+) -> Path:
+
+    is_directory: bool = source.is_dir()  # store for reset logic
+    transferred: Path = Rotate.synced(source, target, mode=mode)
+
+    if reset:
+        if is_directory:
+            source.mkdir()
+        else:
+            source.touch()
+
+    return transferred
+
+
+@castpath
+def copy(
+    source: SourcePath,
+    target: TargetPath,
+    mode: SyncMode = SyncMode.INCREMENT,
+) -> Path:
+    return Copy.synced(source, target, mode=mode)
+
+
+def symlink(
+    source: ResolvedSource,
+    target: TargetPath,
+    mode: SyncMode = SyncMode.INCREMENT,
+) -> Path:
+    return Symlink.synced(source, target, mode=mode)
+
+
+def hardlink(
+    source: SourcePath,
+    target: TargetPath,
+    mode: SyncMode = SyncMode.INCREMENT,
+) -> Path:
+    return Hardlink.synced(source, target, mode=mode)
+
+
+#  INFO: -- delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def remove(target: TargetPath) -> bool:
     """Remove file or folder at target location"""
     return Remove(target)
 
 
-def trash(target: PathInput) -> bool:
+def trash(target: TargetPath) -> bool:
     """Move file or folder at target location to system trash"""
     return Trash(target)
 
 
 def prune(
-    base_target: PathInput, remaining: int = 5, *, use_trash: bool = False
+    base_target: TargetPath, remaining: int = 5, *, use_trash: bool = False
 ) -> list[Path]:
-    """Prune Sequence back to specified number of Remaining Targets"""
-    if len(sequence := find_sequence(base_target)) <= remaining:
+    """Prune files of incremental PathName Sequence until remaining"""
+
+    # AI_TASK: sync with find_sequence/_unique_candidate
+    # - probably all in the same module
+
+    if len(sequence := _ensure.find_sequence(base_target)) <= remaining:
         return []
-    paths_to_delete: list[Path] = sequence[remaining:]
-    _prune: Callable[[Path], bool] = trash if use_trash else remove
-    return [path for path in paths_to_delete if _prune(path)]
+
+    _prune_strategy = trash if use_trash else remove
+
+    return [
+        path  #
+        for path in sequence[remaining:]
+        if _prune_strategy(path)
+    ]

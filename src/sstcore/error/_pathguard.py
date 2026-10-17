@@ -72,7 +72,7 @@ class PathGuardReason(StrEnum):
     """Govern centralized Message distribution for PathGuard failures"""
 
     NO_INIT = """PathGuard is Not intended as Instance!"""
-    INPUT = "PathSpec failed to parse PathInput!"
+    INPUT = "PathSpec failed to parse PathArg!"
 
     MISSING = "Target Missing on Disk!"
     EXISTS = "Target already Exists on Disk!"

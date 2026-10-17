@@ -7,13 +7,12 @@ Unite all Path Tools under  PathGuard 
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
-    "PathInput",
+    "PathArg",
     "PathGuardField",
     #
     "StubFileGuard",
 ]
 
+from ._arg import PathArg, PathSpec
 from ._assemble import PathGuard
-from ._field import PathGuardField
-from ._input import PathInput, PathSpec
 from ._stub_guard import StubFileGuard

@@ -7,7 +7,7 @@ Unite all Path Tools under  PathGuard 
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
-    "PathInput",
+    "PathArg",
     "PathGuardField",
     #
     "StubFileGuard",
@@ -38,7 +38,7 @@ class PathSpec:
     @classmethod
     def ok(
         cls,
-        target: PathInput | None = None,
+        target: PathArg | None = None,
         *,
         resolve: bool | None = None,
         must_exists: bool | None = None,
@@ -49,19 +49,19 @@ class PathSpec:
     @classmethod
     def normalized(
         cls,
-        target: PathInput | None = None,
+        target: PathArg | None = None,
         *,
         resolve: bool | None = None,
         must_exists: bool | None = None,
     ) -> Self:
-        """Build a PathSpec from PathInput (with optional policy overrides)."""
+        """Build a PathSpec from PathArg (with optional policy overrides)."""
         ...
 
     def validate(self) -> Path:
         """Apply resolve / must_exists policy; return Path."""
         ...
 
-type PathInput = str | Path | PathSpec
+type PathArg = str | Path | PathSpec
 
 class PathGuardField[T]:
     def __get__(self, unit: T, objtype: type[T] | None = None) -> Path: ...
@@ -129,14 +129,14 @@ class PathGuard:
 
     @overload
     @staticmethod
-    def dir(target: PathInput) -> Path: ...
+    def dir(target: PathArg) -> Path: ...
     @overload
     @staticmethod
     def dir[**P](target: Callable[P, Path]) -> Callable[P, Path]: ...
     @overload
     @staticmethod
     def file(
-        target: PathInput,
+        target: PathArg,
         raise_error: bool = True,
         default_content: str | None = None,
     ) -> Path: ...
@@ -153,7 +153,7 @@ class PathGuard:
     ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
     @overload
     @staticmethod
-    def unique(target: PathInput, ensure_parent: bool = False) -> Path: ...
+    def unique(target: PathArg, ensure_parent: bool = False) -> Path: ...
     @overload
     @staticmethod
     def unique[**P](target: Callable[P, Path]) -> Callable[P, Path]: ...
@@ -165,7 +165,7 @@ class PathGuard:
         ensure_parent: bool = False,
     ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
     @staticmethod
-    def find_sequence(base_target: PathInput) -> list[Path]:
+    def find_sequence(base_target: PathArg) -> list[Path]:
         """Sequence members for base path, newest mtime first."""
         ...
 
@@ -211,39 +211,39 @@ class PathGuard:
     # Category 2: transfer & delete
     # -----------------------------------------------------------------------
     @staticmethod
-    def remove(target: PathInput) -> bool: ...
+    def remove(target: PathArg) -> bool: ...
     @staticmethod
-    def trash(target: PathInput) -> bool: ...
+    def trash(target: PathArg) -> bool: ...
     @staticmethod
     def prune(
-        base_target: PathInput,
+        base_target: PathArg,
         remaining: int = 5,
         *,
         use_trash: bool = False,
     ) -> list[Path]: ...
     @staticmethod
     def rotate(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
         reset: bool = False,
     ) -> Path: ...
     @staticmethod
     def copy(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
     @staticmethod
     def hardlink(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.OVERRIDE,
     ) -> Path: ...
     @staticmethod
     def symlink(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
 
@@ -253,12 +253,12 @@ class PathGuard:
 
     @staticmethod
     def relative(
-        target: PathInput,
-        root: PathInput | None = None,
+        target: PathArg,
+        root: PathArg | None = None,
         strict: bool = True,
     ) -> Path: ...
     @staticmethod
-    def relative_duo(path1: PathInput, path2: PathInput) -> Path | None: ...
+    def relative_duo(path1: PathArg, path2: PathArg) -> Path | None: ...
     @staticmethod
     def relative_string(source: Path, target: Path) -> str: ...
     @overload

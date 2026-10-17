@@ -7,7 +7,7 @@ Assemble all Tools to PathGuard
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
-    "PathInput",
+    "PathArg",
 ]
 
 from collections.abc import Callable
@@ -16,13 +16,12 @@ from ....brick.color.box import Colors
 from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
-from ....port.color import ColorBox
 from ....port.files import SyncMode
 from . import _ensure, _field, _operate, _relative
 from ._field import PathGuardField
-from ._input import PathInput, PathSpec
+from ._input import PathArg, PathSpec
 
-colors: ColorBox = Colors()
+colors = Colors()
 
 PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {clsname(cls)} ",
@@ -38,6 +37,10 @@ _example = PathGuardError(PathGuardReason.NO_INIT)
 class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     """Safety and Comfort for Path access and File System operations"""
 
+    # NEXT: add PathCast
+    # NEXT: add PathCast
+    # NEXT: add PathCast
+
     Spec: type[PathSpec] = PathSpec
     SyncMode: type[SyncMode] = SyncMode
     Reason: type[PathGuardReason] = PathGuardReason
@@ -49,7 +52,7 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
 
     dir: Callable = _ensure.dir
     file: Callable = _ensure.file
-    unique: Callable = _ensure.unique_main
+    unique: Callable = _ensure.unique
     find_sequence: Callable = _ensure.find_sequence
 
     Dir: PathGuardField = _field.Dir

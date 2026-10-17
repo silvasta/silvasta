@@ -16,8 +16,8 @@ from pathlib import Path
 from typing import Any
 
 from ....brick.color.box import Colors
-from ....brick.labor import clsname
-from ....forge.engine.blueprint import StaticFuncMeta, StaticFuncMetaData
+from ....brick.reflect import clsname
+from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.color import ColorBox
 from ....port.files import SyncMode
 from .. import _module

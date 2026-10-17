@@ -14,11 +14,11 @@ from ....error import (
     PathGuardError,
     PathGuardReason,
 )
-from ._input import PathInput, PathSpec
+from ._input import PathArg, PathSpec
 
 
 def relative_main(
-    target: PathInput, root: PathInput | None = None, strict: bool = True
+    target: PathArg, root: PathArg | None = None, strict: bool = True
 ) -> Path:
     """Find Relative Path starting at Root (or CWD) downwards to Target"""
 
@@ -39,7 +39,7 @@ def relative_main(
         ) from error
 
 
-def relative_string(source: Path, target: Path):  # TODO: PathInput?
+def relative_string(source: Path, target: Path):  # TODO: PathArg?
     """Search relative Path in both direction and provide any rendering"""
     relative: Path | None = relative_duo(source, target)
     relative: Path = relative or relative_main(
@@ -48,7 +48,7 @@ def relative_string(source: Path, target: Path):  # TODO: PathInput?
     return f"{source.name} -> {relative}"
 
 
-def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
+def relative_duo(path1: PathArg, path2: PathArg) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 
     _path1: Path = PathSpec.ok(path1)

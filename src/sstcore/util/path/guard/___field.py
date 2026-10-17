@@ -1,0 +1,103 @@
+"""
+Mound Magic Fields to PathGuard for Hybrid Usage
+
+                         DependencyLevel.sstcore.util.path.guard[2]
+"""
+
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+from ....brick.field import DecoratedField, DerivedField
+from ....port.attach import FieldLoader
+from . import _ensure
+
+type PathStrategy = Callable[..., Path]
+
+# AI_TASK: I need an upgrade of this module, equipped with the latest Fields
+
+
+# AI: this was the last idea for a new version, until then a lot changed
+class DirField(DecoratedField[Path]):  # IDEA: OnlyReadField?
+    """Specialized decorator that locks in the PathGuard logic."""
+
+    def __init__(
+        self,
+        target: FieldLoader[Path] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Pre-bake the directory logic into the args/kwargs"""
+        self.logic: PathStrategy = _ensure._dir_logic
+        super().__init__(target, *args, **kwargs)
+
+    # IDEA: move logic to subhook with optional override?
+    # - maybe better than this entire additional __init__
+
+    def read(self, unit: object) -> Path:
+        base_path = super().read(unit)
+        return self.logic(base_path)
+
+
+# AI: this is the ancient version
+class PathGuardField(DerivedField[Path]):
+    """
+    Descriptor that runs a getter then applies PathGuard logic.
+
+    - Read-only by design (assignment raises).
+    - Supports __set_name__ for clean error messages.
+    - Can be used directly or via the Val/Dir/File factories.
+    """
+
+    def __init__(
+        self,
+        *args: Any,
+        derived: FieldLoader[Path],
+        logic: PathStrategy,
+        **policy: Any,
+    ) -> None:
+        self.logic: PathStrategy = logic
+        self.policy: dict[str, Any] = policy
+        super().__init__(*args, derived=derived)  # ty:ignore
+
+    def read(self, unit: object) -> Path:
+        base_path: Path = super().read(unit)
+        return self.logic(base_path, **self.policy)
+
+    def __set__(self, unit: object, _value: object) -> None:
+        # EXTRACT: create: ReadOnlyField?
+        _cls_attr = self.name(unit)
+        raise AttributeError(f"{_cls_attr} Path is not Writable!")
+
+
+# AI: this was like the template for the decorator
+def Val(logic: PathStrategy, /, **default_policy: Any):  # noqa: N802
+    # TASK: this as factory mixin in brick.field?
+    """
+    Create a descriptor factory for a guard logic.
+
+    Usage:
+        @PathGuard.Dir
+        def logs(self): ...
+
+        @PathGuard.File(raise_error=False, default_content="")
+        def config(self): ...
+    """
+
+    def factory(fget: FieldLoader | None = None, /, **policy: Any):
+        bound: dict[str, Any] = default_policy | policy
+        if fget is None:
+
+            def wrapper(fn: FieldLoader) -> PathGuardField:
+                return PathGuardField(fn, logic, **bound)
+
+            return wrapper
+        return PathGuardField(fget, logic, **bound)
+
+    return factory
+
+
+# AI: this was how it was assembled
+Dir = Val(_ensure._dir_logic)
+File = Val(_ensure._file_logic, raise_error=True, default_content=None)
+Unique = Val(_ensure._unique_candidate, ensure_parent=False)

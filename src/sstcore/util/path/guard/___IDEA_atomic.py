@@ -7,7 +7,7 @@ from pathlib import Path
 from loguru import logger
 
 from ....error import PathGuardError, PathGuardReason
-from ._input import PathInput, PathSpec
+from ._input import PathArg, PathSpec
 from ._operate import SyncMode
 
 
@@ -40,7 +40,7 @@ def _sync_lock(target: Path):  # TODO: with PathGuard.lock(ed|ing|s):
 
 
 @contextmanager
-def lock(target: PathInput, timeout: float = 5.0):
+def lock(target: PathArg, timeout: float = 5.0):
     """Public context manager for safe Read-Modify-Write cycles."""
     target_path = PathSpec.ok(target)
     lock_file = target_path.with_name(f".{target_path.name}.lock")
@@ -137,8 +137,8 @@ def _atomic_move_increment(source: Path, target: Path) -> Path:
 
 
 def _copy(
-    source: PathInput,
-    target: PathInput,
+    source: PathArg,
+    target: PathArg,
     sync_mode: str | SyncMode = "increment",
 ) -> Path:
     """Copy Source to Target"""
@@ -184,8 +184,8 @@ def _copy(
 
 
 def _copy(
-    source: PathInput,
-    target: PathInput,
+    source: PathArg,
+    target: PathArg,
     sync_mode: str | SyncMode = "increment",
 ) -> Path:
     """Copy Source to Target with strict OS-level atomicity."""
@@ -246,8 +246,8 @@ def _copy(
 
 
 def _rotate(
-    source: PathInput,
-    target: PathInput,
+    source: PathArg,
+    target: PathArg,
     sync_mode: str | SyncMode = "increment",
     reset: bool = False,
 ) -> Path:

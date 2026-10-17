@@ -4,61 +4,69 @@ Ensure Dir or File, exists or not
                          DependencyLevel.sstcore.util.path.guard[1]
 """
 
+# IMPORTANT: Ensure in .__init__.pyi that PathArg is annotated for any Path
+
+__all__: list[str] = [
+    "_dir_logic",
+    "dir",
+    "_file_logic",  # LATER: dispatch: file_missing/exists
+    "file",
+    "_unique_candidate",
+    "unique",
+    "find_sequence",
+]
+
+
 import functools
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import cast
 
 from loguru import logger
 
 from ....error import PathGuardError, PathGuardReason
-from ._input import PathInput, PathSpec
+from ._arg import PathArg, PathSpec, TargetPath, castpath
 
 
-def _ensure_dir_logic(path: PathInput) -> Path:
-    """Implement PathGuard.dir logic"""
-    path: Path = PathSpec.ok(path)
+@castpath
+def _dir_logic(path: TargetPath, /) -> Path:
+    """Ensure Directory is Writable"""
     path.mkdir(parents=True, exist_ok=True)
-
     return path
 
 
 def dir[**P](
-    target: Callable[P, Path] | PathInput,
+    target: Callable[P, Path] | PathArg,
 ) -> Callable[P, Path] | Path:
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
-    # Case 1: Used as a Function Call (PathGuard.dir(path))
     if isinstance(target, (Path, str, PathSpec)):
-        return _ensure_dir_logic(target)
+        return _dir_logic(target)  # ty:ignore
 
-    # Case 2: Used as a Decorator (@PathGuard.dir)
     if callable(target):
-        func = cast(Callable[P, Path], target)
+        func: Callable[P, Path] = target
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
             path: Path = func(*args, **kwargs)
-            return _ensure_dir_logic(path)
+            return _dir_logic(path)
 
         return wrapper
 
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 
-def _ensure_file_logic(
-    path: PathInput, raise_error: bool, default_content: str | None
+@castpath
+def _file_logic(
+    path: TargetPath, /, raise_error: bool, default_content: str | None
 ) -> Path:
-    """Implement PathGuard.file logic"""
-
-    path: Path = PathSpec.ok(path)
+    """Ensure File is Writable - no existing file at path!"""
 
     if path.exists():
         return path
 
     if default_content is not None:
-        path.parent.mkdir(parents=True, exist_ok=True)
+        _dir_logic(path.parent)
         path.write_text(default_content)
         if not raise_error:
             return path
@@ -74,7 +82,8 @@ def _ensure_file_logic(
 
 
 def file[**P](
-    target: Callable[P, Path] | PathInput | None = None,
+    target: Callable[P, Path] | PathArg | None = None,
+    *,
     raise_error=True,
     default_content: str | None = None,
 ) -> (
@@ -87,29 +96,26 @@ def file[**P](
 ):
     """Ensure path is file or write default content and | or Raise"""
 
-    # CASE 1: Function Call -> PathGuard.file(path)
     if isinstance(target, (Path, str, PathSpec)):
-        return _ensure_file_logic(target, raise_error, default_content)
+        return _file_logic(target, raise_error, default_content)  # ty:ignore
 
-    # CASE 2: Bare Decorator -> @PathGuard.file
     if callable(target):
-        func = cast(Callable[P, Path], target)
+        func: Callable[P, Path] = target
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
             path = Path(func(*args, **kwargs))
-            return _ensure_file_logic(path, raise_error, default_content)
+            return _file_logic(path, raise_error, default_content)
 
         return wrapper
 
-    # CASE 3: Decorator with Args -> @PathGuard.file(default_content="...")
     if target is None:
 
         def decorator(func: Callable[P, Path]) -> Callable[P, Path]:
             @functools.wraps(func)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
                 path = Path(func(*args, **kwargs))
-                return _ensure_file_logic(path, raise_error, default_content)
+                return _file_logic(path, raise_error, default_content)
 
             return wrapper
 
@@ -118,7 +124,7 @@ def file[**P](
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 
-def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
+def _unique_candidate(path: PathArg, ensure_parent: bool) -> Path:
     """PathGuard.unique implementation logic: Increment until Path is unique"""
 
     path: Path = PathSpec.ok(path)
@@ -126,8 +132,8 @@ def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
     if not path.exists():
         msg = "path already unique, "
         if not path.parent.exists():
-            if ensure_parent:  # REFACTOR: as soon as this updated PathSpec
-                _ensure_dir_logic(path.parent)
+            if ensure_parent:  # TODO: as soon as this updated PathSpec
+                _dir_logic(path.parent)
                 logger.info(msg + "parent ensured!")
             else:
                 logger.warning(f"{msg} take care before write! {path=}")
@@ -135,9 +141,11 @@ def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
         return path
 
     # NOTE: Same logic as in find_sequence, consider when adapt!
-    suffixes: str = "".join(path.suffixes)
-    original_stem: str = (  # prevent f.e. my_archive.tar_1.gz
-        path.name[: -len(suffixes)] if suffixes else path.name
+    # AI_TASK: separate unique_sequence logic and provide _unique_candidate and find_sequence!
+    original_stem: str = (  # prevent stuff like: my_archive.tar_1.gz
+        path.name[: -len(suffixes)]  #
+        if (suffixes := "".join(path.suffixes))
+        else path.name
     )
 
     parent: Path = path.parent
@@ -155,8 +163,8 @@ def _get_unique_candidate(path: PathInput, ensure_parent: bool) -> Path:
     return candidate
 
 
-def unique_main[**P](
-    target: Callable[P, Path] | PathInput | None = None,
+def unique[**P](
+    target: Callable[P, Path] | PathArg | None = None,
     ensure_parent=False,
 ) -> (
     Path
@@ -174,29 +182,26 @@ def unique_main[**P](
     - ensure_parent: create folder to ensure Path is writable
     """
 
-    # Case 1: Direct call (PathGuard.unique(path))
     if isinstance(target, (Path, str, PathSpec)):
-        return _get_unique_candidate(target, ensure_parent)
+        return _unique_candidate(target, ensure_parent)
 
-    # Case 2: Bare Decorator (@PathGuard.unique)
     if callable(target):
-        func = cast(Callable[P, Path], target)
+        func: Callable[P, Path] = target
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
             path: Path = Path(func(*args, **kwargs))
-            return _get_unique_candidate(path, ensure_parent)
+            return _unique_candidate(path, ensure_parent)
 
         return wrapper
 
-    # CASE 3: Decorator with args -> @PathGuard.unique(ensure_parent=True)
     if target is None:
 
         def decorator(func: Callable[P, Path]) -> Callable[P, Path]:
             @functools.wraps(func)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
                 path: Path = Path(func(*args, **kwargs))
-                return _get_unique_candidate(path, ensure_parent)
+                return _unique_candidate(path, ensure_parent)
 
             return wrapper
 
@@ -205,19 +210,23 @@ def unique_main[**P](
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 
-def find_sequence(base_target: PathInput) -> list[Path]:
+@castpath
+def find_sequence(base_target: PathArg) -> list[Path]:
     """
     Find all Paths of a Sequence (base name + auto-incremented versions)
 
     Return list sorted by modification time (newest first)
     """
 
+    # AI_TASK: separate unique_sequence logic and provide _unique_candidate and find_sequence!
+    # TODO: sync with _operate.prune and with _unique_candidate
+
     base: Path = PathSpec.ok(base_target)
 
     if not (parent := base.parent).exists():
         return []
 
-    # Same logic as in _get_unique_candidate, consider when adapt!
+    # Same logic as in _unique_candidate, consider when adapt!
     suffixes: str = "".join(base.suffixes)
     original_stem: str = base.name[: -len(suffixes)] if suffixes else base.name
 
