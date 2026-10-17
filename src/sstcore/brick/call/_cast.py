@@ -1,8 +1,12 @@
 """
-Cast Function Input to Usable Input
+Intercept Function Input and Apply Rules before Entry
 
-- ArgCast: 1 member in the chain
-- Todo: CastArg, collect multiple presets and apply ArgCast on __call__
+- inspect typing.Annotated in signatures and extract rules
+- unpack typing.TypedDict and apply rules to flattened params
+
+What is the meaning of "cast" in this context?
+- active process of enforcing rules to signatures
+  (not equivalent to typing.cast but useful)
 
 """
 
@@ -14,112 +18,120 @@ __all__: list[str] = [
 
 
 import functools
-import inspect as _i
-from collections.abc import Callable
-from typing import (
-    Annotated,
-    Any,
-    Protocol,
-    Unpack,
-    get_args,
-    get_origin,
-    get_type_hints,
-    runtime_checkable,
-)
+import inspect as _inspect
+import typing as _t
+from collections.abc import Callable, Iterator
+from inspect import BoundArguments, Parameter, Signature
+from typing import Annotated, Any, Protocol, Unpack
 
 
-@runtime_checkable
+@_t.runtime_checkable
 class ArgCaster(Protocol):
-    """Cast, Coerce, Resolve and or Validate the Function Input"""
+    """Check if target can be used for ArgCast pipeline"""
 
-    def __call__(
-        self, value: Any, /, *, default: Any = _i.Parameter.empty
-    ) -> Any: ...
+    def __call__[T](
+        self, value: _Coerce[T], /, *, default: _Optional[T] = Parameter.empty
+    ) -> T:
+        """Cast, Coerce, Resolve and or Validate the Function Input"""
+
+
+type _Coerce[T] = T | Any
+type _Optional[T] = T | type[Parameter.empty]
+type _CastPlan = dict[str, ArgCaster]
 
 
 class ArgCast:
-    """Execute Caster on Function Signature"""
+    """Cast Arguments in Function Signature"""
+
+    pass_defaults: bool = True
+    type_registry: dict[type, ArgCaster] = {}  # CHECK: on class or unit?
+    # LATER: define {Path:...} and apply in __call__ or new ArgCast.merge_plan
+
+    def __init__(
+        self, *, pass_defaults: bool | None = None, **overrides: ArgCaster
+    ) -> None:
+        if pass_defaults is not None:
+            self.pass_defaults: bool = pass_defaults
+        self.overrides: _CastPlan = overrides
 
     def __call__[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
-        """Compile CastMap as plan for Casting"""
+        """Compile CastPlan once at Startup for continuous Execution"""
 
-        if not (plan := self.plan(func)):
+        if not (plan := self.walk_plan(func) | self.overrides):
             return func
 
-        sig: _i.Signature = _i.signature(func)
+        sig: Signature = _inspect.signature(func)
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            bound: _i.BoundArguments = sig.bind(*args, **kwargs)
-            bound.apply_defaults()
 
-            # 1. Cast regular positional/keyword parameters
-            for name in plan.keys() & bound.arguments.keys():
-                param_default = sig.parameters[name].default
-                bound.arguments[name] = (
-                    plan[name](bound.arguments[name])
-                    if param_default is _i.Parameter.empty
-                    else plan[name](
-                        bound.arguments[name], default=param_default
-                    )
-                )
+            bound: BoundArguments = sig.bind(*args, **kwargs)
 
-            # 2. Cast **kw: Unpack[TypedDict] arguments inside bound.kwargs
-            if kw_dict := bound.kwargs:
-                for key in plan.keys() & kw_dict.keys():
-                    kw_dict[key] = plan[key](kw_dict[key])
+            if self.pass_defaults:
+                bound.apply_defaults()
+
+            _cast_param_spec(plan, bound, sig)
+            _cast_typed_dict(plan, bound)
 
             return func(*bound.args, **bound.kwargs)
 
         return wrapper
 
     @staticmethod
-    def plan(target: Callable[..., Any] | type[Any]) -> dict[str, ArgCaster]:
-        """Use reversed so the first Caster overwrites any subsequent ones"""
+    def walk_plan(target: Callable[..., Any] | type[Any], /) -> _CastPlan:
+        """
+        Map all Signatures to their Annotated resolver
+
+        - reversed: first Caster overwrites any subsequent ones
+        """
         return {
-            name: meta
-            for name, annotation in _iter_target_hints(target)
-            if get_origin(annotation) is Annotated
-            for meta in reversed(get_args(annotation)[1:])
-            if isinstance(meta, ArgCaster) or callable(meta)
+            name: caster
+            for name, annotation in _iter_type_hints(target)
+            if _t.get_origin(annotation) is Annotated
+            for caster in reversed(_t.get_args(annotation)[1:])
+            if isinstance(caster, ArgCaster)
         }
 
 
-castarg = ArgCast()  # TARGET: main object
+castarg = ArgCast()  # TARGET: main result for export
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Helpers -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def extract_casters(
-    target: Callable[..., Any] | type[Any],
-) -> dict[str, ArgCaster]:
-    """Extract {arg_name: caster} from any Function, Class, or TypedDict."""
-    return {
-        name: caster
-        for name, hint in _iter_target_hints(target)
-        if (caster := _first_caster(hint)) is not None
-    }
+def _cast_param_spec(plan: _CastPlan, bound: BoundArguments, sig: Signature):
+    """Cast regular Positional and Keyword Arguments"""
 
+    for name in plan.keys() & bound.arguments.keys():
+        param: Parameter = sig.parameters[name]
 
-def _first_caster(annotation: Any) -> ArgCaster | None:
-    """Return the first callable/ArgCaster from Annotated[T, ...], or None."""
-    if get_origin(annotation) is not Annotated:
-        return None
-    return next(
-        (m for m in get_args(annotation)[1:] if callable(m)),
-        None,
-    )
-
-
-def _iter_target_hints(target: Callable[..., Any] | type[Any]):
-    """Yield (name, annotation) pairs, and unpack **kw: Unpack[TypedDict]"""
-    for name, hint in get_type_hints(target, include_extras=True).items():
-        if name == "return":
+        if param.kind is Parameter.VAR_KEYWORD:
             continue
-        if get_origin(hint) is Unpack:
-            yield from get_type_hints(
-                get_args(hint)[0], include_extras=True
-            ).items()
+
+        bound.arguments[name] = (
+            plan[name](bound.arguments[name])
+            if param.default is Parameter.empty
+            else plan[name](bound.arguments[name], default=param.default)
+        )
+
+
+def _cast_typed_dict(plan: _CastPlan, bound: BoundArguments):
+    """Unpack and Cast TypedDict inside bound.kwargs"""
+
+    if kw := bound.kwargs:
+        for key in plan.keys() & kw.keys():
+            kw[key] = plan[key](kw[key])
+
+
+def _iter_type_hints(target: Callable | type, /) -> Iterator[tuple[str, Any]]:
+    """Yield (name, annotation) and if needed unpacke TypedDict"""
+
+    for name, hint in _t.get_type_hints(target, include_extras=True).items():
+        if name == "return":  # reject annotation of return type for casting
+            continue
+
+        if _t.get_origin(hint) is Unpack:
+            yield from _iter_type_hints(_t.get_args(hint)[0])
+
         else:
             yield name, hint
