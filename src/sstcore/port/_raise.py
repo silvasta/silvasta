@@ -15,7 +15,7 @@ Adapt the SstCoreError to PortLink
 __all__: list[str] = [
     "LinkRaiserCall",
     "PortErrorInput",
-    "PortErrorData",
+    "PortErrorSpec",
     "LinkRaiser",
     "PortLinkError",
 ]
@@ -56,7 +56,7 @@ class PortErrorInput(raising.ErrorInput, total=False):
 
 
 @dataclass(frozen=True)
-class PortErrorData(raising.ErrorData):
+class PortErrorSpec(raising.ErrorSpec):
     text: str | None = None
     attr: str | None = None
     source: type | None = None
@@ -74,9 +74,9 @@ class LinkRaiser(Raiser):
     __call__: LinkRaiserCall
 
     @property
-    def data(self) -> type[PortErrorData]:
-        """Override to map to specific raising.ErrorData"""
-        return PortErrorData
+    def data(self) -> type[PortErrorSpec]:
+        """Override to map to specific raising.ErrorSpec"""
+        return PortErrorSpec
 
     @property
     def custom(self) -> type[PortLinkError]:
@@ -102,11 +102,11 @@ class LinkRaiser(Raiser):
             case LinkRaiser.Reflect:
                 return AttributeError
 
-    def message(self, data: raising.ErrorData) -> str:
+    def message(self, data: raising.ErrorSpec) -> str:
         """Override to generate formatted messages based on the Enum state"""
 
-        assert isinstance(data, PortErrorData), (
-            f"Expected Fieldraising.ErrorData, got {type(data)}"
+        assert isinstance(data, PortErrorSpec), (
+            f"Expected Fieldraising.ErrorSpec, got {type(data)}"
         )
         text: str = data.text or "No __doc__"
         attr: str = data.attr or "Unknown"

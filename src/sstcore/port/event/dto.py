@@ -8,7 +8,7 @@ Rendering Protocols with Runtime check
 - LogSerializable
 - CliRenderable
 
-                              DependencyLevel.sstcore.port.event[0]
+                              DependencyLevel.sstcore.port.event[1]
 """
 
 __all__: list[str] = [
@@ -19,20 +19,20 @@ __all__: list[str] = [
     "DtoRegistry",
     # main dtos
     "LogDTO",
-    "LogSpec",
+    "LogInput",
     "CliDTO",
+    "CliInput",
     "CliSpec",
-    "CliData",
     # cli extensions
     "PanelDTO",
-    "PanelSpec",
+    "PanelInput",
     "MarkdownDTO",
-    "MarkdownSpec",
+    "MarkdownInput",
     "LineDTO",
-    "LineSpec",
+    "LineInput",
     "TableDTO",
-    "TableSpec",
-    "AllDtoSpecs",
+    "TableInput",
+    "MergedDtoInputs",
 ]
 
 import dataclasses as _dc
@@ -44,7 +44,7 @@ from typing import Unpack as _Unpack
 
 from loguru import logger as _logger
 
-from ...brick.call import castarg
+# from ...brick.call import castarg FIX: that for sure don't work!
 from .._types import _RichView
 from .._types import event_types as _dto
 from ..color import Color as _Color
@@ -60,7 +60,7 @@ type DtoNames = _typing.Literal[
 
 @_typing.dataclass_transform(kw_only_default=True)
 class BaseEventDTO:
-    """Establish DTO Registry and auto-transform all Member to DataClass"""
+    """Establish DTO Registry and auto-transform all Member to SpecClass"""
 
     @property  # CHECK: is this useful on any DTO instance? maybe remove
     def registry(self) -> DtoTable:
@@ -87,17 +87,17 @@ class BaseEventDTO:
 class EventDTO(BaseEventDTO, name="ctor"):
     @classmethod
     def create(cls, *args, **kwargs) -> _typing.Self:
-        """Resolve ParamData Structure and Produce latest registered DTO"""
+        """Resolve ParamSpec Structure and Produce latest registered DTO"""
         target_cls: type[_typing.Self] = cls._registry.get(cls.name, cls)
         sanitized: dict[str, _Any] = target_cls._sanitize_kwargs(**kwargs)
         return target_cls(*args, **sanitized)
 
     @classmethod
-    @castarg
+    # @castarg FIX: adapt the setup or export the sanitizing!
     def _sanitize_kwargs(
-        cls, **kwargs: _Unpack[AllDtoSpecs]
+        cls, **kwargs: _Unpack[MergedDtoInputs]
     ) -> dict[str, _Any]:
-        """Pack nested ParamData and resolve Annotated types"""
+        """Pack nested ParamSpec and resolve Annotated types"""
         return _p.sanitize_specs(
             fields={field.name for field in _dc.fields(class_or_instance=cls)},
             **kwargs,
@@ -116,7 +116,7 @@ class LogDTO(EventDTO, name="log", kw_only=False):
     extra: _dto.Map = _dc.field(default_factory=dict)
 
 
-class LogSpec(_typing.TypedDict, total=False):
+class LogInput(_typing.TypedDict, total=False):
     level: str
     metrics: _dto.Map
     extra: _dto.Map
@@ -133,7 +133,7 @@ class CliDTO[Content = _Content](EventDTO, name="cli", kw_only=False):
     infos: _dto.Map = _dc.field(default_factory=dict)
 
 
-class CliSpec(_typing.TypedDict, total=False):
+class CliInput(_typing.TypedDict, total=False):
     color: _ColorArg
     infos: _dto.Map
 
@@ -153,38 +153,38 @@ class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
         """Snapshot the Target for Visualization"""
 
 
-type CliData = _CliSerializable | _RichView | str
+type CliSpec = _CliSerializable | _RichView | str
 
-type _Content[Value: CliData | _dto.Tuple[CliData]] = _dto.Tuple[Value]
-type _C = _Content[_dto.Tuple[CliData]]  # CHECK: remove
-type _Vec = _Content[CliData]
-type _Grid = tuple[tuple[CliData, ...], ...]
+type _Content[Value: CliSpec | _dto.Tuple[CliSpec]] = _dto.Tuple[Value]
+type _C = _Content[_dto.Tuple[CliSpec]]  # CHECK: usable? or remove
+type _Vec = _Content[CliSpec]
+type _Grid = tuple[tuple[CliSpec, ...], ...]
 
 #  LINE: -- Panel -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class PanelDTO(CliDTO[_Vec], name="panel"):
-    """Store Data to Render in Box"""
+    """Store Spec to Render in Box"""
 
-    header: _p.HeaderData = _dc.field(default_factory=_p.HeaderData)
-    frame: _p.FrameData = _dc.field(default_factory=_p.FrameData)
+    header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
+    frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
 
 
-class PanelSpec(CliSpec, _p.HeaderSpec, _p.FrameSpec, total=False):
+class PanelInput(CliInput, _p.HeaderInput, _p.FrameInput, total=False):
     """Box-Like"""
 
 
 #  LINE: -- Markdown --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class MarkdownDTO(CliDTO[tuple[CliData]], name="markdown"):
-    """Store one Formatted Markdown DataPoint"""
+class MarkdownDTO(CliDTO[tuple[CliSpec]], name="markdown"):
+    """Store one Formatted Markdown SpecPoint"""
 
-    frame: _p.FrameData = _dc.field(default_factory=_p.FrameData)
+    frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
     maxlen: int = 400
 
 
-class MarkdownSpec(CliSpec, _p.FrameSpec, total=False):
+class MarkdownInput(CliInput, _p.FrameInput, total=False):
     """Markdown"""
 
     maxlen: int
@@ -196,13 +196,13 @@ class MarkdownSpec(CliSpec, _p.FrameSpec, total=False):
 class LineDTO(CliDTO[_Vec], name="line"):
     """Store Lines for Sequential unboxed Rendering"""
 
-    header: _p.HeaderData = _dc.field(default_factory=_p.HeaderData)
+    header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
     stat: _Callable[[_Vec], str] | None = lambda lines: (
         f"Total Lines: {len(lines)}"
     )
 
 
-class LineSpec(CliSpec, _p.HeaderSpec, total=False):
+class LineInput(CliInput, _p.HeaderInput, total=False):
     """Line and Lines"""
 
     stat: _Callable[[_Vec], str]
@@ -211,9 +211,9 @@ class LineSpec(CliSpec, _p.HeaderSpec, total=False):
 #  LINE: -- Table --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class TableDTO(CliDTO[_Grid], name="table"):
+class TableDTO(CliDTO[_Grid], name="table"):  # TODO: Input
     """
-    Store Table Data in Grid of Rows and Columns
+    Store Table Spec in Grid of Rows and Columns
 
      - [ 0][ 0] corner
      - [ 0][1:] col_names
@@ -230,11 +230,11 @@ class TableDTO(CliDTO[_Grid], name="table"):
     row_names: _Content[str] = _dc.field(default_factory=tuple)
     corner: str = ""
 
-    header: _p.HeaderData = _dc.field(default_factory=_p.HeaderData)
-    frame: _p.FrameData = _dc.field(default_factory=_p.FrameData)
+    header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
+    frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
 
 
-class TableSpec(CliSpec, _p.HeaderSpec, _p.FrameSpec, total=False):
+class TableInput(CliInput, _p.HeaderInput, _p.FrameInput, total=False):
     """Line and Lines"""
 
     col_names: _Content[str]
@@ -242,5 +242,7 @@ class TableSpec(CliSpec, _p.HeaderSpec, _p.FrameSpec, total=False):
     corner: str
 
 
-class AllDtoSpecs(TableSpec, MarkdownSpec, LineSpec, LogSpec, total=False):
+class MergedDtoInputs(
+    TableInput, MarkdownInput, LineInput, LogInput, total=False
+):
     """Combined spec space so @castarg discovers all Annotated casters once."""

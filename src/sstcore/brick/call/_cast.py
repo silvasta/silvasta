@@ -92,6 +92,32 @@ class ArgCast:
             if isinstance(caster, ArgCaster)
         }
 
+    def _walk_plan(
+        self, target: Callable[..., Any] | type[Any], /
+    ) -> _CastPlan:
+        """Map Signatures to Annotated resolver or type_registry fallback"""
+
+        plan: _CastPlan = {}  # NEXT: plan register? add new checks easily
+
+        for name, annotation in _iter_type_hints(target):
+            if _t.get_origin(annotation) is Annotated:
+                # extract caster for Annotated params
+                for caster in reversed(_t.get_args(annotation)[1:]):
+                    if isinstance(caster, ArgCaster):
+                        plan[name] = caster
+
+                # extract Annotated params without caster but registry entry
+                if name not in plan:
+                    base_type = _t.get_args(annotation)[0]
+                    if base_type in self.type_registry:
+                        plan[name] = self.type_registry[base_type]
+
+            # extract regular annotations without caster but registry entry
+            elif annotation in self.type_registry:
+                plan[name] = self.type_registry[annotation]
+
+        return plan
+
 
 castarg = ArgCast()  # TARGET: main result for export
 

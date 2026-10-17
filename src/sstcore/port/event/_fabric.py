@@ -1,7 +1,7 @@
 """
 Define the Shape of the DTO Factory
 
--
+                              DependencyLevel.sstcore.port.event[2]
 """
 
 __all__: list[str] = [
@@ -42,37 +42,37 @@ class EventDtoFactory(Protocol):
 
 class LogDelivering(Protocol):
     def __call__(
-        self, message: str, /, **kw: Unpack[dto.LogSpec]
+        self, message: str, /, **kw: Unpack[dto.LogInput]
     ) -> dto.LogDTO: ...
 
 
 class CliDelivering(Protocol):
     def __call__(
-        self, content: dto._Content, /, **kw: Unpack[dto.CliSpec]
+        self, content: dto._Content, /, **kw: Unpack[dto.CliInput]
     ) -> dto.CliDTO: ...
 
 
 class PanelDelivering(Protocol):
     def __call__(
-        self, *content: dto.CliData, **kw: Unpack[dto.PanelSpec]
+        self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]
     ) -> dto.PanelDTO: ...
 
 
 class MarkdownDelivering(Protocol):
     def __call__(
-        self, content: _Stringable, /, **kw: Unpack[dto.MarkdownSpec]
+        self, content: _Stringable, /, **kw: Unpack[dto.MarkdownInput]
     ) -> dto.MarkdownDTO: ...
 
 
 class LineDelivering(Protocol):
     def __call__(
-        self, *content: dto.CliData, **kw: Unpack[dto.LineSpec]
+        self, *content: dto.CliSpec, **kw: Unpack[dto.LineInput]
     ) -> dto.LineDTO: ...
 
 
 class TableDelivering(Protocol):
     def __call__(
-        self, content: dto._Grid, /, **kw: Unpack[dto.TableSpec]
+        self, content: dto._Grid, /, **kw: Unpack[dto.TableInput]
     ) -> dto.TableDTO: ...
 
     # TODO: remaining methods (from forge.view.factory._table)

@@ -41,7 +41,7 @@ __all__: list[str] = [
     # _raise
     "FieldError",
     "FieldErrorInput",
-    "FieldErrorData",
+    "FieldErrorSpec",
     "FieldRaiseCall",
     "FieldRaiser",
 ]
@@ -78,8 +78,8 @@ from ._policy import (
 )
 from ._raise import (
     FieldError,
-    FieldErrorData,
     FieldErrorInput,
+    FieldErrorSpec,
     FieldRaiseCall,
     FieldRaiser,
 )

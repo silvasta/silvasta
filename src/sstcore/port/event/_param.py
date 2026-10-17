@@ -1,19 +1,21 @@
 """
 Define the Arguments and Parameter for the DTO Pipeline
 
--
+                              DependencyLevel.sstcore.port.event[0]
 """
 
-__all__: list[str] = [  # AI_QUESTION: where to expose this?
-    "ParamData",
-    "FrameData",
+__all__: list[str] = [
+    "Boxes",  # MOVE: ..printer
+    # data
+    "ParamSpec",
     "FrameSpec",
-    "Boxes",
-    "HeaderData",
-    "HeaderBaseSpec",
-    # cli extensions
-    "HeaderFrameSpec",
     "HeaderSpec",
+    # kwargs
+    "FrameInput",
+    "HeaderBaseInput",
+    "HeaderFrameInput",
+    "HeaderInput",
+    #
     "sanitize_specs",
 ]
 
@@ -28,8 +30,8 @@ from ..solid import BoxOption as _BoxOption
 
 
 @_typing.dataclass_transform(kw_only_default=True)
-class ParamData:
-    """Base for stacked configuration dataclasses (FrameData, HeaderData, etc.)."""
+class ParamSpec:
+    """Base for stacked configuration dataclasses (FrameSpec, HeaderSpec, etc.)."""
 
     def __init_subclass__(cls, kw_only: bool = True, **kwargs: _Any):
         super().__init_subclass__(**kwargs)
@@ -47,7 +49,7 @@ class Boxes(_BoxOption):  # MOVE:  but where? PRINTER!!!
     OPEN = _e.auto()
 
 
-class FrameData(ParamData):
+class FrameSpec(ParamSpec):
     """The Box around the Renderable - supplies Content and Frame"""
 
     topic: str | None = ""
@@ -55,7 +57,7 @@ class FrameData(ParamData):
     box: Boxes = Boxes.CORNER
 
 
-class FrameSpec(_typing.TypedDict, total=False):
+class FrameInput(_typing.TypedDict, total=False):
     """Define the Border of one Header or Main Content"""
 
     topic: str
@@ -63,7 +65,7 @@ class FrameSpec(_typing.TypedDict, total=False):
     box: Boxes
 
 
-class HeaderData(ParamData):
+class HeaderSpec(ParamSpec):
     """
     Explain:
 
@@ -78,14 +80,14 @@ class HeaderData(ParamData):
     """
 
     title: str | None = None
-    frame: FrameData = _dc.field(default_factory=FrameData)
+    frame: FrameSpec = _dc.field(default_factory=FrameSpec)
 
 
-class HeaderBaseSpec(_typing.TypedDict, total=False):
+class HeaderBaseInput(_typing.TypedDict, total=False):
     title: str
 
 
-class HeaderFrameSpec(_typing.TypedDict, total=False):
+class HeaderFrameInput(_typing.TypedDict, total=False):
     """Test"""
 
     header_topic: str
@@ -93,22 +95,23 @@ class HeaderFrameSpec(_typing.TypedDict, total=False):
     header_box: Boxes | None  # None = Same as Main Content
 
 
-class HeaderSpec(HeaderBaseSpec, HeaderFrameSpec, total=False):
+class HeaderInput(HeaderBaseInput, HeaderFrameInput, total=False):
     """Combine Header with Frame Args"""
 
 
+# MOVE: somehow into brick or forge, but how?
 def sanitize_specs(fields: set[str], **kwargs):
     spec: dict[str, _Any] = dict(kwargs)
 
     if "frame" in fields and "frame" not in spec:
         frame_keys: set[str] = {
-            field.name for field in _dc.fields(class_or_instance=FrameData)
+            field.name for field in _dc.fields(class_or_instance=FrameSpec)
         }
         frame_kw: dict[str, _Any] = {
             k: spec.pop(k) for k in list(spec) if k in frame_keys
         }
         if frame_kw:
-            spec["frame"] = FrameData(**frame_kw)
+            spec["frame"] = FrameSpec(**frame_kw)
 
     if "header" in fields and "header" not in spec:
         header_frame_kw: dict[str, _Any] = {
@@ -119,16 +122,16 @@ def sanitize_specs(fields: set[str], **kwargs):
         title: str | None = spec.pop("title", None)
 
         if title is not None or header_frame_kw:
-            main_frame: FrameData | None = spec.get("frame")
+            main_frame: FrameSpec | None = spec.get("frame")
 
             if header_frame_kw.get("box") is None and main_frame:
                 header_frame_kw["box"] = main_frame.box
 
-            spec["header"] = HeaderData(
+            spec["header"] = HeaderSpec(
                 title=title,
-                frame=FrameData(**header_frame_kw)
+                frame=FrameSpec(**header_frame_kw)
                 if header_frame_kw
-                else FrameData(),
+                else FrameSpec(),
             )
 
     return spec

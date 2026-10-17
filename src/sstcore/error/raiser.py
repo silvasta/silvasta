@@ -13,7 +13,7 @@ Assemble Setup with all Sst(Core)Errors
 __all__: list[str] = [
     "SstRaiserCall",
     "SstErrorInput",
-    "SstErrorData",
+    "SstErrorSpec",
     "ErrorBuilder",
     "SstRaiser",
 ]
@@ -24,9 +24,9 @@ from enum import auto
 from typing import Any, Protocol, Unpack
 
 from ..port.raising import (
-    ErrorData,
     ErrorDTO,
     ErrorInput,
+    ErrorSpec,
     Raiser,
 )
 from ._base import SstError
@@ -48,7 +48,7 @@ class SstErrorInput(ErrorInput, total=False):
 
 
 @dataclass(frozen=True)
-class SstErrorData(ErrorData):
+class SstErrorSpec(ErrorSpec):
     reason: SstRaiser
     text: str | None = None
 
@@ -62,14 +62,15 @@ class ErrorBuilder:
     # - Raiser for selecting, Or for Orchestration
     # - 1 non-enum part in the chain!!
     @classmethod
-    def custom(cls, data: SstErrorData) -> type[SstError]:
+    def custom(cls, data: SstErrorSpec) -> type[SstError]:
         """Get Custom Exception registered in Raiser"""
         match data.reason:
             case SstRaiser.RAW:
                 return SstError
 
             case SstRaiser.Dispatch:
-                # TODO: check all internal errors, what is needed, how to provide best?
+                # TODO: check all internal errors:
+                # what is needed, how to provide best?
                 return NotImplementedDispatchError  # or logic error
 
             case SstRaiser.TuiSelector:
@@ -84,13 +85,14 @@ class ErrorBuilder:
                 return RegistrySyncError
 
     @classmethod
-    def builtin(cls, data: ErrorData) -> type[Exception] | None:
+    def builtin(cls, data: ErrorSpec) -> type[Exception] | None:
         """Find Builtin Exception if registered in Raiser"""
         match data.reason:
             case SstRaiser.RAW:
                 ...
             case SstRaiser.Dispatch:
-                # TODO: check all internal errors, what is needed, how to provide best?
+                # TODO: check all internal errors:
+                # what is needed, how to provide best?
                 # return RuntimeError  # or logic error
                 ...  # already has NotImplementedError
 
@@ -106,7 +108,7 @@ class ErrorBuilder:
                 return ValueError  # everything  possible...
 
     @classmethod
-    def message(cls, data: ErrorData) -> str:
+    def message(cls, data: ErrorSpec) -> str:
         """Find Builtin Exception if registered in Raiser"""
         # TODO:
         return f"Error in Sst!! ... {data.reason}"
@@ -122,7 +124,7 @@ class SstRaiser(Raiser):
 
     __call__: SstRaiserCall
 
-    def order(self, data: ErrorData) -> ErrorDTO:
+    def order(self, data: ErrorSpec) -> ErrorDTO:
         return ErrorBuilder.run(data)
 
 

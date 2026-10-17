@@ -17,7 +17,7 @@ Adapt the SstCoreError to the Fields and implement Raiser
 __all__: list[str] = [
     "FieldError",
     "FieldErrorInput",
-    "FieldErrorData",
+    "FieldErrorSpec",
     "FieldRaiseCall",
     "FieldRaiser",
 ]
@@ -57,7 +57,7 @@ class FieldErrorInput[FieldT, UnitT: Any](raising.ErrorInput, total=False):
     value: UnitT | Any
 
 
-class FieldErrorData[FieldT, UnitT](raising.ErrorData):
+class FieldErrorSpec[FieldT, UnitT](raising.ErrorSpec):
     """Define the Arg Space of the Internal Pipeline"""
 
     field: FieldT | None = None
@@ -81,9 +81,9 @@ class FieldRaiser(Raiser, zero=True):
     __call__: FieldRaiseCall
 
     @property
-    def data(self) -> type[FieldErrorData]:
-        """Override to map to specific raising.ErrorData"""
-        return FieldErrorData
+    def data(self) -> type[FieldErrorSpec]:
+        """Override to map to specific raising.ErrorSpec"""
+        return FieldErrorSpec
 
     @property
     def custom(self) -> type[FieldError]:
@@ -118,11 +118,11 @@ class FieldRaiser(Raiser, zero=True):
             case FieldRaiser.Transition:
                 return RuntimeError
 
-    def message(self, data: raising.ErrorData) -> str:
+    def message(self, data: raising.ErrorSpec) -> str:
         """Override to generate formatted messages based on the Enum state"""
 
-        assert isinstance(data, FieldErrorData), (
-            f"Expected Fieldraising.ErrorData, got {type(data)}"
+        assert isinstance(data, FieldErrorSpec), (
+            f"Expected Fieldraising.ErrorSpec, got {type(data)}"
         )
         name: str = data.attr or "Unknown"
         field: Any = data.field

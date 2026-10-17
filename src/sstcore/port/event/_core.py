@@ -1,5 +1,5 @@
 """
-Define the Structure of the Event Data and Pipeline
+Define the Structure of the Event Spec and Pipeline
 
                               DependencyLevel.sstcore.port.event[1]
 """

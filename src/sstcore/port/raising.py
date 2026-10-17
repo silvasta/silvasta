@@ -13,7 +13,7 @@ __all__: list[str] = [
     "SstCoreError",
     "ErrorDTO",
     "ErrorInput",
-    "ErrorData",
+    "ErrorSpec",
     "Raiser",
 ]
 
@@ -80,7 +80,7 @@ class ErrorInput(TypedDict, total=False):
 
 
 @dataclass(frozen=True)
-class ErrorData:
+class ErrorSpec:
     """Define the Arg Space of the Internal Pipeline"""
 
     reason: Raiser
@@ -101,7 +101,7 @@ class ErrorData:
     def absorb(
         cls, reason: Raiser, /, *args, **kwargs: Unpack[ErrorInput]
     ) -> Self:
-        """Extract the ErrorInput kwargs to form the ErrorData"""
+        """Extract the ErrorInput kwargs to form the ErrorSpec"""
 
         items: dict[str, Any] = {}
         extra: dict[str, Any] = {}
@@ -123,8 +123,8 @@ class Raiser(BaseEnum, zero=True, walk=True):
     """Assemble all data and throw it with panic"""
 
     @property
-    def data(self) -> type[ErrorData]:
-        return ErrorData
+    def data(self) -> type[ErrorSpec]:
+        return ErrorSpec
 
     @property
     def custom(self) -> type[SstCoreError]:
@@ -143,7 +143,7 @@ class Raiser(BaseEnum, zero=True, walk=True):
                 front = f"{bases[0].__name__[0:-5]}{bases[-1].__name__}"
         return f"{self.name}{front}"
 
-    def message(self, data: ErrorData) -> str:
+    def message(self, data: ErrorSpec) -> str:
         """Find Builtin Exception if registered in Raiser"""
         return repr(data)
 
@@ -201,7 +201,7 @@ class Raiser(BaseEnum, zero=True, walk=True):
     ) -> ErrorDTO | Exception | NoReturn:
         """Generate the DTO and immediately instantiate the Exception"""
 
-        data: ErrorData = self.data.absorb(self, *args, **kwargs)
+        data: ErrorSpec = self.data.absorb(self, *args, **kwargs)
         error: type[SstCoreError] = self.compose()
         message: str = f"{self.message(data)} {text}".strip()
         _dto = ErrorDTO(error, message=message, args=args)

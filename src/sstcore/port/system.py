@@ -12,12 +12,6 @@ System: The sst Director
                                    DependencyLevel.sstcore.port[10]
 """
 
-# STRATEGY: naming check Spec,Data,Inputs,... globally!!
-
-# IDEA: TypedDictInput->Spec
-# DataClass(OrValidated)->Param, or just DTO?
-# param = SystemBootDTO(**data:SystemBootParam)
-
 __all__: list[str] = [
     "SstSystem",
     "CliSystem",
@@ -76,7 +70,7 @@ class SystemLoading[SysT: CliSystem](Protocol):
     """Bind the tools to the system and make it ready to boot"""
 
     def __call__(
-        self, **spec: Unpack[CliSystemToolSpec]
+        self, **spec: Unpack[SystemLoaderInput]
     ) -> SystemLoader[SysT]: ...
 
 
@@ -92,13 +86,13 @@ class CliSystemInput(TypedDict, total=False):
     home: HomeSetup
 
 
-class CliSystemToolSpec(TypedDict, total=False):
+class SystemLoaderInput(TypedDict, total=False):
     config_loader: ConfigLoader
     bus_loader: BusLoader
     printer: Printer
 
 
-class SystemBootParam(CliSystemToolSpec, CliSystemInput):
+class SystemBootParam(SystemLoaderInput, CliSystemInput):
     """Define Input with both layers of System Input"""
 
 
@@ -106,7 +100,7 @@ class SystemBootParam(CliSystemToolSpec, CliSystemInput):
 
 
 @dataclass
-class CliSystemData:
+class CliSystemSpec:
     """Transfer validated System Input including Defaults"""
 
     verbose: bool = False
@@ -123,29 +117,32 @@ class CliSystemTools:
 
 
 @dataclass
-class SystemBootData(CliSystemData, CliSystemTools):
+class SystemBootSpec(CliSystemSpec, CliSystemTools):
     """Capture Param of both layers of System Params"""
 
     @classmethod
     def from_layers(
         cls,
         tools: CliSystemTools | None = None,
-        cli: CliSystemData | None = None,
+        cli: CliSystemSpec | None = None,
     ) -> Self:
         return cls(
             **asdict(tools or CliSystemTools()),
-            **asdict(cli or CliSystemData()),
+            **asdict(cli or CliSystemSpec()),
         )
 
     def extract_base[T](self, target_cls: type[T]) -> T:
         """Dynamically extract fields belonging to a base class"""
-        _kwargs = {f.name: getattr(self, f.name) for f in fields(target_cls)}  # ty:ignore
-        return target_cls(**_kwargs)
+        field_args = {
+            f.name: getattr(self, f.name)  # LATER: DataClass(Protocol)
+            for f in fields(target_cls)  # ty:ignore
+        }
+        return target_cls(**field_args)
 
     @property
-    def cli_data(self) -> CliSystemData:
+    def cli_data(self) -> CliSystemSpec:
         """Provide separated CLI input data"""
-        return self.extract_base(CliSystemData)
+        return self.extract_base(CliSystemSpec)
 
     @property
     def cli_tools(self) -> CliSystemTools:
@@ -173,7 +170,7 @@ class ConfigInput[P: Paths, S: Settings](TypedDict, total=False):
 
 
 @dataclass
-class ConfigData[P: Paths, S: Settings]:
+class ConfigSpec[P: Paths, S: Settings]:
     settings_cls: type[S] | None = None
     paths_cls: type[P] | None = None
     setting_file: Path | None = None
@@ -202,31 +199,25 @@ class BusInput(TypedDict, total=False):
 
 
 @dataclass
-class BusData:
+class BusSpec:
     bus_registration: BusRegistration | None = None
     use_default_registration: bool = True
 
 
-# LINE: -- tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-# LATER:
-# REMOVE:
+# LINE: -- testing input view(...) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+if __name__ == "__main__":
 
+    def _check_toolspec_binder(
+        **tool_spec: Unpack[SystemLoaderInput],
+    ) -> CliSystemTools:
+        return CliSystemTools(**tool_spec)
 
-def _check_toolspec_binder(
-    **tool_spec: Unpack[CliSystemToolSpec],
-) -> CliSystemTools:
-    return CliSystemTools(**tool_spec)
+    _x = _check_toolspec_binder()  # INFO: check IDE input view here
 
+    def _check_cli_input(**cli_args: Unpack[CliSystemInput]) -> CliSystemSpec:
+        return CliSystemSpec(**cli_args)
 
-_x = _check_toolspec_binder()  # INFO: check IDE input view here
+    def _check_cli_data(data: CliSystemSpec):  # FAIL: no additional check
+        _check_cli_input(**asdict(data))
 
-
-def _check_cli_input(**cli_args: Unpack[CliSystemInput]) -> CliSystemData:
-    return CliSystemData(**cli_args)
-
-
-def _check_cli_data(data: CliSystemData):  # FAIL: no additional check
-    _check_cli_input(**asdict(data))
-
-
-_y = _check_cli_input()  # INFO: check IDE input view here
+    _y = _check_cli_input()  # INFO: check IDE input view here
