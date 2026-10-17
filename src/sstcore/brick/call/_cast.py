@@ -10,8 +10,6 @@ What is the meaning of "cast" in this context?
 
 """
 
-from src.sstcore.brick.none._sentinel import UNSET
-
 __all__: list[str] = [
     "iter_type_hints",
     #
@@ -26,6 +24,7 @@ from inspect import BoundArguments, Parameter, Signature
 from typing import Any, Unpack
 
 from ...port.casting import ArgCasting, CastPlan
+from ...port.empty import VOID
 from ...port.files import SyncMode
 
 
@@ -62,7 +61,7 @@ def sync_mode(  # LATER: use directly SstEnumMeta.resolve
     value: SyncMode | str,
     /,
     *,
-    default: SyncMode | Any = UNSET,
+    default: SyncMode | Any = VOID,
 ) -> SyncMode:
     """Coerce string or SyncMode enum into a validated SyncMode."""
 
@@ -70,8 +69,9 @@ def sync_mode(  # LATER: use directly SstEnumMeta.resolve
         return SyncMode(value)
     except ValueError as error:  # LATER: use MISSING
         _ = error
-        if default is not UNSET:
+        if default is not VOID:
             return sync_mode(default)
+        raise ValueError from error
         # raise PathGuardError(
         #     reason=PathGuardReason.INPUT, target=value
         # ) from error

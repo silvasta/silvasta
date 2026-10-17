@@ -44,7 +44,9 @@ class Register[Item, Vault: _reg.Vault](Protocol):
     vault: Vault
 
     policy: PolicyDescriptor[VaultPolicy]
-    ident: _reg.Ident[Item] | None
+
+    # @property
+    # def ident(self) -> _reg.Ident[Item] | None: ...
 
     def add(self, data: Item | Vault) -> Vault:
         """Extend vault by Items, get removed files back"""

@@ -10,7 +10,7 @@ from rich.console import Group, RenderableType
 from rich.pretty import Pretty
 from rich.text import Text
 
-from ....port.calling import Richable, Stringable
+from ....port.represent import Stringable, is_richable
 from ._base import Conversion, is_sensitive, looks_like_format_spec
 from ._definition import ViewTable
 
@@ -63,7 +63,7 @@ def fallback_unknown(value: Stringable, item: Interpolation) -> RenderableType:
     if is_sensitive(item.expression):
         return Text("***", style="dim")
 
-    if isinstance(value, Richable):
+    if is_richable(value):
         return str(value)
 
     return Pretty(value, max_depth=2, max_length=8, max_string=80)

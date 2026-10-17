@@ -8,7 +8,7 @@ T-string Protocols
 from string.templatelib import Interpolation
 from typing import Protocol
 
-from ....port.calling import Richable, Stringable
+from ....port.represent import Richable, Stringable
 
 
 class ViewTable(Protocol):

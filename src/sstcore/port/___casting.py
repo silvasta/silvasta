@@ -18,7 +18,14 @@ __all__: list[str] = [
 import typing as _t
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Concatenate, Literal, Protocol, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Literal,
+    Protocol,
+    reveal_type,
+)
 from typing import Protocol as _Protocol
 
 from .color import Color
@@ -75,12 +82,12 @@ class _SuperArgCasting[Result = Any, Raw = Any](_Protocol):
     ) -> Result: ...
 
 
-type ColorName = Literal["azure", "teal", "carbon"]
+type ColorName = Literal["azure", "teal", "carbon"]  # EXTRACT: AUTO-COMPLETE
 type ColorArg = Color | ColorName | int | str
 
 
 def castcolor[**P, R](
-    func: Callable[Concatenate[Color, P], R],
+    func: Callable[Concatenate[Color, P], R],  # EXTRACT: colorcast low
 ) -> Callable[Concatenate[ColorArg, P], R]:
     def wrapper(
         color: ColorArg = Color.AZURE, *args: P.args, **kwargs: P.kwargs
@@ -91,57 +98,58 @@ def castcolor[**P, R](
     return wrapper
 
 
-@castcolor
-def my_colorizer(color: Color, target: str) -> str:
-    pass
+if TYPE_CHECKING:
+    from sstcore.brick.color.box import Colors
 
 
-test = my_colorizer("teal", "mytext")
+class ArgCastIntersecting[SuperSet, Result](Protocol):
+    def __call__(
+        self,
+        target: SuperSet | Result,
+        /,
+        *,
+        default: Maybe[Result] = VOID,
+    ) -> SuperSet & Result: ...  # ty:ignore
 
 
-def castcolor1[**P, R](
-    func: Callable[Concatenate[str, Color, P], R],
-) -> Callable[Concatenate[str, ColorArg, P], R]:
+colors = Colors()
+type ColorArg = Color | str | int
+
+
+def intersector(
+    func: Callable[[str, Color], str],
+) -> Callable[[str, Color], str] & Callable[[str, ColorArg], str]:
     def wrapper(
         text: str,
-        color: ColorArg = Color.AZURE,
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> R:
+        color: ColorArg,
+    ) -> str:
+        reveal_type(color)
         resolved: Color = Color.resolve(color)
-        return func(text, resolved, *args, **kwargs)
+        reveal_type(resolved)
+        return func(text, resolved)
 
+    reveal_type(wrapper)
     return wrapper
 
 
-@castcolor1
-def my_colorizer1(text: str, color: Color) -> str:
-    return text
+@intersector
+def color_intersect2(text: str, color: Color) -> str:
+    return colors(text, color)
 
 
-test1 = my_colorizer1("hello")
+bla_purple = color_intersect2("hello", 5)
+bla_green = color_intersect2("bye", "green")
 
 
-class _Colorized1[T1, R](Protocol):
-    def __call__(self, target: T1, color: ColorArg = Color.AZURE) -> R: ...
+def intersector_generic[F: Callable[[str, Color], str]](
+    func: F,
+) -> F & Callable[[str, ColorArg], str]:
+    def wrapper(
+        text: str,
+        color: ColorArg,
+    ) -> str:
+        resolved: Color = Color.resolve(color)
+        return func(text, resolved)
 
-
-class _ColorizedKw[**P, R](Protocol):
-    def __call__(
-        self, *args: P.args, color: ColorArg = Color.AZURE, **kwargs: P.kwargs
-    ) -> R: ...
-
-
-@overload
-def castcolor2[T1, R](
-    func: Callable[[T1, Color], R],
-) -> _Colorized1[T1, R]: ...
-
-
-@overload
-def castcolor2[**P, R](func: Callable[P, R]) -> _ColorizedKw[P, R]: ...
-
-
-def castcolor2(func: Callable[..., Any]) -> Callable[..., Any]:
-    # Runtime inspection via inspect.signature to cast `color`
-    ...
+    reveal_type(wrapper)
+    return wrapper  # ty:ignore

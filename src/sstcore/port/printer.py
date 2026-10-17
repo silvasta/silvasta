@@ -4,13 +4,6 @@ print
                                     DependencyLevel.sstcore.port[9]
 """
 
-from pathlib import Path
-
-from rich.box import Box
-
-from src.sstcore.port.event.dto import LineDTO, MarkdownDTO, PanelDTO
-from src.sstcore.port.tree import SimpleTree
-
 __all__: list[str] = [
     "Print",
     "PrintMode",
@@ -24,15 +17,19 @@ __all__: list[str] = [
 # TASK: finish printer
 
 from enum import auto
+from pathlib import Path
 from string.templatelib import Template
 from typing import Any, TypedDict, Unpack
 from typing import Protocol as Protocol
 
+from rich.box import Box
+
 from .color import ColorBox, ColorId
 from .config import ProjectInformation
-from .event.dto import CliDTO
+from .event.dto import CliDTO, LineDTO, MarkdownDTO, PanelDTO
 from .represent import CliRenderable, Richable
 from .solid import EnumMode
+from .tree import SimpleTree
 
 
 class StdPrintInput(TypedDict, total=False):

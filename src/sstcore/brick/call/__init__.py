@@ -16,6 +16,6 @@ __all__: list[str] = [
     "castarg",
 ]
 
-from ._cast import ArgCast, ArgCasting, castarg
+from ._argcast import ArgCast, ArgCasting, castarg
 from ._inspect import validate_signature
 from ._some import just_return

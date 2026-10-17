@@ -57,7 +57,7 @@ class PortErrorInput(raising.ErrorInput, total=False):
 
 @dataclass(frozen=True)
 class PortErrorSpec(raising.ErrorSpec):
-    text: str | None = None
+    text: str = ""
     attr: str | None = None
     source: type | None = None
     # IDEA: port,plug == Protocol,Cls

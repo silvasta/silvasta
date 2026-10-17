@@ -28,7 +28,7 @@ def full(target, /) -> list[Any]:
     self: Any = None  # FIX:
     return [
         CallableDictModule.__call__(self, target, key)
-        for key in target.__dict__().items()
+        for key in target.__dict__.items()
     ]
 
 

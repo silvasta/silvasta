@@ -13,7 +13,7 @@ __all__: list[str] = [  # NEXT: module name, scan, detect?
 from collections.abc import Callable
 from typing import Any
 
-from ...port.calling import PydanticModel
+from ...port.represent import PydanticModel
 from ._check import AttrFilter
 
 

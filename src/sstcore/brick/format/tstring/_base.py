@@ -4,7 +4,7 @@ from enum import StrEnum
 from string.templatelib import Interpolation, Template
 from typing import Any
 
-from ....port.calling import Stringable
+from ....port.represent import Stringable
 
 
 def normalize(target: Any) -> Stringable:

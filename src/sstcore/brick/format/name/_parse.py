@@ -30,8 +30,8 @@ from typing import TYPE_CHECKING, Any, overload
 
 from ....port import normalize
 from ....port._error import FailedDispatchError
+from ....port.empty import Ghost
 from ....port.link import portlink
-from ...none import Ghost
 from ._zero import NameView
 
 
