@@ -18,6 +18,7 @@ Recommendation, prepare it as toggle (# with comment) and overall,
 it will save time and it is harmless at runtime, but mocking the
 type checker to hard is not recommended.
 
+                              DependencyLevel.sstcore.brick.none[0]
 """
 
 __all__: list[str] = [

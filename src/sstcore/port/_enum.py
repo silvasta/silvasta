@@ -180,11 +180,13 @@ EnumStr = EnumStr2
 EnumRepr = EnumRepr1
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 if __name__ == "__main__":
-    from dataclasses import dataclass  # noqa: E402
-    from enum import Enum  # noqa: E402
-    from typing import ClassVar, Protocol  # noqa: E402
+    #
+    #  LINE: -- TESTS -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    from dataclasses import dataclass
+    from enum import Enum
+    from typing import ClassVar, Protocol
 
     class HasRouting(Protocol):
         prefix: str

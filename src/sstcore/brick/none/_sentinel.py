@@ -1,20 +1,26 @@
 """
-Replace None
+Replace None and Any with type safe Replacement
 
-- until py315
+- Avoid Any to erasure the type just for widening the annotation
+- Avoid None as unprecise and unpredictable placeholder
 
-Usage:
-from sstcore.brick.none import sentinel
-MISSING = sentinel("MISSING")
+Use the UNSET Sentinel as Value and as Type!
+- number: int | UNSET = UNSET
+- clearly narrows the type afterwards,
+  like after isinstance(number,int) == False
+  -> number clearly identified as UNSET
+
+                              DependencyLevel.sstcore.brick.none[0]
 """
 
 __all__: list[str] = [
-    "ViewSentinel",
+    "UNSET",
     "sentinel",
+    "ViewSentinel",
 ]
 
 import sys
-from typing import Any
+from pathlib import Path
 
 from ...port.event.dto import CliDTO, LogDTO
 from ...port.represent import Richable
@@ -33,29 +39,35 @@ class ViewSentinel:
         raise NotImplementedError
 
 
-#  INFO: -- Experimental -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def use_latest_features() -> bool:
-    """Next type check dummy, avoid grey shadowing iff..."""
-    return sys.version_info >= (3, 15)
-
-
-if use_latest_features():
+if sys.version_info >= (3, 15):
     import builtins
 
-    sentinel = builtins.sentinel  # ty:ignore
+    sentinel = builtins.sentinel
+
 else:
+    import typing_extensions
 
-    def sentinel(name: str, repr: str | None = None) -> Any:
-        """Imitate the new sentinel class in py314-"""
+    sentinel = typing_extensions.sentinel
 
-        class Sentinel:
-            def __repr__(self) -> str:
-                return repr if repr is not None else f"<{name}>"
+UNSET = sentinel("UNSET")
 
-            def __bool__(self) -> bool:
-                return True
 
-        Sentinel.__name__ = name
-        return Sentinel()
+if __name__ == "__main__":
+    #
+    #  LINE: -- Tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    print(f"Sentinel {sys.version_info} prepared: {sentinel}")
+
+    def _narrow_type(path: Path | UNSET = UNSET):
+        from typing import reveal_type
+
+        if path is UNSET:
+            reveal_type(path)
+        else:
+            reveal_type(path)
+
+    print(UNSET)
+    print("\n", "repr:")
+    print(repr(UNSET))
+    print("\n", "dir:")
+    print(dir(UNSET))
