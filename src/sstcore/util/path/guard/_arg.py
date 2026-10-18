@@ -5,6 +5,8 @@ Input Normalization
 
 """
 
+# NEXT: Decide which parts go to Base in brick.call._argcast or port.calling
+
 __all__: list[str] = [
     "CastInput",
     "PathInput",
@@ -27,7 +29,14 @@ import typing as _t
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Annotated, Any, Self, TypedDict, Unpack
+from typing import (
+    Annotated,
+    Any,
+    Self,
+    TypedDict,
+    Unpack,
+    reveal_type,
+)
 
 from ....brick.call import ArgCast, _cast
 from ....error import PathGuardError, PathGuardReason
@@ -216,6 +225,71 @@ class PathCast(ArgCast):
                 self._sync(plan, name, registry_lookup=annotation)
 
         return plan
+
+    def intersect2(
+        self,
+        func: Callable[[Path], Path],
+    ) -> Callable[[PathArg], Path]:
+        # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
+        def wrapper(
+            path: PathArg,
+        ) -> Path:
+
+            print("\nintersector::color:", end=" ")
+            reveal_type(path)
+            resolved: Path = PathSpec.ok(path)
+            print("\nintersector::resolved:", end=" ")
+            reveal_type(resolved)
+            return func(resolved)
+
+        reveal_type(wrapper)
+        return wrapper
+
+    # def intersect3[P = Path, Q = PathArg, R = Path](
+    #     self,
+    #     func: Callable[[P], R],
+    # ) -> Callable[[P], R] & Callable[[Q], R]:
+    #     # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
+    #     def wrapper(
+    #         path: PathArg,
+    #     ) -> Path:
+    #
+    #         print("\nintersector::color:", end=" ")
+    #         reveal_type(path)
+    #         resolved = PathSpec.ok(path)
+    #         print("\nintersector::resolved:", end=" ")
+    #         reveal_type(resolved)
+    #         return func(resolved)
+    #
+    #     reveal_type(wrapper)
+    #     return wrapper
+
+    def intersect4(
+        self, p1: Path, p2: Path
+    ) -> Callable[[Callable[[Path], Path]], Callable[[PathArg], Path]]:
+        # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
+        def deco(
+            func: Callable[[Path], Path],
+        ) -> Callable[
+            [PathArg],
+            Path,
+        ]:
+            def wrapper(
+                path: PathArg,
+            ) -> Path:
+                resolved: Path = PathSpec.ok(path)
+
+                print("\nintersector::color:", end=" ")
+                reveal_type(path)
+                print("\nintersector::resolved:", end=" ")
+                reveal_type(resolved)
+                return func(p1, p2)
+
+            reveal_type(wrapper)
+            return wrapper
+
+        reveal_type(deco)
+        return deco
 
 
 castpath = PathCast()  # TARGET: usage inside Path.Guard

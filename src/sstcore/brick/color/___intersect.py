@@ -103,14 +103,14 @@ def intersector(  # STRATEGY: this is valuable!
         color: ColorArg,
     ) -> str:
 
-        # print("\nintersector::color:", end=" ")
-        # reveal_type(color)
+        print("\nintersector::color:", end=" ")
+        reveal_type(color)
         resolved: Color = Color.resolve(color)
-        # print("\nintersector::resolved:", end=" ")
-        # reveal_type(resolved)
+        print("\nintersector::resolved:", end=" ")
+        reveal_type(resolved)
         return func(text, resolved)
 
-    # reveal_type(wrapper)
+    reveal_type(wrapper)
     return wrapper
 
 

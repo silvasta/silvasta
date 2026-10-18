@@ -4,8 +4,7 @@ Assemble Stub Path and Module Operations to StubFileGuard
                              DependencyLevel.sstcore.util.path.guard[5]
 """
 
-__all__: list[str] = [
-    # IDEAS:
+__all__: list[str] = [  # IDEAS:
     "StubFileGuard",
     # "StubGuard",
     # "StubPathGuard",
@@ -18,12 +17,11 @@ from typing import Any
 from ....brick.color.box import Colors
 from ....brick.reflect import clsname
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
-from ....port.color import ColorBox
 from ....port.files import SyncMode
 from .. import _module
 from . import _ensure, _operate
 
-colors: ColorBox = Colors()  # type: ignore
+colors = Colors()
 
 
 def stub_file_init(
@@ -31,8 +29,8 @@ def stub_file_init(
 ) -> Path:
     """Create Package Init StubFile Path and ensure Backup and Writable"""
 
-    # PARAM: change init_stub defaults here
     stub_dir: Path = _module.stub_root(obj, package)
+    # PARAM: change init_stub defaults here
     init_stub: Path = stub_dir / "__init__.pyi"
 
     _ensure.dir(init_stub.parent)
@@ -45,8 +43,7 @@ def stub_file_init(
 
 
 def _ensure_backup(target: Path) -> Path:
-    # MOVE: integrate into guard._ensure
-    # LATER: new branch in _ensure pipeline
+    # TASK:: adapt this concept!
     """NEW: Backup Function for PathGuard"""
     if target.exists():
         _operate.copy(
@@ -62,8 +59,8 @@ def single_stub_file(  # IDEAS: make_stub_file,get_stub_file, else?
 ) -> Path:
     """Create Single StubFile Path and ensure Backup and Writable"""
 
-    # PARAM: change stub_file defaults here
     stub_dir: Path = _module.stub_root(obj, package)
+    # PARAM: change stub_file defaults here
     stub_file: Path = stub_dir / "_stubs" / f"_{prefix.lower()}.pyi"
 
     _ensure.dir(stub_file.parent)
@@ -77,7 +74,7 @@ def single_stub_file(  # IDEAS: make_stub_file,get_stub_file, else?
 
 StubGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {clsname(cls)} ",
-    # FIX: rich=f"{colors.azure('StubPath')}{colors.teal('Guard')}",
+    rich=f"{colors.azure('StubPath')}{colors.teal('Guard')}",
     cli="Resolution, safety, and backups for Python AST Stub generation",
     color=3,
 )

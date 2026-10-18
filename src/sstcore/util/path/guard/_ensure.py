@@ -6,6 +6,8 @@ Ensure Dir or File, exists or not
 
 # IMPORTANT: Ensure in .__init__.pyi that PathArg is annotated for any Path
 
+from typing import reveal_type
+
 __all__: list[str] = [
     "_dir_logic",
     "dir",
@@ -27,8 +29,61 @@ from ._arg import PathArg, PathSpec, TargetPath, castpath
 @castpath
 def _dir_logic(path: TargetPath, /) -> Path:
     """Ensure Directory is Writable"""
+    reveal_type(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@castpath.intersect2
+def _dir_logic2(path: Path, /) -> Path:
+    """Ensure Directory is Writable"""
+    reveal_type(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+test = _dir_logic2(Path())
+test = _dir_logic2("my/path")
+test = _dir_logic2(PathSpec(Path()))
+reveal_type(test)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# @castpath.intersect3
+# def _dir_logic3(path: Path, /) -> Path:
+#     """Ensure Directory is Writable"""
+#     reveal_type(path)
+#     path.mkdir(parents=True, exist_ok=True)
+#     return path
+#
+#
+# test = _dir_logic3(Path())
+# reveal_type(test)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@castpath.intersect4()
+def _dir_logic4(path: Path, /) -> Path:
+    """Ensure Directory is Writable"""
+    reveal_type(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+test = _dir_logic4(Path())
+test = _dir_logic4("my/path")
+test = _dir_logic4(PathSpec(Path()))
+reveal_type(test)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def dir[**P](
@@ -37,6 +92,9 @@ def dir[**P](
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     if isinstance(target, (Path, str, PathSpec)):
+        reveal_type(target)
+        _dir_logic2(target)
+        _dir_logic4(target)
         return _dir_logic(target)
 
     if callable(target):
