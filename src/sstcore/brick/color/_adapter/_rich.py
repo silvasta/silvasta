@@ -37,7 +37,7 @@ class RichPalette(Palette):
         return Adapter.ANSI
 
 
-def printing(func):
+def printing(func):  # MOVE:
     def wrapper(*args, **kwargs):
         # result = func(*args, **kwargs)
         # print()

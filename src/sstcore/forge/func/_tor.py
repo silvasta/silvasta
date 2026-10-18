@@ -14,19 +14,20 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from loguru import logger
-
 from ...brick.field import MorphingField, StrategyField
 from ...brick.reflect import clsname, funcname
 from ...port import functorial
 from ...port.link import portlink
 from ..engine import FunctorMeta, FunctorMetaData
+from ._zero import FunctorView
 
 FunctorInput = FunctorMetaData()
 
 
-@portlink(functorial.Functorial)  # RENAME: who is Functor?
-class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
+@portlink(functorial.Functorial)
+class BaseFunctor[**Args, Result](
+    FunctorView, metaclass=FunctorMeta, data=FunctorInput
+):
     """Ensure Requirements and close MRO forwarding"""
 
     def __init__(
@@ -51,6 +52,7 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
         super().__init__()
 
     def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
+
         return self._call(*args, **kwargs)
 
     @StrategyField(bind_to_self=True)
@@ -60,8 +62,18 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
         )
 
     @MorphingField(bind_to_self=True)
-    def _emit(self, *args, **kwargs) -> None:  # MOVE: global meta defaults
-        logger.debug(*args, sender=str(self), **kwargs)
+    # MOVE: global meta defaults but with better defaults
+    # AI: this here mixes currently 2 things, the _emit as default for any functor should not be to toggle off
+    def _emit(self, *args, **kwargs) -> None:
+        if hasattr(self, "log") and self.log:
+            from loguru import logger
+
+            # TODO: check proper arg forwarding
+            logger.debug(*args, sender=str(self), **kwargs)
+        if hasattr(self, "debug") and self.debug:
+            from rich import print
+
+            print(*args, **kwargs)
 
     @classmethod
     def __mount__(
@@ -70,12 +82,12 @@ class BaseFunctor[**Args, Result](metaclass=FunctorMeta, data=FunctorInput):
         return cls(name=name, **kwargs)
 
 
-def test(): ...
+if __name__ == "__main__":
 
+    def test(): ...
 
-def _plug(x: BaseFunctor):
-    x._call = test
+    def _plug(x: BaseFunctor):
+        x._call = test
 
-
-def _port(x: functorial.Functorial):
-    x._call = test
+    def _port(x: functorial.Functorial):
+        x._call = test

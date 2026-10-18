@@ -17,19 +17,16 @@ from collections.abc import Callable
 from ...brick.call import just_return
 from ...brick.color.box import Colors
 from ...brick.reflect import clsname
-from ...port import represent
-from ...port.calling import ClsRendering
 from ...port.color import Color, ColorId
-from ...port.event.dto import CliDTO, CliDtoCreator, LogDTO, PanelDTO
+from ...port.event.dto import CliDTO, LogDTO, PanelDTO
 from ...port.link import portlink
-from ...port.represent import SstView
+from ...port.represent import CliDtoCreator, ClsRendering, SstFullView
 from ._meta_base import SstMeta, SstMetaData
 
 colors = Colors()
 
 
-@portlink(SstView)
-@portlink(represent.SstView)
+@portlink(SstFullView)
 class ClsViewBase(SstMeta):
     """Provide all Views for Classes"""
 

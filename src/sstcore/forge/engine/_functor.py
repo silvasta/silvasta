@@ -14,7 +14,7 @@ __all__: list[str] = [
 from typing import Any
 
 from ...brick.field import MethodFieldEngine
-from ...brick.none import sentinel
+from ...port.empty import sentinel
 from ...port.link import portlink
 from ...port.shape import Meta, MetaData
 from ._meta_base import SstMeta, SstMetaData

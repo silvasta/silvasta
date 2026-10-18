@@ -17,11 +17,14 @@ from ...brick.field import PolicyField, RequiredField
 from ...brick.field._strategy import StrategyField
 from ...port.functorial import Catch, ErrorPolicy, SafeFunctorial
 from ...port.link import portlink
-from ._tor import BaseFunctor
+from ._tor import BaseFunctor, FunctorInput
 
 
 @portlink(SafeFunctorial)
-class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
+class SafeFunctor[**Args, Result](
+    BaseFunctor[Args, Result],
+    data=FunctorInput,  # TODO: handle by Base!
+):
     """Protect the Execution, Handle Errors, everything able to customize"""
 
     policy = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)

@@ -6,8 +6,6 @@ Compose RichMixins
                              DependencyLevel.sstcore.brick.views[0]
 """
 
-from sstcore.port.calling import Richable
-
 __all__: list[str] = [
     "SimpleRichNameMixin",
     "RichNameMixin",
@@ -15,9 +13,10 @@ __all__: list[str] = [
 ]
 
 
+from ....brick import reflect
 from ....brick.color import colorize
 from ....brick.color.box import Colors
-from ....brick.labor import reflect
+from ....port.represent import Richable
 
 colors = Colors()
 

@@ -88,6 +88,7 @@ class ArgCast:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
 
+            # IMPORTANT: expose logic for usage without decorator
             bound: BoundArguments = signature.bind(*args, **kwargs)
 
             if self.pass_defaults:

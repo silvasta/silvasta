@@ -12,14 +12,14 @@ __all__: list[str] = [
     "ModuleNameMixin",
 ]
 
-from ....brick.labor import clsname, reflect
+from ....brick import reflect
 
 
 class SimpleNameMixin:
     """Show class name"""
 
     def __str__(self) -> str:
-        return clsname(self)
+        return reflect.clsname(self)
 
 
 class NameMixin:
@@ -32,7 +32,7 @@ class NameMixin:
     """
 
     def __str__(self) -> str:
-        return f"{clsname(self)}[{reflect.name(self)}]"
+        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
 
 
 class ModuleNameMixin:

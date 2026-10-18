@@ -22,7 +22,7 @@ def __core__(target: Any, attrs: Sequence[str], default=None, /) -> Any:  # noqa
     # LATER: use __core__ for sstcore.forge.blueprint|func
     # - bind heavy static func meta with nested calls
     for attr in attrs:
-        if detected := getattr(target, attr, None) is not None:
+        if (detected := getattr(target, attr, None)) is not None:
             return detected
     else:
         return default

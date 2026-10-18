@@ -110,6 +110,8 @@ class MergeMachine(EnumMachine):
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+# AI: below the temporary debug engine that was used during creating portlink
+
 
 def _load_printer():
     # NEXT: portlog -> writes ndjson -> render from loaded file!

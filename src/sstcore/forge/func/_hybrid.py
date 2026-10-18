@@ -17,11 +17,14 @@ from typing import Any, Concatenate, NoReturn, TypeGuard, overload
 from ...brick.field import MorphingField, StrategyField
 from ...port.functorial import BoundWrapper, Detect, HybridFunctorial
 from ...port.link import portlink
-from ._tor import BaseFunctor
+from ._tor import BaseFunctor, FunctorInput
 
 
 @portlink(HybridFunctorial)
-class HybridFunctor[In, Out, **P](BaseFunctor[Concatenate[In, P], Out]):
+class HybridFunctor[In, Out, **P](
+    BaseFunctor[Concatenate[In, P], Out],
+    data=FunctorInput,  # TODO: handle by Base!
+):
     """Extend Call for Hybrid3 and use Init for Hybrid2"""
 
     def __init__(self, detect: Detect[In] | None = None, **kwargs) -> None:

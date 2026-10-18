@@ -26,10 +26,11 @@ from ...port.empty import VOID
 from ...port.link import portlink
 from .. import reflect
 from ._raise import FieldRaiser
+from ._zero import FieldView  # CHECK:
 
 
 @portlink(attach.Descriptor)
-class NamedField:
+class NamedField(FieldView):
     """Provide Name for all Fields"""
 
     raiser: type[FieldRaiser] = FieldRaiser

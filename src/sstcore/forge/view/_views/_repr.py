@@ -13,7 +13,9 @@ __all__: list[str] = [
 ]
 
 
-from ....brick.labor import reflect, scan, transform
+from ....brick import reflect
+from ....brick.format import norm
+from ....brick.reflect import scan
 
 
 class ReprMixin:
@@ -22,7 +24,7 @@ class ReprMixin:
     @property
     def _repr_box_text(self):
         """Provide subhook for override __repr__ [box text]"""
-        return transform.dict_to_str(scan.pydantic(self))
+        return norm.dict_to_str(scan.pydantic(self))
 
     def __repr__(self) -> str:
         return f"{reflect.clsname(self)}[{self._repr_box_text}]"
@@ -32,11 +34,13 @@ class ReprDataMixin:
     """Show all public attributes"""
 
     def __repr__(self) -> str:
-        return f"{reflect.clsname(self)}({transform.dict_to_str(scan.pydantic(self))})"
+        return (
+            f"{reflect.clsname(self)}({norm.dict_to_str(scan.pydantic(self))})"
+        )
 
 
 class FullReprMixin:
     """Show all attributes"""
 
     def __repr__(self) -> str:
-        return f"{reflect.clsname(self)}({transform.dict_to_str(vars(self))})"
+        return f"{reflect.clsname(self)}({norm.dict_to_str(vars(self))})"

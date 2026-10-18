@@ -15,8 +15,9 @@ __all__: list[str] = [
     "BoundStrategy",
 ]
 
+import inspect as _inspect
 from collections.abc import Callable
-from inspect import Parameter, Signature, _ParameterKind, signature
+from inspect import Parameter, Signature, _ParameterKind
 from typing import Any, Concatenate, Literal, Self, overload
 
 from ...port import attach
@@ -24,6 +25,7 @@ from ...port.link import portlink
 from .. import reflect
 from ._base import DeleteField, ReadField
 from ._decorate import FieldDecorator
+from ._zero import FieldView
 
 
 @portlink(attach.DecoDescriptor)
@@ -69,7 +71,7 @@ class MethodFieldEngine[**In, Out](
     def bind(self, func: Callable[..., Out]) -> None:
         super().bind(func)
         if self.signature is not None:
-            self.signature: Signature = _extract_signature(
+            self.signature = _extract_signature(
                 func, bind_to_self=self.bind_to_self
             )
 
@@ -117,7 +119,7 @@ class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
         return self
 
 
-class BoundStrategy[**In, Out]:
+class BoundStrategy[**In, Out](FieldView):
     """Proxy object that acts as a bound method and provides swap mutations."""
 
     def __init__(
@@ -165,12 +167,12 @@ class BoundStrategy[**In, Out]:
         return self
 
 
-#  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 #  MOVE: -- probably to brick.call._inspect
+#  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:
-    sig: Signature = signature(func)
+    sig: Signature = _inspect.signature(func)
     if not bind_to_self:
         return sig
     params: list[Parameter] = list(sig.parameters.values())
@@ -184,7 +186,7 @@ def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:
 
 def _valid_sig(func: Callable, baseline: Signature) -> bool:
     try:
-        new_sig: Signature = signature(func)
+        new_sig: Signature = _inspect.signature(func)
     except ValueError:
         return False
     if _is_open_signature(baseline) or _is_open_signature(new_sig):

@@ -89,6 +89,7 @@ class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
 class VaultAccess[Item, V: _r.Vault](
     VaultWriter[Item, V], VaultReader[Item, V]
 ):
+    # AI: here i just reused some empty imtermediate base
     def __str__(self):
         return f"{type(self).__name__}[{len(self.vault)}]"
 

@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ....brick.labor import scan
+from ....brick.reflect import scan
 from ....port.event.dto import LogDTO
 
 
