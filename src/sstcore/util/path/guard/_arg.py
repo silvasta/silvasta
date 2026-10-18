@@ -45,6 +45,10 @@ from ....port.empty import VOID
 from ....port.files import SyncMode
 from ....port.link import portlink
 
+#
+# STRATEGY: find balance of Annotaded or regular Paths
+
+
 type TargetPath = Annotated[Path, PathCaster()]
 type SourcePath = Annotated[Path, PathCaster(must_exists=True)]
 type ResolvedPath = Annotated[Path, PathCaster(resolve=True)]
@@ -226,6 +230,7 @@ class PathCast(ArgCast):
 
         return plan
 
+    # EXTRACT:
     def intersect2(
         self,
         func: Callable[[Path], Path],
@@ -242,11 +247,12 @@ class PathCast(ArgCast):
             reveal_type(resolved)
             return func(resolved)
 
-        reveal_type(wrapper)
+        # reveal_type(wrapper)
         return wrapper
 
     # def intersect3[P = Path, Q = PathArg, R = Path](
     #     self,
+    # EXTRACT:
     #     func: Callable[[P], R],
     # ) -> Callable[[P], R] & Callable[[Q], R]:
     #     # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
@@ -264,32 +270,33 @@ class PathCast(ArgCast):
     #     reveal_type(wrapper)
     #     return wrapper
 
-    def intersect4(
-        self, p1: Path, p2: Path
-    ) -> Callable[[Callable[[Path], Path]], Callable[[PathArg], Path]]:
-        # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
-        def deco(
-            func: Callable[[Path], Path],
-        ) -> Callable[
-            [PathArg],
-            Path,
-        ]:
-            def wrapper(
-                path: PathArg,
-            ) -> Path:
-                resolved: Path = PathSpec.ok(path)
-
-                print("\nintersector::color:", end=" ")
-                reveal_type(path)
-                print("\nintersector::resolved:", end=" ")
-                reveal_type(resolved)
-                return func(p1, p2)
-
-            reveal_type(wrapper)
-            return wrapper
-
-        reveal_type(deco)
-        return deco
+    # # EXTRACT:
+    # def intersect4(
+    #     self, p1: Path, p2: Path
+    # ) -> Callable[[Callable[[Path], Path]], Callable[[PathArg], Path]]:
+    #     # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
+    #     def deco(
+    #         func: Callable[[Path], Path],
+    #     ) -> Callable[
+    #         [PathArg],
+    #         Path,
+    #     ]:
+    #         def wrapper(
+    #             path: PathArg,
+    #         ) -> Path:
+    #             resolved: Path = PathSpec.ok(path)
+    #
+    #             print("\nintersector::color:", end=" ")
+    #             reveal_type(path)
+    #             print("\nintersector::resolved:", end=" ")
+    #             reveal_type(resolved)
+    #             return func(p1, p2)
+    #
+    #         reveal_type(wrapper)
+    #         return wrapper
+    #
+    #     reveal_type(deco)
+    #     return deco
 
 
 castpath = PathCast()  # TARGET: usage inside Path.Guard

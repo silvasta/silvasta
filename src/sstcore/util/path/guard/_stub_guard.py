@@ -24,6 +24,7 @@ from . import _ensure, _operate
 colors = Colors()
 
 
+# MOVE: config.paths
 def stub_file_init(
     obj: Any, *, package: str | None = None, backup: bool = True
 ) -> Path:
@@ -43,7 +44,7 @@ def stub_file_init(
 
 
 def _ensure_backup(target: Path) -> Path:
-    # TASK:: adapt this concept!
+    # EXTRACT:: adapt this concept!
     """NEW: Backup Function for PathGuard"""
     if target.exists():
         _operate.copy(
@@ -54,6 +55,7 @@ def _ensure_backup(target: Path) -> Path:
     return target
 
 
+# MOVE: config.paths
 def single_stub_file(  # IDEAS: make_stub_file,get_stub_file, else?
     obj: Any, *, prefix: str, package: str | None = None, backup: bool = True
 ) -> Path:

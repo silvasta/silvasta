@@ -6,8 +6,6 @@ Ensure Dir or File, exists or not
 
 # IMPORTANT: Ensure in .__init__.pyi that PathArg is annotated for any Path
 
-from typing import reveal_type
-
 __all__: list[str] = [
     "_dir_logic",
     "dir",
@@ -29,7 +27,7 @@ from ._arg import PathArg, PathSpec, TargetPath, castpath
 @castpath
 def _dir_logic(path: TargetPath, /) -> Path:
     """Ensure Directory is Writable"""
-    reveal_type(path)
+    # reveal_type(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -37,19 +35,20 @@ def _dir_logic(path: TargetPath, /) -> Path:
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+# EXTRACT:
 @castpath.intersect2
 def _dir_logic2(path: Path, /) -> Path:
     """Ensure Directory is Writable"""
-    reveal_type(path)
+    # reveal_type(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-test = _dir_logic2(Path())
-test = _dir_logic2("my/path")
-test = _dir_logic2(PathSpec(Path()))
-reveal_type(test)
-
+# test = _dir_logic2(Path())
+# test = _dir_logic2("my/path")
+# test = _dir_logic2(PathSpec(Path()))
+# reveal_type(test)
+#
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
@@ -69,18 +68,23 @@ reveal_type(test)
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@castpath.intersect4()
-def _dir_logic4(path: Path, /) -> Path:
-    """Ensure Directory is Writable"""
-    reveal_type(path)
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-test = _dir_logic4(Path())
-test = _dir_logic4("my/path")
-test = _dir_logic4(PathSpec(Path()))
-reveal_type(test)
+# # EXTRACT:
+# @castpath.intersect4(
+#     # IDEA: write  the desired input signature for caller here!
+#     # - the signature below is the one active for the func body
+#     # -inbetween the castpath is the connector that handles the transformation
+# )
+# def _dir_logic4(path: Path, /) -> Path:
+#     """Ensure Directory is Writable"""
+#     reveal_type(path)
+#     path.mkdir(parents=True, exist_ok=True)
+#     return path
+#
+#
+# test = _dir_logic4(Path())
+# test = _dir_logic4("my/path")
+# test = _dir_logic4(PathSpec(Path()))
+# reveal_type(test)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -92,9 +96,13 @@ def dir[**P](
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     if isinstance(target, (Path, str, PathSpec)):
-        reveal_type(target)
+        # reveal_type(target)
         _dir_logic2(target)
-        _dir_logic4(target)
+        # NEXT:
+        #
+        # NEXT:
+        # NEXT:
+        # _dir_logic4(target)
         return _dir_logic(target)
 
     if callable(target):
@@ -108,6 +116,31 @@ def dir[**P](
         return wrapper
 
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
+
+
+@castpath.intersect2
+def ___file_logic(
+    path: TargetPath, /, raise_error: bool, default_content: str | None
+) -> Path:
+    """Ensure File is Writable - no existing file at path!"""
+
+    if path.exists():
+        return path
+
+    if default_content is not None:
+        _dir_logic(path.parent)
+        path.write_text(default_content)
+        if not raise_error:
+            return path
+        info = f"Default File created: {path=}"
+    else:
+        info: str = (
+            "Suppress Error works only when writing default_content!"
+            if not raise_error
+            else "execute regular raise"
+        )
+
+    raise PathGuardError(PathGuardReason.MISSING, target=path, info=info)
 
 
 @castpath

@@ -6,45 +6,43 @@ with PathGuard.lock(target) as path:
 
 """
 
+# TODO: mount PathGuard.lock
+
 import os
 import time
-from contextlib import ContextDecorator
 from pathlib import Path
 
 from ....error import PathGuardError, PathGuardReason
-from ._arg import ParentEnsuredPath, castpath
-
-# NEXT: mount PathGuard.lock
+from ._arg import PathSpec
 
 
-@castpath
-def lock(
-    target: ParentEnsuredPath,
-    *,
-    timeout: float = 5.0,
-    poll_interval: float = 0.02,
-) -> _LockContext:
-    """Acquire an exclusive sidecar file lock (.name.lock) and yield the Path."""
-    return _LockContext(target, timeout=timeout, poll_interval=poll_interval)
-
-
-class _LockContext(ContextDecorator):
+class Lock:
     """Cross-process exclusive lock context using atomic O_CREAT | O_EXCL."""
 
     def __init__(
         self,
-        target: Path,
+        target: Path,  # LATER: accept spec, PathSpec or something else
         *,
         timeout: float = 5.0,
         poll_interval: float = 0.02,
     ) -> None:
-        self.target: Path = target
+        self.target: Path = PathSpec.ok(target, ensure_parent=True)
         self.lock_file: Path = target.with_name(f".{target.name}.lock")
         self.timeout: float = timeout
         self.poll_interval: float = poll_interval
+        #
+        # self.debug = True
+
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    def _debug(self, *args, **kwargs):
+        if hasattr(self, "debug") and self.debug:
+            print(*args, **kwargs)
 
     def __enter__(self) -> Path:
-        start = time.monotonic()
+        start: float = time.monotonic()
+        self._debug(f"Start : {time.monotonic()}")
 
         while True:
             try:
@@ -71,7 +69,21 @@ class _LockContext(ContextDecorator):
     def __exit__(self, _type, error, _traceback) -> bool:
         self.lock_file.unlink(missing_ok=True)
 
-        if error is not None:
-            print(f"{type(error).__name__}[{error}]")
+        if error is None:
+            self._debug(f"End   : {time.monotonic()}")
+        else:
+            self._debug(f"{type(error).__name__}[{error}]")
 
         return False
+
+
+if __name__ == "__main__":
+    #
+    #  LINE: -- Examples -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    class _PathG:
+        lock = Lock
+
+    with _PathG.lock(Path.cwd() / "my_file.md") as path:
+        print(f"Inside: {time.monotonic()}")
+        print(path)

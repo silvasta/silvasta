@@ -8,6 +8,9 @@ File System Operations (Atomic & SafeFunctor-backed)
                          DependencyLevel.sstcore.util.path.guard[3]
 """
 
+# IMPORTANT: compare this with Functor and the existing ._operate
+# TASK: find solution that combines best of both!!!
+
 __all__: list[str] = [
     "TransferStrategy",
     "check_sync_mode",
@@ -85,9 +88,6 @@ class TransferStrategy(SafeFunctor[[Path, Path], Path]):
     """
 
     policy = PolicyField(ErrorPolicy.RE_RAISE)
-    check_sync_mode: Callable = staticmethod(
-        check_sync_mode  # NOTE: Check MatchingField
-    )
 
     def __init__(
         self,
@@ -96,7 +96,7 @@ class TransferStrategy(SafeFunctor[[Path, Path], Path]):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        # NEXT: check if that is not complete beside the Functor concept
+        # NEXT: check if that is not completely away from the Functor concept
         self.override_func: Callable[[Path, Path], Path] | None = override_func
 
     def _atomic_override(self, source: Path, target: Path) -> Path:
@@ -120,6 +120,7 @@ class TransferStrategy(SafeFunctor[[Path, Path], Path]):
                 logger.warning(f"Overriding existing Path at {target=}")
             return self._atomic_override(source, target)
 
+        # NEXT: why is this specific logic here in the base???
         for candidate in _increment.iter_unique_candidates(
             target, include_base=True
         ):

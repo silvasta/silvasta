@@ -21,7 +21,7 @@ from ._arg import PathArg, ResolvedPath, castpath
 @castpath
 def relative_main(
     target: ResolvedPath,
-    root: ResolvedPath | None = None,
+    root: ResolvedPath | None = None,  # FIX: castpath->CWD!!
     strict: bool = True,
 ) -> Path:
     """
@@ -29,6 +29,7 @@ def relative_main(
 
     - If not strict: walking as well upwards
     """
+    root: Path = root or Path.cwd()
 
     if not strict:
         return Path(os.path.relpath(target, root))

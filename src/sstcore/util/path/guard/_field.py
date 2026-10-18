@@ -4,6 +4,12 @@ Mound Magic Fields to PathGuard for Hybrid Usage
                          DependencyLevel.sstcore.util.path.guard[2]
 """
 
+# STRATEGY: think about when to use which approach
+# - regular decorator
+# - field, how to mount?
+# - where is the spec defined?
+# NEXT: check how to use and prepara a few examples
+
 __all__: list[str] = [
     "PathGuardField",
     "DirField",
@@ -29,9 +35,6 @@ from . import _ensure, _increment
 from ._arg import PathArg, PathInput, PathSpec
 
 type PathStrategy = Callable[..., Path]
-
-
-# NEXT: check how to use and prepara a few examples
 
 
 @portlink(attach.ReadDescriptor)

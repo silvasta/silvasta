@@ -9,6 +9,9 @@ File System Operations
 
 # IMPORTANT: Ensure PathArg is annotated for any Path in .__init__.pyi
 
+# NEXT: create tests for this!
+# - when everything works, run _atomic on them
+
 __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
     "TransferStrategy",
     "check_sync_mode",
@@ -24,7 +27,6 @@ __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
     "prune",
 ]
 
-from collections.abc import Callable
 from pathlib import Path
 
 from loguru import logger
@@ -33,6 +35,7 @@ from ....brick.field import PolicyField
 from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
+from ....forge.func._tor import FunctorInput
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
 from . import _ensure, _increment
@@ -59,7 +62,10 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
 #  LINE: -- Functors -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class TransferStrategy(SafeFunctor[[Path, Path], Path]):
+class TransferStrategy(
+    SafeFunctor[[Path, Path], Path],
+    data=FunctorInput,  # TODO: handle by Base!
+):
     """Execute Transfer Operation in Safe Environment"""
 
     policy = PolicyField(ErrorPolicy.RE_RAISE)
@@ -68,14 +74,15 @@ class TransferStrategy(SafeFunctor[[Path, Path], Path]):
         kwargs.setdefault("error_policy", ErrorPolicy.RE_RAISE)
         super().__init__(**kwargs)
 
-    check_sync_mode: Callable = staticmethod(check_sync_mode)
-
     def synced(self, source: Path, target: Path, mode: SyncMode) -> Path:
         """Apply SyncMode and Transfer Source to confirmed Target"""
         return self(source, check_sync_mode(target, mode))
 
 
-class DeleteStrategy(SafeFunctor[[Path], bool]):
+class DeleteStrategy(
+    SafeFunctor[[Path], bool],
+    data=FunctorInput,  # TODO: handle by Base!
+):
     """Execute Delete Operation in Safe Environment"""
 
     def on_error(self, error: Exception, target: PathArg) -> bool:
@@ -149,18 +156,18 @@ def _trash(path: Path):
 
 
 Symlink = TransferStrategy(
-    name="PathGuard - Simlink",
+    name="PathGuard::Simlink",
     call=_symlink,
 )
 Copy = TransferStrategy(
-    name="PathGuard - Copy",
+    name="PathGuard::Copy",
     call=_copy,
 )
 Rotate: TransferStrategy = TransferStrategy(
-    name="PathGuard - Rotate", call=_rotate
+    name="PathGuard::Rotate", call=_rotate
 )
 Hardlink = TransferStrategy(
-    name="PathGuard - Hardlink",
+    name="PathGuard::Hardlink",
     call=_hardlink,
     catch=_handle_hardlink,
 )
@@ -170,11 +177,11 @@ Hardlink = TransferStrategy(
 
 
 Remove = DeleteStrategy(
-    name="PathGuard - Remove",
+    name="PathGuard::Remove",
     call=_remove,
 )
 Trash = DeleteStrategy(
-    name="PathGuard - Trash",
+    name="PathGuard::Trash",
     call=_trash,
 )
 
@@ -235,16 +242,19 @@ def hardlink(
 #  INFO: -- delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+@castpath
 def remove(target: TargetPath) -> bool:
     """Remove file or folder at target location"""
     return Remove(target)
 
 
+@castpath
 def trash(target: TargetPath) -> bool:
     """Move file or folder at target location to system trash"""
     return Trash(target)
 
 
+@castpath
 def prune(
     base_target: TargetPath, remaining: int = 5, *, use_trash: bool = False
 ) -> list[Path]:

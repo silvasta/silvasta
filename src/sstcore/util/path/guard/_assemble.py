@@ -4,6 +4,8 @@ Assemble all Tools to PathGuard
                          DependencyLevel.sstcore.util.path.guard[4]
 """
 
+from pathlib import Path
+
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
@@ -26,7 +28,7 @@ PathGuardMetaInput = StaticFuncMetaData(
     name=lambda cls: f" {clsname(cls)} ",
     rich=f"{colors.azure('Path')}{colors.teal('Guard')}",
     cli="Safety and Comfort for Path and File System operations",
-    # LATER: split by CamelCase (and then colorize)
+    # LATER: split by PascalCase (and then colorize)
     color=2,
 )
 
@@ -54,7 +56,7 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     unique: Callable = _ensure.unique
     find_sequence: Callable = _increment.find_sequence
 
-    lock: Callable = _lock.lock
+    Lock = _lock.Lock
 
     Dir = _field.Dir
     Fil = _field.File
@@ -80,3 +82,35 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     relative_duo: Callable = _relative.relative_duo
     relative_string: Callable = _relative.relative_string
     split: Callable = _relative.split
+
+
+if __name__ == "__main__":
+    # from typing import reveal_type
+    # from rich import print
+    #  LINE: -- Examples -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    @PathGuard.dir
+    def _my_dir() -> Path:
+        result = Path.cwd() / "experiments"
+        # reveal_type(result)
+        return result
+
+    @PathGuard.file(default_content="", raise_error=False)
+    def _my_file() -> Path:
+        result = _my_dir() / "my_file.md"
+        # reveal_type(result)
+        return result
+
+    @PathGuard.unique
+    def _my_unique() -> Path:
+        result = _my_dir() / "my_file.md"
+        # reveal_type(result)
+        return result
+
+    _unique = _my_unique()
+    print(_unique)
+
+    _relative = PathGuard.relative(_unique)
+    print(_relative)
+
+    PathGuard.remove(_my_file())
