@@ -12,6 +12,8 @@ __all__: list[str] = [
     "DictVault",
 ]
 
+# FIX: Vault BROKEN!!!
+# FIX: Vault BROKEN!!!
 
 from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, cast
@@ -99,5 +101,5 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
         return {k: v for k, v in self.vault.items() if fn(v)}
 
 
-@portlink(DictRegister)
+@portlink(DictRegister)  # ty:ignore
 class DictVault[Item, K](Mapped[Item, K]): ...

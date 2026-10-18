@@ -10,7 +10,8 @@ Things to keep in mind:
 - everything stands and falls with the synchronization
 """
 
-from ....port.color import ColorHub, ColorId, Painter, Stringable
+from ....port.color import ColorHub, ColorId, Painter
+from ....port.represent import Stringable
 from ._paint import Paint
 
 class Colors:

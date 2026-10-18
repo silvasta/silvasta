@@ -24,6 +24,9 @@ class Colors:
     def __init__(self, manager: ColorHub | None = None) -> None:
         self._hub: ColorHub = manager or ColorManager.boot()
 
+    def debug(self):
+        self._hub.debug()  # ty: ignore[unresolved-attribute]
+
     @property
     def hub(self) -> ColorHub:
         return self._hub
@@ -36,8 +39,8 @@ class Colors:
         if color := SHORTCUTS.get(name):
             return self.paint(color)
 
-        if name in Color:
-            return self.paint(name)
+        if color := Color.resolve(name):
+            return self.paint(color)
 
         raise AttributeError(f"{self} Missing Attribute: '{name}'!")
 

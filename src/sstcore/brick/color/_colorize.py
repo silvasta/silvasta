@@ -31,8 +31,6 @@ from .box import Colors
 
 colors = Colors()
 
-_x: list[Any] = reflect.dict.full(colors)
-
 
 @castarg
 def modules(

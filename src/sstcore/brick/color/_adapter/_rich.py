@@ -4,6 +4,8 @@ Adapt Rich Colors and Styles to the ColorGrid
 -
 """
 
+from rich.console import Console
+
 __all__: list[str] = [
     "RichPalette",
     "apply_rich",
@@ -13,9 +15,10 @@ __all__: list[str] = [
 
 from enum import auto
 
-from ....port.calling import Stringable
 from ....port.color import Adapter, ColorData, Palette
 from ._base import ColorBlock, PaletteDTO
+
+console = Console()
 
 
 class RichPalette(Palette):
@@ -34,17 +37,36 @@ class RichPalette(Palette):
         return Adapter.ANSI
 
 
-def apply_rich(text, color: Stringable = "", *modifier: Stringable):
-    return rich_markup(text, rich_style(modifier, color))
+def printing(func):
+    def wrapper(*args, **kwargs):
+        # result = func(*args, **kwargs)
+        # print()
+        # print(*args, **kwargs)
+        # print(func.__name__, "_", result)
+        # console.print(func.__name__, "_", result)
+        # # input()
+        # print()
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
-def rich_markup(text: Stringable, style: Stringable = "bold"):
+@printing
+def apply_rich(text, color: str = "", *modifier: str):
+    return rich_markup(text, rich_style(color, *modifier))
+
+
+@printing
+def rich_markup(text: str, style: str = "bold"):
     return f"[{style}]{text}[/]" if style else text
 
 
-def rich_style(color: Stringable, *modifier: Stringable):
+@printing
+def rich_style(color: str, *modifier: str):
     # LATER: handle background etc...
-    return " ".join([str(m) for m in modifier] + [str(color)]).strip()
+    # x =
+    # print(f"{x=}")
+    return " ".join([*modifier, color]).strip()
 
 
 RICH1 = ColorBlock(
@@ -61,3 +83,6 @@ RICH1 = ColorBlock(
     carbon="grey30",
     black_="black",
 )
+
+if __name__ == "__main__":
+    print(apply_rich("test rich", "cyan"))

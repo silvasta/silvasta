@@ -10,6 +10,9 @@ __all__: list[str] = [
     "TupleVault",
 ]
 
+# FIX: Vault BROKEN!!!
+# FIX: Vault BROKEN!!!
+# FIX: Vault BROKEN!!!
 
 from collections.abc import Iterable, Iterator, Sequence
 from typing import Any
@@ -90,13 +93,13 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
         return self._ctor(x for x in self._iter_items() if fn(x))
 
 
-@portlink(ListRegister)
+@portlink(ListRegister)  # ty:ignore
 class ListVault[Item](Sequential[Item, list[Item]]):
     def _ctor(self, items: Iterable[Item]) -> list[Item]:
         return list(items)
 
 
-@portlink(TupleRegister)
+@portlink(TupleRegister)  # ty:ignore
 class TupleVault[Item](Sequential[Item, tuple[Item, ...]]):
     def _ctor(self, items: Iterable[Item]) -> tuple[Item, ...]:
         return tuple(items)

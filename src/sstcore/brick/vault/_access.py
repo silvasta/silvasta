@@ -88,4 +88,9 @@ class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
 
 class VaultAccess[Item, V: _r.Vault](
     VaultWriter[Item, V], VaultReader[Item, V]
-): ...
+):
+    def __str__(self):
+        return f"{type(self).__name__}[{len(self.vault)}]"
+
+    def __repr__(self):
+        return f"{self}[{self.vault}]"

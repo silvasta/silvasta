@@ -6,6 +6,8 @@ Color Factory
 
 """
 
+from rich import print
+
 __all__: list[str] = [
     "PaintMill",
     "Paint",
@@ -13,7 +15,6 @@ __all__: list[str] = [
 
 from typing import ClassVar
 
-from ....port.calling import Stringable
 from ....port.color import (
     Color,
     ColorData,
@@ -25,6 +26,7 @@ from ....port.color import (
     Palette,
 )
 from ....port.link import portlink
+from ....port.represent import Stringable
 from ...vault import TupleVault
 
 
@@ -41,28 +43,49 @@ class Paint(str):
         self.color: Color = color
         self._paint: Colorizing = paint
 
-        print(f"Created: str({self}) repr({self!r})")  # REMOVE: after debug
+        # TARGET:
+        # print(f"[{self}]Created[/]::{self!r}")  # REMOVE: after debug
+        # TARGET:
 
     def __repr__(self) -> str:
-        return f"{self}[{self.color!r}]"
+        return f"{type(self).__name__}[{self}][{self._paint('painted')}]"
 
     def __call__(self, text: Stringable, /) -> str:
         return self._paint(text)
 
 
-@portlink(ColorSchema)
+@portlink(ColorSchema)  # ty:ignore
 class ColorPalette:
     colors: TupleVault[str]
     paints: TupleVault[Painter]  # LATER: ReadOnlyField?
+
+    def __str__(self):
+        return f"{type(self).__name__}"
+
+    def __repr__(self):
+        return f"{self}[({self.colors!r},{self.colors!r})]"
 
     def __init__(self, data: ColorData):
         """Prepare Painters with Lookups"""
         self.func: Coloring = data.func
         self.colors: TupleVault[str] = TupleVault(data.colors)
+
+        # TARGET:
+        # print("[bold red]Colors[/]")
+        # for c in self.colors:
+        #     print(f"[{c}]{self} loaded: {c}[/]")
+        # TARGET:
+
         self.paints: TupleVault[Painter] = TupleVault(
             Paint(color, paint=self.mount(color.value))  #
             for color in Color
         )
+
+        # TARGET:
+        # print("[bold blue]Paints[/]")
+        # for p in self.paints:
+        #     print(p(f"paint ready: {p!r}"))
+        # TARGET:
 
     def mount(self, index: int, /) -> Colorizing:
 
@@ -83,10 +106,14 @@ class ColorFactory:
         if palette:
             self.setup(palette)
 
+    def print(self):
+        for k, v in self._cache.items():
+            print(f"{k!r}: {v!r}")
+
     def setup(self, palette: Palette) -> ColorSchema:
         # LATER: exchange theme if palette already in _cache
         if palette not in self._cache:
-            self._cache[palette] = ColorPalette(palette.data())
+            self._cache[palette] = ColorPalette(palette.data())  # ty:ignore
         return self._cache[palette]
 
     def paint(self, color: Color, palette) -> Painter:

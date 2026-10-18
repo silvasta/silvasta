@@ -31,6 +31,15 @@ class ColorManager:
         self._palette: Palette = palette
         self._factory.setup(self._palette)
 
+    def __str__(self):
+        return f"{type(self).__name__}[{self.active}]"
+
+    def __repr__(self):
+        return f"{self}[{self._factory}]"
+
+    def debug(self):
+        self._factory.debug()  # ty: ignore[unresolved-attribute]
+
     @property
     def active(self) -> Palette:  # LATER: directly access self.palette
         return self._palette

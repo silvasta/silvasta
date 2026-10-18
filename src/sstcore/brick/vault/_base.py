@@ -19,13 +19,16 @@ from ...port.register import registry_types as _reg
 from ..field import PolicyField
 from ._access import VaultAccess
 
+# FIX: Vault BROKEN!!!
+# FIX: Vault BROKEN!!!
 
-@portlink(Register)
+
+@portlink(Register)  # ty:ignore
 class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
     """Establish the port definition for further specification"""
 
     policy: PolicyField[VaultPolicy] = PolicyField(VaultPolicy)
-    ident: StrategyField[[Item], Hashable] = StrategyField(lambda item: item)
+    ident: StrategyField[[Item], Hashable] = StrategyField(lambda item: item)  # ty:ignore
 
     def __init__(
         self,
@@ -40,6 +43,11 @@ class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
         if policy is not None:
             self.policy: VaultPolicy = policy
         self.vault: V = self._as_vault(initial)
+
+        # TARGET:
+        # print(f"End of Init: {self}")
+        # print(self.vault)
+        # TARGET:
 
     def add(self, data: Item | V) -> V:
         incoming: V = self._as_vault(data)

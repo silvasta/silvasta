@@ -12,8 +12,8 @@ __all__: list[str] = [
 
 from enum import auto
 
-from ....port.calling import Stringable
 from ....port.color import ColorData, Palette
+from ....port.represent import Stringable
 from ._base import ColorBlock, PaletteDTO
 
 
