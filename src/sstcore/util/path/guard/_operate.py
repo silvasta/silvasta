@@ -29,12 +29,13 @@ from pathlib import Path
 
 from loguru import logger
 
+from ....brick.field import PolicyField
 from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
-from . import _ensure
+from . import _ensure, _increment
 from ._arg import PathArg, ResolvedSource, SourcePath, TargetPath, castpath
 
 
@@ -49,7 +50,7 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
             return target
 
         case SyncMode.INCREMENT:
-            return _ensure._unique_candidate(path=target, ensure_parent=True)
+            return _increment.unique_candidate(path=target, ensure_parent=True)
 
         case SyncMode.IGNORE:
             raise PathGuardError(PathGuardReason.SYNC, target=target)
@@ -60,6 +61,8 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
 
 class TransferStrategy(SafeFunctor[[Path, Path], Path]):
     """Execute Transfer Operation in Safe Environment"""
+
+    policy = PolicyField(ErrorPolicy.RE_RAISE)
 
     def __init__(self, **kwargs):
         kwargs.setdefault("error_policy", ErrorPolicy.RE_RAISE)
@@ -147,18 +150,18 @@ def _trash(path: Path):
 
 Symlink = TransferStrategy(
     name="PathGuard - Simlink",
-    func=_symlink,
+    call=_symlink,
 )
 Copy = TransferStrategy(
     name="PathGuard - Copy",
-    func=_copy,
+    call=_copy,
 )
 Rotate: TransferStrategy = TransferStrategy(
-    name="PathGuard - Rotate", func=_rotate
+    name="PathGuard - Rotate", call=_rotate
 )
 Hardlink = TransferStrategy(
     name="PathGuard - Hardlink",
-    func=_hardlink,
+    call=_hardlink,
     catch=_handle_hardlink,
 )
 
@@ -168,11 +171,11 @@ Hardlink = TransferStrategy(
 
 Remove = DeleteStrategy(
     name="PathGuard - Remove",
-    func=_remove,
+    call=_remove,
 )
 Trash = DeleteStrategy(
     name="PathGuard - Trash",
-    func=_trash,
+    call=_trash,
 )
 
 
@@ -211,6 +214,7 @@ def copy(
     return Copy.synced(source, target, mode=mode)
 
 
+@castpath
 def symlink(
     source: ResolvedSource,
     target: TargetPath,
@@ -219,6 +223,7 @@ def symlink(
     return Symlink.synced(source, target, mode=mode)
 
 
+@castpath
 def hardlink(
     source: SourcePath,
     target: TargetPath,
@@ -245,10 +250,7 @@ def prune(
 ) -> list[Path]:
     """Prune files of incremental PathName Sequence until remaining"""
 
-    # AI_TASK: sync with find_sequence/_unique_candidate
-    # - probably all in the same module
-
-    if len(sequence := _ensure.find_sequence(base_target)) <= remaining:
+    if len(sequence := _increment.find_sequence(base_target)) <= remaining:
         return []
 
     _prune_strategy = trash if use_trash else remove

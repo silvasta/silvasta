@@ -83,3 +83,4 @@ class PathGuardReason(StrEnum):
     RELATIVE = "No Relative connection inside FileTree"
 
     DECORATOR = "Target Invalid for Hybrid-Decorator"
+    LOCK = "Not able to open File in given Time..."

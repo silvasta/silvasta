@@ -5,6 +5,7 @@ Calculate Relative Paths and produce renderable Strings
 """
 
 import functools
+import os
 from pathlib import Path
 
 from loguru import logger
@@ -14,25 +15,25 @@ from ....error import (
     PathGuardError,
     PathGuardReason,
 )
-from ._arg import PathArg, PathSpec
+from ._arg import PathArg, ResolvedPath, castpath
 
 
+@castpath
 def relative_main(
-    target: PathArg, root: PathArg | None = None, strict: bool = True
+    target: ResolvedPath,
+    root: ResolvedPath | None = None,
+    strict: bool = True,
 ) -> Path:
-    """Find Relative Path starting at Root (or CWD) downwards to Target"""
+    """
+    Find Relative Path starting at Root (or CWD) downwards to Target
 
-    _target = PathSpec.ok(target, resolve=True)
-    _root = PathSpec.ok(root, resolve=True)
+    - If not strict: walking as well upwards
+    """
 
     if not strict:
-        import os
-
-        return Path(os.path.relpath(_target, _root))
-
+        return Path(os.path.relpath(target, root))
     try:
-        return _target.relative_to(_root)
-
+        return target.relative_to(root)
     except ValueError as error:
         raise PathGuardError(
             PathGuardReason.RELATIVE, target=target, root=root, caught=error
@@ -41,26 +42,23 @@ def relative_main(
 
 def relative_string(source: Path, target: Path):  # TODO: PathArg?
     """Search relative Path in both direction and provide any rendering"""
-    relative: Path | None = relative_duo(source, target)
-    relative: Path = relative or relative_main(
+    relative: Path = relative_duo(source, target) or relative_main(
         target=target, root=source, strict=False
     )
     return f"{source.name} -> {relative}"
 
 
+@castpath
 def relative_duo(path1: PathArg, path2: PathArg) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 
-    _path1: Path = PathSpec.ok(path1)
-    _path2: Path = PathSpec.ok(path2)
-
     try:
-        rel21: Path | None = relative_main(_path1, _path2, strict=True)
+        rel21: Path | None = relative_main(path1, path2, strict=True)
     except PathGuardError:
         rel21: Path | None = None
 
     try:
-        rel12: Path | None = relative_main(_path2, _path1, strict=True)
+        rel12: Path | None = relative_main(path2, path1, strict=True)
     except PathGuardError:
         rel12: Path | None = None
 
@@ -69,6 +67,7 @@ def relative_duo(path1: PathArg, path2: PathArg) -> Path | None:
             return None
         case (Path() as _p, None) | (None, Path() as _p):
             return _p
+
     logger.error(f"It happened! How is that possible??\n{rel21=}\n{rel12=}?")
     return None
 

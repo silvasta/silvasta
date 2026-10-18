@@ -25,10 +25,13 @@ from ....brick.field import DeleteField, FieldDecorator, ReadField, ValidField
 from ....port import attach
 from ....port.attach import FieldLoader
 from ....port.link import portlink
-from . import _ensure
+from . import _ensure, _increment
 from ._arg import PathArg, PathInput, PathSpec
 
 type PathStrategy = Callable[..., Path]
+
+
+# NEXT: check how to use and prepara a few examples
 
 
 @portlink(attach.ReadDescriptor)
@@ -128,7 +131,7 @@ class FileField(PathGuardField):
 class UniqueField(PathGuardField):
     """Provide an auto-incremented unique Path when attribute is accessed."""
 
-    logic: PathStrategy = _ensure._unique_candidate
+    logic: PathStrategy = _increment.unique_candidate
 
     def __init__(
         self,

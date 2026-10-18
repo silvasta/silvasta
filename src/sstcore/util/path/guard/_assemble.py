@@ -17,9 +17,8 @@ from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.files import SyncMode
-from . import _ensure, _field, _operate, _relative
+from . import _ensure, _field, _increment, _lock, _operate, _relative
 from ._arg import PathArg, PathSpec
-from ._field import PathGuardField
 
 colors = Colors()
 
@@ -53,11 +52,14 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     dir: Callable = _ensure.dir
     file: Callable = _ensure.file
     unique: Callable = _ensure.unique
-    find_sequence: Callable = _ensure.find_sequence
+    find_sequence: Callable = _increment.find_sequence
 
-    Dir: PathGuardField = _field.Dir
-    File: PathGuardField = _field.File
-    Unique: PathGuardField = _field.Unique
+    lock: Callable = _lock.lock
+
+    Dir = _field.Dir
+    Fil = _field.File
+    Unique = _field.Unique
+    SpecField = _field.SpecField
 
     """Category 2: Perform File Transfer operations with comfort and safety"""
 

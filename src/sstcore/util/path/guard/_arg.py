@@ -14,7 +14,7 @@ __all__: list[str] = [
     "PathCaster",
     "PathCast",
     "castpath",
-    "Opt",
+    "MayBe",
     # annotated
     "TargetPath",
     "SourcePath",
@@ -27,12 +27,12 @@ import typing as _t
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Annotated, Any, Self, TypedDict, Unpack, reveal_type
+from typing import Annotated, Any, Self, TypedDict, Unpack
 
 from ....brick.call import ArgCast, _cast
-from ....brick.none import VOID
 from ....error import PathGuardError, PathGuardReason
-from ....port.casting import ArgCasting, CastInput, CastPlan, Opt
+from ....port.casting import ArgCasting, CastInput, CastPlan, MayBe
+from ....port.empty import VOID
 from ....port.files import SyncMode
 from ....port.link import portlink
 
@@ -79,7 +79,7 @@ class PathSpec:
     @classmethod  # MOVE: to base
     def ok(
         cls,
-        target: Opt[PathArg] = VOID,
+        target: MayBe[PathArg] = VOID,
         /,
         **kwargs: Unpack[PathInput],
     ) -> Path:
@@ -90,7 +90,7 @@ class PathSpec:
     @classmethod
     def normalize(  # MOVE: maybe to base, provide subhooks
         cls,
-        target: Opt[PathArg] = VOID,
+        target: MayBe[PathArg] = VOID,
         /,
         **kwargs: Unpack[PathInput],
     ) -> Self:
@@ -140,30 +140,24 @@ PathArg = str | Path | PathSpec
 @portlink(ArgCasting)
 class PathCaster:
     def __init__(self, **kwargs: Unpack[PathCastInput]):
-        # IDEA: use PathInput and default as kwa
         """Prepare Input for Binding Args"""
         self.default: Any | VOID = kwargs.pop("default", VOID)
         self.kwargs: PathInput = kwargs
 
     def __call__(  # WARN: VOID/None for getting cwd or fail??
         self,
-        target: Opt[PathArg] = VOID,
+        target: MayBe[PathArg] = VOID,
         /,
         *,
-        default: Opt[Path] = VOID,
+        default: MayBe[Path] = VOID,
     ) -> Path:
         # MOVE: base for orchestration?
         """Prepare incoming Args and cast with PathSpec"""
-        if isinstance(default, Path):
-            reveal_type(default)
-        else:
-            reveal_type(default)
-        selected_target: Opt[PathArg] = self.aim(target, default)
-        reveal_type(selected_target)
+        selected_target: MayBe[PathArg] = self.aim(target, default)
         return PathSpec.ok(selected_target, **self.kwargs)
 
     def aim(
-        self, target: Opt[PathArg], default: Opt[Path] = VOID
+        self, target: MayBe[PathArg], default: MayBe[Path] = VOID
     ) -> PathArg | VOID:
         # MOVE: base plus subhooks? or parameter on cls
         """Select Target from incoming target, default or saved default"""
@@ -177,6 +171,7 @@ class PathCaster:
 
 
 class PathCast(ArgCast):
+    # NEXT: test the intersector
     """Specialized ArgCast with its own isolated path_registry and walk_plan."""
 
     def __init__(
