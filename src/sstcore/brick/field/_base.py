@@ -21,8 +21,8 @@ __all__: list[str] = [
 
 from typing import Any, Never, Self, overload
 
-from ...brick.none import UNSET
 from ...port import attach
+from ...port.empty import VOID
 from ...port.link import portlink
 from .. import reflect
 from ._raise import FieldRaiser
@@ -58,7 +58,7 @@ class BaseField(NamedField):
     """Provide Utils for all Fields"""
 
     def __init__(
-        self, *args, default: Any = UNSET, frozen: bool = False, **kwargs
+        self, *args, default: Any = VOID, frozen: bool = False, **kwargs
     ):
         self.default = default
         self.frozen: bool = frozen
@@ -112,7 +112,7 @@ class ReadField[FieldT](BaseField):
 
     def read(self, unit: object) -> FieldT:
         if not self._has_val(unit):
-            if self.default is not UNSET:
+            if self.default is not VOID:
                 return self.default
             raise self.raiser.ReadMissing(self, unit)
         return self._get_val(unit)

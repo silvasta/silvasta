@@ -159,7 +159,7 @@ class BoundStrategy[**In, Out]:
                 message="Morphing forbidden on StrategyField!",  # CHECK:
                 value=new_func,
             )
-        self.engine.write(self.unit, new_func)
+        self.engine.write(self.unit, new_func)  # ty:ignore
         self.func: Callable[Bound, Opened] = new_func
         self.bind = False
         return self

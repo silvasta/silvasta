@@ -16,9 +16,9 @@ __all__: list[str] = [
 from collections.abc import Callable
 
 from ...port import attach
+from ...port.empty import VOID
 from ...port.link import portlink
 from ...port.solid import EnumId, PolicyEnum
-from ..none import UNSET
 from ._base import ReadField
 from ._extend import TypedField
 
@@ -33,7 +33,7 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         policy: type[EnumT] | EnumT,
         /,
         *args,
-        default: PolicyEnum | UNSET = UNSET,
+        default: PolicyEnum | VOID = VOID,
         **kwargs,
     ):
         match PolicyEnum.membership(policy):
@@ -46,13 +46,13 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
                 )
             case (enum_cls,):
                 self.enum_type: type[EnumT] = enum_cls
-                _extracted_default = self.enum_type.resolve(0, default=UNSET)
+                _extracted_default = self.enum_type.resolve(0, default=VOID)
 
             case (enum_cls, enum_unit):
                 self.enum_type: type[EnumT] = enum_cls
                 _extracted_default = enum_unit
 
-        if default is UNSET and _extracted_default is not UNSET:
+        if default is VOID and _extracted_default is not VOID:
             default: EnumT = _extracted_default  # UnboundError impossible?
 
         super().__init__(

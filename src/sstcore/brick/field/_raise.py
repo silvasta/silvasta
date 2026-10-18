@@ -27,9 +27,9 @@ from dataclasses import dataclass
 from enum import auto
 from typing import Any, Protocol, Unpack
 
-from ...brick.none._sentinel import UNSET
 from ...port import raising
 from ...port.attach import Descriptor
+from ...port.empty import VOID, MayBe
 from ...port.raising import Raiser
 from ..reflect import clsname
 
@@ -42,13 +42,13 @@ class FieldError(raising.SstCoreError):
         message: str,
         field: Descriptor | None = None,
         *args,
-        panic: FieldRaiser | UNSET = UNSET,
+        panic: MayBe[FieldRaiser] = VOID,
         **kwargs: Unpack[FieldErrorInput],
     ):
         self.message: str = message
         self.field: Descriptor | None = field
         self.kwargs: FieldErrorInput = kwargs
-        self.panic: FieldRaiser | UNSET = panic
+        self.panic: MayBe[FieldRaiser] = panic
         super().__init__(*args)
 
 
@@ -56,7 +56,7 @@ class FieldErrorInput[UnitT: Any](raising.ErrorInput, total=False):
     """Define the Kwarg Space of the Error pipeline"""
 
     owner: type | None
-    value: UnitT | UNSET
+    value: UnitT | VOID
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -66,9 +66,9 @@ class FieldErrorSpec[UnitT](raising.ErrorSpec):
     __pos_fields__ = ("field", "unit")
 
     field: Descriptor | None = None
-    unit: UnitT | UNSET = UNSET
+    unit: UnitT | VOID = VOID
     owner: type | None = None
-    value: Any | UNSET = UNSET
+    value: Any | VOID = VOID
 
     def attr(self) -> Any | None:
         return None if self.field is None else self.field.public_name
@@ -76,12 +76,12 @@ class FieldErrorSpec[UnitT](raising.ErrorSpec):
     def __str__(self) -> str:
         """Find best Combination of available Nameable parts"""
         if self.field is not None:
-            if self.unit is not UNSET:
+            if self.unit is not VOID:
                 return self.field.name(self.unit)
             if self.owner is not None:
                 return self.field.name(self.owner)
             return f"{self.field}"
-        if self.unit is not UNSET:
+        if self.unit is not VOID:
             return f"{type(self.unit).__name__}[{self.unit}]"
         if self.owner is not None:
             return f"{self.owner.__name__}[...]"
@@ -95,7 +95,7 @@ class FieldRaiseCall(Protocol):
     def __call__(
         self,
         field: Descriptor | None = None,
-        unit: Any | UNSET = UNSET,
+        unit: Any | VOID = VOID,
         /,
         *args: Any,
         **kwargs: Unpack[FieldErrorInput],
@@ -160,7 +160,7 @@ class FieldRaiser(Raiser, zero=True):
             f"Expected Fieldraising.ErrorSpec, got {type(data)}"
         )
         field: Descriptor | None = data.field
-        value: Any | UNSET = data.value
+        value: Any | VOID = data.value
 
         match self:
             case FieldRaiser.Zero:
@@ -176,7 +176,7 @@ class FieldRaiser(Raiser, zero=True):
                 return f"{data}: {self.name} is not Writable! rejected={value}"
 
             case FieldRaiser.Validation:  # TODO: this, and all others
-                received: str = "UNSET" if value is UNSET else clsname(value)
+                received: str = "VOID" if value is VOID else clsname(value)
                 return f"{data}: expected {value=}, got {received=}"
 
             case FieldRaiser.Function:
