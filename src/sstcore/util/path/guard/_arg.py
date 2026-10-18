@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Annotated, Any, Self, TypedDict, Unpack, reveal_type
 
 from ....brick.call import ArgCast, _cast
-from ....brick.none import UNSET
+from ....brick.none import VOID
 from ....error import PathGuardError, PathGuardReason
 from ....port.casting import ArgCasting, CastInput, CastPlan, Opt
 from ....port.files import SyncMode
@@ -79,7 +79,7 @@ class PathSpec:
     @classmethod  # MOVE: to base
     def ok(
         cls,
-        target: Opt[PathArg] = UNSET,
+        target: Opt[PathArg] = VOID,
         /,
         **kwargs: Unpack[PathInput],
     ) -> Path:
@@ -90,7 +90,7 @@ class PathSpec:
     @classmethod
     def normalize(  # MOVE: maybe to base, provide subhooks
         cls,
-        target: Opt[PathArg] = UNSET,
+        target: Opt[PathArg] = VOID,
         /,
         **kwargs: Unpack[PathInput],
     ) -> Self:
@@ -101,7 +101,7 @@ class PathSpec:
         - kwargs override incoming PathSpec
 
         """
-        if target is UNSET:
+        if target is VOID:
             # FIX: which?? return cls(target=Path.cwd(), **kwargs)
             raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
 
@@ -112,7 +112,7 @@ class PathSpec:
                 return cls(target, **kwargs)
             case str():
                 return cls(target=Path(target), **kwargs)
-            # case UNSET:
+            # case VOID:
             #     return cls(target=Path.cwd(), **kwargs)
 
         raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
@@ -142,15 +142,15 @@ class PathCaster:
     def __init__(self, **kwargs: Unpack[PathCastInput]):
         # IDEA: use PathInput and default as kwa
         """Prepare Input for Binding Args"""
-        self.default: Any | UNSET = kwargs.pop("default", UNSET)
+        self.default: Any | VOID = kwargs.pop("default", VOID)
         self.kwargs: PathInput = kwargs
 
-    def __call__(  # WARN: UNSET/None for getting cwd or fail??
+    def __call__(  # WARN: VOID/None for getting cwd or fail??
         self,
-        target: Opt[PathArg] = UNSET,
+        target: Opt[PathArg] = VOID,
         /,
         *,
-        default: Opt[Path] = UNSET,
+        default: Opt[Path] = VOID,
     ) -> Path:
         # MOVE: base for orchestration?
         """Prepare incoming Args and cast with PathSpec"""
@@ -163,17 +163,17 @@ class PathCaster:
         return PathSpec.ok(selected_target, **self.kwargs)
 
     def aim(
-        self, target: Opt[PathArg], default: Opt[Path] = UNSET
-    ) -> PathArg | UNSET:
+        self, target: Opt[PathArg], default: Opt[Path] = VOID
+    ) -> PathArg | VOID:
         # MOVE: base plus subhooks? or parameter on cls
         """Select Target from incoming target, default or saved default"""
-        if target is UNSET:
-            if default is UNSET:
+        if target is VOID:
+            if default is VOID:
                 return self.default
             return default
         if isinstance(target, PathArg):
             return target
-        return UNSET
+        return VOID
 
 
 class PathCast(ArgCast):

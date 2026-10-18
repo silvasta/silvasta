@@ -18,8 +18,8 @@ from ....error import PathGuardError, PathGuardReason
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.files import SyncMode
 from . import _ensure, _field, _operate, _relative
+from ._arg import PathArg, PathSpec
 from ._field import PathGuardField
-from ._input import PathArg, PathSpec
 
 colors = Colors()
 

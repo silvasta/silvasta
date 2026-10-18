@@ -14,7 +14,7 @@ from ....error import (
     PathGuardError,
     PathGuardReason,
 )
-from ._input import PathArg, PathSpec
+from ._arg import PathArg, PathSpec
 
 
 def relative_main(

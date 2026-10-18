@@ -41,7 +41,7 @@ def dir[**P](
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     if isinstance(target, (Path, str, PathSpec)):
-        return _dir_logic(target)  # ty:ignore
+        return _dir_logic(target)
 
     if callable(target):
         func: Callable[P, Path] = target
@@ -97,7 +97,7 @@ def file[**P](
     """Ensure path is file or write default content and | or Raise"""
 
     if isinstance(target, (Path, str, PathSpec)):
-        return _file_logic(target, raise_error, default_content)  # ty:ignore
+        return _file_logic(target, raise_error, default_content)
 
     if callable(target):
         func: Callable[P, Path] = target

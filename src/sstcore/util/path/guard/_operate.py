@@ -35,7 +35,7 @@ from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
 from . import _ensure
-from ._input import PathArg, ResolvedSource, SourcePath, TargetPath, castpath
+from ._arg import PathArg, ResolvedSource, SourcePath, TargetPath, castpath
 
 
 def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
