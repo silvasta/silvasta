@@ -11,7 +11,7 @@ __all__: list[str] = [
     #
     "PortLinker",
     "DocMerger",
-    "PortEmit",  # REMOVE: ??
+    "PortEmit",
     "Reflecting",
     "Injecting",
     "Collecting",
@@ -20,7 +20,8 @@ __all__: list[str] = [
 from dataclasses import dataclass, replace
 from typing import Any, Generic, Protocol, Self, get_protocol_members
 
-from .._debug import PortEmit, tap
+from .._data import PortEmit
+from .._debug import tap
 from ._model import Docs, PortLinks
 
 

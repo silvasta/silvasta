@@ -5,10 +5,6 @@ Minimal Inner-Core Debug Engine (DependencyLevel[0])
 - Zero runtime overhead when disabled (resolves at import time)
 - Lazy rich / loguru binding to prevent circular imports in port/brick/forge
 
-
-1-PLACE MANUAL TOGGLE:
-
-Examples:
   ""                   -> Completely OFF (zero runtime overhead)
   "*"                  -> Everything ON (excluding 'link' unless specified)
   "color,vault"        -> Only modules/classes matching 'color' or 'vault'
@@ -23,58 +19,20 @@ __all__: list[str] = [
 ]
 
 
-import os
 from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Any, Protocol, overload
+from typing import Any, overload
 
-
-class Channels(frozenset):
-    """Guard the active Channels and Rules for Matching"""
-
-    def __new__(cls, env_var="SST_DEBUG", default=()):
-        env = (*os.getenv(env_var, "").split(","), *default)
-        return super().__new__(cls, (c for e in env if (c := cls.format(e))))
-
-    @classmethod
-    def format(cls, target: str, /) -> str:
-        return target.strip().lower()
-
-    def has(self, flag: str, /) -> bool:
-        """Check formatted flag directly (bypass wildcard/substring match)"""
-        return super().__contains__(self.format(flag))
-
-    def __contains__(self, target: Any) -> bool:
-        """Check if the target matches an active channel"""
-
-        if not self or not isinstance(target, str):
-            return False
-
-        low = self.format(target)
-
-        if "port.link" in low and not self.has("link"):
-            return False
-
-        if self.has("*"):
-            return True
-
-        return any(scope in low for scope in super().__iter__())
-
+from ._data import Channels, PortEmit
 
 TOGGLE: tuple[str, ...] = (
     "color",
     "vault",
     "init",
 )
-
 CHANNELS = Channels(env_var="SST_DEBUG", default=TOGGLE)
 
-INIT = ("__post_init__", "__init__")  # prefer __post_init__ if exists
-
-
-class PortEmit[**P](Protocol):
-    def __call__(self, *args, sender: Any = None, **kwargs) -> None:
-        """Define the message structure of port internal events"""
+INIT = ("__post_init__", "__init__")
 
 
 class Tap:
@@ -207,7 +165,7 @@ def _dict_hits(cls: type, *attrs: str, init: bool = False) -> list[Callable]:
     """Extract matching callables present directly in cls.__dict__."""
     methods: list = [cls.__dict__[a] for a in attrs if a in cls.__dict__]
     if init and (_init := _dict_hits(cls, *INIT, init=False)):
-        return _init[:1] + methods
+        return _init[:1] + methods  # prefer __post_init__ if exists
     return methods
 
 

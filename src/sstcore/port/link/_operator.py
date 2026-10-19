@@ -29,6 +29,7 @@ from inspect import cleandoc as _cleandoc
 from types import SimpleNamespace
 from typing import Any, Literal, Self
 
+from .._data import DunderSet, DunderStore
 from .._raise import LinkRaiser
 from ..raising import SstCoreError
 from ._define import (
@@ -39,7 +40,6 @@ from ._define import (
     PortLinks,
     Reflecting,
 )
-from ._dunder import DunderSet, DunderStore
 from ._model import SidePolicy
 
 
