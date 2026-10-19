@@ -43,23 +43,18 @@ from ._dunder import DunderSet, DunderStore
 from ._model import SidePolicy
 
 
-class EasyNote(SimpleNamespace):
+class EasyNote(SimpleNamespace):  # NEXT: SimpleNamespace why (not) drop?
     """Stable Base for all Easy Member"""
 
-    _emit: Callable | None = None
+    spec: LinkSpec
 
-    def emit(self, *args, **kwargs):  # TODO: check wiring
-        (self._emit or self.port_emit)(*args, sender=self, **kwargs)
+    def emit(self, *args, **kwargs):
+        self.spec.note(*args, sender=self, **kwargs)
 
-    @staticmethod
-    def port_emit(*_args, **kwargs):  # TODO: simple logger
-        _sender = kwargs.pop("sender", None)
-        # print(f"{_sender=}", *_args, **kwargs)  # PARAM: debug toggle
-        pass
+    # LATER: log/print/help() mainly for ._render from tap
 
     def __str__(self):
-        todo = "TODO"
-        return f"{type(self).__name__}[{todo}]"
+        return f"{type(self).__name__}"
 
 
 class EasyCore[Core: Callable](SimpleNamespace):
@@ -80,23 +75,19 @@ class EasyCore[Core: Callable](SimpleNamespace):
 class EasyBase[Core: Callable](EasyCore, EasyNote):
     """Mixed Base for all Easy Member"""
 
-    _registry: dict[int, type[Self]] = {}
+    _registry: dict[str, type[Self]] = {}
 
-    # FIX: replace id again by str, or some Literal/Enum
-    def __init_subclass__(cls, id: int, art: str, **kwargs):
+    def __init_subclass__(cls, id: str, **kwargs):
         super().__init_subclass__(**kwargs)
-        if not id:
-            cls.port_emit(f"{cls.__name__}: Ignored...")
-        elif id in cls._registry:
+        if id in cls._registry:
             raise LinkRaiser.PipeLine(
                 f"Duplicated {cls}[{id}]", id=id, state=cls._registry
             )
         else:
             cls._registry[id] = cls
-            cls.port_emit(f"{cls.__name__}: Registered: {id}")
 
 
-class EasyCatch(EasyBase, id=0, art="D"):
+class EasyCatch(EasyBase, id="catch"):
     emit: PortEmit
 
     def __core__(self, *args, **kwargs):  # TODO: sync with strategy!
@@ -130,7 +121,7 @@ class EasyCatch(EasyBase, id=0, art="D"):
         return True  # PARAM: Error Handling
 
 
-class PortOperator[Core: Callable](EasyCatch, EasyBase, id=1, art="C"):
+class PortOperator[Core: Callable](EasyCatch, EasyBase, id="op"):
     """Mixed Base for all Easy Member"""
 
     @property
@@ -143,25 +134,25 @@ class Spawner:
 
     operators: frozenset[str] = frozenset({"reflect", "collect", "inject"})
 
-    def __init__(self, registry: dict[int, Any]):
+    def __init__(self, registry: dict[str, Any]):
         if missing := self.operators - registry.keys():
             raise RuntimeError(f"Missing Operators! [{missing}]({registry=})")
-        self._registry: dict[int, Any] = registry
+        self._registry: dict[str, Any] = registry
 
     @property
     def inject(self) -> type[Inject]:
-        return self._registry[3]
+        return self._registry["reflect"]
 
     @property
     def reflect(self) -> type[Reflect]:
-        return self._registry[4]
+        return self._registry["collect"]
 
     @property
     def collect(self) -> type[Collect]:
-        return self._registry[5]
+        return self._registry["inject"]
 
 
-class EasyAccess(EasyBase, id=2, art="S"):
+class EasyAccess(EasyBase, id="get"):
     """Dot Access on all Dunders"""
 
     Dunders: type[DunderStore] = DunderSet
@@ -197,7 +188,7 @@ class EasyAccess(EasyBase, id=2, art="S"):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Inject(PortOperator[Injecting], EasyAccess, id=3, art="O"):
+class Inject(PortOperator[Injecting], EasyAccess, id="inject"):
     """Collect the Modificating Methods with Safety"""
 
     __call__: Injecting
@@ -242,7 +233,7 @@ def _inject_doc_raw(target: Any, value: str):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Reflect(PortOperator[Reflecting], EasyAccess, id=4, art="O"):
+class Reflect(PortOperator[Reflecting], EasyAccess, id="reflect"):
     """Collect the Detecting and Extracting Methods"""
 
     __call__: Reflecting
@@ -293,7 +284,7 @@ class Reflect(PortOperator[Reflecting], EasyAccess, id=4, art="O"):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Collect(PortOperator[Collecting], id=5, art="O"):
+class Collect(PortOperator[Collecting], id="collect"):
     """Run the MRO pipelines and Reflect and Inject data"""
 
     __call__: Collecting

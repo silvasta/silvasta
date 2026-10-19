@@ -17,7 +17,7 @@ Use the VOID Sentinel as Value and as Type!
   like after isinstance(number,int) == False
   -> number clearly identified as VOID
 
-                              DependencyLevel.sstcore.port.empty[9] 🙂
+                              DependencyLevel.sstcore.port.empty[0]
 """
 
 __all__: list[str] = [
@@ -33,10 +33,6 @@ __all__: list[str] = [
 
 import sys
 from typing import TYPE_CHECKING as _TYPECHECKING
-
-# LATER: shadow by if TYPE_CHECKING:...
-# - or move ViewSentinel -> dto/represent
-from . import represent as _view
 
 if sys.version_info >= (3, 15):
     from builtins import sentinel
@@ -65,13 +61,13 @@ Ghost = _GhostBaseEradicator()
 class ViewSentinel:
     """Imitate ViewMixin to replace None in View selection pipeline"""
 
-    def __cli__(self) -> _view._CliDTO:
+    def __cli__(self):
         raise NotImplementedError
 
-    def __log__(self) -> _view._LogDTO:
+    def __log__(self):
         raise NotImplementedError
 
-    def __rich__(self) -> _view._Richable:
+    def __rich__(self):
         raise NotImplementedError
 
 

@@ -42,6 +42,7 @@ import typing as _t
 from dataclasses import dataclass as _dataclass
 from dataclasses import replace as _replace
 
+from .._debug import tap
 from ._define import (
     Collecting,
     DocMerger,
@@ -111,7 +112,7 @@ class PortLink:
                     final_data: PortLinkDocs = task_data.save()
                     _injector.portlinkdocs(cls, final_data)
 
-            return cls
+            return tap.hook_class(cls)  # TEST:
 
         return portlinker
 

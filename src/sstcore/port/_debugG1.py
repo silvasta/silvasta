@@ -28,6 +28,7 @@ _busy: ContextVar[bool] = ContextVar("sstcore_dbg_busy", default=False)
 
 
 def _from_env(raw: str | None) -> tuple[bool, frozenset[str]]:
+    # EXTRACT:
     if raw is None or raw.strip().lower() in _OFF:
         return False, frozenset()
     key = raw.strip().lower()
@@ -56,6 +57,7 @@ class DebugGate:
         self.enabled = False
 
     def hot(self, ch: str = "") -> bool:
+        # EXTRACT:
         """True when a probe in this channel would print. Guard expensive messages."""
         if not self.enabled:
             return False
@@ -77,6 +79,7 @@ class DebugGate:
                 args = (f"[dim]{ch}[/]", *args)
             rprint(*args)
         except Exception as exc:
+            # EXTRACT:
             sys.stderr.write(f"[dbg] {type(exc).__name__}: {exc}\n")
         finally:
             _busy.reset(token)

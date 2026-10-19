@@ -56,9 +56,8 @@ class HybridFunctor[In, Out, **P](
         """Case 3: Bind additional input to case 2"""
         return lambda fn: self._wrap(fn, *args, **kwargs)
 
-    def reject(self, failed: Any, *args, **kwargs) -> NoReturn:
-        self.emit("Invalid Hybrid Usage", failed, *args, **kwargs)
-        raise TypeError("Invalid Hybrid Usage")
+    def _reject(self, failed: Any, *args, **kwargs) -> NoReturn:
+        raise TypeError("Invalid Hybrid Usage", failed, args, kwargs)
 
     @overload
     def __call__(
@@ -79,7 +78,7 @@ class HybridFunctor[In, Out, **P](
         """Hybrid triple dispatch"""
 
         if self._detect(target):
-            return self.call(target, *args, **kwargs)
+            return self._call(target, *args, **kwargs)
 
         if callable(target) and target is not type:
             return self._wrap(target, *args, **kwargs)
@@ -87,4 +86,4 @@ class HybridFunctor[In, Out, **P](
         if target is None:
             return self._bind(*args, **kwargs)
 
-        self.reject(target)
+        self._reject(target)

@@ -1,4 +1,3 @@
-# /home/silvan/sstcore/src/sstcore/port/_debug.py
 """
 Minimal Inner-Core Debug Engine (DependencyLevel[0])
 
@@ -20,214 +19,214 @@ Examples:
 
 __all__: list[str] = [
     "tap",
-    "MiniProbe",
+    "Tap",
 ]
 
 
 import os
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
 from functools import wraps
-from types import SimpleNamespace
-from typing import Any, Generic, Protocol
+from typing import Any, Protocol, overload
 
-from .link._define import DocMerger, PortEmit, PortLinker
 
-TOGGLE: str = "color,vault,init"
+class Channels(frozenset):
+    """Guard the active Channels and Rules for Matching"""
 
-_RAW_SCOPES: str = os.getenv("SST_DEBUG", TOGGLE)
-ACTIVE_SCOPES: frozenset[str] = frozenset(
-    s.strip().lower() for s in _RAW_SCOPES.split(",") if s.strip()
+    def __new__(cls, env_var="SST_DEBUG", default=()):
+        env = (*os.getenv(env_var, "").split(","), *default)
+        return super().__new__(cls, (c for e in env if (c := cls.format(e))))
+
+    @classmethod
+    def format(cls, target: str, /) -> str:
+        return target.strip().lower()
+
+    def has(self, flag: str, /) -> bool:
+        """Check formatted flag directly (bypass wildcard/substring match)"""
+        return super().__contains__(self.format(flag))
+
+    def __contains__(self, target: Any) -> bool:
+        """Check if the target matches an active channel"""
+
+        if not self or not isinstance(target, str):
+            return False
+
+        low = self.format(target)
+
+        if "port.link" in low and not self.has("link"):
+            return False
+
+        if self.has("*"):
+            return True
+
+        return any(scope in low for scope in super().__iter__())
+
+
+TOGGLE: tuple[str, ...] = (
+    "color",
+    "vault",
+    "init",
 )
+
+CHANNELS = Channels(env_var="SST_DEBUG", default=TOGGLE)
+
+INIT = ("__post_init__", "__init__")  # prefer __post_init__ if exists
+
+
+class PortEmit[**P](Protocol):
+    def __call__(self, *args, sender: Any = None, **kwargs) -> None:
+        """Define the message structure of port internal events"""
+
+
+class Tap:
+    """Minimal debug probe for port, brick, and forge bring-up."""
+
+    __slots__ = ("enabled", "trace_init", "use_loguru", "emit")
+
+    def __init__(self) -> None:
+        """Bind once at startup: zero branching overhead when OFF"""
+        self.enabled: bool = bool(CHANNELS)
+        self.trace_init: bool = CHANNELS.has("init")
+        self.use_loguru: bool = CHANNELS.has("log")
+        self.emit: PortEmit = _emit if self.enabled else _noop
+
+    def __bool__(self) -> bool:
+        return self.enabled
+
+    def __call__(self, *args: Any, sender: Any = None, **kwargs: Any) -> None:
+        self.emit(*args, sender=sender, **kwargs)
+
+    def matches(self, target: str, /) -> bool:
+        return self.enabled and target in CHANNELS
+
+    def fn[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
+        """Startup-bound function decorator: zero-cost no-op when disabled."""
+        if not self.matches(qual := _qual(func)):
+            return func
+
+        is_method: bool = "." in func.__qualname__  # ty:ignore
+        is_init: bool = func.__name__ in INIT  # ty:ignore
+
+        @wraps(func)
+        def _traced(*args: P.args, **kwargs: P.kwargs) -> R:
+            result: R = func(*args, **kwargs)  # before _unpack!
+            sender, pargs = _unpack(func, qual, is_method, args)
+            self.emit(f"Params: {pargs=} {kwargs=}", sender=sender)
+            message = (
+                f"Created -> {args[0]!r}" if is_init else f"Result: {result!r}"
+            )
+            self.emit(message, sender=sender)
+            return result
+
+        return _traced
+
+    @overload
+    def hook_class[C](self, cls: type[C], /) -> type[C]: ...
+    @overload
+    def hook_class[C](
+        self, /, *, methods: Sequence[str] = ()
+    ) -> Callable[[type[C]], type[C]]: ...
+
+    def hook_class[C](
+        self, cls: type[C] | None = None, /, *, methods: Sequence[str] = ()
+    ) -> type[C] | Callable[[type[C]], type[C]]:
+        """Inject self._debug() and wrap target methods on a class."""
+
+        def _decorator(_cls: type[C]) -> type[C]:
+            active: bool = self.enabled and self.matches(_qual(_cls))
+
+            if not hasattr(_cls, "_debug"):
+                _cls._debug = _debug if active else _noop  # ty:ignore
+
+            if not active:
+                return _cls
+
+            for method in _dict_hits(_cls, *methods, init=self.trace_init):
+                setattr(_cls, method.__name__, self.fn(method))  # ty:ignore
+
+            return _cls
+
+        return _decorator(cls) if cls is not None else _decorator
+
+
+tap = Tap()  # TARGET: main result
+
+
+#  LINE: -- Render -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _render_rich(prefix: str, *args: Any, **kwargs: Any) -> None:
+    from rich import print as rprint
+
+    rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
+
+
+def _emit(*args: Any, sender: Any = None, **kwargs: Any) -> None:
+    """Active emission pipeline (only bound when CHANNELS is non-empty)."""
+
+    if sender is not None and not isinstance(sender, str):
+        if not tap.matches(_qual(sender)):  # LATER: check earlier bind
+            return
+
+    prefix: str = f"[bold cyan]{_who(sender)}[/] [dim]│[/]" if sender else ""
+    _render_rich(prefix, *args, **kwargs)
+
+    if tap.use_loguru:
+        _render_log(sender, *args)
+
+
+def _render_log(sender: Any, *args: Any) -> None:
+    from loguru import logger
+
+    msg = " ".join(repr(a) if not isinstance(a, str) else a for a in args)
+    logger.opt(depth=3).debug(f"[{_who(sender)}] {msg}")
+
+
+#  LINE: -- Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def _noop(*_args: Any, **_kwargs: Any) -> None:
     """Zero-cost sink when debug is disabled."""
 
 
-class MiniProbe:
-    """Minimal debug probe for port, brick, and forge bring-up."""
-
-    __slots__ = ("enabled", "trace_init", "use_loguru", "emit")
-
-    def __init__(self) -> None:
-        self.enabled: bool = bool(ACTIVE_SCOPES)
-        self.trace_init: bool = "init" in ACTIVE_SCOPES
-        self.use_loguru: bool = "log" in ACTIVE_SCOPES
-        # Bind once at startup: zero branching overhead when OFF
-        self.emit: Callable[..., None] = (
-            self._active_emit if self.enabled else _noop
-        )
-
-    def __bool__(self) -> bool:
-        return self.enabled
-
-    def __call__(
-        self, *args: Any, sender: Any = None, tag: str = "", **kwargs: Any
-    ) -> None:
-        self.emit(*args, sender=sender, tag=tag, **kwargs)
-
-    def matches(self, target: str) -> bool:
-        """Check if a module/class/tag path matches active scopes."""
-        if not self.enabled:
-            return False
-        low = target.lower()
-        # Prevent PortLink's internal MRO walking from flooding every run
-        # unless "link" is explicitly requested in TOGGLE
-        if "port.link" in low and "link" not in ACTIVE_SCOPES:
-            return False
-        if "*" in ACTIVE_SCOPES:
-            return True
-        return any(scope in low for scope in ACTIVE_SCOPES)
-
-    def _active_emit(
-        self, *args: Any, sender: Any = None, tag: str = "", **kwargs: Any
-    ) -> None:
-        from rich import print as rprint
-
-        if sender is not None:
-            is_cls = isinstance(sender, type)
-            cls_name = sender.__name__ if is_cls else type(sender).__name__
-            mod_name = getattr(sender, "__module__", "")
-            if not self.matches(f"{mod_name}.{cls_name}.{tag}"):
-                return
-
-            # Render sender using its own __rich__ / __str__ if it's an instance
-            who = (
-                f"[bold cyan]{cls_name}[/]"
-                if is_cls
-                else f"[bold cyan]{sender}[/]"
-            )
-            sfx = f"[dim].{tag}[/]" if tag else ""
-            rprint(f"[dim]⚡[/]{who}{sfx} [dim]│[/]", *args, **kwargs)
-        else:
-            if tag and not self.matches(tag):
-                return
-            sfx = f"[bold yellow]{tag}[/] [dim]│[/] " if tag else ""
-            rprint(f"[dim]⚡[/]{sfx}", *args, **kwargs)
-
-        if self.use_loguru:
-            from loguru import logger
-
-            msg = " ".join(
-                repr(a) if not isinstance(a, str) else a for a in args
-            )
-            logger.opt(depth=2).debug(f"[{sender or tag}] {msg}")
-
-    # ── Decorators & Class Injection ─────────────────────────────────────────
-
-    def fn[F: Callable[..., Any]](self, func: F) -> F:
-        """Startup-bound function decorator: zero-cost no-op when disabled."""
-        qual = f"{func.__module__}.{func.__qualname__}"
-        if not self.matches(qual):
-            return func
-
-        @wraps(func)
-        def _traced(*args: Any, **kwargs: Any) -> Any:
-            sender = args[0] if args else None
-            self._active_emit(
-                f"in:  args={args[1:]!r} kwargs={kwargs or '{}'}",
-                sender=sender,
-                tag=func.__name__,
-            )
-            res = func(*args, **kwargs)
-            self._active_emit(
-                f"out: {res!r}",
-                sender=sender,
-                tag=func.__name__,
-            )
-            return res
-
-        return _traced  # type: ignore[return-value]
-
-    def hook_class[C](self, cls: type[C]) -> type[C]:
-        """Inject self._debug() and optional __init__ tracing into a class."""
-        # Always attach _debug so inline `self._debug(...)` never raises AttributeError
-        if not hasattr(cls, "_debug"):
-            if self.enabled and self.matches(
-                f"{cls.__module__}.{cls.__qualname__}"
-            ):
-                cls._debug = lambda self, *a, **kw: tap.emit(  # type: ignore[attr-defined]
-                    *a, sender=self, **kw
-                )
-            else:
-                cls._debug = _noop  # type: ignore[attr-defined]
-
-        if not (
-            self.enabled
-            and self.trace_init
-            and self.matches(f"{cls.__module__}.{cls.__qualname__}")
-        ):
-            return cls
-
-        # Hook __post_init__ (for @dataclass like PaletteDTO) or __init__
-        hook_name = (
-            "__post_init__" if "__post_init__" in cls.__dict__ else "__init__"
-        )
-        if hook_name in cls.__dict__:
-            orig = cls.__dict__[hook_name]
-
-            @wraps(orig)
-            def _wrapped_init(self: Any, *args: Any, **kwargs: Any) -> Any:
-                res = orig(self, *args, **kwargs)
-                tap._active_emit(
-                    f"Created -> {self!r}", sender=self, tag=hook_name
-                )
-                return res
-
-            setattr(cls, hook_name, _wrapped_init)
-
-        return cls
+def _debug(self, *args, **kwargs):
+    """Inject to cls"""
+    tap.emit(*args, sender=self, **kwargs)
 
 
-tap = MiniProbe()
+def _unpack(
+    func: Callable[..., Any], qual: str, is_method: bool, args: tuple[Any, ...]
+) -> tuple[str, Sequence[Any]]:
+    """Resolve dynamic method sender and unbound args in one step."""
+    if is_method and args:
+        target, *unbound = args
+        return f"{_who(target)}.{func.__name__}", unbound  # ty:ignore
+    return qual, args
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+def _dict_hits(cls: type, *attrs: str, init: bool = False) -> list[Callable]:
+    """Extract matching callables present directly in cls.__dict__."""
+    methods: list = [cls.__dict__[a] for a in attrs if a in cls.__dict__]
+    if init and (_init := _dict_hits(cls, *INIT, init=False)):
+        return _init[:1] + methods
+    return methods
 
 
-# /home/silvan/sstcore/src/sstcore/port/link/_define.py
-# ... existing imports ...
+def _who(target: Any, /) -> str:
+    """Format a readable sender label for instances, classes, or strings."""
+    if target is None:
+        return ""
+    if isinstance(target, str):
+        return target
+    if isinstance(target, type):
+        return target.__name__
+    return str(target)
 
 
-@dataclass(frozen=True, slots=True)
-class LinkSpec:
-    skip: frozenset[type] = frozenset({object, Protocol, Generic})
-    on_exit_with_error: bool = True
-    merge: DocMerger = lambda docs: f"merge: {docs}"
-    # NEXT:
-    emit: PortEmit | None = tap.emit  # <-- Wired directly to MiniProbe
-
-
-# /home/silvan/sstcore/src/sstcore/port/link/_operator.py
-# ... existing imports ...
-
-
-class EasyNote(SimpleNamespace):
-    """Stable Base for all Easy Member"""
-
-    _emit: Callable | None = None
-
-    def emit(self, *args, **kwargs):
-        (self._emit or self.port_emit)(*args, sender=self, **kwargs)
-
-    @staticmethod
-    def port_emit(*args, **kwargs):
-        tap.emit(*args, **kwargs)
-
-    def __str__(self):
-        return f"{type(self).__name__}"
-
-
-class _P:
-    def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
-        """Merge docstrings and enforce static type check"""
-
-        def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
-            """Catch all __doc__ merge issues and always return original Cls"""
-
-            # INFO: all operations
-
-            return tap.hook_class(cls)  # <-- Injects _debug and init tracing
-
-        return portlinker
+def _qual(target: Any, /) -> str:
+    """Generate full module.qualname path for scope matching."""
+    # TODO: compare with reflect.funcname|objname
+    module: str = getattr(target, "__module__", "")
+    qualname: str = getattr(
+        target, "__qualname__", getattr(type(target), "__qualname__", "")
+    )
+    return f"{module}.{qualname}"  # CHECK: ".qualname"?

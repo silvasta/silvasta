@@ -121,7 +121,7 @@ class PortLinkDocs(PortLinkData):
     def __init__(self, data: Docs | DocMap = ()):
         match data:
             case Mapping() as mapping:
-                self.data: _FixMap[DocKey, Doc] = _FixMap(mapping)
+                self.data: _FixMap[DocKey, Doc] = _FixMap(mapping)  # ty:ignore
             case Sequence() as sequence:
                 self.data: _FixMap[DocKey, Doc] = _FixMap(
                     mapping={doc.key: doc for doc in sequence}
@@ -136,7 +136,7 @@ class PortLinks(PortLinkData):
     __slots__ = ()
 
     def __init__(self, data: Docs | DocMap = ()):
-        self.data: dict[DocKey, Doc] = {}
+        self.data: dict[DocKey, Doc] = {}  # ty:ignore
         self.fill(data)
 
     def absorb(self, data: PortLinkData, /):

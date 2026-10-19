@@ -22,11 +22,10 @@ __all__: list[str] = [
 
 import enum as _enum
 
-from ...brick.none import ViewSentinel
-from ...port import calling as _calling
-from ...port import event as _event
+from ...port import represent as _represent
 from ...port import solid as _solid
 from ...port._error import EnumError as _EnumError
+from ...port.empty import ViewSentinel
 from . import _views
 
 
@@ -41,7 +40,7 @@ class Cli(_solid.MixinCatalog):
     OFF = _enum.auto()
 
     @property
-    def mixin(self) -> type[_event.CliRenderable]:
+    def mixin(self) -> type[_represent.CliSerializable]:
         match self:
             case self.LINE:
                 return _views.cli.LineMixin
@@ -64,7 +63,7 @@ class Cli(_solid.MixinCatalog):
             case self.MARKDOWN:
                 return _views.cli.MarkdownMixin
 
-            case self.OFF:  # IDEA: make this Zero?
+            case self.OFF:
                 return ViewSentinel
 
         raise _EnumError(self, "Failed Dispatch in Match")
@@ -82,7 +81,7 @@ class Str(_solid.MixinCatalog):
         return "string"
 
     @property
-    def mixin(self) -> type[_calling.Stringable]:
+    def mixin(self) -> type[_represent.Stringable]:
         match self:
             case self.SHORT:
                 return _views.string.SimpleNameMixin
@@ -106,7 +105,7 @@ class Rich(_solid.MixinCatalog):
     OFF = _enum.auto()
 
     @property
-    def mixin(self) -> type[_calling.RichView]:
+    def mixin(self) -> type[_represent.RichView]:
         match self:
             case self.SHORT:
                 return _views.rich.SimpleRichNameMixin
@@ -130,7 +129,7 @@ class Repr(_solid.MixinCatalog):
     OFF = _enum.auto()
 
     @property
-    def mixin(self) -> type[_calling.LogStringable]:
+    def mixin(self) -> type[_represent.LogStringable]:
         match self:
             case self.BOX:
                 return _views.repr.ReprMixin
@@ -153,7 +152,7 @@ class Log(_solid.MixinCatalog):
     OFF = _enum.auto()
 
     @property
-    def mixin(self) -> type[_event.LogSerializable]:
+    def mixin(self) -> type[_represent.LogSerializable]:
         match self:
             case self.DATA:
                 return _views.log.LogDataMixin

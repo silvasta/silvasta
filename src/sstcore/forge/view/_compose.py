@@ -16,7 +16,7 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import Any, Self
 
-from ...brick.none import ViewSentinel
+from ...port.empty import ViewSentinel
 from ...port.link import portlink
 from ...port.raising import SstCoreError
 from ...port.shape import Builder, Injector
