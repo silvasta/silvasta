@@ -53,18 +53,16 @@ class Collecting(Protocol):
 @dataclass(frozen=True, slots=True)
 class LinkSpec:
     skip: frozenset[type] = frozenset({object, Protocol, Generic})
-    on_exit_with_error: bool = True  # TODO:
+    on_exit_with_error: bool = True  # TODO: error strategy
     merge: DocMerger = lambda docs: f"merge: {docs}"
     emit: PortEmit | None = tap.emit
 
     def ignores(self, base: type) -> bool:
         return base in self.skip
 
-    def note(
-        self, *args: Any, sender: Any = None, tag: str = "", **kwargs: Any
-    ) -> None:
+    def note(self, *args, sender: Any = None, **kwargs) -> None:
         if self.emit is not None:
-            self.emit(args, sender, tag, kwargs)
+            self.emit(*args, sender, **kwargs)
 
     def derive(self, **kwargs) -> Self:
         return replace(self, **kwargs)

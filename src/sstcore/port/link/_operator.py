@@ -98,23 +98,21 @@ class EasyCatch(EasyBase, id="catch"):
         self.emit(f"{self}: Executing Pipeline in Context")
         return self
 
-    def __exit__(self, _type, error, _traceback):  # CHECK: -> XXX?
+    def __exit__(self, _error_type, error, _traceback):  # CHECK: -> XXX?
         self.emit(f"{self}: Closing context")
 
-        if _type is None:
+        if _error_type is None:
             self.emit(f"{self}: No Issues...")
             return True
 
-        self.emit(f"{self}: {(error := _type.__name__)}")
+        self.emit(f"{self}: {(name := _error_type.__name__)}")
 
-        # TODO: isinstance
-        if issubclass(_type, SstCoreError):
-            self.emit(f"Critical! {error=}")
+        if isinstance(error, SstCoreError):
+            self.emit(f"Critical! {name=}")
             return True
 
-        # TODO: isinstance
-        if issubclass(_type, (AttributeError, TypeError)):
-            self.emit(f"Continue... {error=}")
+        if isinstance(error, (AttributeError, TypeError)):
+            self.emit(f"Continue... {name=}")
             return True
 
         # TASK: catch all with top-level, let others break trough, relaunch...

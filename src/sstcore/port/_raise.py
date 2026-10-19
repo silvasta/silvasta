@@ -63,6 +63,12 @@ class PortErrorSpec(raising.ErrorSpec):
     # IDEA: port,plug == Protocol,Cls
 
 
+class LinkRaiserCall(Protocol):
+    def __call__(
+        self, *args, **kwargs: Unpack[PortErrorInput]
+    ) -> raising.SstCoreError: ...
+
+
 class LinkRaiser(Raiser):
     Zero = auto()
 
@@ -133,9 +139,3 @@ class LinkRaiser(Raiser):
                 return f"Issue for: {source_name}.{attr}, __doc__:{text}"
 
         return f"Failed Match: {type(self).__name__}.message: {self=}"
-
-
-class LinkRaiserCall(Protocol):  # TASK: think about parametrization
-    def __call__(
-        self, *args, **kwargs: Unpack[PortErrorInput]
-    ) -> raising.SstCoreError: ...

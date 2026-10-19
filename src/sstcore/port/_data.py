@@ -50,8 +50,7 @@ class Channels(frozenset):
         if not self or not isinstance(target, str):
             return False
 
-        low = self.format(target)
-
+        low: str = self.format(target)
         if "port.link" in low and not self.has("link"):
             return False
 
@@ -80,6 +79,8 @@ class DunderFormatMixin:
 
 
 class DunderDict(DunderFormatMixin, dict):
+    """Outdated initial attempt..."""
+
     def __init__(self, dunders: Iterable[str] = ()):
         for method in dunders:
             self[method] = None

@@ -53,12 +53,13 @@ class Tap:
     def __call__(self, *args: Any, sender: Any = None, **kwargs: Any) -> None:
         self.emit(*args, sender=sender, **kwargs)
 
-    def matches(self, target: str, /) -> bool:
+    def watches(self, target: str, /) -> bool:
+        # IDEA: target:str|type, _qualname(target) always with watches, cons?
         return self.enabled and target in CHANNELS
 
-    def fn[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
-        """Startup-bound function decorator: zero-cost no-op when disabled."""
-        if not self.matches(qual := _qual(func)):
+    def watch[**P, R](self, func: Callable[P, R], /) -> Callable[P, R]:
+        """Bind Function or Method at Startup (zero-cost no-op when disabled)"""
+        if not self.watches(qual := _qualname(func)):
             return func
 
         is_method: bool = "." in func.__qualname__  # ty:ignore
@@ -89,8 +90,11 @@ class Tap:
     ) -> type[C] | Callable[[type[C]], type[C]]:
         """Inject self._debug() and wrap target methods on a class."""
 
+        # IMPORTANT: early return here? same as in watch?
+        # - can cls ever change after mounting the decorator?
+
         def _decorator(_cls: type[C]) -> type[C]:
-            active: bool = self.enabled and self.matches(_qual(_cls))
+            active: bool = self.enabled and self.watches(_qualname(_cls))
 
             if not hasattr(_cls, "_debug"):
                 _cls._debug = _debug if active else _noop  # ty:ignore
@@ -99,7 +103,7 @@ class Tap:
                 return _cls
 
             for method in _dict_hits(_cls, *methods, init=self.trace_init):
-                setattr(_cls, method.__name__, self.fn(method))  # ty:ignore
+                setattr(_cls, method.__name__, self.watch(method))  # ty:ignore
 
             return _cls
 
@@ -121,8 +125,10 @@ def _render_rich(prefix: str, *args: Any, **kwargs: Any) -> None:
 def _emit(*args: Any, sender: Any = None, **kwargs: Any) -> None:
     """Active emission pipeline (only bound when CHANNELS is non-empty)."""
 
+    # TODO: check if that is needed in every call
+    # - why not bind it earlier for cls?
     if sender is not None and not isinstance(sender, str):
-        if not tap.matches(_qual(sender)):  # LATER: check earlier bind
+        if not tap.watches(_qualname(sender)):  # LATER: check earlier bind
             return
 
     prefix: str = f"[bold cyan]{_who(sender)}[/] [dim]│[/]" if sender else ""
@@ -164,8 +170,8 @@ def _unpack(
 def _dict_hits(cls: type, *attrs: str, init: bool = False) -> list[Callable]:
     """Extract matching callables present directly in cls.__dict__."""
     methods: list = [cls.__dict__[a] for a in attrs if a in cls.__dict__]
-    if init and (_init := _dict_hits(cls, *INIT, init=False)):
-        return _init[:1] + methods  # prefer __post_init__ if exists
+    if init and (_init_ := _dict_hits(cls, *INIT, init=False)):
+        methods.append(_init_[0])  # prefer __post_init__ if exists
     return methods
 
 
@@ -180,8 +186,8 @@ def _who(target: Any, /) -> str:
     return str(target)
 
 
-def _qual(target: Any, /) -> str:
-    """Generate full module.qualname path for scope matching."""
+def _qualname(target: Any, /) -> str:
+    """Generate full module.qualname path for scope matching"""
     # TODO: compare with reflect.funcname|objname
     module: str = getattr(target, "__module__", "")
     qualname: str = getattr(
