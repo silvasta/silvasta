@@ -35,7 +35,6 @@ type DocMap = Mapping[DocKey, Doc]
 type PortDocs = Sequence[PortDoc]
 type PlugDocs = Sequence[PlugDoc]
 
-
 type DocKey = tuple[str, type]
 
 

@@ -42,7 +42,6 @@ import typing as _t
 from dataclasses import dataclass as _dataclass
 from dataclasses import replace as _replace
 
-from .._debug import tap
 from ._define import (
     Collecting,
     DocMerger,
@@ -63,6 +62,7 @@ from ._model import (
 )
 from ._operator import PortOperator
 from ._render import MergeMachine
+from ._tap import tap
 
 spec = LinkSpec(merge=MergeMachine.Schema1)
 

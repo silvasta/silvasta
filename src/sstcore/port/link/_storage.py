@@ -5,7 +5,6 @@ Solve a Simple Problem with elegantly building new Types
 """
 
 __all__: list[str] = [
-    "PortEmit",
     "Channels",
     "DunderStore",
     "DunderFormatMixin",
@@ -18,13 +17,7 @@ import os
 from collections.abc import Iterable
 from typing import Any, Protocol
 
-from ._types import _Stringable
-
-
-class PortEmit[**P](Protocol):  # MOVE:
-    def __call__(self, *args, sender: Any = None, **kwargs) -> None:
-        """Define the message structure of port internal events"""
-
+from .._types import _Stringable
 
 #  LINE: -- Debug Channel (Tap) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

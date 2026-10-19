@@ -20,9 +20,8 @@ __all__: list[str] = [
 from dataclasses import dataclass, replace
 from typing import Any, Generic, Protocol, Self, get_protocol_members
 
-from .._data import PortEmit
-from .._debug import tap
 from ._model import Docs, PortLinks
+from ._tap import tap
 
 
 class PortLinker[C, P](Protocol):
@@ -33,6 +32,11 @@ class PortLinker[C, P](Protocol):
 class DocMerger(Protocol):  # IDEA: Merging? only if as well operator
     def __call__(self, docs: Docs) -> str:
         """Format and Render Protocol and Implementation docstrings"""
+
+
+class PortEmit[**P](Protocol):
+    def __call__(self, *args, sender: Any = None, **kwargs) -> None:
+        """Define the message structure of port internal events"""
 
 
 class Reflecting(Protocol):
@@ -52,10 +56,11 @@ class Collecting(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class LinkSpec:
+    # AI: maybe this can stay here when 'merge' and 'emit' are only declared by protocol
     skip: frozenset[type] = frozenset({object, Protocol, Generic})
     on_exit_with_error: bool = True  # TODO: error strategy
-    merge: DocMerger = lambda docs: f"merge: {docs}"
-    emit: PortEmit | None = tap.emit
+    merge: DocMerger = lambda docs: f"merge: {docs}"  # NEXT: same as emit
+    emit: PortEmit | None = tap.emit  # IDEA: set default in link.__init__?
 
     def ignores(self, base: type) -> bool:
         return base in self.skip

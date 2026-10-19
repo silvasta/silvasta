@@ -29,7 +29,6 @@ from inspect import cleandoc as _cleandoc
 from types import SimpleNamespace
 from typing import Any, Literal, Self
 
-from .._data import DunderSet, DunderStore
 from .._raise import LinkRaiser
 from ..raising import SstCoreError
 from ._define import (
@@ -41,6 +40,7 @@ from ._define import (
     Reflecting,
 )
 from ._model import SidePolicy
+from ._storage import DunderSet, DunderStore
 
 
 class EasyNote(SimpleNamespace):  # NEXT: SimpleNamespace why (not) drop?
@@ -139,15 +139,15 @@ class Spawner:
 
     @property
     def inject(self) -> type[Inject]:
-        return self._registry["reflect"]
+        return self._registry["inject"]
 
     @property
     def reflect(self) -> type[Reflect]:
-        return self._registry["collect"]
+        return self._registry["reflect"]
 
     @property
     def collect(self) -> type[Collect]:
-        return self._registry["inject"]
+        return self._registry["collect"]
 
 
 class EasyAccess(EasyBase, id="get"):
