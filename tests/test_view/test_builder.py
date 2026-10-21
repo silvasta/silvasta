@@ -2,7 +2,7 @@ import pytest
 from pydantic import BaseModel
 
 from sstcore.contract.cli import CliRenderable, LineDTO, PanelDTO
-from sstcore.contract.log import LogDTO, LogSerializable
+from sstcore.port import LogDTO, LogSerializable
 from sstcore.utils.view import ViewBuilder, view
 from sstcore.utils.view.registry import Cli, Log, Repr, Rich, Str
 

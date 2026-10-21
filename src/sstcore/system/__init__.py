@@ -1,23 +1,19 @@
 """
-Wire the Event Infrastructure.
+Install the System
 
-- Provide EventBus with loader, handler and if needed, global access
+Check:
+- sstcore.system.boot for all Loaders
+- sstcore.system.event for Bus and Emitter
 
-"""  # TODO: adapt, move to Bus
+For Scripts and small Projects:
+- sstcore.system.globals for wireless setup
+                                                       DependencyLevel[4]
+"""
 
 __all__: list[str] = [
     "System",
-    "EventBus",
-    "EventHandler",
-    "BusRegistrationFunc",
-    "sst_bus",
-    "EmitFunctor",
-    "Emitter",
+    "SstSystem",
 ]
 
 
-from .bus import EventBus, EventHandler
-from .core import System
-from .emit import EmitFunctor, Emitter
-from .register import BusRegistrationFunc
-from .setup import sst_bus
+from ._core import SstSystem, System

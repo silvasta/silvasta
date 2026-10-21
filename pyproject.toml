@@ -1,25 +1,24 @@
 [project]
-name = "sstcore"
-version = "0.3.0b6"
-description = "Collection of Generalized Utils, Functions and Tools"
+name = "sstcore-py"
+version = "0.4.0a1"
+description = "Generalized Function and Tools combined as Project Setup Boost"
 readme = "README.md"
 authors = [{ name = "silvan", email = "silvasta3@gmail.com" }]
 requires-python = ">=3.14"
 license = { text = "Apache-2.0" }
 keywords = [
-  # --- Category 1: Descriptors & Features ---
-  "utilities",
-  "path-handling",
+  # ---  Descriptors & Features ---
+  "system-bootstrap",
   "config-management",
   "cli-framework",
   "terminal-ui",
-  "tui-components",
-  # --- Category 2: Ecosystem & Libraries ---
+  "utils",
+  # ---  Ecosystem & Libraries ---
   "pydantic",
+  "loguru",
   "rich",
   "typer",
   "textual",
-  "loguru",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -36,25 +35,29 @@ dependencies = [
   "rich>=14.3.3",
   "send2trash>=2.1.0",
   "fire",
+  "msgspec>=0.21.1",
 ]
 
-[project.urls]
-Repository = "https://github.com/silvasta/silvasta"
-
-[dependency-groups]
-dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.44"]
-
-[build-system]
-requires = ["uv_build>=0.11.16,<0.12.0"]
-build-backend = "uv_build"
+[project.optional-dependencies]
+cli = ["typer", "textual"]
+all = ["sstcore-py[cli]"]
 
 [project.scripts]
 sst = "sstcore.__main__:main"
 
-[project.optional-dependencies]
-cli = ["typer", "textual"]
-all = ["sstcore[cli]"]
+[project.urls]
+Repository = "https://github.com/silvasta/silvasta"
 
+[tool.uv.build-backend]
+module-name = "sstcore"
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+
+[dependency-groups]
+dev = ["pre-commit>=4.6.0", "pytest>=9.0.3", "ruff>=0.15.12", "ty>=0.0.44"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -63,13 +66,20 @@ pythonpath = ["src"]
 [tool.ty.src]
 include = ["src", "examples"]
 exclude = [
-  "src/sstcore/utils/_functor",    #
-  "src/sstcore/system/emitter.py", # FIX:
+  # Match all files/dirs starting with 3+ underscores anywhere
+  "**/____*",
+  # Specific directory branches (if you prefer explicit paths)
+  # "src/sstcore/brick/field/___ideas",
 ]
 
 [tool.ruff]
 line-length = 79
-exclude = ["src/sstcore/utils/_functor", "tests"]
+exclude = ["tests"]
+extend-exclude = [
+  "tests",
+  # Catch any file or folder starting with 3+ underscores
+  "**/____*",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

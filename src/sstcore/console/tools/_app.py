@@ -1,0 +1,132 @@
+"""
+Collect and assemble mini-tools for example app
+
+- transform util functions to Typer executables with Arg handling
+"""
+
+from pathlib import Path
+from typing import Annotated
+
+from typer import Context, Option
+
+from ...port.config import Config, Paths
+from ...port.event.dto import LogDTO
+from ...port.filter import FilterArgs
+from ...system import System
+from ...util.filter import ProjectFilter
+from ...util.path import any_root
+from ...util.print import printer
+from ...util.scan import SummaryFileMachine
+from ...util.write._engine import StubFileMachine
+from .. import _args as args
+from .._engine import SafeTyper
+from ..select import TreeSelectorApp
+from ..tui import LogMonitorApp
+from ._monitor import log_monitor
+from ._scanner import folder_scanner
+from ._writer import stub_typer
+
+app = SafeTyper(name="tools", help="Basic Equipment for Development")
+
+
+@app.command("writer")
+def launch_stub_engine(
+    ctx: Context,
+    _output_file: args.OutputFile = None,
+    _file_type: StubFileMachine = StubFileMachine.TYPE,
+    _reset: args.CleanState = False,
+    _select: bool = False,
+):
+    """StubFile Writer for fast an efficient Typing!"""
+    system: System = ctx.obj["system"]
+    _paths: Paths = system.config.paths
+    stub_typer(Path())
+
+
+_filter_arg = args.enum_opt(FilterArgs, "Select preset", "--filter")
+_FilterArg = Annotated[FilterArgs, _filter_arg]
+
+
+@app.command("scanner")
+def launch_folder_scanner(
+    ctx: Context,
+    scan_root: args.Root = None,
+    output_file: args.OutputFile = None,
+    file_type: SummaryFileMachine = SummaryFileMachine.MD,  # TODO: help text
+    reset: args.CleanState = False,
+    sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
+    filter_box: _FilterArg = FilterArgs.PROJECT,
+    # scan_mode: ScanMode = ScanMode.Zero,
+):
+    """Folder Scanner with TreeSelector: Write combined file!"""
+    system: System = ctx.obj["system"]
+    paths: Paths = system.config.paths
+    folder_scanner(
+        scan_root=(root := scan_root or any_root()),
+        output_file=output_file or paths.summary_file(suffix=file_type),
+        cache_file=paths.scanner_cache_file(root),
+        cache_reset=reset,
+        sort=sort,
+        local_printer=system.printer,
+        filter=ProjectFilter.from_args(
+            filter_box(
+                # LATER: include/exclude
+            )
+        ),
+        # scan_mode=scan_mode,
+    )
+
+
+@app.command("monitor")
+def launch_log_monitor_2(
+    ctx: Context,
+    file: args.LogFile = None,
+    tail: bool = Option(True, help="Keep watching the file for new entries"),
+):
+    """Log Console Monitor: Analyze log file entries!"""
+
+    config: Config = ctx.obj["config"]
+
+    def render_adapter(dto: LogDTO):
+        return printer.render(dto)  # LATER: improve adapter
+
+    LogMonitorApp(
+        log_file=file or config.log_result.struct_log_file,
+        render_func=render_adapter,
+        tail=tail,
+    ).run()
+
+
+@app.command("monitor1")
+def launch_log_monitor_1(file: args.LogFile = None):  # TODO: improveCLI hint
+    """Log Console Scroll: Watch new log file entries!"""
+    log_monitor(log_path=file)
+
+
+@app.command("config")
+def config_details_and_write(ctx: Context, write_config: args.Write = False):
+    """Print config to Console, optional write new json settings"""
+    config: Config = ctx.obj["config"]
+    printer(config)
+    printer(config.settings)
+    printer(config.settings.file)
+
+    if write_config:
+        config.save_settings()
+
+
+@app.command("print")
+def print_file(path: Path):
+    """Print Prompt, Response or any Markdown File in Rich style"""
+    printer.title(path.name)
+    match path.suffix:
+        case ".json":
+            printer(path.read_text())
+        case ".md":
+            printer.md(path.read_text())
+        case _:  # LATER: other file types? match as function of printer?!
+            printer.md(path.read_text())
+
+
+if __name__ == "__main__":
+    app()

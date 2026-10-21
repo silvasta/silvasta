@@ -1,0 +1,58 @@
+"""
+Provide Engine for easy access to Rich Console setup
+
+- Load Base with Meta, attach Modus and finally build Core
+
+"""
+
+from rich.abc import RichRenderable
+from rich.console import Console
+from rich.padding import Padding
+
+from ...brick.color import colorize
+from ...port.event import CliRenderable, LogSerializable
+from ...port.event.dto import CliDTO, LogDTO
+from ...port.link import portlink
+from ...port.printer import Print
+
+
+@portlink(Print)
+class PrinterCore:
+    """Execute the printer()"""
+
+    def __init__(self):
+        self.console = Console()
+
+    def __call__(self, target, **kwargs):
+        """Single entry point for printing logic"""
+
+        match target:
+            case type():
+                target: str = colorize.modules(  # MOVE: normalize
+                    target,
+                    project_color="cyan",
+                    module_color="green",
+                    target_color="purple",
+                )
+            case CliRenderable():
+                target: CliDTO = target.__cli__()
+            case LogSerializable():
+                target: LogDTO = target.__log__()
+
+        match target:
+            case CliDTO() | LogDTO():
+                renderable = self.render(target)
+            case RichRenderable():  # TEST: maybe remove this rich.abc...
+                renderable: RichRenderable = target
+            case _:  # FIX: pydantic goes trough..
+                renderable: str = self.normalize(target)
+
+        indent: int = getattr(target, "indent", kwargs.pop("indent", 0))
+
+        i_hope_it_renders = (  # ty:ignore
+            Padding(renderable, (0, 0, 0, indent))
+            if indent and renderable is not None
+            else renderable
+        )
+
+        self.console.print(i_hope_it_renders, **kwargs)
