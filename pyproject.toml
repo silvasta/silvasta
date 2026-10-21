@@ -29,21 +29,20 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+  "fire>=0.7.1",
   "loguru>=0.7.3",
-  "pydantic>=2.12.5",
-  "pydantic-settings>=2.13.1",
-  "rich>=14.3.3",
+  "msgspec>=0.22.0",
+  "pydantic-settings>=2.16.1",
+  "pydantic>=2.14.1",
+  "rich>=15.0.0",
   "send2trash>=2.1.0",
-  "fire",
-  "msgspec>=0.21.1",
+  "textual>=8.2.8",
+  "typer>=0.27.3",
 ]
-
-[project.optional-dependencies]
-cli = ["typer", "textual"]
-all = ["sstcore-py[cli]"]
 
 [project.scripts]
 sst = "sstcore.__main__:main"
+sstcore-py = "sstcore.__main__:main" # invoked on uvx
 
 [project.urls]
 Repository = "https://github.com/silvasta/silvasta"
