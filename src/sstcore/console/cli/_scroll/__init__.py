@@ -12,4 +12,4 @@ __all__: list[str] = [
 ]
 
 
-from . import safe_typer  #  don't name it engine!
+from . import _safe_typer as safe_typer

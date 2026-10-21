@@ -1,28 +1,28 @@
 """
-Exceptor - Massivly load and launch exceptions
+Exceptor - Massivly launch exceptions for Demo and Development
+
+UNDER CONSTRUCTION!
 
 - app: Provide Environment and Tracking for Execution inside Typer Setup
 
 """
 
-import sys
+# TASK: split regular|typer, create easy setup for fast tests, check __log|cli__
+
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Self
 
 from sstcore import printer
-from sstcore.cli.engine import SafeTyper  # WARN: this worked before, but...
-from sstcore.utils.color import ColorBox
 
-c: ColorBox = ColorBox.bold()
+from ...brick.color.box import Colors
+from .._engine import SafeTyper  # WARN: DEPENDENCY ISSUE
+
+c = Colors()
 
 
 type ErrorHandler = Callable[[Any], None]
 type ErrorList = list[type[BaseException] | ExceptorTask]
-
-# TODO: check with latest __fmt__
-
-# MOVE: maybe to CLI, together with other utils, tools
 
 
 @dataclass
@@ -216,7 +216,3 @@ class ExceptorTask:
 
             case (False, False):
                 return self.error(*self.args, **self.kwargs)  # ty:ignore
-
-        arguments: str = f"{c.c('args')} and {c.c('kwargs')}"
-        printer.special(f"{c.purple(self)} Failed to load {arguments}!")
-        return sys.exit(2)

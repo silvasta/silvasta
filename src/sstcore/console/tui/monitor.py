@@ -1,3 +1,14 @@
+"""
+Log Monitor 2 - Show jsonl, load and render
+
+-
+"""
+
+__all__: list[str] = [
+    "PREDEFINED_CATCHES",
+    "LogMonitorApp",
+]
+
 import json
 import time
 from collections.abc import Callable
@@ -16,9 +27,11 @@ from textual.widgets import (
     Static,
 )
 
-from ..contract.log import LogDTO
+from ...port.event.dto import LogDTO
 
 PREDEFINED_CATCHES: dict[str, Callable[[LogDTO], bool]] = {
+    # TASK: fill this and make id customizable, maybe from config
+    # - probably better data structure
     "🌐 All Logs": lambda _dto: True,  # <--- Add this line
     "🔥 All Errors": lambda dto: dto.level in ("ERROR", "CRITICAL"),
     "💾 DB Timeouts": lambda dto: (
@@ -51,6 +64,7 @@ class LogMonitorApp(App):
     """
 
     BINDINGS = [
+        # TODO: vim style bindings
         ("q", "quit", "Quit"),
         ("c", "clear_logs", "Clear Buffer"),
         ("e", "toggle_errors", "Toggle Errors Only"),
@@ -67,7 +81,6 @@ class LogMonitorApp(App):
         self.log_file = log_file
         self.render_func = render_func
         self.max_buffer = max_buffer
-        # TODO: tailing/running?
         self.is_live_tailing = tail
 
         self.log_buffer: list[LogDTO] = []

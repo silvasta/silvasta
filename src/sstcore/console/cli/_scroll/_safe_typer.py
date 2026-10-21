@@ -21,23 +21,23 @@ from typing import Any, Literal
 
 from rich.box import Box
 
-from sstcore.utils import PathGuard
-from sstcore.utils.log.setup import fetch_log_result
+from ....brick.color import colorize
+from ....brick.color.box import Colors
+from ....port.config import Config
+from ....system.boot import ConfigLoader
+from ....util.log import fetch_log_result
+from ....util.path.guard import PathGuard
+from ....util.print import boxes, printer
+from ..___print_option import PrintOption, SelectMode
 
-from ...config import ConfigManager
-from ...config.setup import ConfigLoader
-from ...utils import printer
-from ...utils.color import ColorBox, colorize
-from ...utils.color.palette import ColorName
-from ...utils.print import boxes
-from .option import PrintOption, SelectMode
+# TASK: system and bus!
 
-c: ColorBox = ColorBox.bold()
+c = Colors()
 
-# TODO: find better solution!
-# - not in engine, to polluting
-# - not at bottom, to hidden
 toggle: dict[str, SelectMode] = {
+    # TODO: find better solution!
+    # - not in engine, to polluting
+    # - not at bottom, to hidden
     "intro_": SelectMode.FIXED,
     "setup_": SelectMode.FIXED,
     "sub___": SelectMode.FIXED,
@@ -56,7 +56,7 @@ class MainIntroScroll(PrintOption[Callable[[str], None]]):
         )
 
     def _template(
-        self, project_name: str, outer: ColorName, inner: ColorName, box: Box
+        self, project_name: str, outer: str, inner: str, box: Box
     ) -> None:
         project: str = c(project_name, color=inner)
 
@@ -83,7 +83,7 @@ intro = MainIntroScroll(select_mode=toggle["intro_"])
 
 type Mode = Literal["up", "both", "down"]
 
-type ConfigSignature = Callable[[ConfigManager, ConfigLoader], None]
+type ConfigSignature = Callable[[Config, ConfigLoader], None]
 type LoaderStyler = Callable[[ConfigLoader], str]
 
 
@@ -94,12 +94,12 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
 
     def _template(
         self,
-        config: ConfigManager,
+        config: Config,
         loader: ConfigLoader,
         styler: LoaderStyler,
         mode: Mode,
     ) -> None:
-        _config: str = c.cyan(config)
+        _config: str = c.azure(config)
         _loader: str = styler(loader)
 
         text: str = f"{_config} loaded via {_loader}"
@@ -126,12 +126,12 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
         self.grid(self._template, param_grid=param_grid)
 
 
-def _config_modules_2(config: ConfigManager, loader: ConfigLoader) -> None:
+def _config_modules_2(config: Config, loader: ConfigLoader) -> None:
     # MOVE: do stuff like this in colorize
     project, *modules = loader.__module__.split(".")
-    module: str = ".".join([c.cyan(project), *modules])
+    module: str = ".".join([c.a(project), *modules])
     _loader = f"{c.white(getattr(loader, '__name__', 'loader_func'))}"
-    text: str = f"{c.cyan(config)} loaded via {module}::{loader}"
+    text: str = f"{c.a(config)} loaded via {module}::{loader}"
     printer.mini_box(text, mode="both")
 
 
@@ -176,17 +176,17 @@ config_loader = ConfigLoaderScroll(select_mode=toggle["setup_"])
 log_or_config_path = ConfigAndLogPanel(select_mode=toggle["sub___"])
 
 
-def setup(config: ConfigManager, loader: Callable):
+def setup(config: Config, loader: Callable):
     """Provide main callback text"""
 
     # TODO: quiet?
 
     config_loader(config, loader)
-    log_or_config_path(config.setting_file, mode="config")
+    log_or_config_path(config.settings.file, mode="config")
 
     if log_result := fetch_log_result():
         #
-        if log_result.print_at_setup:
+        if log_result.print_at_setup:  # ty:ignore
             printer(log_result)
 
         if log_result.log_to_file:
@@ -210,7 +210,7 @@ def sub_callback(name: str):
 type StatusSignature = Callable[
     [object, list[type[BaseException]], bool], None
 ]
-type ExceptionFormatter = Callable[type[BaseException], str]
+type ExceptionFormatter = Callable[[type[BaseException]], str]
 
 
 class SetupStatus(PrintOption[StatusSignature]):
@@ -230,7 +230,7 @@ class SetupStatus(PrintOption[StatusSignature]):
         exceptions: list[BaseException],
         show_all: bool,
         box1: Box,  # LATER: handle default box other than with None...
-        color1: ColorName,
+        color1: str,
         exc_formatter: ExceptionFormatter,
     ):
         _safe_typer = c(safe_typer, color1)
@@ -241,7 +241,7 @@ class SetupStatus(PrintOption[StatusSignature]):
 
         if show_all:
             for exception in exceptions:
-                printer(exc_formatter(exception), _i=4)
+                printer(exc_formatter(type(exception)), _i=4)
 
         printer("Some statistics: ...", _i=2)
         printer.line("yellow")
