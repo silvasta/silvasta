@@ -1,4 +1,19 @@
-# TODO: explain
+"""
+Collect helper for time related functions
+
+- stays in format due to small size and relevance
+                                                          PackageLevel[0]
+"""
+
+# LATER: date range and more advanced time calculations will move
+
+__all__: list[str] = [
+    "DateRange",
+    "timer",
+    "day_count",
+    "day_count_plus",
+    "nice_duration",
+]
 
 import time
 from dataclasses import dataclass
@@ -7,11 +22,13 @@ from functools import wraps
 
 from loguru import logger
 
-# TASK: check utc for entire project, maybe pendulum or stay with builtin
+# LATER: check utc for entire project, maybe pendulum or stay with builtin
 
 
 @dataclass
 class DateRange:
+    """Hold timespan and provide basic operations and information"""
+
     start: datetime | date = date(2026, 1, 1)
     end: datetime | date = date(2026, 12, 31)
 
@@ -25,14 +42,19 @@ class DateRange:
 
     @property
     def date_type(self) -> type[datetime] | type[date]:
+        """Show type of internal date type"""
+        # LATER: as class parameter
         return type(self.start)
 
     @property
     def duration(self) -> timedelta:
+        """Show length of timespan"""
         return self.end - self.start
 
 
 def timer(func):
+    """Decorate function and Log execution time"""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         logger.info("Launching timer")
@@ -52,12 +74,19 @@ def day_count(day: date | None = None) -> int:
     return delta.days
 
 
-def nice_duration(before: datetime, after: datetime) -> str:
-    """Transform duration from Start to End in Nice String"""
+def day_count_plus(day: date | None = None) -> str:
+    """DoM plus the hours interpolated to 1 decimal"""
+    day: date = day or date.today()
+    delta: timedelta = day - date(2000, 1, 1)
+    return f"{delta.days}{int(delta.seconds / 144)}"
 
-    delta: timedelta = after - before
-    days: int = delta.days
-    hours, remainder = divmod(delta.seconds, 3600)
+
+def nice_duration(start: datetime, end: datetime) -> str:
+    """Format duration with days, hours, minutes and seconds char"""
+
+    duration: timedelta = end - start
+    days: int = duration.days
+    hours, remainder = divmod(duration.seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
 
     if days > 0:
