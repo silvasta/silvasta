@@ -1,45 +1,53 @@
-# TODO: explain
+"""
+Generate File System Tree with Nodes from Paths
+
+- PathTreeNode: Represent FileTree built with decomposed Paths
+- build_path_tree: Recursively stack folder and files
+                                                       DependencyLevel[1]
+"""
+
+__all__: list[str] = [
+    "PathTreeNode",
+    "build_path_tree",
+]
+
 
 from collections import defaultdict, deque
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
+
+from ...port.link import portlink
+from ...port.tree import PathTree
+from ._simple import SimpleTreeNode
 
 
-@dataclass(frozen=True)
-class SimpleTreeNode:
-    # TODO: explain
-    name: str
-    id: str | None = None
-    branches: Sequence[Self] = field(default_factory=list)
-
-    @property
-    def display_label(self) -> str:
-        return self.name
-
-    @property
-    def identifier(self):
-        return self.id
-
-
+@portlink(PathTree)
 @dataclass(frozen=True)
 class PathTreeNode(SimpleTreeNode):
-    # TODO: explain
+    """Represent FileTree with Nodes=Folders and Leaves=Files"""
+
     path: Path = field(default_factory=Path)
 
     @property
     def identifier(self):
+        """Try with file system path for uniqueness"""
         return self.path
 
     @classmethod
     def create(
         cls, path: Path, branches: Sequence[Self] | None = None
     ) -> Self:
+        """Split path and build subnodes with that"""
         if branches is None:
             branches: Sequence[Self] = []
 
         return cls(name=path.name, path=path, branches=branches)
+
+
+if TYPE_CHECKING:
+    _path_tree: PathTree = PathTreeNode.create(Path())
 
 
 def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
@@ -50,7 +58,7 @@ def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
     return _recursive_path_tree(path_parts, current_node_name=root_name)
 
 
-def _recursive_path_tree(
+def _recursive_path_tree(  # NEXT: generalize, first for SimpleTreeNode
     path_parts: list[deque[str]],
     current_node_name: str = "",
     current_node_path: Path = Path(),
