@@ -1,11 +1,8 @@
 """
-SstError - Root of all Errors with amazing Cli and Log Defaults
+SstError - Root of all Errors with __cli__ and __log__ Defaults
 
-- others mainly stand-alone
-- (not implemented) RegistrySyncError maybe as Root for derived Registries
-
-                                                          PackageLevel[1]
-"""  # TODO:
+                                                       DependencyLevel[2]
+"""
 
 __all__: list[str] = [
     "SstError",
@@ -29,4 +26,4 @@ from ._general import (
     PropertyNotInitializedError,
     TuiSelectorError,
 )
-from ._util import PathGuardError, PathGuardReason
+from ._pathguard import PathGuardError, PathGuardReason

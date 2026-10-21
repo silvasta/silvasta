@@ -1,0 +1,118 @@
+"""
+Define the Shape of Exceptions
+
+- SstError: The Root
+                                                       DependencyLevel[0]
+"""
+
+__all__: list[str] = [
+    "SstError",
+]
+
+from typing import Any
+
+from ..brick import reflect
+from ..brick.color.box import Colors
+from ..port.event.dto import LogDTO, PanelDTO
+from ..port.raising import SstCoreError
+from ..port.represent import CliRenderable
+
+c = Colors()
+
+
+# IDEA: - subclass detection - ghost color box for SstError!
+# IDEA: SstBaseError? Then update in .raiser, then final assemble SstError in .__init__?
+class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
+    """Define the View and Behaviour of Custom Errors"""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Store Kwargs as builtins.Exception forced handles Args"""
+        self.kwargs: dict = kwargs
+        super().__init__(*args)
+
+    # IDEA: this in View??
+    # TASK: this from View!!
+
+    # --- DTO
+    def __log__(self) -> LogDTO:
+        """Provide Structured Data for Log"""
+        return LogDTO(
+            message=f"{self}" or self.name,
+            level="ERROR",
+            metrics={"args": self.args, "kwargs": self.kwargs},
+            extra={"error_type": self.name},
+        )
+
+    def __cli__(self) -> PanelDTO:
+        """Provide Data Transfer Object for Command Line Interface"""
+
+        # LATER: better table creation, similar to dict-like approach:
+        # - title: text starting at predefined length
+        # - use f-string with length cut, maybe by longest title or default
+        # - difficulty: sorting! derived errors want to modify order
+
+        lines: list[CliRenderable] = [
+            f"{c.r(self.name)} {self.summary()}",  # ignore empty space
+            f"{c.c('args')}    {self.args or 'nothing attached'}",
+            f"{c.c('kwargs')}  {self.kwargs or 'nothing attached'}",
+            *("" if self._causing_error else []),  # \newline or nothing
+            *(self._causing_error if self._causing_error else []),
+        ]
+
+        return PanelDTO(
+            content=self._modify_scroll(lines),  # ty:ignore FIX:
+            title=self.__rich__(),
+            frame="red",
+            title_align="right",
+        )
+
+    def _modify_scroll(
+        self, lines: list[CliRenderable]
+    ) -> list[CliRenderable]:
+        """Customize Lines displayed inside CLI Panel"""
+        return lines
+
+    @property
+    def _short(self) -> str:
+        """Set Optional Content for Header Line in CLI Panel"""
+        return ""  # WARN: hole for empty? maybe use None
+
+    @property
+    def _causing_error(self) -> list[CliRenderable]:
+        """Panel Lines"""
+        scroll_for_error_that_caused_this_error: list[CliRenderable] = []
+        if reraised_error := (self.__cause__ or self.__context__):
+            scroll_for_error_that_caused_this_error += [
+                f"{c.r('ReRaised')} {c.r(reflect.clsname(reraised_error))}",
+                f"{reraised_error}",
+            ]
+        return scroll_for_error_that_caused_this_error
+
+    def summary(self, *_args, max_len=60, **_kwargs) -> str:
+        # NOTE: why kw/args?
+        """Cut header line to ensure max length"""
+        header_len: int = len(self.name) - 1 - len(self._short)
+        if (to_long := max_len - header_len) < 0:
+            # TODO: check ..format.text
+            # LATER:: create entire header? use f-string < max_len
+            # something like: header = f"{f'{self.name} {self._short}': < 60}"
+            return f"{self._short[: (to_long - 3)]}..."
+        return self._short
+
+    # --- Views
+
+    def __repr__(self):
+        """Provide Structured Data flattened to string"""
+        attributes: list[str] = [f"args={self.args!r}"]
+        attributes.extend(
+            f"{k}={v!r}"
+            for k, v in vars(self).items()
+            if not k.startswith("_")
+        )
+        return f"{self.name}({', '.join(attributes)})"
+
+    def __rich__(self) -> str:
+        """Provide colorized Name"""
+        # TODO: check ..format.text|name
+        # LATER: improve color hack, maybe by CamelCase?
+        return f"{self.name[:-5]}{c.red('Error')}"

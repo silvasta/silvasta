@@ -3,7 +3,7 @@ Provide Exceptions for sstcore.utils
 
 - PathGuard: Cover all internal Errors and explain with enumerated Reasons
 
-                                                           ModuleLevel[1]
+                                                       DependencyLevel[1]
 """
 
 __all__: list[str] = [
@@ -19,11 +19,11 @@ __all__: list[str] = [
 from enum import StrEnum
 from typing import Any
 
-from ..contract.cli import Renderable
-from ..utils.color import ColorBox
+from ..brick.color.box import Colors
+from ..port.represent import CliRenderable
 from ._base import SstError
 
-c: ColorBox = ColorBox.bold()
+c = Colors()
 
 
 class PathGuardError(SstError):
@@ -52,7 +52,9 @@ class PathGuardError(SstError):
     def _short(self):
         return self.reason
 
-    def _modify_scroll(self, lines: list[Renderable]) -> list[Renderable]:
+    def _modify_scroll(
+        self, lines: list[CliRenderable]
+    ) -> list[CliRenderable]:
         """Format PathGuard fail for CLI"""
         return [
             lines[0],
@@ -70,7 +72,7 @@ class PathGuardReason(StrEnum):
     """Govern centralized Message distribution for PathGuard failures"""
 
     NO_INIT = """PathGuard is Not intended as Instance!"""
-    INPUT = "PathSpec failed to parse PathInput!"
+    INPUT = "PathSpec failed to parse PathArg!"
 
     MISSING = "Target Missing on Disk!"
     EXISTS = "Target already Exists on Disk!"
@@ -81,3 +83,4 @@ class PathGuardReason(StrEnum):
     RELATIVE = "No Relative connection inside FileTree"
 
     DECORATOR = "Target Invalid for Hybrid-Decorator"
+    LOCK = "Not able to open File in given Time..."
