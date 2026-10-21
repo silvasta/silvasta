@@ -1,8 +1,16 @@
+"""
+Transform to BaseModel and Merge with Registries and Files
+
+- Remaining NameParser after the Package moved to sstcore.format...
+
+                                                       DependencyLevel[0]
+"""
+
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
-from .base import NameParser
+from ...brick.format.name import NameParser
 
 __all__: list[str] = [
     "SchemaName",
