@@ -1,0 +1,42 @@
+"""
+Compose StrMixins
+
+- Atomize: 1 class with 1 method __str__
+
+                             DependencyLevel.sstcore.brick.views[0]
+"""
+
+__all__: list[str] = [
+    "SimpleNameMixin",
+    "NameMixin",
+    "ModuleNameMixin",
+]
+
+from ....brick import reflect
+
+
+class SimpleNameMixin:
+    """Show class name"""
+
+    def __str__(self) -> str:
+        return reflect.clsname(self)
+
+
+class NameMixin:
+    """
+    Show colorized class name and attribute value as below
+
+    - _inside_brackets (priority 1, descending)
+    - _name
+    - name
+    """
+
+    def __str__(self) -> str:
+        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
+
+
+class ModuleNameMixin:
+    """Show module path from project to class name"""
+
+    def __str__(self) -> str:
+        return self.__module__

@@ -1,0 +1,48 @@
+"""
+Compose RichMixins
+
+- Atomize: 1 class with 1 method __rich__
+
+                             DependencyLevel.sstcore.brick.views[0]
+"""
+
+__all__: list[str] = [
+    "SimpleRichNameMixin",
+    "RichNameMixin",
+    "RichModuleNameMixin",
+]
+
+
+from ....brick import reflect
+from ....brick.color import colorize
+from ....brick.color.box import Colors
+from ....port.represent import Richable
+
+colors = Colors()
+
+
+class SimpleRichNameMixin:
+    """Show colorized class name"""
+
+    def __rich__(self) -> Richable:
+        return colors(reflect.clsname(self), 3)
+
+
+class RichNameMixin:
+    """
+    Show colorized class name and attribute value as below
+
+    - _inside_brackets (priority 1, descending)
+    - _name
+    - name
+    """
+
+    def __rich__(self) -> str:
+        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
+
+
+class RichModuleNameMixin:
+    def __rich__(self) -> Richable:
+        """Show module path from project to class name"""
+        # LATER: select colors by class attributes?
+        return colorize.modules(self)
