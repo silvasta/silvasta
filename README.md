@@ -27,9 +27,13 @@ uv add "sstcore-py[all]"
 
 **Install from TestPyPI:**
 
+<!-- TODO: remove this for (not test) pypi -->
+
 ```bash
-uv add --index-url [https://test.pypi.org/simple/](https://test.pypi.org/simple/) \
-  --extra-index-url [https://pypi.org/simple/](https://pypi.org/simple/) \
+uv add \
+  --index https://test.pypi.org/simple/ \
+  --default-index https://pypi.org/simple/ \
+  --index-strategy unsafe-best-match \
   "sstcore-py[all]"
 ```
 
