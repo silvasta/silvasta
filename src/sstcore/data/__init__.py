@@ -1,19 +1,15 @@
-# TODO: explain
+"""
+Provide Infrastructure for Data Operations and Modeling
 
-from sstcore.data.model import SstModel
+                                                       DependencyLevel[4]
+"""
 
 __all__: list[str] = [
     "SstFile",
-    "SstFileFilter",
-    "FileRegistry",
     "SstFileRegistry",
-    "FileSystemManager",
+    # pydantic defaults
     "SstModel",
 ]
-from .files import (
-    FileRegistry,
-    FileSystemManager,
-    SstFile,
-    SstFileFilter,
-    SstFileRegistry,
-)
+
+from ._model import SstModel
+from .files import SstFile, SstFileRegistry
