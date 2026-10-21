@@ -1,31 +1,37 @@
 """
-sstcore — Generalize recurring patterns in projects.
+AUTO-GENERATED
 
-- SafeTyper: CLI Pipeline with defaults
-- ConfigManager: config bootstrap and access
-- printer: nice prints and DX
-- System: combined config, printer and bus
-- PathGuard: file system safety
+- DO NOT EDIT!
+
 """
 
-__all__: list[str] = [
-    "__version__",
-    "SafeTyper",
-    "ConfigManager",
-    "printer",
-    "System",
-    "PathGuard",
-]
-
+from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 
-from .cli import SafeTyper
-from .config import ConfigManager
-from .system import System
-from .utils.path import PathGuard
-from .utils.print import printer
+_LAZY_IMPORTS = {
+    "SafeTyper": ".console",
+    "portlink": ".port.link",
+    "System": ".system",
+    "ConfigManager": ".system.config",
+    "EmitCore": ".system.event",
+    "PathGuard": ".util.path.guard",
+    "printer": ".util.print",
+}
 
-try:  # show pyproject.toml package name
-    __version__: str = version("sstcore")
+
+def __getattr__(name: str):
+    if name in _LAZY_IMPORTS:
+        module_path = _LAZY_IMPORTS[name]
+        module = import_module(module_path, package=__package__)
+        return getattr(module, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return list(_LAZY_IMPORTS.keys())
+
+
+try:
+    __version__: str = version(distribution_name="sstcore-py")  # CHECK: name
 except PackageNotFoundError:
     __version__ = "unknown"

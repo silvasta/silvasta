@@ -1,55 +1,71 @@
 """
-Launch 'utils_app' with Example Functions
+Launch cli_tools with SafeTyper and the full System in action
 
 Amazing
-- scanner: scan folder, select from filetree, merge to summary file
+- scanner: Select in tui filetree from scanned folder and merge to summary file
 
 Useful
-- monitor: Log Console with live updates from file
+- monitor: Log Console with live updates from file (new with .jsonl)
 - print: Read Markdown and print with Rich
 
 """
 
-import importlib.util
-import sys
-
-from rich.markup import escape
-
 from . import printer
+from .console.tools import cli_tools
 
 
 def main() -> None:
-    check_cli_installed()
-    from .cli import tools
+    if cli_installed():
+        cli_tools()
+    else:
+        install_instructions()
 
-    tools()
+
+def cli_installed() -> bool:
+    # REMOVE: when new ImportError setup works
+    from importlib.util import find_spec
+
+    def _installed(package: str):
+        return find_spec(name=package) is not None
+
+    return all(_installed(package) for package in ["typer", "textual"])
 
 
-def check_cli_installed():
-    """Find required packages or give instructions and quit"""
+def install_instructions():
+    # LATER: this as well for sstcore.__init__, and maybe others
+    from rich.markup import escape
 
-    cli_is_installed: bool = (
-        importlib.util.find_spec("typer") is not None
-        and importlib.util.find_spec("textual") is not None
-    )
+    from .brick.color.box import Colors
 
-    if not cli_is_installed:
-        # paint
-        error: str = printer.color_box.red("Problem with Installation")
-        sst_cli = escape("'sstcore[cli]'")
-        uv: str = printer.color_box.cyan(f"uv add {sst_cli}")
-        or_: str = printer.color_box.green("or")
-        pip: str = printer.color_box.cyan(f"pip install {sst_cli}")
+    sst_cli: str = escape("'sstcore[cli]'")
+    colors = Colors()
+    error: str = colors.red("Problem with Installation")
+    uv: str = colors.b(f"uv add {sst_cli}")
+    pip: str = colors.blue(f"pip install {sst_cli}")
 
-        # scroll
-        text: list[str] = [
-            f"{error} Missing CLI dependency...",
-            f"fix with {uv} {or_} {pip}",
-        ]
-        printer.danger(text)
+    text: list[str] = [  # scroll
+        f"{error} Missing CLI dependency...",
+        f"fix with {uv} {colors.g('or')} {pip}",
+    ]
+    printer.danger(text)
 
-        sys.exit(1)
 
+# TASK: probably in .__init__, for package mismatch
+# def __getattr__(name: str):
+#     if name in _LAZY_IMPORTS:
+#         module_path = _LAZY_IMPORTS[name]
+#         try:
+#             module = import_module(module_path, package=__package__)
+#             return getattr(module, name)
+#         except ImportError as e:
+#             # Intercept missing optional dependencies gracefully
+#             if name == "SafeTyper":
+#                 raise ImportError(
+#                     f"\nMissing CLI dependencies for {name}.\n"
+#                     "Fix with: uv add 'sstcore-py[cli]' or pip install 'sstcore-py[cli]'"
+#                 ) from e
+#             raise  # Re-raise standard import errors for other modules
+#     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 if __name__ == "__main__":
     main()
