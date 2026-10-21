@@ -9,10 +9,25 @@ __all__: list[str] = [
     "MINI_UP",
     "MINI_DOWN",
     "CORNER",
+    #
+    "AllNames",
 ]
 
+from typing import Literal
 
 from rich.box import ROUNDED, Box
+
+type AllNames = Literal[
+    "ROUND",
+    "OPEN",
+    "UP",
+    "DOWN",
+    "MINI",
+    "MINI_UP",
+    "MINI_DOWN",
+    "CORNER",
+]
+
 
 ROUND: Box = ROUNDED  # Panel Default
 
