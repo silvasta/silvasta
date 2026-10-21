@@ -1,22 +1,27 @@
-"""Define the Public Interface of PathGuard"""
+"""
+Unite all Path Tools under  PathGuard 
 
-from __future__ import annotations
+                               DependencyLevel.sstcore.util.path[0]
+"""
 
 __all__: list[str] = [
     "PathGuard",
     "PathSpec",
-    "PathInput",
+    "PathArg",
+    "PathGuardField",
+    #
+    "StubFileGuard",
 ]
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
-from typing import NoReturn, Self, overload
+from types import ModuleType
+from typing import Any, NoReturn, Self, overload
 
-from ....contract.cli import PanelDTO
-from ....contract.log import LogDTO
-from ....exceptions import PathGuardReason
+from ....error import PathGuardReason
+from ....port.event.dto import LogDTO, PanelDTO
+from ....port.files import SyncMode
 
 # ---------------------------------------------------------------------------
 # Input layer (public)
@@ -33,7 +38,7 @@ class PathSpec:
     @classmethod
     def ok(
         cls,
-        target: PathInput | None = None,
+        target: PathArg | None = None,
         *,
         resolve: bool | None = None,
         must_exists: bool | None = None,
@@ -44,57 +49,67 @@ class PathSpec:
     @classmethod
     def normalized(
         cls,
-        target: PathInput | None = None,
+        target: PathArg | None = None,
         *,
         resolve: bool | None = None,
         must_exists: bool | None = None,
     ) -> Self:
-        """Build a PathSpec from PathInput (with optional policy overrides)."""
+        """Build a PathSpec from PathArg (with optional policy overrides)."""
         ...
 
     def validate(self) -> Path:
         """Apply resolve / must_exists policy; return Path."""
         ...
 
-type PathInput = str | Path | PathSpec
+type PathArg = str | Path | PathSpec
+
+class PathGuardField[T]:
+    def __get__(self, unit: T, objtype: type[T] | None = None) -> Path: ...
+    def __set__(self, unit: T, value: object) -> NoReturn: ...
+    def __set_name__(self, owner: type, name: str) -> None: ...
 
 # ---------------------------------------------------------------------------
-# Nested enum (accessible as PathGuard.SyncMode; not a top-level export)
+# Mini
 # ---------------------------------------------------------------------------
 
-class SyncMode(StrEnum):
-    """Conflict resolution strategy for transfer operations."""
-
-    INCREMENT = "increment"
-    OVERRIDE = "override"
-    IGNORE = "ignore"
+class StubFileGuard:
+    @staticmethod
+    def module_name(obj: Any) -> str: ...
+    @staticmethod
+    def public_package(module_name: str) -> str: ...
+    @staticmethod
+    def package_dir(dot_path: str) -> Path: ...
+    @staticmethod
+    def stub_root(obj: Any, package: str | None = None) -> Path: ...
+    @staticmethod
+    def get_stub_dir(
+        target: str | ModuleType | Path, subdir: str = "_stubs"
+    ) -> Path: ...
+    @staticmethod
+    def stub_file_init(
+        obj: Any, *, package: str | None = None, backup: bool = True
+    ) -> Path: ...
+    @staticmethod
+    def single_stub_file(
+        obj: Any,
+        *,
+        prefix: str,
+        package: str | None = None,
+        backup: bool = True,
+    ) -> Path: ...
 
 # ---------------------------------------------------------------------------
 # Facade
 # ---------------------------------------------------------------------------
 
 class PathGuard:
-    """
-    Safety and comfort toolkit for path access and filesystem operations.
-
-    Not instantiable — use class-level static API only.
-    """
-
     Spec: type[PathSpec]
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
 
-    def __init__(self) -> NoReturn:
-        """PathGuard is not instantiable."""
-        ...
+    # EXTRACT: define at StaticMeta and mix it here?
 
-    # --- metaclass view / introspection (PathGuardMeta) ---
-
-    @classmethod
-    def toolkit(cls, sort: bool = True) -> list[str]:
-        """Names of all staticmethods on the toolkit."""
-        ...
-
+    def __init__(self) -> NoReturn: ...
     @classmethod
     def __str__(cls) -> str: ...
     @classmethod
@@ -105,6 +120,8 @@ class PathGuard:
     def __cli__(cls) -> PanelDTO: ...
     @classmethod
     def __log__(cls) -> LogDTO: ...
+    @classmethod
+    def toolkit(cls, sort: bool = True) -> list[str]: ...
 
     # -----------------------------------------------------------------------
     # Category 1: structural guards (hybrid call / decorator)
@@ -112,14 +129,14 @@ class PathGuard:
 
     @overload
     @staticmethod
-    def dir(target: PathInput) -> Path: ...
+    def dir(target: PathArg) -> Path: ...
     @overload
     @staticmethod
     def dir[**P](target: Callable[P, Path]) -> Callable[P, Path]: ...
     @overload
     @staticmethod
     def file(
-        target: PathInput,
+        target: PathArg,
         raise_error: bool = True,
         default_content: str | None = None,
     ) -> Path: ...
@@ -136,7 +153,7 @@ class PathGuard:
     ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
     @overload
     @staticmethod
-    def unique(target: PathInput, ensure_parent: bool = False) -> Path: ...
+    def unique(target: PathArg, ensure_parent: bool = False) -> Path: ...
     @overload
     @staticmethod
     def unique[**P](target: Callable[P, Path]) -> Callable[P, Path]: ...
@@ -148,48 +165,85 @@ class PathGuard:
         ensure_parent: bool = False,
     ) -> Callable[[Callable[P, Path]], Callable[P, Path]]: ...
     @staticmethod
-    def find_sequence(base_target: PathInput) -> list[Path]:
+    def find_sequence(base_target: PathArg) -> list[Path]:
         """Sequence members for base path, newest mtime first."""
         ...
 
     # -----------------------------------------------------------------------
+    # Descriptors
+    # -----------------------------------------------------------------------
+    @overload
+    @staticmethod
+    def Dir(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    @overload
+    @staticmethod
+    def Dir() -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    @staticmethod
+    def Dir(fget: Callable[[Any], Path] | None = None) -> Any: ...  # noqa: N802
+    @overload
+    @staticmethod
+    def File(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    @overload
+    @staticmethod
+    def File(
+        *,
+        raise_error: bool = True,
+        default_content: str | None = None,
+    ) -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    @staticmethod
+    def File(  # noqa: N802
+        fget: Callable[[Any], Path] | None = None, **policy: Any
+    ) -> Any: ...
+    @overload
+    @staticmethod
+    def Unique(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    @overload
+    @staticmethod
+    def Unique(
+        *,
+        ensure_parent: bool = False,
+    ) -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    @staticmethod
+    def Unique(  # noqa: N802
+        fget: Callable[[Any], Path] | None = None, **policy: Any
+    ) -> Any: ...
+    # -----------------------------------------------------------------------
     # Category 2: transfer & delete
     # -----------------------------------------------------------------------
-
     @staticmethod
-    def remove(target: PathInput) -> bool: ...
+    def remove(target: PathArg) -> bool: ...
     @staticmethod
-    def trash(target: PathInput) -> bool: ...
+    def trash(target: PathArg) -> bool: ...
     @staticmethod
     def prune(
-        base_target: PathInput,
+        base_target: PathArg,
         remaining: int = 5,
         *,
         use_trash: bool = False,
     ) -> list[Path]: ...
     @staticmethod
     def rotate(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
         reset: bool = False,
     ) -> Path: ...
     @staticmethod
     def copy(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
     @staticmethod
     def hardlink(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.OVERRIDE,
     ) -> Path: ...
     @staticmethod
     def symlink(
-        source: PathInput,
-        target: PathInput,
+        source: PathArg,
+        target: PathArg,
         sync_mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
 
@@ -199,23 +253,23 @@ class PathGuard:
 
     @staticmethod
     def relative(
-        target: PathInput,
-        root: PathInput | None = None,
+        target: PathArg,
+        root: PathArg | None = None,
         strict: bool = True,
     ) -> Path: ...
     @staticmethod
-    def relative_duo(path1: PathInput, path2: PathInput) -> Path | None: ...
+    def relative_duo(path1: PathArg, path2: PathArg) -> Path | None: ...
     @staticmethod
     def relative_string(source: Path, target: Path) -> str: ...
     @overload
     @staticmethod
-    def split_read_print_path(
+    def split(
         target: Path,
         local_root: Path | None = None,
     ) -> tuple[Path, Path]: ...
     @overload
     @staticmethod
-    def split_read_print_path(
+    def split(
         target: list[Path],
         local_root: Path | None = None,
     ) -> list[tuple[Path, Path]]: ...

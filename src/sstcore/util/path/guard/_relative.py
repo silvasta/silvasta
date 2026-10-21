@@ -1,60 +1,65 @@
+"""
+Calculate Relative Paths and produce renderable Strings
+
+                         DependencyLevel.sstcore.util.path.guard[2]
+"""
+
 import functools
+import os
 from pathlib import Path
 
 from loguru import logger
 
-from ....exceptions import (
+from ....error import (
     NotImplementedDispatchError,
     PathGuardError,
     PathGuardReason,
 )
-from ._input import PathInput, PathSpec
+from ._arg import PathArg, ResolvedPath, castpath
 
 
+@castpath
 def relative_main(
-    target: PathInput, root: PathInput | None = None, strict: bool = True
+    target: ResolvedPath,
+    root: ResolvedPath | None = None,  # FIX: castpath->CWD!!
+    strict: bool = True,
 ) -> Path:
-    """Find Relative Path starting at Root (or CWD) downwards to Target"""
+    """
+    Find Relative Path starting at Root (or CWD) downwards to Target
 
-    _target = PathSpec.ok(target, resolve=True)
-    _root = PathSpec.ok(root, resolve=True)
+    - If not strict: walking as well upwards
+    """
+    root: Path = root or Path.cwd()
 
     if not strict:
-        import os
-
-        return Path(os.path.relpath(_target, _root))
-
+        return Path(os.path.relpath(target, root))
     try:
-        return _target.relative_to(_root)
-
+        return target.relative_to(root)
     except ValueError as error:
         raise PathGuardError(
-            PathGuardReason.RELATIVE, target=target, root=root, catched=error
+            PathGuardReason.RELATIVE, target=target, root=root, caught=error
         ) from error
 
 
-def relative_string(source: Path, target: Path):  # TODO: PathInput?
+def relative_string(source: Path, target: Path):  # TODO: PathArg?
     """Search relative Path in both direction and provide any rendering"""
-    relative: Path | None = relative_duo(source, target)
-    relative: Path = relative or relative_main(
+    relative: Path = relative_duo(source, target) or relative_main(
         target=target, root=source, strict=False
     )
     return f"{source.name} -> {relative}"
 
 
-def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
+@castpath
+def relative_duo(path1: PathArg, path2: PathArg) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 
-    _path1: Path = PathSpec.ok(path1)
-    _path2: Path = PathSpec.ok(path2)
-
     try:
-        rel21: Path | None = relative_main(_path1, _path2, strict=True)
+        rel21: Path | None = relative_main(path1, path2, strict=True)
     except PathGuardError:
         rel21: Path | None = None
 
     try:
-        rel12: Path | None = relative_main(_path2, _path1, strict=True)
+        rel12: Path | None = relative_main(path2, path1, strict=True)
     except PathGuardError:
         rel12: Path | None = None
 
@@ -63,12 +68,13 @@ def relative_duo(path1: PathInput, path2: PathInput) -> Path | None:
             return None
         case (Path() as _p, None) | (None, Path() as _p):
             return _p
+
     logger.error(f"It happened! How is that possible??\n{rel21=}\n{rel12=}?")
     return None
 
 
 @functools.singledispatch
-def split_read_print_path(target, local_root: Path | None = None):
+def split(target, local_root: Path | None = None):
     """
     Apply local_root or CWD at Target and create Path Pairs
 
@@ -79,12 +85,13 @@ def split_read_print_path(target, local_root: Path | None = None):
     raise NotImplementedDispatchError(target, local_root)
 
 
-@split_read_print_path.register
+@split.register
 def _(target: list, local_root: Path | None = None) -> list[tuple[Path, Path]]:
-    return [split_read_print_path(path, local_root) for path in target]
+    # TASK: filter for existing return paths
+    return [split(path, local_root) for path in target]
 
 
-@split_read_print_path.register
+@split.register
 def _(target: Path, local_root: Path | None = None) -> tuple[Path, Path]:
 
     if target.is_absolute():
