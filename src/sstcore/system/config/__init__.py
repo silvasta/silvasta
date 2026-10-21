@@ -6,9 +6,6 @@ Provide Configuration Pipeline with global access and json support
   - Paths: assemble and ensure filesystem locations
   - Defaults: provide default values and parameter
   - Names: provide static and dynamic parsed names
-
-- sst_config: access to global 'config' singleton (unlock or load setup first)
-
 """
 
 __all__: list = [
@@ -17,11 +14,13 @@ __all__: list = [
     "SstPaths",
     "SstDefaults",
     "SstNames",
-    "sst_config",
+    "SstHomes",
+    "HomeSetup",
 ]
-from .defaults import SstDefaults
-from .manager import ConfigManager
-from .names import SstNames
-from .paths import SstPaths
-from .settings import SstSettings
-from .setup import sst_config  # TODO: ConfigLoader?
+
+from ._defaults import SstDefaults
+from ._homes import HomeSetup, SstHomes
+from ._manager import ConfigManager
+from ._names import SstNames
+from ._paths import SstPaths
+from ._settings import SstSettings
