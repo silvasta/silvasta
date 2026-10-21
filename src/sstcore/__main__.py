@@ -50,7 +50,7 @@ def install_instructions():
     printer.danger(text)
 
 
-# TASK: probably in .__init__
+# TASK: probably in .__init__, for package mismatch
 # def __getattr__(name: str):
 #     if name in _LAZY_IMPORTS:
 #         module_path = _LAZY_IMPORTS[name]

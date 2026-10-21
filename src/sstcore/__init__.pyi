@@ -54,7 +54,7 @@ __all__: list[str] = [
     "ConfigManager",
     "SafeTyper",
     "PathGuard",
-    # IMPORTANT: activate on publish!
+    # IMPORTANT: activate on publish! (deactivated due to auto-import from sstcore instead of ...port.link)
     # "portlink",
 ]
 
