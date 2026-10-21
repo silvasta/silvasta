@@ -6,23 +6,14 @@ Show examples in isolated environment without any deeper purpose
 """
 
 from contextlib import suppress
-from pathlib import Path
 from typing import Any
 
 import fire
-from pydantic import BaseModel
 
-from sstcore import ConfigManager, System
-from sstcore.system import EventBus
-from sstcore.utils import Printer, day_count
-from sstcore.utils.parse import ParsedName
-from sstcore.utils.parse.name import NamePattern
-
-# Globals
-sst: System = System.bootstrap(use_globals=True)
-config: ConfigManager = sst.config
-bus: EventBus = sst.bus
-printer: Printer = sst.printer
+from sstcore.brick.format.name import NamePattern
+from sstcore.brick.time import day_count
+from sstcore.util.parse import ParsedName, SchemaName
+from sstcore.util.print import printer
 
 pattern1: str = "{day}_summary.{suffix}"
 
@@ -39,24 +30,54 @@ def view(obj: Any):
 
 
 class ParseTasks:
-    def base(self):
+    """OUTDATED..."""
+
+    def schema(self):
+        schema_name()
+
+    def core(self):
         parsed_name()
 
-    # def style(self):
-    #     styled_name()
+    # old...
+    def parse(self):
+        old_parsed_name()
 
+    # old...
     def regex(self):
         pattern_namer()
 
+    # old...
     def error(self):
         show_error()
 
-    def model(self):
-        parsed_basemodel_name()
-
 
 def parsed_name():
-    printer.title("Start of parsed_name")
+    printer.title("Start of new parsed_name")
+
+    pattern: str = "{day}_summary.{suffix}"
+    parser = ParsedName(pattern=pattern)
+    printer(parser)
+    # TODO: example with DTO return
+
+
+def schema_name():
+    pattern = "t_{id}_{topic}"
+    schema = SchemaName(pattern=pattern)
+
+    printer(str(schema))
+    printer(schema)
+    printer(f"{schema!r}")
+
+    name = "t_33_validation"
+    printer(schema(name))
+
+    keys = (11, "test")
+    printer(schema(keys))
+
+
+def old_parsed_name():
+    """OUTDATED???"""
+    printer.title("Start of old_parsed_name")
 
     pattern: str = "{day}_summary.{suffix}"
     summary_file: ParsedName = ParsedName(pattern=pattern)
@@ -76,53 +97,11 @@ def parsed_name():
         printer.success("it works!")
 
 
-# def styled_name():
 #
-#     sstfile_dates: ColoredName = StyledName.parse_style(
-#         style_pattern=(
-#             "[{style1}]{name}[/]: [{style2}]{first_tracked}[/]"
-#             " - [{style3}]{last_updated}[/]"
-#         ),
-#         keys=["name", "first_tracked", "last_updated"],
-#         styles=["blue", "red", "white"],
-#     )
-#
-#     # printer(sstfile_dates) # ERROR: rich.errors.MarkupError
-#     print(sstfile_dates)
-#
-#     print(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
-#     printer(sstfile_dates.styled(["file.pdf", datetime.now(), "22-03-2026"]))
-#
-
-
-def parsed_basemodel_name():
-    printer.title("Start of parsed_basemodel_name")
-
-    class TreeInfoSchema(BaseModel):
-        sprout_id: int
-        topic: str
-
-    # Instantiate with the generic type and schema class
-    tree_parser: ParsedName[TreeInfoSchema] = ParsedName[TreeInfoSchema](
-        pattern="t_{sprout_id}_{topic}",
-        model_cls=TreeInfoSchema,
-        strip_extension=True,  # Safely handles Path("t_42_math.json")
-    )
-    # Backwards parsing returns the BaseModel directly!
-    tree_data = tree_parser(Path("t_42_math.json"))
-
-    printer("tree_data", end=": ")
-    printer(tree_data)
-    printer(f"{tree_data}")
-    printer(f"{tree_data=}")
-
-    printer(tree_data.sprout_id)  # 42 (as int)
-    printer(tree_data.topic)  # "math"
-
-    printer(tree_parser)
 
 
 def pattern_namer():
+    """OUTDATED???"""
     namer = NamePattern("{date}_{topic}_sstcore.{suffix}")
 
     printer(namer)
@@ -150,6 +129,7 @@ def pattern_namer():
 
 
 def show_error():
+    """OUTDATED???"""
     pattern = "{day}_summary.{suffix}"
     summary_name: ParsedName = ParsedName(pattern=pattern)
     printer(summary_name)

@@ -1,7 +1,7 @@
 import typer
+from sstcore.tui import ListSelectorApp
 
 from sstcore import printer
-from sstcore.tui import ListSelectorApp
 
 app = typer.Typer()
 

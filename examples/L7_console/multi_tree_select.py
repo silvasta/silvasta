@@ -1,12 +1,12 @@
 from pathlib import Path
 
 import fire
-
-from sstcore.exceptions import TuiSelectorError
 from sstcore.tui.tree_selector import TreeSelectorApp
 from sstcore.utils import FolderScanner, PathTreeNode, SimpleTreeNode, printer
 from sstcore.utils.path import get_project_root
 from sstcore.utils.tree import examples
+
+from sstcore.error import TuiSelectorError
 
 SCAN_ROOT: Path = get_project_root()
 

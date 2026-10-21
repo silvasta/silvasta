@@ -4,11 +4,11 @@ from typing import Any
 from loguru import logger
 from rich.color import ANSI_COLOR_NAMES, Color
 from rich.style import Style
-
-from sstcore import printer
 from sstcore.utils.color import ColorBox
 from sstcore.utils.color.style import TextStyle
 from sstcore.utils.tree import SimpleTreeNode, examples
+
+from sstcore import printer
 
 c: ColorBox = ColorBox()
 
