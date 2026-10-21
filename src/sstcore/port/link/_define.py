@@ -7,8 +7,6 @@ Setup the Protocols that guide the Behaviour of the Implementations
 """
 
 __all__: list[str] = [
-    "LinkSpec",
-    #
     "PortLinker",
     "DocMerger",
     "PortEmit",
@@ -17,11 +15,9 @@ __all__: list[str] = [
     "Collecting",
 ]
 
-from dataclasses import dataclass, replace
-from typing import Any, Generic, Protocol, Self, get_protocol_members
+from typing import Any, Protocol
 
 from ._model import Docs, PortLinks
-from ._tap import tap
 
 
 class PortLinker[C, P](Protocol):
@@ -29,14 +25,14 @@ class PortLinker[C, P](Protocol):
         """Accept class C iff C implements P and return C unchanged"""
 
 
-class DocMerger(Protocol):  # IDEA: Merging? only if as well operator
-    def __call__(self, docs: Docs) -> str:
-        """Format and Render Protocol and Implementation docstrings"""
-
-
 class PortEmit[**P](Protocol):
     def __call__(self, *args, sender: Any = None, **kwargs) -> None:
         """Define the message structure of port internal events"""
+
+
+class DocMerger(Protocol):  # IDEA: Merging? only if as well operator
+    def __call__(self, docs: Docs) -> str:
+        """Format and Render Protocol and Implementation docstrings"""
 
 
 class Reflecting(Protocol):
@@ -52,26 +48,3 @@ class Injecting(Protocol):
 class Collecting(Protocol):
     def __call__(self, port: type, plug: type, attr: str, /) -> PortLinks:
         """Harvest data in both sides MRO pipeline"""
-
-
-@dataclass(frozen=True, slots=True)
-class LinkSpec:
-    # AI: maybe this can stay here when 'merge' and 'emit' are only declared by protocol
-    skip: frozenset[type] = frozenset({object, Protocol, Generic})
-    on_exit_with_error: bool = True  # TODO: error strategy
-    merge: DocMerger = lambda docs: f"merge: {docs}"  # NEXT: same as emit
-    emit: PortEmit | None = tap.emit  # IDEA: set default in link.__init__?
-
-    def ignores(self, base: type) -> bool:
-        return base in self.skip
-
-    def note(self, *args, sender: Any = None, **kwargs) -> None:
-        if self.emit is not None:
-            self.emit(*args, sender, **kwargs)
-
-    def derive(self, **kwargs) -> Self:
-        return replace(self, **kwargs)
-
-    def surface(self, protocol: type) -> list[str]:
-        cls_as_attribute: list[str] = [""]
-        return cls_as_attribute + list(get_protocol_members(protocol))

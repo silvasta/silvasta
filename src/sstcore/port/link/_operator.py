@@ -157,7 +157,7 @@ class EasyAccess(EasyBase, id="get"):
     dunders: set[str] = {
         "__doc__",
         "__func__",
-        "__links__",
+        "__links__",  # FIX:
     }
     _methods: DunderStore
 
@@ -173,6 +173,7 @@ class EasyAccess(EasyBase, id="get"):
     def __getattr__(self, name: str) -> Callable:
         self.emit(f"[{self}].__getattr__: {name}")
         if method := self._methods.get(name):
+            # FIX:
             return partial(self.invoke, attribute=method)
         raise LinkRaiser.PipeLine(f"__getattr__: {name}", state=self._methods)
 
