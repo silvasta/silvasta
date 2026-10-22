@@ -221,6 +221,27 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
             case "hard":
                 return self.direct
 
+    def __core__(self, target: Any, attr: str, *args: Any) -> Any:
+        if (resolved := self.pre(target, attr)) is None:
+            return None
+        result = self.strategy(resolved, attr, *args)
+        return self.post(result, attr)
+
+    def pre(self, target: Any, attr: str, /) -> Any:
+        """Unwrap descriptors when reading or writing __doc__s"""
+        if attr == "__doc__":
+            if isinstance(target, property):
+                return target.fget
+            if isinstance(target, cached_property):
+                return target.func
+            if hasattr(target, "__func__"):
+                return target.__func__
+        return target
+
+    def post(self, result: Any, attr: str, /) -> Any:
+        """Hook for post-processing the strategy result."""
+        return result
+
     def direct(self, *args, **kwargs):
         raise NotImplementedError(args, kwargs)
 
@@ -228,7 +249,7 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
         raise NotImplementedError(args, kwargs)
 
     def resolve(self, target: Any, attr: str, /) -> Any:
-        raise NotImplementedError(target, attr)
+        return self.pre(target, attr)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -239,25 +260,11 @@ class Projector(Operator[Projecting], id="project"):
 
     __call__: Projecting
 
-    def __core__(self, target: Any, attr: str, value: Any, /) -> None:
-        resolved = self.resolve(target, attr)
-        self.strategy(resolved, attr, value)
-
     def direct(self, target: Any, attr: str, value: Any, /) -> None:
         object.__setattr__(target, attr, value)
 
     def polite(self, target: Any, attr: str, value: Any, /) -> None:
         setattr(target, attr, value)
-
-    def resolve(self, target: Any, attr: str, /) -> Any:
-        if attr == "__doc__":
-            if isinstance(target, property) and target.fget is not None:
-                return target.fget
-            if isinstance(target, cached_property) and target.func is not None:
-                return target.func
-            if hasattr(target, "__func__"):
-                return target.__func__
-        return target
 
 
 class Detector(Operator[Detecting], id="detect"):
@@ -265,16 +272,19 @@ class Detector(Operator[Detecting], id="detect"):
 
     __call__: Reflector
 
-    def __core__(self, target: Any, attr: str, /) -> Any:
-        return self.strategy(target, attr)
-
     def direct(self, target: Any, attr: str, /) -> Any:
         return getattr(target, "__dict__", {}).get(attr)
 
     def polite(self, target: Any, attr: str, /, default: Any = None) -> Any:
         return getattr(target, attr, default)
 
+    def post(self, result: Any, attr: str, /) -> Any:
+        if attr == "__doc__":
+            return self.clean(result)
+        return result
+
     def resolve(self, cls: type, attr: str, /) -> Any:
+        """Resolve Class or its Member during MRO walk"""
         if not attr:
             return cls
         with self.on("hard"):
@@ -289,25 +299,9 @@ class Detector(Operator[Detecting], id="detect"):
             case _:
                 return None
 
-    def extract_doc(self, cls: type, attr: str, /) -> str:
-        """Resolve cls or cls.attr and return its own cleaned docstring."""
-        # REMOVE: preferably entire method, at least the duplicated checks
-        if (target := self.resolve(cls, attr)) is None:
-            return ""
-        if isinstance(target, property) and target.fget is not None:
-            target = target.fget
-        elif isinstance(target, cached_property) and target.func is not None:
-            target = target.func
-
-        with self.on(mode="hard"):
-            raw_doc: str | None = self.doc(target)
-        return self.clean(raw_doc)
-
     def clean(self, doc: str | Any, /) -> str:
         return cleandoc(doc) if isinstance(doc, str) and doc else ""
 
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
@@ -328,7 +322,7 @@ class Collector(Reflector[Collecting], id="collect"):
         return data
 
     def stream(self, cls: type) -> Iterator[type]:
-        """Yield filtered MRO mases of Cls"""
+        """Yield filtered MRO bases of Cls"""
         for base in cls.__mro__:
             if not self.spec.ignores(base):
                 yield base
@@ -350,7 +344,9 @@ class Collector(Reflector[Collecting], id="collect"):
             if track_nearest and self.nearest_target is None:
                 self.nearest_target: Any = target
 
-            text: str = self.detector.doc(base, attr)
+            with self.detector.on("hard") as detect:
+                text: str = detect.doc(target)
+
             if text and (attr, base) not in data:
                 data.fill(side.ctor(text, attr, source=base))
 

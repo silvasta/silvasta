@@ -37,7 +37,7 @@ from ._define import (
     SortedDocs,
 )
 
-HAND_TOGGLE: tuple[str, ...] = (
+HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
     "report",
     "init",
 )
