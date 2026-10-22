@@ -10,13 +10,18 @@ Reference the Implementations back to their Definitions in the port
 - Trigger static type checker warning on implementation mismatch
 
                                     DependencyLevel.sstcore.port[4]
+                                    (drop to 1? remove enums would be enough)
 """
+
+from typing import Any, Self
 
 __all__: list[str] = [
     "portlink",
     "PortLink",
     "LinkSpec",
     "spec",
+    "tap",
+    "Tap",
     # definitions
     "PortLinker",
     "Reflecting",
@@ -27,8 +32,8 @@ __all__: list[str] = [
     # rendering
     "MergeMachine",
     # __doc__
-    "PortLinkDocs",
-    "PortLinks",
+    "PortLinkStore",
+    "PortLinkCollect",
     "PortLinkData",
     "SidePolicy",
     # dto
@@ -42,29 +47,28 @@ import typing as _t
 from dataclasses import dataclass as _dataclass
 from dataclasses import replace as _replace
 
+from ._control import LinkSpec, Tap
 from ._define import (
-    Collecting,
-    DocMerger,
-    Injecting,
-    LinkSpec,
-    PortEmit,
-    PortLinker,
-    Reflecting,
-)
-from ._model import (
     Doc,
     PlugDoc,
     PortDoc,
+    PortEmit,
+    PortLinkCollect,
     PortLinkData,
-    PortLinkDocs,
-    PortLinks,
+    PortLinker,
+    PortLinkStore,
+    PortRegistry,
     SidePolicy,
 )
-from ._operator import PortOperator
-from ._render import MergeMachine
-from ._tap import tap
+from ._operate import Redactor, Reflector
 
-spec = LinkSpec(merge=MergeMachine.Schema1)
+# IMPORTANT: LingConfig (or its DTO predecessor) will for sure add something here
+# - check what can be split from here and LinkSpec to 1 config for both and portlink
+tap = Tap()
+
+spec = LinkSpec(merge=Redactor(spec="FAIL"), emit=tap.emit)  # CHECK:
+
+registry = PortRegistry()
 
 
 @_dataclass(frozen=True, slots=True)
@@ -72,12 +76,28 @@ class PortLink:
     """Anchor an Implementation to its Protocol"""
 
     spec: LinkSpec = spec
-
-    def create(self, spec: LinkSpec) -> _t.Self:
-        return _replace(self, spec=spec)
+    tap: Tap = tap
+    registry: PortRegistry = registry
 
     def evolve(self, **spec_overrides) -> _t.Self:
         return _replace(self, spec=self.spec.derive(**spec_overrides))
+
+    def configure(
+        self,
+        *,
+        env_var: str | None = None,
+        toggle: tuple[str, ...] | None = None,
+        **spec_overrides: Any,
+    ) -> Self:
+        """Mutate shared Tap and LinkSpec in-place"""
+        if env_var is not None or toggle is not None:
+            self.tap.configure(  # TODO: better forwarding
+                env_var=env_var or "SST_DEBUG",
+                toggle=toggle or (),
+            )
+        if spec_overrides:
+            self.spec.configure(**spec_overrides)
+        return self
 
     def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
         """Merge docstrings and enforce static type check"""
@@ -85,35 +105,38 @@ class PortLink:
         def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
             """Catch all __doc__ merge issues and always return original Cls"""
 
-            with PortOperator(spec=self.spec) as operator:
-                with operator.spawn.reflect(mode="hard") as _reflector:
-                    local_data: PortLinkDocs = _reflector.portlinkdocs(cls)
+            with Reflector(spec=self.spec) as reflect:
+                with reflect.detect(mode="hard") as detector:
+                    local_data: PortLinkStore = detector.portlinkdocs(cls)
 
                 if protocol in local_data:
                     return cls
 
-                task_data: PortLinks = local_data.edit()
+                task_data: PortLinkCollect = local_data.edit()
 
                 for attr in spec.surface(protocol):
-                    with operator.spawn.collect() as _collector:
-                        attr_data: PortLinks = _collector(protocol, cls, attr)
-                        target: type | None = _collector.nearest_target
+                    with reflect.collect(spec="HANDLE THIS INTERN!") as collect:
+                        attr_data: PortLinkCollect = collect(
+                            protocol, cls, attr
+                        )
+                        target: type | None = collect.nearest_target
 
+                    # IDEA: just spawn the merger here?
+                    # - and find policy that replaces merge, like 1 part of the internal Redactor chain
                     attr_doc: str = self.spec.merge(docs=attr_data[attr])
 
                     if target is None or not attr_doc:
                         continue
 
-                    with operator.spawn.inject(mode="soft") as _injector:
-                        _injector.doc(target, attr_doc)
+                    with reflect.inject(mode="soft") as projector:
+                        projector.doc(target, attr_doc)
                         task_data.absorb(attr_data)  # absorb on inject success
 
-                with operator.spawn.inject(mode="hard") as _injector:
-                    final_data: PortLinkDocs = task_data.save()
-                    _injector.portlinkdocs(cls, final_data)
+                with reflect.inject(mode="hard") as projector:
+                    final_data: PortLinkStore = task_data.save()
+                    projector.portlinkdocs(cls, final_data)
 
-            # AI: here may more actions follow in the future
-            return tap.hook_class(cls)  # TEST:
+            return tap.trace(cls)
 
         return portlinker
 

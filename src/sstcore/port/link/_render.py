@@ -1,102 +1,80 @@
 """
-The Docstring Merging Render Engine
+Render the Output with Lazy Loaded external Libraries
 
-- Setup prepared with possibilities to grow
+- rich.(Console.)print: direct feedback inside active terminal session
+- loguru: when it needs to be retained for longer than just one window
 
-                               DependencyLevel.sstcore.port.link[2]
+                               DependencyLevel.sstcore.port.link[1]
 """
 
-# TASK: remove QuickPrinter asap
+from typing import TYPE_CHECKING, Any
 
-from collections.abc import Iterable
-from contextlib import contextmanager
-from typing import Any
-
-from .._types import _Stringable
-
-printer: Any = None  # REMOVE:
+from ._define import PortEmit, PortPrinter
 
 
-def _load_printer():
-    # NEXT: portlog -> writes ndjson -> render from loaded file!
+def _loguru(sender: str, *args: Any) -> None:
+    # TODO: improve, kwargs??
+    from loguru import logger
+
+    msg = " ".join(repr(a) if not isinstance(a, str) else a for a in args)
+    logger.opt(depth=3).debug(f"[{sender}] {msg}")
+
+
+def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
+    # TODO: improve, better default
+    from rich import print as rprint
+
+    prefix: str = f"[bold cyan]{sender}[/] [dim]│[/]"
+    rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
+
+
+if TYPE_CHECKING:  # WARN: somehow always shows no error... is that proper?
+    _l: PortEmit = _loguru
+    _p: PortEmit = _rich
+
+    def _t() -> PortEmit:
+        return _loguru
+
+
+def _load_printer() -> PortPrinter:
     from rich.console import Console
     from rich.panel import Panel
-    from rich.rule import Rule
     from rich.table import Table
 
-    class QuickPrinter:
-        console = None
+    class MiniPrinter:
+        console = Console()
 
         def __call__(self, *args, **kwargs):
-            if self.console is None:
-                self.console = Console()
             self.console.print(*args, **kwargs)
 
-        def lines(self, target: Iterable[_Stringable], /):
-            match target:
-                case dict():
-                    _lines = (f"{k}: {v}" for k, v in target.items())
-                case _:
-                    _lines = (str(i) for i in target)
-            self("\n".join(_lines))
+        def line(self, *target, color: str = "yellow"):
+            self("\n".join(str(i) for i in target), color=color)
 
-        @contextmanager
-        def topic(self, title, /):
-            self.panel(f"Start of: {title}", frame="green", title=title)
-            try:
-                yield
-            finally:
-                self.line()
-
-        #  LINE: -- Layouts -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-        def section(self, title, content):
-            self.panel(title, frame="yellow")
-            self(content)
-
-        def panel(
-            self, content, /, text="bold white", title=None, frame="cyan"
-        ):
+        def panel(self, content, /, title=None, frame="cyan"):
             panel = Panel(
                 renderable=content,
-                style=text,
                 title=f"[bold white]{title}[/]" if title else None,
                 title_align="right",
                 border_style=frame,
             )
             self(panel)
 
-        def line(self, char="-- --- --", color="red"):
-            self(Rule(style=color, characters=char))
-
-        #  LINE: -- Specialized -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-        def vars(self, target, /):
-            self(vars(target), title=f"vars({clsname(target)})")
-
-        def repr(self, target, /):
-            self(repr(target))
-
-        def debug(
+        def table(
             self,
             target: dict,
             /,
-            header="Dict Inspection",
-            show_type: bool | tuple[bool, bool] = (True, True),
-            style="yellow",
+            show_key_type: bool = False,
+            show_value_type: bool = True,
+            color: str = "green",
         ) -> None:
             """Render colorful Debug Dict, optional with Key or Value Type"""
-            if header:
-                self.panel(header, title="Dict Inspection", frame=style)
-            show_key_type, show_value_type = (
-                show_type
-                if isinstance(show_type, tuple)
-                else (show_type, show_type)
-            )
-            table = Table(style=style)
+
+            table = Table(style=color)
+
             table.add_column("Key", justify="left", style="green")
             if show_key_type:
                 table.add_column("Type Key", justify="center", style="magenta")
+
             table.add_column("Value", style="blue", justify="left")
             if show_value_type:
                 table.add_column("Type Value", style="magenta")
@@ -111,9 +89,7 @@ def _load_printer():
                 table.add_row(*row)
             self(table)
 
-    def clsname(target, /, default="") -> str:
-        """Extract name from instance or class"""
-        default: str = default or type(target).__name__
-        return getattr(target, "__name__", default)
+    if TYPE_CHECKING:
+        _printer: PortPrinter = MiniPrinter()
 
-    return QuickPrinter
+    return MiniPrinter()
