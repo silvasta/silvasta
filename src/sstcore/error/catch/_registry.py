@@ -12,7 +12,7 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from ...brick.vault import DictRegistry
+from ...brick.vault import DictRegistry  # NEXT: proper vault
 from ...port.register import DictRegister, FuncRegister
 from ._handler import ErrorHandler  # REMOVE: proto???
 
@@ -21,7 +21,7 @@ type HandlerFunc = Callable[[BaseException], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
 
-class ErrorRegistry(DictRegistry[ErrorHandler]):
+class ErrorRegistry(DictRegistry[ErrorHandler]):  # NEXT: proper vault
     """
     Collect and Provide the ErrorHandler
 
@@ -29,6 +29,8 @@ class ErrorRegistry(DictRegistry[ErrorHandler]):
     - Access by Exception type as Key
 
     """
+
+    # IMPORTANT: compare error with __mro__
 
     def __init__(self):
         self.items: dict[type[BaseException], ErrorHandler] = {}

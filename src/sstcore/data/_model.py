@@ -28,6 +28,7 @@ class SstModel(BaseModel):
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @classmethod
+    # TODO: compare with config.Settings, just: load?
     def build_from_file(cls, path: Path) -> Self:
         """Load saved state from json and build Model"""
         return cls.model_validate(
@@ -39,6 +40,7 @@ class SstModel(BaseModel):
         self.last_updated: datetime = datetime.now(UTC)
         logger.debug(f"state file: {self.last_updated=}")
 
+    # TODO: compare with config.Settings, just: save?
     def save_to_file(self, path: Path):
         """Save current state to json after final update"""
         self.touch()

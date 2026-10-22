@@ -13,14 +13,14 @@ from loguru import logger
 
 from ..error.catch import ErrorRegistry
 from ..forge.view import view
-from ..port.system import SstSystem, SystemCliArgs
+from ..port.system import CliSystem, SystemLoaderInput
 from ..system.boot import System, SystemLoader, sst_system_loader
 from ..system.config import HomeSetup
 from . import _args as args
 from .cli import _scroll as scroll
 
 
-@view.safe_typer  # ty:ignore
+@view.safe_typer
 class SafeTyper(typer.Typer):
     """
     Lead the CLI execution and distribute the booted System
@@ -57,6 +57,7 @@ class SafeTyper(typer.Typer):
 
         @self.callback()
         def dispatcher(
+            # TODO: hide from subabpps?
             ctx: typer.Context,
             verbose: args.Verbose = False,
             quiet: args.Quiet = False,
@@ -75,16 +76,15 @@ class SafeTyper(typer.Typer):
             else:
                 self._run_sub_callback(ctx)
 
-    # AI: Input spectrum must be No DTO!
     def _run_main_callback(
-        self, ctx: typer.Context, **cli_args: Unpack[SystemCliArgs]
+        self, ctx: typer.Context, **cli_args: Unpack[SystemLoaderInput]
     ):
         """Setup Config and Logging and show Status"""
 
         self.errors: ErrorRegistry = self._error_registry or ErrorRegistry()
 
         loader: SystemLoader = self._system_loader or sst_system_loader()
-        self.system: SstSystem = loader(**cli_args)
+        self.system: CliSystem = loader(**cli_args)
         self._update_system_context(ctx)
 
         # LATER: update input scroll prints
@@ -94,10 +94,10 @@ class SafeTyper(typer.Typer):
         #     scroll.safe_typer.setup(self.system.config, loader)
 
     def _update_system_context(
-        self, ctx: typer.Context, system: SstSystem | None = None
+        self, ctx: typer.Context, system: CliSystem | None = None
     ) -> None:
         ctx.obj = ctx.obj or {}
-        system: SstSystem = system or self.system
+        system: CliSystem = system or self.system
         system_context: dict = {
             "system": system,
             "config": system.config,
