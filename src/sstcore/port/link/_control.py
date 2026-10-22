@@ -38,8 +38,10 @@ from ._define import (
 )
 
 HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
-    "report",
-    "init",
+    # "log",
+    # "report",
+    # "init",
+    # "name",
 )
 
 DUNDERS: set[str] = {
@@ -81,7 +83,7 @@ class LinkSpec:
             self.report = 2
 
         self.emit: PortEmit = _prepare_emit(self)
-        self.printer: PortPrinter = (
+        self.printer: PortPrinter = (  # CHECK: does this turn all printer on??
             _render._load_printer() if self.report > 0 else _render.NOOP_PRINTER
         )
 

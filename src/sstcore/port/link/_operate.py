@@ -9,8 +9,6 @@ Create the SimpleNamespace Easy Operators
                                DependencyLevel.sstcore.port.link[1]
 """
 
-# TASK: raiser! or just import SstCoreError -> LinkError and export this to Raiser
-
 __all__: list[str] = [
     "EasyNote",
     "EasyCore",
@@ -29,7 +27,7 @@ from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from functools import cached_property, partial
 from inspect import cleandoc
-from typing import Any, Literal, NamedTuple, Self
+from typing import Any, Literal, Self
 
 from .._raise import LinkRaiser
 from ..empty import VOID, MayBe
@@ -37,10 +35,12 @@ from ..raising import SstCoreError
 from ._define import (
     Collecting,
     Detecting,
+    Doc,
     Docs,
     DunderSet,
     DunderStore,
     LinkConfig,
+    Param,
     PlugDocs,
     PortDoc,
     PortDocs,
@@ -73,21 +73,10 @@ class EasyCore[Core: Callable](EasyNote):  # TODO: resolve wiring
         return self.__core__(*args, **kwargs)
 
 
-class Param(NamedTuple):
-    """Track the ongoing Actions"""
-
-    args: tuple[Any, ...]
-    kwargs: dict[str, Any]
-
-    def __str__(self):
-        return f"args={self.args}, kwargs={self.kwargs}"
-
-    def __repr__(self):
-        return str(self)  # LATER: explain each (kw)arg
-
-
 class EasyCatch(EasyCore):
     """Execute in Context and Safe reflecting Operations"""
+
+    # TASK: make this emits here easy to mute and to turn on
 
     _last_call: MayBe[Param] = VOID
 
@@ -97,14 +86,14 @@ class EasyCatch(EasyCore):
             return super().__call__(*args, **kwargs)
 
     def __enter__(self) -> Self:
-        self.emit(f"{self}: Executing Pipeline in Context")
+        self.emit("Executing Pipeline in Context")
         return self
 
     def __exit__(self, _error_type, error, _traceback):
-        self.emit(f"{self}: Closing context")
+        self.emit("Closing context")
 
         if _error_type is None:
-            self.emit(f"{self}: No Issues...")
+            self.emit("No Issues...")
             return True
 
         self.emit(f"{self!r}: {error=}")
@@ -261,7 +250,13 @@ class Projector(Operator[Projecting], id="project"):
     __call__: Projecting
 
     def direct(self, target: Any, attr: str, value: Any, /) -> None:
-        object.__setattr__(target, attr, value)
+        """object.__setattr__ for instances and type.__setattr__ for cls"""
+        setter: Callable[[str, Any, Any], None] = (
+            type.__setattr__
+            if isinstance(target, type)  #
+            else object.__setattr__
+        )
+        setter(target, attr, value)
 
     def polite(self, target: Any, attr: str, value: Any, /) -> None:
         setattr(target, attr, value)
@@ -273,7 +268,9 @@ class Detector(Operator[Detecting], id="detect"):
     __call__: Reflector
 
     def direct(self, target: Any, attr: str, /) -> Any:
-        return getattr(target, "__dict__", {}).get(attr)
+        if isinstance(target, type):
+            return target.__dict__.get(attr)
+        return getattr(target, attr, None)
 
     def polite(self, target: Any, attr: str, /, default: Any = None) -> Any:
         return getattr(target, attr, default)
@@ -347,19 +344,24 @@ class Collector(Reflector[Collecting], id="collect"):
             with self.detector.on("hard") as detect:
                 text: str = detect.doc(target)
 
+            self.emit(
+                f"Walk [{side.name}] {base.__name__}.{attr or '<class>'}: doc={bool(text)}"
+            )
             if text and (attr, base) not in data:
-                data.fill(side.ctor(text, attr, source=base))
+                doc_item: Doc = side.ctor(text, attr, source=base)
+                data.fill(doc_item)
+                self.emit(f"Filled: {doc_item} -> len={len(data[attr])}")
 
 
 class Redactor(Reflector, id="redact"):
     __call__: Redacting
 
-    def __call__(self, docs: Docs, /) -> str:
-        sorted: SortedDocs = SidePolicy.sort(docs)
-        self.spec.show_result(sorted)
-        lines: list[str] = schema1(*sorted.port_and_plug())
+    def __core__(self, docs: Docs, /) -> str:
+        sorted_docs: SortedDocs = SidePolicy.sort(docs)
+        self.spec.show_result(sorted_docs)
+        lines: list[str] = self.spec.merge(*sorted_docs.port_and_plug())
         # LATER: show_merge_result(...)
-        self.spec.printer.panel(f"Statsistic: Total Lines: {len(lines)}")
+        self.spec.printer.panel(f"Statistic: Total Lines: {len(lines)}")
         return "\n".join(lines)
 
 

@@ -99,6 +99,9 @@ class PortLink:
             """Catch all __doc__ merge issues and always return original Cls"""
 
             with Reflector(spec=self.spec) as reflect:
+                self.spec.printer.panel("Start of Reflector")
+                self.spec.printer(protocol)
+                self.spec.printer(cls)
                 with reflect.detector.on(mode="hard") as detect:
                     local_data: PortLinkStore = (
                         detect.portlinks(cls) or PortLinkStore()
@@ -119,15 +122,16 @@ class PortLink:
                     if target is None or not attr_doc:
                         continue
 
-                    with reflect.projector.on(mode="soft") as projector:
-                        projector.doc(target, attr_doc)
+                    with reflect.projector.on(mode="soft") as project:
+                        project.doc(target, attr_doc)
                         task_data.absorb(attr_data)  # absorb on inject success
 
                 with reflect.projector.on(mode="hard") as project:
                     final_data: PortLinkStore = task_data.save()
                     project.portlinks(cls, final_data)
+                    self.registry.register(port=protocol, plug=cls)
 
-            return tap.trace(cls)
+            return self.tap.trace(cls)
 
         return portlinker
 

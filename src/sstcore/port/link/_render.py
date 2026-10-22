@@ -9,8 +9,11 @@ Render the Output with Lazy Loaded external Libraries
 
 from functools import lru_cache
 from typing import Any
+from weakref import WeakSet
 
-from ._define import LinkRegistry, PortPrinter, SortedDocs
+from src.sstcore.port.link._define import Doc
+
+from ._define import LinkRegistry, Param, PortPrinter, SortedDocs
 
 
 def _loguru(*args: Any, sender: str = "", **kwargs: Any) -> None:
@@ -28,9 +31,38 @@ def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
     rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
 
 
+def _format_cell(val: Any) -> str:
+    """Format types, WeakSets, and Docs cleanly for Rich panels and tables."""
+    if isinstance(val, type):
+        return val.__name__
+    if isinstance(val, WeakSet):
+        return ", ".join(c.__name__ for c in val) or "∅"
+    if isinstance(val, Doc):
+        attr_suffix: str = f".{val.attr}" if val.attr else ""
+        return f"[bold]{val.source.__name__}{attr_suffix}[/]: {val.text!r}"
+    return str(val)
+
+
+class _NoopPrinter:
+    """Zero-cost printer sink when rendering is disabled."""
+
+    def __call__(self, *args, **kwargs): ...
+    def line(self, *args, **kwargs): ...
+    def panel(self, *args, **kwargs): ...
+    def table(self, *args, **kwargs): ...
+    def show_sort_result(self, *args, **kwargs): ...
+    def overview(self, *args, **kwargs): ...
+
+
+NOOP_PRINTER: PortPrinter = _NoopPrinter()
+
+
 @lru_cache(maxsize=1)
 def _load_printer() -> PortPrinter:
+    """From here Only Printer"""
+
     from rich.console import Console
+    from rich.errors import NotRenderableError
     from rich.panel import Panel
     from rich.table import Table
 
@@ -38,14 +70,23 @@ def _load_printer() -> PortPrinter:
         console = Console()
 
         def __call__(self, *args, **kwargs):
-            self.console.print(*args, **kwargs)
+            try:
+                self.console.print(*args, **kwargs)
+            except NotRenderableError as error:
+                param = Param(args, kwargs)
+                self.panel(str(param), title=str(error), color="red")
 
         def line(self, *target, color: str = "yellow"):
             self("\n".join(str(i) for i in target), style=color)
 
-        def panel(self, content, /, title=None, color="cyan"):
+        def panel(self, *content: Any, title: Any = None, color: str = "cyan"):
+            body: str = (
+                "\n".join(_format_cell(c) for c in content)
+                if content
+                else "[dim]Empty[/]"
+            )
             panel = Panel(
-                renderable=content,
+                renderable=body,
                 title=f"[bold white]{title}[/]" if title else None,
                 title_align="right",
                 border_style=color,
@@ -74,7 +115,7 @@ def _load_printer() -> PortPrinter:
 
             for key, value in target.items():
                 row: list[str] = [
-                    key,
+                    str(key),
                     *([type(key).__name__] if show_key_type else []),
                     str(value),
                     *([type(value).__name__] if show_value_type else []),
@@ -125,17 +166,3 @@ def _load_printer() -> PortPrinter:
             self.table(dict(registry._by_plug))
 
     return MiniPrinter()
-
-
-class _NoopPrinter:
-    """Zero-cost printer sink when rendering is disabled."""
-
-    def __call__(self, *args, **kwargs): ...
-    def line(self, *args, **kwargs): ...
-    def panel(self, *args, **kwargs): ...
-    def table(self, *args, **kwargs): ...
-    def show_sort_result(self, *args, **kwargs): ...
-    def overview(self, *args, **kwargs): ...
-
-
-NOOP_PRINTER: PortPrinter = _NoopPrinter()

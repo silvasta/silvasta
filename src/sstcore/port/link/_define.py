@@ -112,6 +112,7 @@ class LinkConfig(Protocol):
     def ignores(self, base: type) -> bool: ...
     def show_result(self, docs: SortedDocs, /): ...
 
+    merge: DocMerging
     dunders: frozenset[str]
 
 
@@ -171,6 +172,19 @@ class PortPrinter(Protocol):
 #  LINE: -- Dunders (PortOperator.__getattr__) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+class Param(NamedTuple):
+    """Track the ongoing Actions"""
+
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+    def __str__(self):
+        return f"args={self.args}, kwargs={self.kwargs}"
+
+    def __repr__(self):
+        return str(self)  # LATER: explain each (kw)arg
+
+
 class DunderStore(Protocol):  # MOVE: _define
     def __init__(self, dunders: Iterable[str] = ()): ...
     def get(self, name: str, *args, **kwargs) -> str | None: ...
@@ -208,11 +222,14 @@ class Channels(frozenset):
 
     def __contains__(self, target: Any) -> bool:
         """Check if the target matches an active channel"""
+        # NEXT: check what here is compared and comes out
         if not self or target is None:
             return False
         target: str = (
             target.lower() if isinstance(target, str) else self.key(target)
         )
+
+        # TEST: this looks like not working... as soon as something is on, the entire EasyCatch is starting
         if "port.link" in target and not self.has("link"):
             return False
         if self.has("*"):
@@ -518,7 +535,13 @@ class LinkRegistry:
         plugs: WeakSet[type] | None = self._by_port.get(port)
         return tuple(plugs) if plugs is not None else ()
 
-    # IDEA: just __getitem__ ? caller knows if port/plug, this could be shorter?
+    def __getitem__(self, cls: type) -> tuple[type, ...]:
+        result: list[type] = []
+        if (plug := self._by_plug.get(cls)) is not None:
+            result.extend(list(plug))
+        if (port := self._by_port.get(cls)) is not None:
+            result.extend(list(port))
+        return tuple(result)
 
     def protocols_of(self, plug: type) -> tuple[type, ...]:
         """Return all Protocols linked to specific Implementation"""
