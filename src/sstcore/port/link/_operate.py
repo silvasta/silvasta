@@ -29,9 +29,10 @@ from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from functools import cached_property, partial
 from inspect import cleandoc
-from typing import Any, Literal, Self
+from typing import Any, Literal, NamedTuple, Self
 
 from .._raise import LinkRaiser
+from ..empty import VOID, MayBe
 from ..raising import SstCoreError
 from ._define import (
     Collecting,
@@ -66,22 +67,32 @@ class EasyNote:
 class EasyCore[Core: Callable](EasyNote):  # TODO: resolve wiring
     """Stable Core for all Easy Member"""
 
-    # core: Core
     __core__: Core
 
     def __call__(self, *args, **kwargs):
-        return (  # TODO: clean up
-            # self.core(*args, **kwargs)
-            # if hasattr(self, "core")
-            # else
-            self.__core__(*args, **kwargs)
-        )
+        return self.__core__(*args, **kwargs)
+
+
+class Param(NamedTuple):
+    """Track the ongoing Actions"""
+
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+    def __str__(self):
+        return f"args={self.args}, kwargs={self.kwargs}"
+
+    def __repr__(self):
+        return str(self)  # LATER: explain each (kw)arg
 
 
 class EasyCatch(EasyCore):
+    """Execute in Context and Safe reflecting Operations"""
+
+    _last_call: MayBe[Param] = VOID
+
     def __call__(self, *args, **kwargs):
-        self._args = args
-        self._kwargs = kwargs
+        self._last_call = Param(args, kwargs)
         with self:
             return super().__call__(*args, **kwargs)
 
@@ -97,10 +108,9 @@ class EasyCatch(EasyCore):
             return True
 
         self.emit(f"{self!r}: {error=}")
-        if hasattr(self, "_args"):
-            self.emit(*self._args)
-        if hasattr(self, "_kwargs"):
-            self.emit(*self._kwargs)
+        if self._last_call is not VOID:
+            self.emit(f"Call context: {self._last_call}")
+            self._last_call: VOID = VOID
 
         if isinstance(error, SstCoreError):
             self.emit(f"Specific: {error=}")
@@ -108,9 +118,9 @@ class EasyCatch(EasyCore):
 
         if isinstance(error, (AttributeError, TypeError)):
             self.emit(f"Continue: {error=}")
-            return True
+            return type(self) is Reflector
 
-        return True
+        return False
 
 
 REFLECT: frozenset[str] = frozenset(("detect", "collect", "project", "redact"))
@@ -169,25 +179,23 @@ class EasyAccess(Reflector, id="get"):
         super().__init__(spec, **kwargs)
         self._methods: DunderStore = self.Dunders(spec.dunders)
 
+    def invoke(self, target: Any, *args: Any, method: str) -> Any:
+        """Uniform hook for dunder shortcut calls (e.g. op.doc(target, ...))."""
+        return self(target, method, *args)
+
     def __getattr__(self, name: str) -> Callable:
+        if name.startswith("_"):
+            raise AttributeError(name)
         self.emit(f"[{self}].__getattr__: {name}")
         if method := self._methods.get(name):
-            # FIX:
-            # FIX:
-            # FIX:
-            # FIX:
             return partial(self.invoke, method=method)
-        raise AttributeError
+        raise AttributeError(f"'{self}' object has no attribute '{name}'")
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Operator[Core: Callable](
-    EasyAccess,
-    Reflector,
-    id="base",
-):
+class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
     """Provide extended access for presets"""
 
     mode: Literal["soft", "hard"] = "soft"
@@ -203,7 +211,7 @@ class Operator[Core: Callable](
             with self:
                 yield self
         finally:
-            self.mode = prev
+            self.mode: Literal["soft", "hard"] = prev
 
     @property
     def strategy(self):  # NEXT: what type fits?
@@ -233,24 +241,23 @@ class Projector(Operator[Projecting], id="project"):
 
     def __core__(self, target: Any, attr: str, value: Any, /) -> None:
         resolved = self.resolve(target, attr)
-        self.strategy(resolved, value, attr)
+        self.strategy(resolved, attr, value)
 
-    def direct(self, target: Any, attr: str, value: Any, /):
+    def direct(self, target: Any, attr: str, value: Any, /) -> None:
         object.__setattr__(target, attr, value)
 
-    def polite(self, target: Any, attr: str, value: Any, /):
+    def polite(self, target: Any, attr: str, value: Any, /) -> None:
         setattr(target, attr, value)
 
     def resolve(self, target: Any, attr: str, /) -> Any:
         if attr == "__doc__":
             if isinstance(target, property) and target.fget is not None:
                 return target.fget
+            if isinstance(target, cached_property) and target.func is not None:
+                return target.func
             if hasattr(target, "__func__"):
                 return target.__func__
         return target
-
-    def invoke(self, target, method, value) -> Any:
-        return self(target, method, value)
 
 
 class Detector(Operator[Detecting], id="detect"):
@@ -261,37 +268,43 @@ class Detector(Operator[Detecting], id="detect"):
     def __core__(self, target: Any, attr: str, /) -> Any:
         return self.strategy(target, attr)
 
-    def direct(self, target: type, attr: str, /):
-        return target.__dict__.get(attr)
+    def direct(self, target: Any, attr: str, /) -> Any:
+        return getattr(target, "__dict__", {}).get(attr)
 
-    def polite(self, target: type, attr: str, /, default=None):
+    def polite(self, target: Any, attr: str, /, default: Any = None) -> Any:
         return getattr(target, attr, default)
 
-    def resolve(self, cls: type, attr: str, /):
-        match attr := self(cls, attr):
+    def resolve(self, cls: type, attr: str, /) -> Any:
+        if not attr:
+            return cls
+        with self.on("hard"):
+            raw: Any = self(cls, attr)
+        match raw:
             case classmethod() | staticmethod():
-                return attr.__func__
+                return raw.__func__
             case property() | cached_property():
-                return attr
-            case _ if callable(attr):
-                return attr
+                return raw
+            case _ if callable(raw):
+                return raw
             case _:
                 return None
 
-    def doc(self, cls: Any, attr: str, /) -> str:
-        """Resolve cls or cls.attr and return its cleaned docstring."""
-        # AI: is this wired well?
+    def extract_doc(self, cls: type, attr: str, /) -> str:
+        """Resolve cls or cls.attr and return its own cleaned docstring."""
+        # REMOVE: preferably entire method, at least the duplicated checks
         if (target := self.resolve(cls, attr)) is None:
             return ""
-        with self.on(mode="soft" if attr else "hard"):
-            doc: str | None = self(target, attr)
-        return self.clean(doc)
+        if isinstance(target, property) and target.fget is not None:
+            target = target.fget
+        elif isinstance(target, cached_property) and target.func is not None:
+            target = target.func
 
-    def clean(self, doc: str | Any, /):
+        with self.on(mode="hard"):
+            raw_doc: str | None = self.doc(target)
+        return self.clean(raw_doc)
+
+    def clean(self, doc: str | Any, /) -> str:
         return cleandoc(doc) if isinstance(doc, str) and doc else ""
-
-    def invoke(self, target, method) -> Any:
-        return self(target, method)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -308,17 +321,13 @@ class Collector(Reflector[Collecting], id="collect"):
     def __core__(self, port: type, plug: type, attr: str, /) -> PortLinkCollect:
         self.nearest_target = None
         data = PortLinkCollect()
-        self.walk_mro(
-            data, attr, cls=plug, side=SidePolicy.PLUG, track_nearest=True
-        )
+        self.walk_mro(data, attr, SidePolicy.PLUG, plug, track_nearest=True)
         if self.nearest_target is None:
             self.emit(f"Missing implementation for {plug.__name__} and {attr=}")
-        self.walk_mro(
-            data, attr, cls=port, side=SidePolicy.PORT, track_nearest=False
-        )
+        self.walk_mro(data, attr, SidePolicy.PORT, port, track_nearest=False)
         return data
 
-    def provide(self, cls: type) -> Iterator[type]:
+    def stream(self, cls: type) -> Iterator[type]:
         """Yield filtered MRO mases of Cls"""
         for base in cls.__mro__:
             if not self.spec.ignores(base):
@@ -328,12 +337,13 @@ class Collector(Reflector[Collecting], id="collect"):
         self,
         data: PortLinkCollect,
         attr: str,
-        *,
-        cls: type,
         side: SidePolicy,
+        /,
+        cls: type,
+        *,
         track_nearest: bool = False,
     ) -> None:
-        for base in self.provide(cls):
+        for base in self.stream(cls):
             if (target := self.detector.resolve(base, attr)) is None:
                 continue
 
@@ -352,7 +362,7 @@ class Redactor(Reflector, id="redact"):
         sorted: SortedDocs = SidePolicy.sort(docs)
         self.spec.show_result(sorted)
         lines: list[str] = schema1(*sorted.port_and_plug())
-        # TODO: show_merge_result(...)
+        # LATER: show_merge_result(...)
         self.spec.printer.panel(f"Statsistic: Total Lines: {len(lines)}")
         return "\n".join(lines)
 
@@ -371,7 +381,7 @@ def schema1(port: PortDocs, plug: PlugDocs) -> list[str]:
             lines.append(doc.text.strip("\n"))
 
     def _format_separator(lines):
-        lines.append("\n\n", "--- -- ---" * 8, "\n\n", "Implementation", "\n")
+        lines.extend(["\n\n", "--- -- ---" * 8, "\n\n", "Implementation", "\n"])
 
     def _format_plug_body(plug: PlugDocs, lines: list[str]):
         for doc in plug[::-1]:  # CHECK: reverse
