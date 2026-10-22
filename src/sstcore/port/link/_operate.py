@@ -25,7 +25,8 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Callable
+from collections.abc import Callable, Generator, Iterator
+from contextlib import contextmanager
 from functools import cached_property, partial
 from inspect import cleandoc
 from typing import TYPE_CHECKING, Any, Literal, Self
@@ -35,18 +36,18 @@ from ..raising import SstCoreError
 from ._define import (
     Collecting,
     Detecting,
-    Doc,
     Docs,
     DunderSet,
     DunderStore,
-    PlugDoc,
+    PlugDocs,
     PortDoc,
+    PortDocs,
     PortLinkCollect,
     Projecting,
     Redacting,
     SidePolicy,
+    SortedDocs,
 )
-from ._render import _load_printer
 
 if TYPE_CHECKING:
     from ._control import LinkConfig
@@ -107,14 +108,7 @@ class EasyCatch(EasyCore):
         return True  # NEXT:
 
 
-REFLECT: frozenset[str] = frozenset(
-    {
-        "detect",
-        "collect",
-        "project",
-        "redact",
-    }
-)
+REFLECT: frozenset[str] = frozenset(("detect", "collect", "project", "redact"))
 
 
 class Reflector[Core: Callable](EasyCatch):
@@ -127,6 +121,7 @@ class Reflector[Core: Callable](EasyCatch):
             raise RuntimeError(f"Missing Operators! [{missing}]({registry=})")
 
         self.spec: LinkConfig = spec
+        self._instances: dict[str, Self] = {}
 
     def __init_subclass__(cls, id: str, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -137,34 +132,37 @@ class Reflector[Core: Callable](EasyCatch):
         else:
             cls._registry[id] = cls
 
-    # IMPORTANT: provide cached instances! 4 inits per decorated, 2 of it in loop!
-    # - find mechanism and rule when to reset and rebuild, somewhere __enter__ and __exit__
+    def _get_op(self, key: str, /) -> Any:
+        if key not in self._instances:
+            self._instances[key] = self._registry[key](self.spec)
+        return self._instances[key]
 
     @property
-    def detect(self) -> type[Detector]:
-        return self._registry["detect"]  # ty:ignore
+    def detector(self) -> Detector:
+        return self._get_op("detect")
 
     @property
-    def collect(self) -> type[Collector]:
-        return self._registry["collect"]  # ty:ignore
+    def collector(self) -> Collector:
+        return self._get_op("collect")
 
     @property
-    def project(self) -> type[Projector]:
-        return self._registry["project"]  # ty:ignore
+    def projector(self) -> Projector:
+        return self._get_op("project")
 
     @property
-    def redact(self) -> type[Redactor]:
-        return self._registry["redact"]  # ty:ignore
+    def redactor(self) -> Redactor:
+        return self._get_op("redact")
 
 
 class EasyAccess:
     """Dot Access on all Dunders"""
 
     Dunders: type[DunderStore] = DunderSet
-    dunders: set[str] = {  # MOVE: default, how to update?
+    dunders: set[str] = {
         "__doc__",
         "__func__",
-        "__links__",  # FIX:
+        "__portlinks__",
+        # LATER: why restrict these?
     }
     _methods: DunderStore
 
@@ -172,15 +170,13 @@ class EasyAccess:
         self.dunders: set[str] = (dunders or set()) | self.dunders
         super().__init__(**kwargs)
 
-    def __setattr__(self, name, value):
-        super().__setattr__(name, value)
-        if name == "dunders":
-            self._methods: DunderStore = self.Dunders(self.dunders)
+    def invoke(self, *args: Any, attribute: str) -> Any:
+        """Route dunder dot-call (e.g., op.doc(target, ...)) to Operator.__call__."""
+        return self(*args, attr=attribute)  # ty:ignore
 
     def __getattr__(self, name: str) -> Callable:
         self.emit(f"[{self}].__getattr__: {name}")
         if method := self._methods.get(name):
-            # FIX: invoke? and outsource to DunderSet
             return partial(self.invoke, attribute=method)
         raise LinkRaiser.PipeLine(f"__getattr__: {name}", state=self._methods)
 
@@ -188,10 +184,11 @@ class EasyAccess:
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# LATER: shared base of Inject/Reflect
-
-
-class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
+class Operator[Core: Callable](
+    EasyAccess,
+    Reflector,
+    id="base",
+):
     """Provide extended access for presets"""
 
     mode: Literal["soft", "hard"] = "soft"
@@ -201,8 +198,18 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
         _target = self.resolve(target, attr)
         self.strategy(_target, value, attr)
 
+    @contextmanager
+    def on(self, mode: Literal["soft", "hard"] = "soft") -> Generator[Self]:
+        """Temporarily switch operator mode ('soft' vs 'hard') inside a with-block."""
+        prev, self.mode = self.mode, mode
+        try:
+            with self:
+                yield self
+        finally:
+            self.mode = prev
+
     @property
-    def strategy(self) -> Core:  # NEXT: or what fits?
+    def strategy(self):  # NEXT: what type fits?
         match self.mode:
             case "soft":
                 return self.polite
@@ -210,13 +217,13 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
                 return self.direct
 
     def direct(self, *args, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError(args, kwargs)
 
     def polite(self, *args, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError(args, kwargs)
 
-    def resolve(self, target: Any, attr: str) -> Any:
-        raise NotImplementedError
+    def resolve(self, target: Any, attr: str, /) -> Any:
+        raise NotImplementedError(target, attr)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -227,25 +234,13 @@ class Projector(Operator[Projecting], id="inject"):
 
     __call__: Projecting
 
-    # def __core__(self, target: Any, value: Any, attr: str):
-    #     _target = self.resolve(target, attr)
-    #     self.strategy(_target, value, attr)
-
-    # @property
-    # def strategy(self) -> Projector:
-    #     match self.mode:
-    #         case "soft":
-    #             return self.polite
-    #         case "hard":
-    #             return self.direct
-
     def direct(self, target: Any, value: Any, attr: str):
         object.__setattr__(target, attr, value)
 
     def polite(self, target: Any, value: Any, attr: str):
         setattr(target, attr, value)
 
-    def resolve(self, target: Any, attr: str) -> Any:
+    def resolve(self, target: Any, attr: str, /) -> Any:
         if attr == "__doc__":
             if isinstance(target, property) and target.fget is not None:
                 return target.fget
@@ -254,26 +249,10 @@ class Projector(Operator[Projecting], id="inject"):
         return target
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
 class Detector(Operator[Detecting], id="reflect"):
     """Collect the Detecting and Extracting Methods"""
 
     __call__: Reflector
-    # mode: Literal["soft", "hard"] = "soft"  # IDEA: combine with inject?
-
-    def __core__(self, target: type, attr: str, /):
-        _target = self.resolve(target, attr)
-        self.strategy(target, attr)
-
-    # @property
-    # def strategy(self) -> Reflector:  # IDEA: combine with inject? in EasyCore
-    #     match self.mode:
-    #         case "soft":
-    #             return self.polite
-    #         case "hard":
-    #             return self.direct
 
     def direct(self, target: type, attr: str, /):
         return target.__dict__.get(attr)
@@ -294,7 +273,7 @@ class Detector(Operator[Detecting], id="reflect"):
 
     def doc(self, target: Any, name: str, /) -> str:
         # NEXT: check dispatch: easy/soft? maybe remove
-        raw: Any | None = (
+        raw: Any | None = (  # MOVE: everything to resolve
             self.polite(target, "__doc__")
             if name
             else self.direct(target, "__doc__")
@@ -307,6 +286,8 @@ class Detector(Operator[Detecting], id="reflect"):
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
 
 class Collector(Reflector[Collecting], id="collect"):
     """Run the MRO pipelines and Reflect and Inject data"""
@@ -314,17 +295,24 @@ class Collector(Reflector[Collecting], id="collect"):
     __call__: Collecting
     nearest_target: type | None = None
 
-    def __core__(
-        self, port: type, plug: type, attr: str, /
-    ) -> PortLinkCollect:
+    def __core__(self, port: type, plug: type, attr: str, /) -> PortLinkCollect:
+        self.nearest_target = None
         data = PortLinkCollect()
-        self.walk_mro(data, attr, cls=plug, side=SidePolicy.PLUG, nearest=True)
+        self.walk_mro(
+            data, attr, cls=plug, side=SidePolicy.PLUG, track_nearest=True
+        )
         if self.nearest_target is None:
-            self.emit(f"Missing ancestor {plug.__name__} for {attr=}")
-            # IDEA: let it continue, and see what DocMerger prints
-        self.walk_mro(data, attr, cls=port, side=SidePolicy.PORT)
-        self.emit(f"Extracted __doc__: {len(data)}")
+            self.emit(f"Missing implementation for {plug.__name__} and {attr=}")
+        self.walk_mro(
+            data, attr, cls=port, side=SidePolicy.PORT, track_nearest=False
+        )
         return data
+
+    def provide(self, cls: type) -> Iterator[type]:
+        """Yield filtered MRO mases of Cls"""
+        for base in cls.__mro__:
+            if not self.spec.ignores(base):
+                yield base
 
     def walk_mro(
         self,
@@ -333,99 +321,97 @@ class Collector(Reflector[Collecting], id="collect"):
         *,
         cls: type,
         side: SidePolicy,
-        nearest=False,
+        track_nearest: bool = False,
     ) -> None:
-        for base in cls.__mro__:
-            if self.spec.ignores(base):
+        for base in self.provide(cls):
+            if (target := self.detector.resolve(base, attr)) is None:
                 continue
-            text: str = self.detect().doc(base, "")  # FIX:
+
+            if track_nearest and self.nearest_target is None:
+                self.nearest_target: Any = target
+
+            text: str = self.detector.doc(base, attr)
             if text and (attr, base) not in data:
-                if nearest and side == SidePolicy.PLUG:
-                    self.nearest_target: type = base
-                    nearest = False
-                data.fill(side.retrieve(text, attr, source=base))
+                data.fill(side.ctor(text, attr, source=base))
 
 
 class Redactor(Reflector, id="redact"):
     __call__: Redacting  # NEXT:
 
-    def __call__(self, docs: Docs, spec: LinkConfig | None = None) -> str:
+    def __call__(self, docs: Docs, /) -> str:
+        # NEXT: this must come from config, either the func or the flag/command
 
-        # NEXT: something like this:
-        _spec_to_emit_and_format: LinkConfig = spec or LinkConfig()  # FIX:
-        port: list[Doc] = []
-        plug: list[Doc] = []
-        fail: list[Doc] = []
-        self.printer = _load_printer()  # NEXT: this must come from config, either the func or the flag/command
-        for doc in docs:
-            self.printer.line(color="cyan")
-            match doc:  # MOVE: side policy! fill all 3 lists in 1 call
-                case PortDoc():
-                    self.sort_for_port(doc, port, fail)
-                case PlugDoc():
-                    self.sort_for_plug(doc, plug, fail)
-        self.handle_sort(port, plug, fail)
-        lines: list[str] = self.schema1(port, plug)
+        sorted: SortedDocs = SidePolicy.sort(docs)
+        show_sort_result(docs=sorted, _panel=self.spec.printer.panel)
+        lines: list[str] = schema1(*sorted.port_and_plug())
+        # TODO: show_merge_result(...)
+        self.spec.printer.panel(f"Statsistic: Total Lines: {len(lines)}")
         return "\n".join(lines)
 
-    def schema1(self, port: list[Doc], plug: list[Doc]) -> list[str]:
-        lines: list[str] = []
-        if port:
-            first, *remaining = port
-            self.format_port_header(first, lines)
-            self.format_port_body(remaining, lines)
-        if plug:
-            self.format_separator(lines)
-            self.format_plug_body(plug, lines)
-        self.printer.panel(f"Statsistic: Total (multi) lines: {len(lines)}")
-        return lines
 
-    def format_port_header(self, first: Doc, lines: list[str]):
+def schema1(port: PortDocs, plug: PlugDocs) -> list[str]:
+    """Take Port- and Plug- Docs and Produce a Text"""
+
+    def _format_port_header(first: PortDoc, lines: list[str]):
         lines.append(first.text.strip("\n"))
-        self.printer(f"Attached Port header: {first.key}")
 
-    def format_port_body(self, remaining: list[Doc], lines: list[str]):
+    def _format_port_body(remaining: PortDocs, lines: list[str]):
         for doc in remaining:
             lines.append("\n")
             attr_draw: str = f".{doc.attr}" if doc.attr else ""
             lines.append(f"[{doc.source.__name__}{attr_draw}]")
             lines.append(doc.text.strip("\n"))
 
-    def format_separator(self, lines):
+    def _format_separator(lines):
         lines.append("\n\n", "--- -- ---" * 8, "\n\n", "Implementation", "\n")
 
-    def format_plug_body(self, plug: list[Doc], lines: list[str]):
+    def _format_plug_body(plug: PlugDocs, lines: list[str]):
         for doc in plug[::-1]:  # CHECK: reverse
             lines.append("\n")
             attr_draw: str = f".{doc.attr}" if doc.attr else ""
             lines.append(f"[{{{doc.source.__name__}}}{attr_draw}]")
             lines.append(doc.text.strip("\n"))
 
-    def handle_sort(self, port: list[Doc], plug: list[Doc], fail: list[Doc]):
-        self.printer.panel(
-            f"Stats: port: {len(port)}, plug: {len(plug)}, fail: {len(fail)} "
-        )
-        if not plug:
-            self.printer.panel(
-                "Implementation", frame="yellow", title="Missing"
-            )
-        if not port:
-            self.printer.panel("Definitions", frame="orange", title="Missing")
-        if fail:
-            self.printer.panel(*fail, frame="red", title="Failed")
+    lines: list[str] = []
 
-    def sort_for_port(self, doc: Doc, port: list, fail: list) -> None:
-        if SidePolicy.PORT.validate(doc):
-            port.append(doc)
-            self.printer(f"Accepted: {doc.key}")
-        else:
-            fail.append(doc)
-            self.printer(f"Rejected: {doc.key}")
+    if port:
+        first, *remaining = port
+        _format_port_header(first, lines)
+        _format_port_body(remaining, lines)
+    if port and plug:
+        _format_separator(lines)
+    if plug:
+        _format_plug_body(plug, lines)
 
-    def sort_for_plug(self, doc: Doc, plug: list, fail: list) -> None:
-        if SidePolicy.PLUG.validate(doc):
-            plug.append(doc)
-            self.printer(f"Accepted: {doc.key}")
-        else:
-            fail.append(doc)
-            self.printer(f"Rejected: {doc.key}")
+    return lines
+
+
+def show_sort_result(  # MOVE: printer?
+    docs: SortedDocs,
+    _panel,
+    # IMPORTANT: everything from here below, attach to config
+    spec_level=2,
+    color1="cyan",
+    color2="orange",
+    color3="purple",
+    color4="green",
+):
+    if spec_level < 1:
+        return
+
+    _panel(f"[{color1}]Statistics[/] {docs!r}", title=docs, color=color1)
+
+    if spec_level < 2:
+        return
+
+    _panel(f"[{color2}]Failed[/]", color=color2, title=repr(docs))
+    _panel(*docs.fail, color=color2, title=f"[{color2}]Fails[/]")
+
+    if spec_level < 3:
+        return
+
+    _panel(f"[{color3}]PortDocs[/]", color=color3, title=repr(docs))
+    _panel(*docs.port, color=color3, title=f"[{color3}]Protocol[/]")
+
+    _panel(f"[{color4}]PlugDocs[/]", color=color4, title=repr(docs))
+    _panel(*docs.plug, color=color4, title=f"[{color4}]Implementation[/]")

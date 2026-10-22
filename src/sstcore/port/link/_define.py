@@ -22,6 +22,7 @@ __all__: list[str] = [
     "Collecting",
     "Projecting",
     "Redacting",
+    "DocMerging",
     # storage
     "DunderStore",
     "DunderSet",
@@ -41,7 +42,7 @@ __all__: list[str] = [
     "PortLinkData",
     "PortLinkStore",
     "PortLinkCollect",
-    "PortRegistry",
+    "LinkRegistry",
 ]
 
 import os
@@ -50,7 +51,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from functools import partial
 from types import MappingProxyType as _FixMap
-from typing import Any, NamedTuple, Protocol, TypedDict
+from typing import Any, NamedTuple, Protocol
 from weakref import WeakKeyDictionary, WeakSet
 
 from .._raise import PortLinkError  # TODO: use Raiser?
@@ -73,24 +74,15 @@ class PortEmit[**P](Protocol):
 class PortPrinter(Protocol):
     def __call__(self, *args, **kwargs): ...
     def line(self, *targets, color): ...
-    def panel(self, content, /, title=None, frame="cyan"): ...
-    # def table(
-    #     self, target: dict, /, **kwargs: Unpack[PortPanelInput]
-    # ) -> None: ...
+    def panel(self, content, /, title=None, color="cyan"): ...
     def table(
         self,
         target: dict,
-        /,
         show_key_type: bool = False,
         show_value_type: bool = True,
+        /,
         color: str = "green",
     ) -> None: ...
-
-
-class _PortPanelInput(TypedDict):  # IDEA:
-    show_key_type: bool
-    show_value_type: bool
-    color: str
 
 
 #  LINE: -- Reflecting Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -112,15 +104,21 @@ class Projecting(Protocol):
 
 
 class Collecting(Protocol):
-    def __call__(
-        self, port: type, plug: type, attr: str, /
-    ) -> PortLinkCollect:
+    def __call__(self, port: type, plug: type, attr: str, /) -> PortLinkCollect:
         """Harvest data in both sides MRO pipeline"""
 
 
 class Redacting(Protocol):
-    def __call__(self, docs: Docs) -> str:
+    def __call__(self, docs: Docs, /) -> str:
         """Format and Render Protocol and Implementation docstrings"""
+
+
+class DocMerging(Protocol):
+    """Callable policy that formats validated Port and Plug doc sequences into a docstring."""
+
+    def __call__(
+        self, port: Sequence[PortDoc], plug: Sequence[PlugDoc]
+    ) -> list[str]: ...
 
 
 #  LINE: -- Dunders (PortOperator.__getattr__) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -157,33 +155,38 @@ class DunderSet(frozenset):
 class Channels(frozenset):
     """Guard the active Channels and Rules for Matching"""
 
-    @classmethod
-    def format(cls, target: str, /) -> str:
-        return target.strip().lower()
-
-    def has(self, flag: str, /) -> bool:
-        """Check formatted flag directly (bypass wildcard/substring match)"""
-        return super().__contains__(self.format(flag))
-
     def __new__(cls, env_var="SST_DEBUG", default=()):
         env: tuple[str, ...] = (*os.getenv(env_var, "").split(","), *default)
         return super().__new__(cls, (c for e in env if (c := cls.format(e))))
 
     def __contains__(self, target: Any) -> bool:
         """Check if the target matches an active channel"""
-
-        # NEXT: define matching behaviour once, here!
-        if not self or not isinstance(target, str):
-            return False  # REMOVE: accept as well not-string!!!
-
-        low: str = self.format(target)
-        if "port.link" in low and not self.has("link"):
+        if not self or target is None:
             return False
-
+        target: str = (
+            target.lower() if isinstance(target, str) else self.key(target)
+        )
+        if "port.link" in target and not self.has("link"):
+            return False
         if self.has("*"):
             return True
+        return any(scope in target for scope in super().__iter__())
 
-        return any(scope in low for scope in super().__iter__())
+    def has(self, flag: str, /) -> bool:
+        """Check formatted flag directly (bypass wildcard/substring match)"""
+        return super().__contains__(self.format(flag))
+
+    @classmethod
+    def format(cls, target: str, /) -> str:
+        return target.strip().lower()
+
+    @classmethod
+    def key(cls, target: Any, /) -> str:
+        """The identifier for Member matching"""
+        module: str = getattr(target, "__module__", "")
+        qualname: str = getattr(target, "__qualname__", "")
+        qualname: str = qualname or getattr(type(target), "__qualname__", "")
+        return f"{module}.{qualname}"
 
 
 #  LINE: -- __doc__ Snapshot  -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -243,8 +246,8 @@ class SidePolicy(StrEnum):
         raise ValueError(f"{cls} got invalid side: {data}")
 
     @property
-    def retrieve(self) -> type[PortDoc | PlugDoc]:  # RENAME: side.ctor? other?
-        """Get the corresponding Doc type"""
+    def ctor(self) -> type[PortDoc | PlugDoc]:
+        """Get the corresponding Doc class"""
         match self:
             case self.PORT:
                 return PortDoc
@@ -262,6 +265,40 @@ class SidePolicy(StrEnum):
                 if not isinstance(data, PlugDoc):
                     return False
                 return not issubclass(data.source, Protocol)
+
+    @classmethod  # NOTE: partition fails for str.partition overwrite...
+    def sort(cls, docs: Docs, /) -> SortedDocs:
+        port: PortDocs = []
+        plug: PlugDocs = []
+        fail: Docs = []
+        for doc in docs:
+            match doc:
+                case PortDoc():
+                    port.append(doc)
+                case PlugDoc():
+                    plug.append(doc)
+                case _:
+                    fail.append(doc)
+        return SortedDocs(port, plug, fail)
+
+
+class SortedDocs(NamedTuple):
+    port: PortDocs
+    plug: PlugDocs
+    fail: Docs
+
+    def port_and_plug(self) -> tuple[list[PortDoc], list[PlugDoc]]:
+        return list(self.port), list(self.plug)
+
+    def __str__(self):
+        return type(self).__name__
+
+    def __repr__(self):
+        port: int = len(self.port)
+        plug: int = len(self.plug)
+        fail: int = len(self.fail)
+        total: int = port + plug + fail
+        return f"{self}[{port=}, {plug=}, {fail=}, {total=}]"
 
 
 #  LINE: -- Link Data -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -388,7 +425,7 @@ _weak_dict_field = partial(
 
 
 @dataclass(slots=True)  # WARN: what about that??
-class PortRegistry:
+class LinkRegistry:
     """
     Weak M:N topological index of (Protocol <-> Implementation) links
 
@@ -437,6 +474,9 @@ class PortRegistry:
         """Return all Protocols linked to specific Implementation"""
         ports: WeakSet[type] | None = self._by_plug.get(plug)
         return tuple(ports) if ports is not None else ()
+
+    def __str__(self):
+        return f"{type(self).__name__}[{self.stats()}]"
 
     def stats(self) -> dict[str, int]:
         return {

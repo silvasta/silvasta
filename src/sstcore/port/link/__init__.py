@@ -13,8 +13,6 @@ Reference the Implementations back to their Definitions in the port
                                     (drop to 1? remove enums would be enough)
 """
 
-from typing import Any, Self
-
 __all__: list[str] = [
     "portlink",
     "PortLink",
@@ -50,6 +48,7 @@ from dataclasses import replace as _replace
 from ._control import LinkSpec, Tap
 from ._define import (
     Doc,
+    LinkRegistry,
     PlugDoc,
     PortDoc,
     PortEmit,
@@ -57,18 +56,13 @@ from ._define import (
     PortLinkData,
     PortLinker,
     PortLinkStore,
-    PortRegistry,
     SidePolicy,
 )
-from ._operate import Redactor, Reflector
+from ._operate import Reflector, schema1
 
-# IMPORTANT: LingConfig (or its DTO predecessor) will for sure add something here
-# - check what can be split from here and LinkSpec to 1 config for both and portlink
 tap = Tap()
-
-spec = LinkSpec(merge=Redactor(spec="FAIL"), emit=tap.emit)  # CHECK:
-
-registry = PortRegistry()
+spec = LinkSpec(emit=tap.emit, printer=tap.printer, merge=schema1)
+registry = LinkRegistry()
 
 
 @_dataclass(frozen=True, slots=True)
@@ -77,7 +71,16 @@ class PortLink:
 
     spec: LinkSpec = spec
     tap: Tap = tap
-    registry: PortRegistry = registry
+    registry: LinkRegistry = registry
+
+    def __str__(self):
+        _id = 4  # LATER: something better
+        return f"{type(self).__name__}[{_id}]"
+
+    def print(self):
+        self.tap.printer.panel(f"{self}::{self.registry}")
+        self.tap.printer.table(dict(self.registry._by_port), False, False)
+        self.tap.printer.table(dict(self.registry._by_plug), False, False)
 
     def evolve(self, **spec_overrides) -> _t.Self:
         return _replace(self, spec=self.spec.derive(**spec_overrides))
@@ -87,8 +90,8 @@ class PortLink:
         *,
         env_var: str | None = None,
         toggle: tuple[str, ...] | None = None,
-        **spec_overrides: Any,
-    ) -> Self:
+        **spec_overrides: _t.Any,
+    ) -> _t.Self:
         """Mutate shared Tap and LinkSpec in-place"""
         if env_var is not None or toggle is not None:
             self.tap.configure(  # TODO: better forwarding
@@ -106,8 +109,8 @@ class PortLink:
             """Catch all __doc__ merge issues and always return original Cls"""
 
             with Reflector(spec=self.spec) as reflect:
-                with reflect.detect(mode="hard") as detector:
-                    local_data: PortLinkStore = detector.portlinkdocs(cls)
+                with reflect.detector(mode="hard") as detect:
+                    local_data: PortLinkStore = detect.portlinks(cls)
 
                 if protocol in local_data:
                     return cls
@@ -115,26 +118,22 @@ class PortLink:
                 task_data: PortLinkCollect = local_data.edit()
 
                 for attr in spec.surface(protocol):
-                    with reflect.collect(spec="HANDLE THIS INTERN!") as collect:
-                        attr_data: PortLinkCollect = collect(
-                            protocol, cls, attr
-                        )
-                        target: type | None = collect.nearest_target
-
-                    # IDEA: just spawn the merger here?
-                    # - and find policy that replaces merge, like 1 part of the internal Redactor chain
-                    attr_doc: str = self.spec.merge(docs=attr_data[attr])
+                    attr_data: PortLinkCollect = reflect.collector(
+                        protocol, cls, attr
+                    )
+                    target: type | None = reflect.collector.nearest_target
+                    attr_doc: str = reflect.redactor(attr_data[attr])
 
                     if target is None or not attr_doc:
                         continue
 
-                    with reflect.inject(mode="soft") as projector:
+                    with reflect.projector.on(mode="soft") as projector:
                         projector.doc(target, attr_doc)
                         task_data.absorb(attr_data)  # absorb on inject success
 
-                with reflect.inject(mode="hard") as projector:
+                with reflect.projector.on(mode="hard") as project:
                     final_data: PortLinkStore = task_data.save()
-                    projector.portlinkdocs(cls, final_data)
+                    project.portlinks(cls, final_data)
 
             return tap.trace(cls)
 
