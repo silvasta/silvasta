@@ -7,8 +7,9 @@ Draw the Shape of the Core
                                          DependencyLevel.sstcore[0]
 """
 
-__all__: list[str] = [
-    "SstSystem",
-    "CliSystem",
-]
-from .system import CliSystem, SstSystem
+# NEXT: activate, maybe __getattr__
+# __all__: list[str] = [
+#     "SstSystem",
+#     "CliSystem",
+# ]
+# from .system import CliSystem, SstSystem

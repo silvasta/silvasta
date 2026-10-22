@@ -23,8 +23,13 @@ class TestProtocol(Protocol):
         """Transform internal state to text depending on order"""
 
 
+# help(TestProtocol)
+
+
 @portlink(TestProtocol)
 class ProperImplementation:
+    """Matching"""
+
     def __init__(self):
         self.side_info: dict[str, Any] = {}
         self.other = ...
@@ -35,15 +40,19 @@ class ProperImplementation:
         return self._some_process(_important, self.other)
 
     def _some_process(self, *args, **kwargs):
-        raise NotImplementedError(args, kwargs)
+        # raise NotImplementedError(args, kwargs)
+        pass
 
     def handle(self, order: int) -> str:
         """Transform internal state to text depending on order"""
         match order:
             # ... fill here
             case _:
-                return str(self.state)
+                pass
+                # return str(self.state)
 
+
+# help(TestProtocol)
 
 g = ProperImplementation()
 g.handle(1)
@@ -80,3 +89,5 @@ if TYPE_CHECKING:
     _pattern: TestProtocol = ProperImplementation()
     _pattern: TestProtocol = MissingMethodImplementation()
     _pattern: TestProtocol = TypeFailInSignatureImplementation()
+
+portlink.show()

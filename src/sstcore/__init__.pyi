@@ -54,14 +54,11 @@ __all__: list[str] = [
     "ConfigManager",
     "SafeTyper",
     "PathGuard",
-    # IMPORTANT: activate on publish! (deactivated due to auto-import from sstcore instead of ...port.link)
-    # "portlink",
+    "portlink",
 ]
 
 from .console import SafeTyper
-
-# IMPORTANT: activate on publish!
-# from .port.link import portlink
+from .port.link import portlink
 from .system import System
 from .system.config import ConfigManager
 from .system.event import EmitCore

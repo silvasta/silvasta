@@ -37,7 +37,6 @@ class SstCoreError(Exception):
         return type(self).__name__
 
     def __repr__(self) -> str:
-        """Show Everything"""
         _vars = [f"{k}={v!r}" for k, v in vars(self).items()]
         return f"{type(self).__name__}[{', '.join(_vars)}]"
 

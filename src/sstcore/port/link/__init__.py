@@ -43,6 +43,7 @@ __all__: list[str] = [
 
 import typing as _t
 from dataclasses import dataclass as _dataclass
+from dataclasses import field as _field
 from dataclasses import replace as _replace
 
 from ._control import LinkSpec, Tap
@@ -70,9 +71,9 @@ registry = LinkRegistry()
 class PortLink:
     """Anchor an Implementation to its Protocol"""
 
-    spec: LinkSpec = spec
-    tap: Tap = tap
-    registry: LinkRegistry = registry
+    spec: LinkSpec = _field(default_factory=lambda: spec)
+    tap: Tap = _field(default_factory=lambda: tap)
+    registry: LinkRegistry = _field(default_factory=lambda: registry)
 
     def __str__(self):
         return f"{type(self).__name__}[4]"
@@ -83,7 +84,7 @@ class PortLink:
 
     def evolve(self, **changes: _t.Unpack[LinkInput]) -> _t.Self:
         """Spawn a new PortLink with a derived LinkSpec and bound Tap."""
-        new_spec = self.spec.derive(**changes)
+        new_spec: LinkSpec = self.spec.derive(**changes)
         return _replace(self, spec=new_spec, tap=Tap(spec=new_spec))
 
     def configure(self, **changes: _t.Unpack[LinkInput]) -> _t.Self:
@@ -98,7 +99,7 @@ class PortLink:
             """Catch all __doc__ merge issues and always return original Cls"""
 
             with Reflector(spec=self.spec) as reflect:
-                with reflect.detector(mode="hard") as detect:
+                with reflect.detector.on(mode="hard") as detect:
                     local_data: PortLinkStore = (
                         detect.portlinks(cls) or PortLinkStore()
                     )

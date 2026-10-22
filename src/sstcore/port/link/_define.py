@@ -118,7 +118,7 @@ class LinkConfig(Protocol):
 class RenderTheme(TypedDict, total=False):
     """Sub-config for Redactor/Printer panel colors."""
 
-    stats: str
+    stat: str
     fail: str
     port: str
     plug: str
@@ -126,8 +126,8 @@ class RenderTheme(TypedDict, total=False):
 
 @dataclass
 class DefaultTheme:
-    stats: str = "cyan"
-    fail: str = "orange"
+    stat: str = "cyan"
+    fail: str = "orange_red1"
     port: str = "purple"
     plug: str = "green"
 
@@ -339,6 +339,9 @@ class SortedDocs(NamedTuple):
 
     def __str__(self):
         return type(self).__name__
+
+    def __bool__(self) -> bool:
+        return len(self.port) != 0 or len(self.plug) != 0 or len(self.fail) != 0
 
     def __repr__(self):
         port: int = len(self.port)

@@ -7,6 +7,7 @@ Render the Output with Lazy Loaded external Libraries
                                DependencyLevel.sstcore.port.link[1]
 """
 
+from functools import lru_cache
 from typing import Any
 
 from ._define import LinkRegistry, PortPrinter, SortedDocs
@@ -27,6 +28,7 @@ def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
     rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
 
 
+@lru_cache(maxsize=1)
 def _load_printer() -> PortPrinter:
     from rich.console import Console
     from rich.panel import Panel
@@ -84,33 +86,37 @@ def _load_printer() -> PortPrinter:
             self,
             docs: SortedDocs,
             level=2,
-            color1="cyan",
-            color2="orange",
-            color3="purple",
-            color4="green",
+            stat="cyan",
+            fail="orange_red1",
+            port="purple",
+            plug="green",
         ):
             if level < 1:
                 return
 
+            if not docs:
+                self.panel("Nothing to print...", color="blue")
+                return
+
             self.panel(
-                f"[{color1}]Statistics[/] {docs!r}", title=docs, color=color1
+                f"[{stat}]Statistics[/] {docs!r}", title=docs, color=stat
             )
 
             if level < 2:
                 return
 
-            self.panel(f"[{color2}]Failed[/]", color=color2, title=repr(docs))
-            self.panel(*docs.fail, color=color2, title=f"[{color2}]Fails[/]")
+            self.panel(f"[{fail}]Failed[/]", color=fail, title=repr(docs))
+            self.panel(*docs.fail, color=fail, title=f"[{fail}]Fails[/]")
 
             if level < 3:
                 return
 
-            self.panel(f"[{color3}]PortDocs[/]", color=color3, title=repr(docs))
-            self.panel(*docs.port, color=color3, title=f"[{color3}]Protocol[/]")
+            self.panel(f"[{port}]PortDocs[/]", color=port, title=repr(docs))
+            self.panel(*docs.port, color=port, title=f"[{port}]Protocol[/]")
 
-            self.panel(f"[{color4}]PlugDocs[/]", color=color4, title=repr(docs))
+            self.panel(f"[{plug}]PlugDocs[/]", color=plug, title=repr(docs))
             self.panel(
-                *docs.plug, color=color4, title=f"[{color4}]Implementation[/]"
+                *docs.plug, color=plug, title=f"[{plug}]Implementation[/]"
             )
 
         def overview(self, portlink: Any, registry: LinkRegistry, /):

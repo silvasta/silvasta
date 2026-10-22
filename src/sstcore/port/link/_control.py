@@ -38,8 +38,7 @@ from ._define import (
 )
 
 HAND_TOGGLE: tuple[str, ...] = (
-    "color",
-    "vault",
+    "report",
     "init",
 )
 
@@ -53,16 +52,16 @@ DUNDERS: set[str] = {
 @dataclass
 class LinkSpec:
     merge: DocMerging
-    channels: Channels = field(init=False, repr=False)
-    emit: PortEmit = field(init=False, repr=False)
-    printer: PortPrinter = field(init=False, repr=False)
+    channels: Channels = field(init=False)
+    emit: PortEmit = field(init=False)
+    printer: PortPrinter = field(init=False)
     #
     env_var: str = "SST_DEBUG"
     toggle: tuple[str, ...] = HAND_TOGGLE
     trace_init: bool | None = None
     use_loguru: bool | None = None
     report: int = 0
-    theme: DefaultTheme = DefaultTheme()
+    theme: DefaultTheme = field(init=False)
     dunders: frozenset[str] = frozenset(DUNDERS)
     skip: frozenset[type] = frozenset({object, Protocol, Generic})
 
@@ -72,6 +71,7 @@ class LinkSpec:
     def _sync(self) -> None:
         """Synthesize channels, emitter, and printer from current config fields."""
         self.channels = Channels(env_var=self.env_var, default=self.toggle)
+        self.theme = DefaultTheme()
 
         if self.trace_init is None:
             self.trace_init: bool = self.channels.has("init")

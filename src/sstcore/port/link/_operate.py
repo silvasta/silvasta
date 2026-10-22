@@ -66,21 +66,24 @@ class EasyNote:
 class EasyCore[Core: Callable](EasyNote):  # TODO: resolve wiring
     """Stable Core for all Easy Member"""
 
-    core: Core
+    # core: Core
     __core__: Core
 
     def __call__(self, *args, **kwargs):
-        return (
-            self.core(*args, **kwargs)
-            if hasattr(self, "core")
-            else self.__core__(*args, **kwargs)
+        return (  # TODO: clean up
+            # self.core(*args, **kwargs)
+            # if hasattr(self, "core")
+            # else
+            self.__core__(*args, **kwargs)
         )
 
 
 class EasyCatch(EasyCore):
-    def __core__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
         with self:
-            return super().__core__(*args, **kwargs)
+            return super().__call__(*args, **kwargs)
 
     def __enter__(self) -> Self:
         self.emit(f"{self}: Executing Pipeline in Context")
@@ -93,17 +96,21 @@ class EasyCatch(EasyCore):
             self.emit(f"{self}: No Issues...")
             return True
 
-        self.emit(f"{self}: {(name := _error_type.__name__)}")
+        self.emit(f"{self!r}: {error=}")
+        if hasattr(self, "_args"):
+            self.emit(*self._args)
+        if hasattr(self, "_kwargs"):
+            self.emit(*self._kwargs)
 
         if isinstance(error, SstCoreError):
-            self.emit(f"Specific: {name=}")
-            return True
+            self.emit(f"Specific: {error=}")
+            return False
 
         if isinstance(error, (AttributeError, TypeError)):
-            self.emit(f"Continue... {name=}")
+            self.emit(f"Continue: {error=}")
             return True
 
-        return True  # NEXT:
+        return True
 
 
 REFLECT: frozenset[str] = frozenset(("detect", "collect", "project", "redact"))
@@ -162,15 +169,15 @@ class EasyAccess(Reflector, id="get"):
         super().__init__(spec, **kwargs)
         self._methods: DunderStore = self.Dunders(spec.dunders)
 
-    def invoke(self, *args: Any, attribute: str) -> Any:
-        """Route dunder dot-call (e.g., op.doc(target, ...)) to Operator.__call__."""
-        return self(*args, attr=attribute)
-
     def __getattr__(self, name: str) -> Callable:
         self.emit(f"[{self}].__getattr__: {name}")
         if method := self._methods.get(name):
-            return partial(self.invoke, attribute=method)
-        raise LinkRaiser.PipeLine(f"__getattr__: {name}", state=self._methods)
+            # FIX:
+            # FIX:
+            # FIX:
+            # FIX:
+            return partial(self.invoke, method=method)
+        raise AttributeError
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -184,6 +191,9 @@ class Operator[Core: Callable](
     """Provide extended access for presets"""
 
     mode: Literal["soft", "hard"] = "soft"
+
+    def __str__(self):
+        return f"{type(self).__name__}[{self.mode}]"
 
     @contextmanager
     def on(self, mode: Literal["soft", "hard"] = "soft") -> Generator[Self]:
@@ -216,19 +226,19 @@ class Operator[Core: Callable](
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Projector(Operator[Projecting], id="inject"):
+class Projector(Operator[Projecting], id="project"):
     """Collect the Modificating Methods with Safety"""
 
     __call__: Projecting
 
-    def __core__(self, target: Any, value: Any, attr: str, /) -> None:
+    def __core__(self, target: Any, attr: str, value: Any, /) -> None:
         resolved = self.resolve(target, attr)
         self.strategy(resolved, value, attr)
 
-    def direct(self, target: Any, value: Any, attr: str):
+    def direct(self, target: Any, attr: str, value: Any, /):
         object.__setattr__(target, attr, value)
 
-    def polite(self, target: Any, value: Any, attr: str):
+    def polite(self, target: Any, attr: str, value: Any, /):
         setattr(target, attr, value)
 
     def resolve(self, target: Any, attr: str, /) -> Any:
@@ -239,8 +249,11 @@ class Projector(Operator[Projecting], id="inject"):
                 return target.__func__
         return target
 
+    def invoke(self, target, method, value) -> Any:
+        return self(target, method, value)
 
-class Detector(Operator[Detecting], id="reflect"):
+
+class Detector(Operator[Detecting], id="detect"):
     """Collect the Detecting and Extracting Methods"""
 
     __call__: Reflector
@@ -276,6 +289,9 @@ class Detector(Operator[Detecting], id="reflect"):
 
     def clean(self, doc: str | Any, /):
         return cleandoc(doc) if isinstance(doc, str) and doc else ""
+
+    def invoke(self, target, method) -> Any:
+        return self(target, method)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
