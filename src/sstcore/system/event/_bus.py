@@ -18,7 +18,7 @@ from ...brick.reflect import clsname
 from ...port.event import Event, EventBus, EventHandling
 from ...port.event.name import CoreEvent, EventName, EventPattern
 from ...port.link import portlink
-from ...port.system import BusData, BusInput, BusLoader
+from ...port.system import BusInput, BusLoader, BusSpec
 from ._handler import register_default_event_handler
 
 
@@ -58,9 +58,7 @@ class Bus:
     def __repr__(self) -> str:
         return f"{self}(  {self.n_global_handler} 󰌌 {self.n_handler} 󰍹 )"
 
-    def _match_subscribers(
-        self, event: EventName
-    ) -> tuple[EventHandling, ...]:
+    def _match_subscribers(self, event: EventName) -> tuple[EventHandling, ...]:
         """Filter subscribers by event name and wildcard pattern"""
 
         subscribers: tuple[EventPattern, ...] = tuple(self._subscribers.keys())
@@ -80,7 +78,7 @@ class Bus:
     def ready(cls, **data: Unpack[BusInput]) -> Self:
 
         bus: Self = cls()
-        spec = BusData(**data)
+        spec = BusSpec(**data)
 
         if spec.use_default_registration:
             register_default_event_handler(bus)

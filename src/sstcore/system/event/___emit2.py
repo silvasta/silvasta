@@ -8,6 +8,8 @@ Provide ergonomic facade on top of the EventBus
 
 # TASK: define Emitter!!!
 
+from src.sstcore.port.represent import CliSerializable
+
 __all__: list[str] = [
     "Emitter",
     "LogEmitter",
@@ -17,11 +19,11 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from ...brick.views import Repr, Str
-from ...forge.view import view
-from ...port.event.dto import CliRenderable, LogDTO, LogSerializable
+from ...forge.view import Repr, Str, view
+from ...port.event.dto import LogDTO
 from ...port.event.emit import BoundEmit, Emit, Emitter, LogEmitter
 from ...port.event.name import CliEvent, EventName
+from ...port.represent import LogSerializable
 
 
 class EventEmitter:
@@ -72,7 +74,7 @@ class EventLogEmitter(LogLevelMixin):
 
 
 if TYPE_CHECKING:
-    _log: type[LogEmitter] = EventLogEmitter
+    _log: type[LogEmitter] = EventLogEmitter  # ty:ignore
 
 
 @dataclass(frozen=True)
@@ -131,7 +133,7 @@ class ViewEmitter(_EmitterView):
         # EXTRACT:
         payload: dict[str, Any] = {}
 
-        if isinstance(target, CliRenderable):
+        if isinstance(target, CliSerializable):
             payload["cli"] = target.__cli__()
 
         if isinstance(target, LogSerializable):
@@ -141,7 +143,7 @@ class ViewEmitter(_EmitterView):
 
 
 @dataclass(frozen=True)
-@view(str=Str.SHORT, repr=Repr.BOX)
+@view(Str.SHORT, Repr.BOX)
 class EmitCore(LogLevelMixin):
     """Lead the Distribution of globally wired Bus Entry Points"""
 
@@ -155,9 +157,7 @@ class EmitCore(LogLevelMixin):
     def __call__(self, event: EventName, sender: str, **payload: Any) -> None:
         self.emit(event, sender, **payload)
 
-    def bind(
-        self, event: EventName, sender: str, **defaults: Any
-    ) -> BoundEmit:
+    def bind(self, event: EventName, sender: str, **defaults: Any) -> BoundEmit:
         """Create a specialized, pre-bound emitter."""
         # return EventEmitter(self.emit, event, sender, defaults)
         raise NotImplementedError

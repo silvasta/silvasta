@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Self, Unpack
 from dotenv import load_dotenv
 from loguru import logger
 
-from ...brick.labor import clsname
+from ...brick.reflect import clsname
 from ...brick.time import day_count
 from ...port.config import (
     Config,
@@ -38,7 +38,7 @@ from ...port.config import (
     Settings,
 )
 from ...port.link import portlink
-from ...port.system import ConfigData, ConfigInput, ConfigLoader
+from ...port.system import ConfigInput, ConfigLoader, ConfigSpec
 from ...util.log import setup_logging
 from ...util.path import ProjectInfo
 from ._homes import SstHomes
@@ -59,7 +59,7 @@ class ConfigManager[D: Defaults, N: Names, P: Paths, S: Settings]:
 
     @classmethod
     def bootstrap(cls, **data: Unpack[ConfigInput]) -> Self:
-        dto: ConfigData = ConfigData(**data)
+        dto: ConfigSpec = ConfigSpec(**data)
 
         info: ProjectInformation = ProjectInfo.collect(dto.project_name)
         homes: Homes = SstHomes.from_setup(

@@ -25,7 +25,7 @@ from ...util.scan import FolderScanner
 from ...util.tree import build_path_tree
 
 
-@portlink(ScanRegister)
+@portlink(ScanRegister)  # ty:ignore FIX:
 class FileScanMixin:
     """Setup scanner, load directories and build tree"""
 

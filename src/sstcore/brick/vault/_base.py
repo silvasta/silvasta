@@ -23,12 +23,12 @@ from ._access import VaultAccess
 # FIX: Vault BROKEN!!!
 
 
-@portlink(Register)  # ty:ignore
+@portlink(Register)
 class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
     """Establish the port definition for further specification"""
 
     policy: PolicyField[VaultPolicy] = PolicyField(VaultPolicy)
-    ident: StrategyField[[Item], Hashable] = StrategyField(lambda item: item)  # ty:ignore
+    ident: StrategyField[[Item], Hashable] = StrategyField(lambda item: item)
 
     def __init__(
         self,

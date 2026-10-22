@@ -4,6 +4,8 @@ Build the Functor for the Exception handling
                              DependencyLevel.sstcore.error.catch[0]
 """
 
+from sstcore.forge.engine import FunctorMetaData
+
 __all__: list[str] = [
     "ErrorHandler",
 ]
@@ -17,7 +19,9 @@ from ...forge.func import SafeFunctor
 from ...port.functorial import ErrorPolicy
 
 
-class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
+class ErrorHandler[Error: BaseException](
+    SafeFunctor[[Error], None], data=FunctorMetaData()
+):
     """Handle CLI Exception and Terminate"""
 
     def __init__(self, exception_type: type[Error], **kwargs):

@@ -17,12 +17,11 @@ from typing import TYPE_CHECKING
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from ...brick.views import Cli, Log, Rich, Str
-from ...forge.view import view
+from ...forge.view import Cli, Log, Rich, Str, view
 from ...port.files import File
 
 
-@view(cli=Cli.HEADER, str=Str.NAME, rich=Rich.MODULE, log=Log.DATA)
+@view(Cli.HEADER, Str.NAME, Rich.MODULE, Log.DATA)
 class SstFile(BaseModel):
     """Local file for upload and usage in prompt"""
 

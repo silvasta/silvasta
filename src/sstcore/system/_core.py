@@ -15,7 +15,6 @@ __all__: list = [
 from dataclasses import asdict
 from typing import Any, Self, Unpack
 
-from ..port import CliSystem
 from ..port.config import Config
 from ..port.event import EventBus
 from ..port.event.emit import Emitter
@@ -24,10 +23,11 @@ from ..port.link import portlink
 from ..port.printer import Printer
 from ..port.system import (
     BusLoader,
+    CliSystem,
     ConfigLoader,
     SstSystem,
-    SystemBootData,
     SystemBootParam,
+    SystemBootSpec,
 )
 from ..util.log import setup_minimal_logging
 from ..util.print import PrinterFactory
@@ -54,7 +54,7 @@ class System:
     def boot(cls, **data: Unpack[SystemBootParam]) -> Self:
         """Assemble Config, wire Bus, ensure Printer and launch the System"""
 
-        param = SystemBootData(**data)
+        param = SystemBootSpec(**data)
 
         setup_minimal_logging(level="DEBUG" if param.verbose else "WARNING")
 

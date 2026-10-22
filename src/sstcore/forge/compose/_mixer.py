@@ -7,8 +7,6 @@ Define Functions and Rules to Combine Mixins
 
 """
 
-from src.sstcore.port.shape import Builder
-
 __all__: list[str] = [
     "Combine",
     "NameSpace",
@@ -16,6 +14,8 @@ __all__: list[str] = [
 
 
 from typing import Any
+
+from ...port.shape import Builder
 
 
 class Combine:

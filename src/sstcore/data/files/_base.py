@@ -17,7 +17,7 @@ from ...port.link import portlink
 from ...util.path.guard import PathGuard
 
 
-@portlink(Files)
+@portlink(Files)  # ty:ignore FIX:
 class SstFiles(ListVault):
     """Provide basic registry access and confirmation"""
 

@@ -58,9 +58,9 @@ class MainIntroScroll(PrintOption[Callable[[str], None]]):
     def _template(
         self, project_name: str, outer: str, inner: str, box: Box
     ) -> None:
-        project: str = c(project_name, color=inner)
+        project: str = c(project_name, inner)
 
-        text: str = c(f"Welcome to {project}", color=outer)
+        text: str = c(f"Welcome to {project}", outer)
 
         printer.title(text, box=box, frame="cyan")
 
@@ -207,9 +207,7 @@ def sub_callback(name: str):
 ### Status
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-type StatusSignature = Callable[
-    [object, list[type[BaseException]], bool], None
-]
+type StatusSignature = Callable[[object, list[type[BaseException]], bool], None]
 type ExceptionFormatter = Callable[[type[BaseException]], str]
 
 

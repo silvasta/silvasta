@@ -49,5 +49,3 @@ __all__: list[str] = [
 from ._file import FileScanner
 from ._folder import FolderScanner
 from ._summary import SummaryFile, SummaryFileMachine
-
-# LATER: SummaryFile, dataclass with list with lines and optional write path

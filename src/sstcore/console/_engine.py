@@ -114,7 +114,7 @@ class SafeTyper(typer.Typer):
 
     def print_setup_status(self, show_all_exceptions=False):
         """Print summary of status after assembly"""
-        scroll.safe_typer.status(self, self.errors.all, show_all_exceptions)
+        scroll.safe_typer.status(self, self.errors, show_all_exceptions)
 
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
@@ -122,7 +122,7 @@ class SafeTyper(typer.Typer):
             return super().__call__(*args, **kwargs)
 
         except Exception as error:
-            if handler := self.errors.get(exception_type=type(error)):
+            if handler := self.errors[type(error)]:  # ty:ignore FIX:
                 handler.execute_safe(error)  # -> NoReturn!
                 # LATER: check __mro__ for derived exceptions!
 

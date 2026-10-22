@@ -17,6 +17,7 @@ from pathlib import Path
 
 import typer
 
+from ...port.scanner import ScanMode
 from ...util.filter import PathFilter, ProjectFilter
 from ...util.print import Printer
 from ...util.print import printer as _printer
@@ -40,7 +41,7 @@ def folder_scanner(
     sort: str = TreeSelectorApp.Sort.SELECTION,
     local_printer: Printer | None = None,
     filter: PathFilter | None = None,
-    # scan_mode: ScanMode = ScanMode.Zero,
+    scan_mode: ScanMode = ScanMode.READ,
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
     _x = _printer
@@ -67,7 +68,7 @@ def folder_scanner(
                 output_file,
                 target_files=selected_files,
                 local_root=scan_root,
-                # scan_mode=scan_mode,
+                scan_mode=scan_mode,
             )
         )
     )

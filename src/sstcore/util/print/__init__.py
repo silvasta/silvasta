@@ -16,7 +16,7 @@ __all__: list[str] = [
 
 
 from ...port.printer import Printer
-from ._compose import printer
+from .___compose import printer
 
 
 class PrinterFactory:

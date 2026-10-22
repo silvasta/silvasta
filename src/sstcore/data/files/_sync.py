@@ -21,13 +21,13 @@ from ...error import NotImplementedDispatchError
 from ...port.files import File, SyncMode, SyncRegister
 from ...port.link import portlink
 from ...util.path.guard import PathGuard
-from ...util.path.guard._operate import TransferStrategy
+from ...util.path.guard._operate import Copy, Rotate, TransferStrategy
 from ._file import SstFile
 
 type _PathS = Path | list[Path]
 
 
-@portlink(SyncRegister)
+@portlink(SyncRegister)  # ty:ignore FIX:
 class FileSyncMixin[File: SstFile]:
     """Execute File System Operations supported by PathGuard"""
 
@@ -61,7 +61,8 @@ class FileSyncMixin[File: SstFile]:
         """Move external files from into local_root and add to registry"""
         self.sync_mode = SyncMode(sync_mode)
         return self._sync_external_files(
-            source, transfer_strategy=PathGuard.rotate
+            source,
+            transfer_strategy=PathGuard.rotate,  # LATER:
         )
 
     def mirror_from_registry(
@@ -69,16 +70,14 @@ class FileSyncMixin[File: SstFile]:
     ) -> list[File]:
         """Copy files of external registry into local_root and attach"""
         self.sync_mode = SyncMode(sync_mode)
-        return self._sync_registry(external, transfer_strategy=PathGuard.copy)
+        return self._sync_registry(external, transfer_strategy=Copy)
 
     def absorb_from_registry(
         self, external: Self, sync_mode: SyncMode = SyncMode.INCREMENT
     ) -> list[File]:
         """Move files of external registry into local_root and attach"""
         self.sync_mode = SyncMode(sync_mode)
-        return self._sync_registry(
-            external, transfer_strategy=PathGuard.rotate
-        )
+        return self._sync_registry(external, transfer_strategy=Rotate)  # LATER:
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
     ### Workers
@@ -119,7 +118,8 @@ class FileSyncMixin[File: SstFile]:
 
         if source.is_dir():
             temp_registry: Self = self.clone_empty_registry(local_root=source)
-            temp_registry.attach_new_files_from_local_folder()
+            # WARN: behavoiur out
+            # temp_registry.attach_new_files_from_local_folder()
             return self._sync_registry(
                 external=temp_registry,
                 transfer_strategy=transfer_strategy,

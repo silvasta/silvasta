@@ -68,7 +68,7 @@ exclude = [
   # Match all files/dirs starting with 3+ underscores anywhere
   "**/____*",
   # Specific directory branches (if you prefer explicit paths)
-  # "src/sstcore/brick/field/___ideas",
+  "src/sstcore/util/write",
 ]
 
 [tool.ruff]
@@ -78,6 +78,7 @@ extend-exclude = [
   "tests",
   # Catch any file or folder starting with 3+ underscores
   "**/____*",
+  "src/sstcore/util/write",
 ]
 
 [tool.ruff.lint.pydocstyle]

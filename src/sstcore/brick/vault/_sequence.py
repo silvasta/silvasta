@@ -94,14 +94,14 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
 
 
 # FIX: Vault BROKEN!!!
-@portlink(ListRegister)  # ty:ignore
+@portlink(ListRegister)
 class ListVault[Item](Sequential[Item, list[Item]]):
     def _ctor(self, items: Iterable[Item]) -> list[Item]:
         return list(items)
 
 
 # FIX: Vault BROKEN!!!
-@portlink(TupleRegister)  # ty:ignore
+@portlink(TupleRegister)
 class TupleVault[Item](Sequential[Item, tuple[Item, ...]]):
     def _ctor(self, items: Iterable[Item]) -> tuple[Item, ...]:
         return tuple(items)

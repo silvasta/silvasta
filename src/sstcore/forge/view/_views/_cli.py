@@ -17,8 +17,10 @@ __all__: list[str] = [
 
 from pathlib import Path
 
+from ....brick import reflect
 from ....brick.color import colorize
-from ....brick.labor import invoke, reflect, scan, transform
+from ....brick.format import norm
+from ....brick.reflect import invoke, scan
 from ....port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
 
 
@@ -56,13 +58,13 @@ class PanelMixin:
         # def _panel_data(self) -> str | list[str]:
         # TASK: new concept for that
         """Provide subhook for override custom panel data"""
-        return transform.dict_to_list(scan.data(self), sep=": ")
+        return norm.dict_to_list(scan.data(self), sep=": ")
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
             self._panel_data,
-            title=invoke.rich(self),
-            frame="cyan",  # NEXT: color not hardcoded!!
+            # title=self.__rich__(),
+            # frame="cyan",  # NEXT: color not hardcoded!!
         )
 
 

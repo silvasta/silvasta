@@ -17,7 +17,8 @@ from ...util.filter import ProjectFilter
 from ...util.path import any_root
 from ...util.print import printer
 from ...util.scan import SummaryFileMachine
-from ...util.write._engine import StubFileMachine
+
+# from ...util.write import StubFileMachine
 from .. import _args as args
 from .._engine import SafeTyper
 from ..select import TreeSelectorApp
@@ -33,7 +34,7 @@ app = SafeTyper(name="tools", help="Basic Equipment for Development")
 def launch_stub_engine(
     ctx: Context,
     _output_file: args.OutputFile = None,
-    _file_type: StubFileMachine = StubFileMachine.TYPE,
+    # _file_type: StubFileMachine = StubFileMachine.TYPE,
     _reset: args.CleanState = False,
     _select: bool = False,
 ):

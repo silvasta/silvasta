@@ -18,13 +18,13 @@ from pathlib import Path
 
 from loguru import logger
 
-from ...brick.view import Cli, Str, view
+from ...forge.view import Cli, Str, view
 from ..path.guard import PathGuard
 from ..print import printer
 from ._file import FileScanner, ScanMode
 
 
-@view(cli=Cli.MARKDOWN, str=Str.NAME)
+@view(Cli.MARKDOWN, Str.NAME)
 @dataclass
 class SummaryFile:
     output_file: Path

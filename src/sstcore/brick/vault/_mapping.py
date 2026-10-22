@@ -101,5 +101,5 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
         return {k: v for k, v in self.vault.items() if fn(v)}
 
 
-@portlink(DictRegister)  # ty:ignore
+@portlink(DictRegister)
 class DictVault[Item, K](Mapped[Item, K]): ...
