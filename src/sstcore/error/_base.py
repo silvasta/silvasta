@@ -13,16 +13,18 @@ from typing import Any
 
 from ..brick import reflect
 from ..brick.color.box import Colors
+from ..port.color import Color
+from ..port.event._param import FrameSpec
 from ..port.event.dto import LogDTO, PanelDTO
 from ..port.raising import SstCoreError
 from ..port.represent import CliRenderable
 
 c = Colors()
 
+# TASK: unify pipeline with port.raising.SstCoreError
 
-# IDEA: - subclass detection - ghost color box for SstError!
-# IDEA: SstBaseError? Then update in .raiser, then final assemble SstError in .__init__?
-class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
+
+class SstError(SstCoreError):
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -30,10 +32,6 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
         self.kwargs: dict = kwargs
         super().__init__(*args)
 
-    # IDEA: this in View??
-    # TASK: this from View!!
-
-    # --- DTO
     def __log__(self) -> LogDTO:
         """Provide Structured Data for Log"""
         return LogDTO(
@@ -59,16 +57,13 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
             *(self._causing_error if self._causing_error else []),
         ]
 
+        # NEXT: use DtoFactory
         return PanelDTO(
-            content=self._modify_scroll(lines),  # ty:ignore FIX:
-            title=self.__rich__(),
-            frame="red",
-            title_align="right",
+            content=tuple(self._modify_scroll(lines)),
+            frame=FrameSpec(topic=self.__rich__(), topic_color=Color.RED),
         )
 
-    def _modify_scroll(
-        self, lines: list[CliRenderable]
-    ) -> list[CliRenderable]:
+    def _modify_scroll(self, lines: list[CliRenderable]) -> list[CliRenderable]:
         """Customize Lines displayed inside CLI Panel"""
         return lines
 
@@ -89,11 +84,10 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
         return scroll_for_error_that_caused_this_error
 
     def summary(self, *_args, max_len=60, **_kwargs) -> str:
-        # NOTE: why kw/args?
         """Cut header line to ensure max length"""
         header_len: int = len(self.name) - 1 - len(self._short)
         if (to_long := max_len - header_len) < 0:
-            # TODO: check ..format.text
+            # TASK: check ..format.text
             # LATER:: create entire header? use f-string < max_len
             # something like: header = f"{f'{self.name} {self._short}': < 60}"
             return f"{self._short[: (to_long - 3)]}..."
@@ -105,14 +99,13 @@ class SstError(SstCoreError):  # IMPORTANT: check intermediate Error steps
         """Provide Structured Data flattened to string"""
         attributes: list[str] = [f"args={self.args!r}"]
         attributes.extend(
-            f"{k}={v!r}"
-            for k, v in vars(self).items()
-            if not k.startswith("_")
+            f"{k}={v!r}" for k, v in vars(self).items() if not k.startswith("_")
         )
         return f"{self.name}({', '.join(attributes)})"
 
     def __rich__(self) -> str:
         """Provide colorized Name"""
-        # TODO: check ..format.text|name
-        # LATER: improve color hack, maybe by CamelCase?
+        # TASK: check ..format.text
+        # LATER:: create entire header? use f-string < max_len
+        # something like: header = f"{f'{self.name} {self._short}': < 60}"
         return f"{self.name[:-5]}{c.red('Error')}"

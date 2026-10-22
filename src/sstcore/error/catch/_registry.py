@@ -1,10 +1,8 @@
 """
 Build the Error Handler Container
 
-                                                       DependencyLevel[1]
+                             DependencyLevel.sstcore.error.catch[1]
 """
-
-from typing import TYPE_CHECKING
 
 __all__: list[str] = [
     "ErrorRegistry",
@@ -12,16 +10,18 @@ __all__: list[str] = [
 
 from collections.abc import Callable
 
-from ...brick.vault import DictRegistry  # NEXT: proper vault
+from ...brick.vault import DictVault
+from ...port.link import portlink
 from ...port.register import DictRegister, FuncRegister
-from ._handler import ErrorHandler  # REMOVE: proto???
+from ._handler import ErrorHandler
 
-# IDEA: Generalize/Parametrize this for FunctorRegistry
-type HandlerFunc = Callable[[BaseException], None]
+type HandlerFunc[Error: Exception] = Callable[[Error], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
 
-class ErrorRegistry(DictRegistry[ErrorHandler]):  # NEXT: proper vault
+@portlink(FuncRegister)  # CHECK: is this proper??
+@portlink(DictRegister)  # TASK: fix the mismatch of vault/proto
+class ErrorRegistry(DictVault[ErrorHandler, type[Exception]]):
     """
     Collect and Provide the ErrorHandler
 
@@ -30,28 +30,18 @@ class ErrorRegistry(DictRegistry[ErrorHandler]):  # NEXT: proper vault
 
     """
 
-    # IMPORTANT: compare error with __mro__
-
-    def __init__(self):
-        self.items: dict[type[BaseException], ErrorHandler] = {}
-
     def _item_identifier(self, item: ErrorHandler):
         return item.exception_type, ErrorHandler
 
     def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:
         """Attach handler functions by decorator"""
 
-        def decorator(func: HandlerFunc):
-            self.add(ErrorHandler.from_func(func, exit_code, name))
+        def decorator[E: Exception](func: HandlerFunc[E]):
+            handler: ErrorHandler[E] = ErrorHandler.from_func(
+                func, exit_code, name
+            )
+            # NEXT: figure out how to assing the Handler
+            self[handler.exception_type] = handler
             return func
 
         return decorator
-
-
-if TYPE_CHECKING:
-    # LATER: implement and use FunctionalRegistry
-    _instance_check: FuncRegister = ErrorRegistry()
-    _class_check: type[FuncRegister] = ErrorRegistry
-    #
-    _instance_check: DictRegister = ErrorRegistry()
-    _class_check: type[DictRegister] = ErrorRegistry

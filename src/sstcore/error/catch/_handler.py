@@ -1,7 +1,7 @@
 """
 Build the Functor for the Exception handling
 
-                                                       DependencyLevel[0]
+                             DependencyLevel.sstcore.error.catch[0]
 """
 
 __all__: list[str] = [
@@ -9,13 +9,12 @@ __all__: list[str] = [
 ]
 
 import inspect
-import sys
 from collections.abc import Callable
-from typing import NoReturn, Self
+from typing import Self
 
-from ...brick.labor import clsname
+from ...brick.reflect import clsname
 from ...forge.func import SafeFunctor
-from ...port.functor import ErrorPolicy
+from ...port.functorial import ErrorPolicy
 
 
 class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
@@ -25,11 +24,7 @@ class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
         self.exception_type: type[Error] = exception_type
         kwargs.setdefault("exit_code", 1)
         kwargs.setdefault("error_policy", ErrorPolicy.LOG_AND_EXIT)
-        super().__init__(**kwargs)
-
-    @property
-    def _inside_brackets(self) -> str:
-        return clsname(self.exception_type)
+        super().__init__(name=clsname(self.exception_type), **kwargs)
 
     @classmethod
     def from_func(
@@ -47,8 +42,3 @@ class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
             exception_type=inferred_type,
             exit_code=exit_code,
         )
-
-    def execute_safe(self, error: Error) -> NoReturn:
-        """Executes the handler, then terminates the CLI safely."""
-        self.safe(error)
-        sys.exit(self.exit_code)
