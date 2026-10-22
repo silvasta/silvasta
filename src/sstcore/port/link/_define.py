@@ -51,7 +51,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from functools import partial
 from types import MappingProxyType as _FixMap
-from typing import Any, NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol, TypedDict
 from weakref import WeakKeyDictionary, WeakSet
 
 from .._raise import PortLinkError  # TODO: use Raiser?
@@ -61,28 +61,6 @@ from .._types import _Stringable
 class PortLinker[C, P](Protocol):
     def __call__(self, cls: type[C & P]) -> type[C]:  # ty:ignore (type intersection)
         """Accept class C iff C implements P and return C unchanged"""
-
-
-#  LINE: -- Emitting Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class PortEmit[**P](Protocol):
-    def __call__(self, *args, sender: Any = None, **kwargs) -> None:
-        """Define the message structure of port internal events"""
-
-
-class PortPrinter(Protocol):
-    def __call__(self, *args, **kwargs): ...
-    def line(self, *targets, color): ...
-    def panel(self, content, /, title=None, color="cyan"): ...
-    def table(
-        self,
-        target: dict,
-        show_key_type: bool = False,
-        show_value_type: bool = True,
-        /,
-        color: str = "green",
-    ) -> None: ...
 
 
 #  LINE: -- Reflecting Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -119,6 +97,75 @@ class DocMerging(Protocol):
     def __call__(
         self, port: Sequence[PortDoc], plug: Sequence[PlugDoc]
     ) -> list[str]: ...
+
+
+#  LINE: -- Config -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class LinkConfig(Protocol):
+    """The Parts needed for operators"""
+
+    @property
+    def emit(self) -> PortEmit: ...
+    @property
+    def printer(self) -> PortPrinter: ...
+    def ignores(self, base: type) -> bool: ...
+    def show_result(self, docs: SortedDocs, /): ...
+
+    dunders: frozenset[str]
+
+
+class RenderTheme(TypedDict, total=False):
+    """Sub-config for Redactor/Printer panel colors."""
+
+    stats: str
+    fail: str
+    port: str
+    plug: str
+
+
+@dataclass
+class DefaultTheme:
+    stats: str = "cyan"
+    fail: str = "orange"
+    port: str = "purple"
+    plug: str = "green"
+
+
+class LinkInput(TypedDict, total=False):
+    env_var: str
+    toggle: Iterable[str]
+    trace_init: bool | None
+    use_loguru: bool | None
+    report: int
+    theme: RenderTheme
+    merge: DocMerging
+    skip: frozenset[type]
+    dunders: frozenset[str]
+
+
+#  LINE: -- Emitting Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class PortEmit[**P](Protocol):
+    def __call__(self, *args, sender: Any = None, **kwargs) -> None:
+        """Define the message structure of port internal events"""
+
+
+class PortPrinter(Protocol):
+    def __call__(self, *args, **kwargs): ...
+    def line(self, *targets, color): ...
+    def panel(self, content, /, title=None, color="cyan"): ...
+    def table(
+        self,
+        target: dict,
+        show_key_type: bool = False,
+        show_value_type: bool = True,
+        /,
+        color: str = "green",
+    ) -> None: ...
+    def show_sort_result(self, docs: SortedDocs, level=2): ...
+    def overview(self, portlink: Any, registry: LinkRegistry, /): ...
 
 
 #  LINE: -- Dunders (PortOperator.__getattr__) -- -- - -- -- - -- -- - -- -- - -- -- - -- --

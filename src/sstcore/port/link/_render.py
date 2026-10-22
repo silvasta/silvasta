@@ -7,9 +7,9 @@ Render the Output with Lazy Loaded external Libraries
                                DependencyLevel.sstcore.port.link[1]
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from ._define import PortEmit, PortPrinter
+from ._define import LinkRegistry, PortPrinter, SortedDocs
 
 
 def _loguru(*args: Any, sender: str = "", **kwargs: Any) -> None:
@@ -27,11 +27,6 @@ def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
     rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
 
 
-if TYPE_CHECKING:
-    _l: PortEmit = _loguru
-    _p: PortEmit = _rich
-
-
 def _load_printer() -> PortPrinter:
     from rich.console import Console
     from rich.panel import Panel
@@ -44,7 +39,7 @@ def _load_printer() -> PortPrinter:
             self.console.print(*args, **kwargs)
 
         def line(self, *target, color: str = "yellow"):
-            self("\n".join(str(i) for i in target), color=color)
+            self("\n".join(str(i) for i in target), style=color)
 
         def panel(self, content, /, title=None, color="cyan"):
             panel = Panel(
@@ -58,9 +53,9 @@ def _load_printer() -> PortPrinter:
         def table(
             self,
             target: dict,
-            show_key_type: bool = False,
-            show_value_type: bool = True,
             /,
+            show_key_type: bool = False,
+            show_value_type: bool = False,
             color: str = "green",
         ) -> None:
             """Render colorful Debug Dict, optional with Key or Value Type"""
@@ -85,8 +80,43 @@ def _load_printer() -> PortPrinter:
                 table.add_row(*row)
             self(table)
 
-    if TYPE_CHECKING:
-        _printer: PortPrinter = MiniPrinter()
+        def show_sort_result(  # MOVE: printer?
+            self,
+            docs: SortedDocs,
+            level=2,
+            color1="cyan",
+            color2="orange",
+            color3="purple",
+            color4="green",
+        ):
+            if level < 1:
+                return
+
+            self.panel(
+                f"[{color1}]Statistics[/] {docs!r}", title=docs, color=color1
+            )
+
+            if level < 2:
+                return
+
+            self.panel(f"[{color2}]Failed[/]", color=color2, title=repr(docs))
+            self.panel(*docs.fail, color=color2, title=f"[{color2}]Fails[/]")
+
+            if level < 3:
+                return
+
+            self.panel(f"[{color3}]PortDocs[/]", color=color3, title=repr(docs))
+            self.panel(*docs.port, color=color3, title=f"[{color3}]Protocol[/]")
+
+            self.panel(f"[{color4}]PlugDocs[/]", color=color4, title=repr(docs))
+            self.panel(
+                *docs.plug, color=color4, title=f"[{color4}]Implementation[/]"
+            )
+
+        def overview(self, portlink: Any, registry: LinkRegistry, /):
+            self.panel(f"{portlink}::{registry}")
+            self.table(dict(registry._by_port))
+            self.table(dict(registry._by_plug))
 
     return MiniPrinter()
 
@@ -94,10 +124,12 @@ def _load_printer() -> PortPrinter:
 class _NoopPrinter:
     """Zero-cost printer sink when rendering is disabled."""
 
-    def __call__(self, *args, **kwargs) -> None: ...
-    def line(self, *args, **kwargs) -> None: ...
-    def panel(self, *args, **kwargs) -> None: ...
-    def table(self, *args, **kwargs) -> None: ...
+    def __call__(self, *args, **kwargs): ...
+    def line(self, *args, **kwargs): ...
+    def panel(self, *args, **kwargs): ...
+    def table(self, *args, **kwargs): ...
+    def show_sort_result(self, *args, **kwargs): ...
+    def overview(self, *args, **kwargs): ...
 
 
 NOOP_PRINTER: PortPrinter = _NoopPrinter()

@@ -29,7 +29,7 @@ from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from functools import cached_property, partial
 from inspect import cleandoc
-from typing import TYPE_CHECKING, Any, Literal, Self
+from typing import Any, Literal, Self
 
 from .._raise import LinkRaiser
 from ..raising import SstCoreError
@@ -39,6 +39,7 @@ from ._define import (
     Docs,
     DunderSet,
     DunderStore,
+    LinkConfig,
     PlugDocs,
     PortDoc,
     PortDocs,
@@ -48,9 +49,6 @@ from ._define import (
     SidePolicy,
     SortedDocs,
 )
-
-if TYPE_CHECKING:
-    from ._control import LinkConfig
 
 
 class EasyNote:
@@ -80,9 +78,9 @@ class EasyCore[Core: Callable](EasyNote):  # TODO: resolve wiring
 
 
 class EasyCatch(EasyCore):
-    def __core__(self, *args, **kwargs):  # TODO: sync with strategy!
+    def __core__(self, *args, **kwargs):
         with self:
-            super().__core__(*args, **kwargs)
+            return super().__core__(*args, **kwargs)
 
     def __enter__(self) -> Self:
         self.emit(f"{self}: Executing Pipeline in Context")
@@ -98,7 +96,7 @@ class EasyCatch(EasyCore):
         self.emit(f"{self}: {(name := _error_type.__name__)}")
 
         if isinstance(error, SstCoreError):
-            self.emit(f"Critical! {name=}")
+            self.emit(f"Specific: {name=}")
             return True
 
         if isinstance(error, (AttributeError, TypeError)):
@@ -154,25 +152,19 @@ class Reflector[Core: Callable](EasyCatch):
         return self._get_op("redact")
 
 
-class EasyAccess:
+class EasyAccess(Reflector, id="get"):
     """Dot Access on all Dunders"""
 
     Dunders: type[DunderStore] = DunderSet
-    dunders: set[str] = {
-        "__doc__",
-        "__func__",
-        "__portlinks__",
-        # LATER: why restrict these?
-    }
     _methods: DunderStore
 
-    def __init__(self, dunders: set[str] | None = None, **kwargs):
-        self.dunders: set[str] = (dunders or set()) | self.dunders
-        super().__init__(**kwargs)
+    def __init__(self, spec: LinkConfig, **kwargs: Any):
+        super().__init__(spec, **kwargs)
+        self._methods: DunderStore = self.Dunders(spec.dunders)
 
     def invoke(self, *args: Any, attribute: str) -> Any:
         """Route dunder dot-call (e.g., op.doc(target, ...)) to Operator.__call__."""
-        return self(*args, attr=attribute)  # ty:ignore
+        return self(*args, attr=attribute)
 
     def __getattr__(self, name: str) -> Callable:
         self.emit(f"[{self}].__getattr__: {name}")
@@ -192,11 +184,6 @@ class Operator[Core: Callable](
     """Provide extended access for presets"""
 
     mode: Literal["soft", "hard"] = "soft"
-
-    def __core__(self, target: Any, value: Any, attr: str):
-        # NEXT: safe??
-        _target = self.resolve(target, attr)
-        self.strategy(_target, value, attr)
 
     @contextmanager
     def on(self, mode: Literal["soft", "hard"] = "soft") -> Generator[Self]:
@@ -234,6 +221,10 @@ class Projector(Operator[Projecting], id="inject"):
 
     __call__: Projecting
 
+    def __core__(self, target: Any, value: Any, attr: str, /) -> None:
+        resolved = self.resolve(target, attr)
+        self.strategy(resolved, value, attr)
+
     def direct(self, target: Any, value: Any, attr: str):
         object.__setattr__(target, attr, value)
 
@@ -254,6 +245,9 @@ class Detector(Operator[Detecting], id="reflect"):
 
     __call__: Reflector
 
+    def __core__(self, target: Any, attr: str, /) -> Any:
+        return self.strategy(target, attr)
+
     def direct(self, target: type, attr: str, /):
         return target.__dict__.get(attr)
 
@@ -271,14 +265,14 @@ class Detector(Operator[Detecting], id="reflect"):
             case _:
                 return None
 
-    def doc(self, target: Any, name: str, /) -> str:
-        # NEXT: check dispatch: easy/soft? maybe remove
-        raw: Any | None = (  # MOVE: everything to resolve
-            self.polite(target, "__doc__")
-            if name
-            else self.direct(target, "__doc__")
-        )
-        return self.clean(raw)
+    def doc(self, cls: Any, attr: str, /) -> str:
+        """Resolve cls or cls.attr and return its cleaned docstring."""
+        # AI: is this wired well?
+        if (target := self.resolve(cls, attr)) is None:
+            return ""
+        with self.on(mode="soft" if attr else "hard"):
+            doc: str | None = self(target, attr)
+        return self.clean(doc)
 
     def clean(self, doc: str | Any, /):
         return cleandoc(doc) if isinstance(doc, str) and doc else ""
@@ -336,13 +330,11 @@ class Collector(Reflector[Collecting], id="collect"):
 
 
 class Redactor(Reflector, id="redact"):
-    __call__: Redacting  # NEXT:
+    __call__: Redacting
 
     def __call__(self, docs: Docs, /) -> str:
-        # NEXT: this must come from config, either the func or the flag/command
-
         sorted: SortedDocs = SidePolicy.sort(docs)
-        show_sort_result(docs=sorted, _panel=self.spec.printer.panel)
+        self.spec.show_result(sorted)
         lines: list[str] = schema1(*sorted.port_and_plug())
         # TODO: show_merge_result(...)
         self.spec.printer.panel(f"Statsistic: Total Lines: {len(lines)}")
@@ -384,34 +376,3 @@ def schema1(port: PortDocs, plug: PlugDocs) -> list[str]:
         _format_plug_body(plug, lines)
 
     return lines
-
-
-def show_sort_result(  # MOVE: printer?
-    docs: SortedDocs,
-    _panel,
-    # IMPORTANT: everything from here below, attach to config
-    spec_level=2,
-    color1="cyan",
-    color2="orange",
-    color3="purple",
-    color4="green",
-):
-    if spec_level < 1:
-        return
-
-    _panel(f"[{color1}]Statistics[/] {docs!r}", title=docs, color=color1)
-
-    if spec_level < 2:
-        return
-
-    _panel(f"[{color2}]Failed[/]", color=color2, title=repr(docs))
-    _panel(*docs.fail, color=color2, title=f"[{color2}]Fails[/]")
-
-    if spec_level < 3:
-        return
-
-    _panel(f"[{color3}]PortDocs[/]", color=color3, title=repr(docs))
-    _panel(*docs.port, color=color3, title=f"[{color3}]Protocol[/]")
-
-    _panel(f"[{color4}]PlugDocs[/]", color=color4, title=repr(docs))
-    _panel(*docs.plug, color=color4, title=f"[{color4}]Implementation[/]")

@@ -48,6 +48,7 @@ from dataclasses import replace as _replace
 from ._control import LinkSpec, Tap
 from ._define import (
     Doc,
+    LinkInput,
     LinkRegistry,
     PlugDoc,
     PortDoc,
@@ -60,8 +61,8 @@ from ._define import (
 )
 from ._operate import Reflector, schema1
 
-tap = Tap()
-spec = LinkSpec(emit=tap.emit, printer=tap.printer, merge=schema1)
+spec = LinkSpec(merge=schema1)
+tap = Tap(spec=spec)
 registry = LinkRegistry()
 
 
@@ -74,32 +75,20 @@ class PortLink:
     registry: LinkRegistry = registry
 
     def __str__(self):
-        _id = 4  # LATER: something better
-        return f"{type(self).__name__}[{_id}]"
+        return f"{type(self).__name__}[4]"
 
-    def print(self):
-        self.tap.printer.panel(f"{self}::{self.registry}")
-        self.tap.printer.table(dict(self.registry._by_port), False, False)
-        self.tap.printer.table(dict(self.registry._by_plug), False, False)
+    def show(self):
+        """Display Registry Overview if active Printer in Spec"""
+        self.spec.printer.overview(self, self.registry)
 
-    def evolve(self, **spec_overrides) -> _t.Self:
-        return _replace(self, spec=self.spec.derive(**spec_overrides))
+    def evolve(self, **changes: _t.Unpack[LinkInput]) -> _t.Self:
+        """Spawn a new PortLink with a derived LinkSpec and bound Tap."""
+        new_spec = self.spec.derive(**changes)
+        return _replace(self, spec=new_spec, tap=Tap(spec=new_spec))
 
-    def configure(
-        self,
-        *,
-        env_var: str | None = None,
-        toggle: tuple[str, ...] | None = None,
-        **spec_overrides: _t.Any,
-    ) -> _t.Self:
-        """Mutate shared Tap and LinkSpec in-place"""
-        if env_var is not None or toggle is not None:
-            self.tap.configure(  # TODO: better forwarding
-                env_var=env_var or "SST_DEBUG",
-                toggle=toggle or (),
-            )
-        if spec_overrides:
-            self.spec.configure(**spec_overrides)
+    def configure(self, **changes: _t.Unpack[LinkInput]) -> _t.Self:
+        """Mutate shared LinkSpec (and Tap) in-place."""
+        self.spec.configure(**changes)
         return self
 
     def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
@@ -110,14 +99,16 @@ class PortLink:
 
             with Reflector(spec=self.spec) as reflect:
                 with reflect.detector(mode="hard") as detect:
-                    local_data: PortLinkStore = detect.portlinks(cls)
+                    local_data: PortLinkStore = (
+                        detect.portlinks(cls) or PortLinkStore()
+                    )
 
                 if protocol in local_data:
                     return cls
 
                 task_data: PortLinkCollect = local_data.edit()
 
-                for attr in spec.surface(protocol):
+                for attr in self.spec.surface(protocol):
                     attr_data: PortLinkCollect = reflect.collector(
                         protocol, cls, attr
                     )
