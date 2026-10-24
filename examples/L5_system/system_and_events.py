@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 import fire
 from pydantic import BaseModel
-from sstcore.config import ConfigManager
-from sstcore.contract.event import EventName
-from sstcore.utils import Printer
 
-# from sstcore.contract.cli import CliRenderable  # , PanelDTO, TableDTO
-from sstcore.port import LogDTO  # , LogSerializable
-from sstcore.system import EventBus, System
+from sstcore.port.event.dto import LogDTO
+from sstcore.port.event.name import EventName
+from sstcore.system import System
+from sstcore.system.config import ConfigManager
+from sstcore.system.event import Bus
+from sstcore.util.print import Printer
 
 
 def main():
@@ -17,19 +17,19 @@ def main():
 
 class SystemExamples:
     def __init__(self):
-        self._system: System = System.bootstrap()
+        self._system: System = System.boot()
 
     @property
     def _config(self) -> ConfigManager:
-        return self._system.config
+        return self._system.config  # ty:ignore FIX:
 
     @property
     def _printer(self) -> Printer:
         return self._system.printer
 
     @property
-    def _bus(self) -> EventBus:
-        return self._system.bus
+    def _bus(self) -> Bus:
+        return self._system.bus  # ty:ignore FIX:
 
     def _emit(self, event_name: EventName, sender: str, **payload) -> None:
         """Increase convenience for bus access"""
