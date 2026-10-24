@@ -10,9 +10,6 @@ __all__: list[str] = [
     "TupleVault",
 ]
 
-# FIX: Vault BROKEN!!!
-# FIX: Vault BROKEN!!!
-# FIX: Vault BROKEN!!!
 
 from collections.abc import Iterable, Iterator, Sequence
 from typing import Any
@@ -81,8 +78,19 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
     def _box_key(self, key: str) -> V:
         return self._ctor(x for x in self if self._item_id(x) == key)
 
-    def _slice(self, s: slice) -> V:
-        return self._ctor(self.vault[s])
+    def _box_index(self, idx: int) -> V:
+        return self._ctor((self._index_item(idx),))
+
+    def _key_put(self, key: Any, item: Item) -> None:
+        hits: list[int] = [
+            i for i, x in enumerate(self.vault) if self._item_id(x) == key
+        ]
+        if len(hits) != 1:
+            raise KeyError(key)
+        self._index_put(hits[0], item)
+
+        def _slice(self, s: slice) -> V:
+            return self._ctor(self.vault[s])
 
     def _slice_put(self, s: slice, value: Any) -> None:
         items: list[Item] = list(self._iter_items())
@@ -93,14 +101,12 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
         return self._ctor(x for x in self._iter_items() if fn(x))
 
 
-# FIX: Vault BROKEN!!!
 @portlink(ListRegister)
 class ListVault[Item](Sequential[Item, list[Item]]):
     def _ctor(self, items: Iterable[Item]) -> list[Item]:
         return list(items)
 
 
-# FIX: Vault BROKEN!!!
 @portlink(TupleRegister)
 class TupleVault[Item](Sequential[Item, tuple[Item, ...]]):
     def _ctor(self, items: Iterable[Item]) -> tuple[Item, ...]:

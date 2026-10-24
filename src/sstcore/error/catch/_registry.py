@@ -8,8 +8,11 @@ __all__: list[str] = [
     "ErrorRegistry",
 ]
 
-from collections.abc import Callable
 
+from collections.abc import Callable
+from typing import Any
+
+from ...brick.reflect import objname
 from ...brick.vault import DictVault
 from ...port.link import portlink
 from ...port.register import DictRegister, FuncRegister
@@ -19,8 +22,8 @@ type HandlerFunc[Error: Exception] = Callable[[Error], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
 
-@portlink(FuncRegister)  # CHECK: is this proper??
-@portlink(DictRegister)  # TASK: fix the mismatch of vault/proto
+@portlink(FuncRegister)
+@portlink(DictRegister)
 class ErrorRegistry(DictVault[ErrorHandler, type[Exception]]):
     """
     Collect and Provide the ErrorHandler
@@ -30,18 +33,38 @@ class ErrorRegistry(DictVault[ErrorHandler, type[Exception]]):
 
     """
 
-    def _item_identifier(self, item: ErrorHandler):
-        return item.exception_type, ErrorHandler
+    def _item_id(self, item: ErrorHandler, /) -> type[Exception]:
+        """Extract the exception class as the unique mapping key"""
+        return item.error_type
+
+    def _normalize(self, value: Any) -> ErrorHandler:
+        """Ensure incoming items are valid ErrorHandler instances"""
+        if isinstance(value, ErrorHandler):
+            return value
+        if callable(value) and not isinstance(value, type):
+            return ErrorHandler.from_func(value)
+        raise TypeError(
+            f"Expected ErrorHandler or handler function, got {objname(value)}"
+        )
 
     def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:
         """Attach handler functions by decorator"""
 
         def decorator[E: Exception](func: HandlerFunc[E]):
             handler: ErrorHandler[E] = ErrorHandler.from_func(
-                func, exit_code, name
+                func, exit_code=exit_code, name=name
             )
-            # NEXT: figure out how to assing the Handler
-            self[handler.exception_type] = handler
+            self.add(handler)
             return func
 
         return decorator
+
+    def resolve(  # LATER: wire this with Vault.__getitem__ or Vault.find
+        self, exc: Exception | type[Exception]
+    ) -> ErrorHandler[Any] | None:
+        """Find the most specific ErrorHandler for an Exception"""
+        exc_type: type[Exception] = exc if isinstance(exc, type) else type(exc)
+        for cls in exc_type.__mro__:
+            if issubclass(cls, Exception) and cls in self.vault:
+                return self.vault[cls]
+        return None

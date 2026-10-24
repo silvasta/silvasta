@@ -27,8 +27,7 @@ class Event:
 
 
 class EventHandling(Protocol):
-    def __call__(self, event: Event) -> None:
-        # AI: what about this fix?  def __call__(self, event: Event, /) -> None:
+    def __call__(self, event: Event, /) -> None:
         """Process emitted Events dispatched by the Bus"""
 
 
@@ -43,7 +42,7 @@ class EventBus(Protocol):
     def emit(self, event: EventName, sender: str, /, **payload: Any) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
-    def subscribe(self, name: EventPattern, handler: EventHandling) -> None:
+    def subscribe(self, handler: EventHandling, pattern: EventPattern) -> None:
         """Attach handler as subscriber to specific event"""
 
     def subscribe_all(self, handler: EventHandling) -> None:

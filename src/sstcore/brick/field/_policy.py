@@ -55,9 +55,7 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
         if default is VOID and _extracted_default is not VOID:
             default: EnumT = _extracted_default  # UnboundError impossible?
 
-        super().__init__(
-            *args, types=self.enum_type, default=default, **kwargs
-        )
+        super().__init__(*args, types=self.enum_type, default=default, **kwargs)
 
     def validate(self, unit: object, value: EnumId[EnumT]) -> EnumT:
         resolved_value: EnumT = self.enum_type.resolve(value)
@@ -65,7 +63,9 @@ class PolicyFieldEngine[EnumT: PolicyEnum](TypedField[EnumT]):
 
 
 @portlink(attach.PolicyDescriptor)
-class PolicyField[EnumT: PolicyEnum](PolicyFieldEngine[EnumT], ReadField):
+class PolicyField[EnumT: PolicyEnum](
+    PolicyFieldEngine[EnumT], ReadField[EnumT]
+):
     """PolicyEngine with Simple ReadField"""
 
 

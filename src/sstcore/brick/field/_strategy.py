@@ -150,9 +150,7 @@ class BoundStrategy[**In, Out](FieldView):
         self.bind = False
         return self
 
-    def morph[**Bound, Opened](
-        self, new_func: Callable[Bound, Opened]
-    ) -> Self:
+    def morph[**Bound, Opened](self, new_func: Callable[Bound, Opened]) -> Self:
         """Swap function while ignoring LSP-violatons"""
         if not isinstance(self.engine, MorphingField):  # CHECK: needed?
             raise self.engine.raiser.Function(

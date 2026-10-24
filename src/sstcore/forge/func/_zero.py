@@ -66,7 +66,7 @@ class FunctorView:
     def __repr__(self) -> str:
         return f"{self}({norm.dict_to_str(vars(self))})"
 
-    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+    #  LINE: -- Select, later on -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def __rich__(self) -> str:
         return f"{reflect.clsname(self)}[{reflect.name(self)}]"

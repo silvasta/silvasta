@@ -3,7 +3,7 @@ Define the Shape of the Core Register
 
 - 1 Interface for Any type of Vaults -> enable independent data handling
 
-                                    DependencyLevel.sstcore.port[5]
+                                    DependencyLevel.sstcore.port[2]
 """
 
 __all__: list[str] = [
@@ -31,7 +31,6 @@ from enum import auto
 from typing import Any, Protocol, overload
 
 from ._types import registry_types
-from .attach import PolicyDescriptor  # 3
 from .solid import PolicyEnum  # 1
 
 _reg = registry_types
@@ -41,11 +40,8 @@ class Register[Item, Vault: _reg.Vault](Protocol):
     """Define the Shape of the General Register"""
 
     vault: Vault
-
-    policy: PolicyDescriptor[VaultPolicy]
-
-    # @property
-    # def ident(self) -> _reg.Ident[Item] | None: ...
+    policy: VaultPolicy
+    ident: _reg.Ident[Item]
 
     def add(self, data: Item | Vault) -> Vault:
         """Extend vault by Items, get removed files back"""
@@ -114,13 +110,16 @@ class DictRegister[Item, K](Register[Item, _reg.Dict[K, Item]], Protocol):
 class FuncRegister[Item: Callable](Protocol):
     """Extend the Register for Functions (LATER: and Functors)"""
 
+    # AI: so far no specific implementation, just the ErrorRegistry
+
     def attach(self) -> Callable[[Item], Item]:
         """Register new member by Decorator"""
 
 
 class MixinRegister[S: _reg.Slot](TupleRegister[_reg.Mixin], Protocol):
-    # TODO: check forge.compose.SLOT
     """Provide a stable Container for Compositiions"""
+
+    # TODO: check forge.compose.SLOT
 
     @property
     def mixins(self) -> tuple[S, ...]: ...

@@ -67,7 +67,11 @@ class Registry:
     type Key = str
     type Index = int | slice
     type Selector[T] = (
-        Registry.Key | Registry.Index | Registry.Predicate[T] | tuple[Any, ...]
+        Registry.Key
+        | Registry.Index
+        | Registry.Predicate[T]
+        | tuple[Any, ...]
+        | Hashable
     )
     type Predicate[T] = Callable[[T], bool]
     type Ident[Item] = Callable[[Item], Hashable]

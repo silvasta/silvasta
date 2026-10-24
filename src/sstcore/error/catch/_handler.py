@@ -29,13 +29,14 @@ class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
         super().__init__(**kwargs)
 
     def _format_name(self, name: str = "") -> str:
-        return name or f"ErrorHandler[{clsname(self.error_type)}]"
+        """Format str:= [(Cls)][{name}::{error}]"""
+        return f"{name or super()._format_name()}::{clsname(self.error_type)}"
 
     def handles(self, error: BaseException) -> bool:
         """Check whether this handler is responsible for the given exception."""
         return isinstance(error, self.error_type)
 
-    @StrategyField(bind_to_self=True)
+    @StrategyField(bind_to_self=False)
     def _call(self, error: Error) -> None:
         self._emit(
             f"Unhandled {clsname(error)}: {error}",
