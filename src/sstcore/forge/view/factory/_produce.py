@@ -53,7 +53,7 @@ class LogDtoProducer(DtoProducer[dto.LogDTO]):
     dto_name: dto.DtoNames = "log"
 
     def __call__(
-        self, message: str, /, **kw: Unpack[dto.LogSpec]
+        self, message: str, /, **kw: Unpack[dto.LogInput]
     ) -> dto.LogDTO:
         return self.dto_cls.create(message=message, **kw)
 
@@ -63,7 +63,7 @@ class CliDtoProducer(DtoProducer[dto.CliDTO]):
     dto_name: dto.DtoNames = "cli"
 
     def __call__(
-        self, content: Sequence[dto.CliData], /, **kw: Unpack[dto.CliSpec]
+        self, content: Sequence[dto.CliSpec], /, **kw: Unpack[dto.CliInput]
     ) -> dto.CliDTO:
         return self.dto_cls.create(content, **kw)
 
@@ -76,7 +76,7 @@ class PanelDtoProducer(DtoProducer[dto.PanelDTO]):
     dto_name: dto.DtoNames = "panel"
 
     def __call__(
-        self, *content: dto.CliData, **kw: Unpack[dto.PanelSpec]
+        self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]
     ) -> dto.PanelDTO:
         return self.dto_cls.create(*content, **kw)
 
@@ -86,7 +86,7 @@ class MarkdownDtoProducer(DtoProducer[dto.MarkdownDTO]):
     dto_name: dto.DtoNames = "markdown"
 
     def __call__(
-        self, content: Stringable, /, **kw: Unpack[dto.MarkdownSpec]
+        self, content: Stringable, /, **kw: Unpack[dto.MarkdownInput]
     ) -> dto.MarkdownDTO:
         return self.dto_cls.create(content, **kw)
 
@@ -96,7 +96,7 @@ class LineDtoProducer(DtoProducer[dto.LineDTO]):
     dto_name: dto.DtoNames = "line"
 
     def __call__(
-        self, *content: dto.CliData, **kw: Unpack[dto.LineSpec]
+        self, *content: dto.CliSpec, **kw: Unpack[dto.LineInput]
     ) -> dto.LineDTO:
         return self.dto_cls.create(content, **kw)
 
@@ -109,7 +109,7 @@ class TableDtoProducer(DtoProducer[TableViewDTO]):
         self,
         content: dto._Grid,
         /,
-        **kw: Unpack[dto.TableSpec],
+        **kw: Unpack[dto.TableInput],
     ) -> TableViewDTO:
         return self.dto_cls.create(content, **kw)
 

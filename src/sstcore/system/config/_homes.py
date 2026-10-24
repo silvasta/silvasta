@@ -22,14 +22,14 @@ __all__: list[str] = [
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from ...port.config import Homes, HomeSetup
 from ...port.link import portlink
 from ...util.path import HomeDirs
 
 
-@portlink(Homes)  # CHECK: above dataclass? returns cls, just __doc__ injected
+@portlink(Homes)
 @dataclass
 class SstHomes(HomeDirs):
     setup: HomeSetup
@@ -61,8 +61,3 @@ class SstHomes(HomeDirs):
                 fail_reason = "custom setup needs defined dirs..."
 
         raise RuntimeError(f"Bad home setup, {fail_reason}")
-
-
-if TYPE_CHECKING:
-    _instance_check: Homes = SstHomes(**dict())
-    _class_check: type[Homes] = SstHomes

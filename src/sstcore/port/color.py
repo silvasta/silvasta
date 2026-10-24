@@ -180,6 +180,13 @@ class ColorHub(Protocol):
         """Start without any Configuration"""
 
 
+class _ColorBoxHidden(Protocol):
+    """Show what the Stub file hides"""
+
+    def __getattr__(self, name: str) -> Painter:
+        """Provide Colors on ColorIndex Name and Shortcut"""
+
+
 class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
     """Global Orchestrator and Distributor of Colors"""
 
@@ -189,9 +196,6 @@ class ColorBox(Protocol):  # TASK: pyi with assigned color stacks
 
     def paint(self, color: ColorId, /) -> Painter | None:
         """Map ColorIdentifier to Painter of active Palette"""
-
-    def __getattr__(self, name: str) -> Painter:
-        """Provide Colors on ColorIndex Name and Shortcut"""
 
     def __call__(self, text: _Stringable, color: ColorId, /) -> str:
         """Find Color by Identifier and return painted text"""

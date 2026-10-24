@@ -57,7 +57,6 @@ class SafeTyper(typer.Typer):
 
         @self.callback()
         def dispatcher(
-            # TODO: hide from subabpps?
             ctx: typer.Context,
             verbose: args.Verbose = False,
             quiet: args.Quiet = False,

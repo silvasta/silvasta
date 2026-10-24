@@ -177,7 +177,7 @@ class PanelInput(CliInput, _p.HeaderInput, _p.FrameInput, total=False):
 #  LINE: -- Markdown --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class MarkdownDTO(CliDTO[tuple[CliSpec]], name="markdown"):
+class MarkdownDTO(CliDTO[CliSpec], name="markdown"):
     """Store one Formatted Markdown SpecPoint"""
 
     frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)

@@ -28,12 +28,11 @@ __all__: list[str] = [
 import typing as _t
 from collections.abc import Callable, Iterator
 from enum import auto
-from typing import Any, Protocol, Self, overload
+from typing import Any, Protocol, overload
 
 from ._types import registry_types
-from .attach import LazyDescriptor, PolicyDescriptor  # 3
-from .filter import Filter  # 4
-from .solid import EnumZero, PolicyEnum  # 1
+from .attach import PolicyDescriptor  # 3
+from .solid import PolicyEnum  # 1
 
 _reg = registry_types
 
@@ -112,36 +111,19 @@ class DictRegister[Item, K](Register[Item, _reg.Dict[K, Item]], Protocol):
 #  LINE: -- Extensions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class _IndexRegister[Item, Axes: tuple[EnumZero, ...]](Protocol):
-    # TASK: colorgrid!!
-    """Build the ultimate robust and stable container"""
+class FuncRegister[Item: Callable](Protocol):
+    """Extend the Register for Functions (LATER: and Functors)"""
 
-    axes: Axes
-
-    @property
-    def n_axes(self) -> int: ...
+    def attach(self) -> Callable[[Item], Item]:
+        """Register new member by Decorator"""
 
 
 class MixinRegister[S: _reg.Slot](TupleRegister[_reg.Mixin], Protocol):
-    # TODO: check in forge.compose.SLOT
+    # TODO: check forge.compose.SLOT
     """Provide a stable Container for Compositiions"""
 
     @property
     def mixins(self) -> tuple[S, ...]: ...
-
-
-class RegisterDescriptor(LazyDescriptor, Protocol):
-    @classmethod
-    def as_field(cls, *args, **kwargs) -> Self:
-        """Mount the vault keeper proper to the classes"""
-
-
-class FuncRegister[Item: Callable](Protocol):
-    """Extend the Register for Functions (LATER: and Functors)"""
-
-    # RENAME: check conflicts with with fields and bisect register
-    def attach(self) -> Callable[[Item], Item]:
-        """Register new member by Decorator"""
 
 
 #  LINE: -- ongoing bisect project -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -203,29 +185,3 @@ class BoundaryPolicy(BisectPolicyBase):
 
     INCLUSIVE = auto()
     EXCLUSIVE = auto()
-
-
-#  LINE: -- Experiments -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class _FilterRegister[Item: Callable](Protocol):
-    """Extend the Register with Filtering"""
-
-    # TODO: build FilterField
-    # TASK: this is 1:1 a descriptor mock...
-    # - find the proper descriptor for filters and remove this
-
-    def filter(self, new_active_filter: Filter | None) -> list[Item]:
-        """Provide Items that fulfill the active Filter"""
-
-    def set_filter(self, active_filter: Filter) -> Filter:
-        """Set and Get attached Filter"""
-
-    def reset_filter(self) -> Filter | None:
-        """Remove attached Filter and provide previous"""
-
-    @property
-    def active_filter(self) -> Filter:
-        """Provide attached Filter, load default first if needed"""
-
-    """Establish the Register with Enum and Tuple"""

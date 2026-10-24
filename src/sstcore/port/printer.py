@@ -149,20 +149,6 @@ class LayoutPrint(Protocol):
     def box(self, content: Any, frame: str = "", box: Box = ...) -> PanelDTO:
         """Check Difference to Panel"""
 
-    # TODO:
-    # def box_top(self, target: Any, frame: str = "") -> None: ...
-    # def box_bottom(self, target: Any, frame: str = "") -> None: ...
-    # TODO: box.top
-    # TODO: box.bottom
-    # TODO: box.mini
-    # TODO: box.mini.up
-    # TODO: box.mini.down
-    # TODO: box.mini.both
-    # TODO: box.corner
-    # def mini_box( self, target: Any, frame: str = "",
-    #     mode: Literal["up", "down", "both"] = "both",) -> None: ...
-    # def corner( self, target: Any, # frame: str = "", # box: Box = ...,) -> None: ...
-
     def header(self, content: Any, **kwargs: Unpack[HeaderInput]) -> PanelDTO:
         """Define Single Slim Panel"""
 
@@ -195,7 +181,6 @@ class LayoutPrint(Protocol):
 type TableInput = dict | list[list] | list[dict]  # NEXT: finish this!
 
 
-# TODO: unwrap this functions, attach only function
 class SpecialPrint(Protocol):
     def path_exists_table(  # IDEA: PathDTO? definitely multiple path prints!
         self, paths: list[Path], **kwargs: Unpack[PanelInput]

@@ -28,6 +28,7 @@ class Event:
 
 class EventHandling(Protocol):
     def __call__(self, event: Event) -> None:
+        # AI: what about this fix?  def __call__(self, event: Event, /) -> None:
         """Process emitted Events dispatched by the Bus"""
 
 

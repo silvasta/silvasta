@@ -11,29 +11,29 @@ __all__: list[str] = [
 from collections.abc import Sequence
 from typing import Any, Self
 
-from ....port.event._param import HeaderData
-from ....port.event.dto import CliData, TableDTO
+from ....port.event._param import HeaderSpec
+from ....port.event.dto import CliSpec, TableDTO
 
 
 class TableViewDTO(TableDTO, name="table"):
     @classmethod
     def table_from_matrix(
-        cls, matrix: list[list[CliData]], title: str | None = None
+        cls, matrix: list[list[CliSpec]], title: str | None = None
     ) -> Self:
         return cls(
             content=tuple(tuple(row) for row in matrix),
-            header=HeaderData(title=title),
+            header=HeaderSpec(title=title),
         )
 
     @classmethod
-    def table_from_rows(cls, rows: dict[str, CliData | list[CliData]]) -> Self:
+    def table_from_rows(cls, rows: dict[str, CliSpec | list[CliSpec]]) -> Self:
         return cls(
             content=tuple(
                 tuple(v) if isinstance(v, (list, tuple)) else (v,)
                 for v in rows.values()
             ),
             row_names=tuple(rows.keys()),
-            header=HeaderData(title="Table From Dicts"),
+            header=HeaderSpec(title="Table From Dicts"),
         )
 
     @classmethod
@@ -43,7 +43,7 @@ class TableViewDTO(TableDTO, name="table"):
         """Transform dict of {col_name: column_values} into a cls (transposed)."""
 
         return cls(
-            header=HeaderData(title="Table From Cols"),
+            header=HeaderSpec(title="Table From Cols"),
             content=tuple(
                 tuple(val for val in row)
                 for row in zip(*cols.values(), strict=True)
@@ -62,7 +62,7 @@ class TableViewDTO(TableDTO, name="table"):
         if not records:
             return cls(
                 content=(()),
-                header=HeaderData(title="Table from no Records"),
+                header=HeaderSpec(title="Table from no Records"),
             )
 
         headers: tuple[str, ...] = (
@@ -71,7 +71,7 @@ class TableViewDTO(TableDTO, name="table"):
             else tuple(dict.fromkeys(k for row in records for k in row.keys()))
         )
         return cls(
-            header=HeaderData(title="Table from Records"),
+            header=HeaderSpec(title="Table from Records"),
             content=tuple(
                 tuple(row.get(h, "") for h in headers) for row in records
             ),
@@ -79,9 +79,7 @@ class TableViewDTO(TableDTO, name="table"):
         )
 
     @classmethod
-    def table_from_col_dicts(
-        cls, cols: dict[str, list[Any]], **kwargs
-    ) -> Self:
+    def table_from_col_dicts(cls, cols: dict[str, list[Any]], **kwargs) -> Self:
         return cls(
             content=tuple(
                 tuple(row) for row in zip(*cols.values(), strict=True)

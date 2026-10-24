@@ -11,9 +11,7 @@ from functools import lru_cache
 from typing import Any
 from weakref import WeakSet
 
-from src.sstcore.port.link._define import Doc
-
-from ._define import LinkRegistry, Param, PortPrinter, SortedDocs
+from ._define import Doc, LinkRegistry, Param, PortPrinter, SortedDocs
 
 
 def _loguru(*args: Any, sender: str = "", **kwargs: Any) -> None:

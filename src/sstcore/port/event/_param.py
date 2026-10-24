@@ -30,7 +30,7 @@ from ..solid import BoxOption as _BoxOption
 
 
 @_typing.dataclass_transform(kw_only_default=True)
-class ParamSpec:
+class ParamSpec:  # TODO: compare with Functor::ParamSpec
     """Base for stacked configuration dataclasses (FrameSpec, HeaderSpec, etc.)."""
 
     def __init_subclass__(cls, kw_only: bool = True, **kwargs: _Any):
@@ -100,6 +100,7 @@ class HeaderInput(HeaderBaseInput, HeaderFrameInput, total=False):
 
 
 # MOVE: somehow into brick or forge, but how?
+# TODO: compare with Functor::ParamSpec
 def sanitize_specs(fields: set[str], **kwargs):
     spec: dict[str, _Any] = dict(kwargs)
 
