@@ -56,9 +56,6 @@ class StackRunner[**In, ValueT, Out]:
 @portlink(stacking.StackingState)
 @dataclass(frozen=True)
 class StackState[T]:
-    # LATER: think about MappingRegistry with immutable state, maybe on core
-    """Immutable accumulation of selected values and masking rules."""
-
     selected: _st.Accumulated[T] = field(
         default_factory=lambda: defaultdict(list)
     )
@@ -73,7 +70,6 @@ class StackState[T]:
         new_used_ids: set[int] = set(self.used_value_ids)
 
         match mode:
-            # TODO: resolve to simple evolve with just 1 field/kwarg change
             case LayerMode.SINGLE:
                 new_locked.add(layer)
             case LayerMode.MULTI:

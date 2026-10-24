@@ -5,44 +5,45 @@ Implement the Functors for calltions and more
 
 """
 
-from typing import Any, Self
-
 __all__: list[str] = [
     "BaseFunctor",
 ]
 
-
 from collections.abc import Callable
+from typing import Any, Self, TypedDict, Unpack
 
 from ...brick.field import MorphingField, StrategyField
 from ...brick.reflect import clsname, funcname
 from ...port import functorial
 from ...port.link import portlink
-from ..engine import FunctorMeta, FunctorMetaData
-from ._zero import FunctorView
-
-FunctorInput = FunctorMetaData()
+from ..engine import FunctorMeta
+from ._zero import DataClassSpec, FunctorMetaInput, FunctorView
 
 
-@portlink(functorial.Functorial)
+class FunctorInput[**A, R](TypedDict, total=False):
+    call: Callable[A, R]
+    name: str
+
+
+class FunctorSpec[**A, R](DataClassSpec):
+    call: Callable[A, R] | None = None
+    name: str = ""
+
+
+@portlink(functorial.Functorial)  # LATER: who is Functor?
 class BaseFunctor[**Args, Result](
-    FunctorView, metaclass=FunctorMeta, data=FunctorInput
-):
+    FunctorView, metaclass=FunctorMeta, data=FunctorMetaInput
+):  # LATER: __init_subclass__ with registry from here?
     """Ensure Requirements and close MRO forwarding"""
 
-    def __init__(
-        self,
-        call: Callable[Args, Result] | None = None,
-        name: str = "",
-        **kwargs,
-    ):  # LATER: __init_subclass__ from here?
+    def __init__(self, **kwargs: Unpack[FunctorInput[Args, Result]]):
+        spec: FunctorSpec[Args, Result] = FunctorSpec.absorb(kwargs)
 
-        if call is not None:
-            self._call: Callable[Args, Result] = call
+        if spec.call is not None:
+            self._call: Callable[Args, Result] = spec.call
 
-        name: str = name or funcname(
-            self._call, default=f"{clsname(self)}Unit"
-        )
+        name: str = self._format_name(spec.name)
+
         self.__name__: str = name
         self.__qualname__: str = name
 
@@ -51,43 +52,35 @@ class BaseFunctor[**Args, Result](
 
         super().__init__()
 
-    def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
+    def _format_name(self, name: str = "") -> str:
+        """Prepare Name if empty or by critera defined in Subhook"""
+        return name or funcname(self._call, default=f"{clsname(self)}Unit")
 
+    @classmethod
+    def __mount__(cls, _host: Any, /, *, name: str = "", **kwargs: Any) -> Self:
+        return cls(name=name, **kwargs)
+
+    def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         return self._call(*args, **kwargs)
 
     @StrategyField(bind_to_self=True)
     def _call(self, *args: Args.args, **kwargs: Args.kwargs):
-        raise AttributeError(
-            "Functor is Missing: [ _call_ ]!", self, args, kwargs
-        )
+        raise AttributeError(f"{self} has no _call!", self, args, kwargs)
 
-    @MorphingField(bind_to_self=True)
-    # MOVE: global meta defaults but with better defaults
-    # AI: this here mixes currently 2 things, the _emit as default for any functor should not be to toggle off
+    @MorphingField(bind_to_self=True)  # MOVE: to meta defaults when improved
     def _emit(self, *args, **kwargs) -> None:
+        count = 0
         if hasattr(self, "log") and self.log:
             from loguru import logger
 
-            # TODO: check proper arg forwarding
+            count += 1
             logger.debug(*args, sender=str(self), **kwargs)
+        # LATER: check arg forwarding, see/copy port.link._render
         if hasattr(self, "debug") and self.debug:
             from rich import print
 
+            count += 1
             print(*args, **kwargs)
 
-    @classmethod
-    def __mount__(
-        cls, _host: Any, /, *, name: str = "", **kwargs: Any
-    ) -> Self:
-        return cls(name=name, **kwargs)
-
-
-if __name__ == "__main__":
-
-    def test(): ...
-
-    def _plug(x: BaseFunctor):
-        x._call = test
-
-    def _port(x: functorial.Functorial):
-        x._call = test
+        if count == 0:  # LATER: improve this
+            raise Exception(f"Missing _emit handling! {args=}, {kwargs=}")

@@ -35,6 +35,7 @@ __all__: list[str] = [
 import typing as _t
 from collections.abc import Callable as _Callable
 
+from .empty import VOID
 from .solid import PolicyEnum as _PolicyEnum
 
 
@@ -100,9 +101,9 @@ class SafeFunctorial[**ArgSpace, SubSetResult](_t.Protocol):
     def exit_code(self) -> int:
         """The sys.exit(Value)"""
 
-    def safe(  # public
+    def safe(
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs
-    ) -> SubSetResult | None | _t.NoReturn:
+    ) -> SubSetResult | _t.NoReturn | VOID:
         """Establish the Frame for Safe Execution"""
 
 

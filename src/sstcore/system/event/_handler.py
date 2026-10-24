@@ -5,6 +5,9 @@ Provide Infrastructure for Events
 
                                                        DependencyLevel[0]
 """
+# NEXT: look at bottom
+
+from typing import Unpack
 
 __all__: list[str] = [
     "EventHandler",
@@ -21,7 +24,11 @@ from dataclasses import dataclass
 
 from loguru import logger
 
+from ...brick.field import StrategyField
+from ...forge.func import SafeFunctor
+from ...forge.func._safe import SafeFunctorInput
 from ...port.event import Event, EventBus, EventHandling
+from ...port.functorial import ErrorPolicy
 from ...port.link import portlink
 from ...util.log import handle_log_event
 from ...util.print import printer
@@ -101,4 +108,32 @@ TELEMETRY_HANDLER = EventHandler(
     name="Telemetry",
     func=telemetry,
     fail_loud=False,
+)
+
+
+@portlink(EventHandling)
+class NewEventHandler(SafeFunctor[[Event], None]):
+    # LATER: check ErrorHandler.from_func
+    """Process Events emitted from the bus in an observable environment."""
+
+    def __init__(self, fail_loud=False, **kwargs: Unpack[SafeFunctorInput]):
+        kwargs.setdefault(
+            "policy",
+            ErrorPolicy.RE_RAISE if fail_loud else ErrorPolicy.LOG_AND_CONTINUE,
+        )
+        super().__init__(**kwargs)
+
+    @StrategyField
+    def _catch(self, error: Exception, /, event: Event) -> None:
+        if self.policy == ErrorPolicy.RE_RAISE:
+            raise RuntimeError(f"Critical Fail: {self}") from error
+
+        logger.error(f"{self} failed for '{event.name}': {error}")
+        logger.debug(f"Traceback for {self}:", exc_info=True)
+
+
+NEW_LOG_HANDLER = NewEventHandler(
+    name="LoguruBridge",
+    call=handle_log_event,
+    fail_loud=True,
 )
