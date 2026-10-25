@@ -45,7 +45,7 @@ class DtoProducer[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
         return cls(registry=host._registry, name=name, **kwargs)
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Log and Cli Base -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @portlink(functorial.MountableFunctor)
@@ -68,7 +68,7 @@ class CliDtoProducer(DtoProducer[dto.CliDTO]):
         return self.dto_cls.create(content, **kw)
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Cli Specifications -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @portlink(functorial.MountableFunctor)

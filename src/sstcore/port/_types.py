@@ -48,7 +48,7 @@ class _RichView(Protocol):
 
 @runtime_checkable
 class _RichConsolable(Protocol):
-    def __rich_console__(self):
+    def __rich_console__(self, console, options):
         """Just extend the Renderable type"""
 
 

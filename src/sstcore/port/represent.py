@@ -103,7 +103,7 @@ class _SstTestView(_typing.Protocol):
 
 
 type SstView = CliSerializable | LogSerializable  # LATER: TuiSerializable
-type CliRenderable = CliSerializable | Richable
+type CliRenderable = CliSerializable | Richable  # LATER: Serializable?
 type Richable = RichView | RichConsolable | str
 
 
