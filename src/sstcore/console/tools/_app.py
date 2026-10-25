@@ -57,7 +57,6 @@ def launch_folder_scanner(
     reset: args.CleanState = False,
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
     filter_box: _FilterArg = FilterArgs.PROJECT,
-    # scan_mode: ScanMode = ScanMode.Zero,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
     system: System = ctx.obj["system"]
@@ -71,10 +70,9 @@ def launch_folder_scanner(
         local_printer=system.printer,
         filter=ProjectFilter.from_args(
             filter_box(
-                # LATER: include/exclude
+                # AI_TASK: include/exclude
             )
         ),
-        # scan_mode=scan_mode,
     )
 
 

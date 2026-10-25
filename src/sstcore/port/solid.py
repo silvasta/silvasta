@@ -22,9 +22,13 @@ __all__: list[str] = [
 ]
 
 
+from typing import Any as _Any
 from typing import Protocol as _Protocol
+from typing import Self as _Self
 
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
+from .empty import VOID as _VOID
+from .empty import MayBe as _MayBe
 
 
 class EnumMeta(_Protocol):
@@ -86,10 +90,6 @@ class EnumMode(BaseEnum):  # CHECK: same as Option?
     """Task Toggle"""
 
 
-# IDEA: Mode:= no zero, Option:= zero as default
-# - if so, mount MRO walk to meta for detecting superclasses with flag
-
-
 class EnumOption(EnumZero):
     """Multiple Selections - Always 1 default (on zero)"""
 
@@ -98,8 +98,32 @@ class PrintOption(EnumZero, walk=True):
     """(Randomly) toggle views until it looks nice"""
 
 
-class BoxOption(EnumZero, walk=True):
-    """Select the Box for the Viz"""
+class OptionRegister(EnumZero, walk=True):
+    """Provide Container to register Options for each Member"""
+
+    _registry: dict[int, _Any]
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._registry: dict[int, _Any] = {}
+
+    @classmethod
+    def register(cls, mapping: dict[_Self, _Any]) -> None:
+        """Update the internal storage with Options for Member"""
+        cls._registry.update(
+            {enum.value: option for enum, option in mapping.items()}
+        )
+
+    def option(self, fallback: _MayBe[_Any] = _VOID):
+        # AI: sentinel from Level[0] package, allows for None as fallback
+        """Get Option that is registered for current Member"""
+        try:
+            return self._registry[self.value]
+        except KeyError as err:
+            if fallback is not _VOID:
+                return fallback
+            # AI: no custom error, .raising imports from here
+            raise RuntimeError(f"Unregistered {type(self).__name__}") from err
 
 
 class EnumCatalog(BaseEnum):

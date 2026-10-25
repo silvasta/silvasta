@@ -96,3 +96,8 @@ def attach_call_to_filter_args(self: FilterArgs) -> FilterData:
 
 
 setattr(FilterArgs, "__call__", attach_call_to_filter_args)  # noqa: B010
+
+if __name__ == "__main__":
+    print(FilterArgs)
+    for f in FilterArgs:
+        print(f, f.value, f())

@@ -67,10 +67,10 @@ include = ["src", "examples"]
 exclude = [
   # Match rules: ignore ____* in outer branch, ignore ___* in core branch
   "**/____*",
-  "**/___*",
+  # "**/___*",
   # Explicit paths (temporary)
-  "src/sstcore/util/write",
-  "src/sstcore/util/print",
+  # "src/sstcore/util/write",
+  # "src/sstcore/util/print",
 ]
 
 [tool.ruff]

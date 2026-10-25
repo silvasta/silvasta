@@ -5,7 +5,7 @@ Define the Arguments and Parameter for the DTO Pipeline
 """
 
 __all__: list[str] = [
-    "Boxes",  # MOVE: ..printer
+    "_Boxes",
     # data
     "ParamSpec",
     "FrameSpec",
@@ -24,9 +24,8 @@ import enum as _e
 import typing as _typing
 from typing import Any as _Any
 
-from ..color import Color as _Color
-from ..color import ColorArg as _ColorArg
-from ..solid import BoxOption as _BoxOption
+from ..color import Color, ColorArg
+from ..solid import OptionRegister
 
 
 @_typing.dataclass_transform(kw_only_default=True)
@@ -38,7 +37,9 @@ class ParamSpec:  # TODO: compare with Functor::ParamSpec
         _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
 
 
-class Boxes(_BoxOption):  # MOVE:  but where? PRINTER!!!
+class _Boxes(OptionRegister):  # INFO: exposed in util.print(._boxes set public)
+    """Select the Box around the Visualization"""
+
     CORNER = _e.auto()
     ROUND = _e.auto()
     UP = _e.auto()
@@ -53,16 +54,16 @@ class FrameSpec(ParamSpec):
     """The Box around the Renderable - supplies Content and Frame"""
 
     topic: str | None = ""
-    topic_color: _Color = _Color.WHITE
-    box: Boxes = Boxes.CORNER
+    topic_color: Color = Color.WHITE
+    box: _Boxes = _Boxes.CORNER
 
 
 class FrameInput(_typing.TypedDict, total=False):
     """Define the Border of one Header or Main Content"""
 
     topic: str
-    topic_color: _ColorArg
-    box: Boxes
+    topic_color: ColorArg
+    box: _Boxes
 
 
 class HeaderSpec(ParamSpec):
@@ -91,8 +92,8 @@ class HeaderFrameInput(_typing.TypedDict, total=False):
     """Test"""
 
     header_topic: str
-    header_topic_color: _ColorArg
-    header_box: Boxes | None  # None = Same as Main Content
+    header_topic_color: ColorArg
+    header_box: _Boxes | None  # None = Same as Main Content
 
 
 class HeaderInput(HeaderBaseInput, HeaderFrameInput, total=False):
@@ -136,3 +137,9 @@ def sanitize_specs(fields: set[str], **kwargs):
             )
 
     return spec
+
+
+if __name__ == "__main__":
+    print(_Boxes)
+    for f in _Boxes:
+        print(f, f.value)
