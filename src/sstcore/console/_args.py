@@ -57,18 +57,17 @@ def enum_opt[EnumT: Enum](
     """Inject {value: Name} mapping into the help string of an IntEnum."""
     mapping: str = ", ".join(f"{m.value}: {m.name}" for m in enum_class)
     full_help_text: str = f"{help_text} [{mapping}]".strip()
-    return typer.Option(None, *flags, help=full_help_text)
+    return typer.Option(*flags, help=full_help_text)
 
 
-def flag_opt(help_text: str, *flags: str, default: bool = False) -> Any:
+def flag_opt(help_text: str, *flags: str) -> Any:
     """Generates Typer metadata for boolean flags."""
-    return typer.Option(default, *flags, help=help_text)
+    return typer.Option(*flags, help=help_text)
 
 
-def filter_opt(help_text: str, *flags: str) -> Any:  # LATER: other than Filter?
+def filter_opt(help_text: str, *flags: str) -> Any:
     """Generates Typer metadata for filter lists supporting comma-separated strings."""
     return typer.Option(
-        None,
         *flags,
         help=help_text,
         callback=_parse_keywords,
@@ -81,7 +80,6 @@ def file_opt(
     """Generates Typer metadata for a single file option."""
     cli_flags: tuple[str, ...] = flags if flags else ("--file", "-f")
     return typer.Option(
-        None,
         *cli_flags,
         help=f"Select {desc} file by path",
         exists=exists,
@@ -91,9 +89,8 @@ def file_opt(
 
 def files_opt(desc: str, *flags: str, exists: bool = False) -> Any:
     """Generates Typer metadata for a multiple files option."""
-    cli_flags = flags if flags else ("--files", "-F")
+    cli_flags: tuple[str, ...] = flags if flags else ("--files", "-F")
     return typer.Option(
-        None,
         *cli_flags,
         help=f"Add {desc} files from paths",
         exists=exists,
@@ -138,12 +135,10 @@ Write = Annotated[
 Root = Annotated[
     Path | None,
     typer.Option(
-        None,
         "--root",
         "-r",
         help="Select root for current task",
         dir_okay=True,
-        # IDEA: flag_opt **kwargs??
         file_okay=False,
     ),
 ]

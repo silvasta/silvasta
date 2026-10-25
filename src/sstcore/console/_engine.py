@@ -11,7 +11,7 @@ from typing import Unpack
 import typer
 from loguru import logger
 
-from ..error.catch import ErrorRegistry
+from ..error.catch import ErrorHandler, ErrorRegistry
 from ..forge.view import view
 from ..port.system import CliSystem, SystemLoaderInput
 from ..system.boot import System, SystemLoader, sst_system_loader
@@ -48,7 +48,11 @@ class SafeTyper(typer.Typer):
         super().__init__(**kwargs)
 
         self._system_loader: SystemLoader | None = system_loader
-        self._error_registry: ErrorRegistry | None = error_registry
+
+        if error_registry is None:
+            error_registry = ErrorRegistry()
+
+        self.errors: ErrorRegistry = error_registry or ErrorRegistry()
 
         self._attach_internal_callback()
 
@@ -80,16 +84,13 @@ class SafeTyper(typer.Typer):
     ):
         """Setup Config and Logging and show Status"""
 
-        self.errors: ErrorRegistry = self._error_registry or ErrorRegistry()
-
         loader: SystemLoader = self._system_loader or sst_system_loader()
         self.system: CliSystem = loader(**cli_args)
         self._update_system_context(ctx)
 
-        # LATER: update input scroll prints
-        # if not quiet:  # TODO: send system! (emit!)
-        #     scroll.safe_typer.intro(ctx.info_name)  # FIX: info_name
-        #     # TASK: split quiet: scroll prints, subapps, general, ...
+        # if not quiet:
+        # TASK: split quiet: scroll prints, subapps, general, ...
+        #     scroll.safe_typer.intro(ctx.info_name)
         #     scroll.safe_typer.setup(self.system.config, loader)
 
     def _update_system_context(
@@ -108,7 +109,6 @@ class SafeTyper(typer.Typer):
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice subapp title"""
-        # LATER: what about Error Handler in subapps?
         scroll.safe_typer.sub_callback(ctx.info_name or "subapp")
 
     def print_setup_status(self, show_all_exceptions=False):
@@ -118,13 +118,13 @@ class SafeTyper(typer.Typer):
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
         try:
+            print(f"{args=},{kwargs=}")
             return super().__call__(*args, **kwargs)
 
         except Exception as error:
-            if handler := self.errors[type(error)]:  # ty:ignore FIX:
-                handler.execute_safe(error)  # -> NoReturn!
-                # LATER: check __mro__ for derived exceptions!
+            if type(error) in self.errors.vault:
+                handler: ErrorHandler = self.errors[type(error)]
+                handler(error)
 
-            # Fallback for unhandled structural issues
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)

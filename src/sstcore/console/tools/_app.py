@@ -25,7 +25,10 @@ from ._monitor import log_monitor
 from ._scanner import folder_scanner
 from ._writer import stub_typer
 
-app = SafeTyper(name="tools", help="Basic Equipment for Development")
+app = SafeTyper(
+    name="tools",
+    help="Basic Equipment for Development",
+)
 
 
 @app.command("writer")

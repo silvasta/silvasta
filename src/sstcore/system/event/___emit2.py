@@ -8,8 +8,6 @@ Provide ergonomic facade on top of the EventBus
 
 # TASK: define Emitter!!!
 
-from src.sstcore.port.represent import CliSerializable
-
 __all__: list[str] = [
     "Emitter",
     "LogEmitter",
@@ -19,11 +17,12 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from ...forge.view import Repr, Str, view
+from ...forge.view import view
+from ...forge.view.catalog import Repr, Str
 from ...port.event.dto import LogDTO
 from ...port.event.emit import BoundEmit, Emit, Emitter, LogEmitter
 from ...port.event.name import CliEvent, EventName
-from ...port.represent import LogSerializable
+from ...port.represent import CliSerializable, LogSerializable
 
 
 class EventEmitter:
