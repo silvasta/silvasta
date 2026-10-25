@@ -27,51 +27,28 @@ from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from functools import cached_property, partial
 from inspect import cleandoc
-from typing import Any, Literal, Self
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 from .._raise import LinkRaiser
 from ..empty import VOID, MayBe
 from ..raising import SstCoreError
-from ._define import (
-    Collecting,
-    Detecting,
-    Doc,
-    Docs,
-    DunderSet,
-    DunderStore,
-    LinkConfig,
-    Param,
-    PlugDocs,
-    PortDoc,
-    PortDocs,
-    PortLinkCollect,
-    Projecting,
-    Redacting,
-    SidePolicy,
-    SortedDocs,
-)
-
-TEMPORARY_FIX = False
-
-COUNTER = 0
+from . import _define as _def
+from ._define import Doc, Docs, PlugDocs, PortDoc, PortDocs
 
 
 class EasyNote:
     """Stable Base for all Easy Member"""
 
-    spec: LinkConfig
+    config: _def.LinkConfig
 
     def emit(self, *args, **kwargs):
-        global COUNTER
-        COUNTER += 1
-        if TEMPORARY_FIX:
-            self.spec.emit(*args, sender=self, **kwargs)
+        self.config.emit(*args, sender=self, **kwargs)
 
     def __str__(self):
         return f"{type(self).__name__}"
 
 
-class EasyCore[Core: Callable](EasyNote):  # TODO: resolve wiring
+class EasyCore[Core: Callable](EasyNote):
     """Stable Core for all Easy Member"""
 
     __core__: Core
@@ -83,12 +60,10 @@ class EasyCore[Core: Callable](EasyNote):  # TODO: resolve wiring
 class EasyCatch(EasyCore):
     """Execute in Context and Safe reflecting Operations"""
 
-    # TASK: make this emits here easy to mute and to turn on
-
-    _last_call: MayBe[Param] = VOID
+    _last_call: MayBe[_def.Param] = VOID
 
     def __call__(self, *args, **kwargs):
-        self._last_call = Param(args, kwargs)
+        self._last_call = _def.Param(args, kwargs)
         with self:
             return super().__call__(*args, **kwargs)
 
@@ -119,19 +94,16 @@ class EasyCatch(EasyCore):
         return False
 
 
-REFLECT: frozenset[str] = frozenset(("detect", "collect", "project", "redact"))
-
-
 class Reflector[Core: Callable](EasyCatch):
-    """Mixed Base for all Easy Member"""
+    """Mixed Base for all Easy Member"""  # LATER: __core__?
 
     _registry: dict[str, type[Self]] = {}
 
-    def __init__(self, spec: LinkConfig):
-        if missing := REFLECT - (registry := self._registry.keys()):
+    def __init__(self, config: _def.LinkConfig):
+        if missing := _def.REFLECT - (registry := self._registry.keys()):
             raise RuntimeError(f"Missing Operators! [{missing}]({registry=})")
 
-        self.spec: LinkConfig = spec
+        self.config: _def.LinkConfig = config
         self._instances: dict[str, Self] = {}
 
     def __init_subclass__(cls, id: str, **kwargs):
@@ -145,7 +117,7 @@ class Reflector[Core: Callable](EasyCatch):
 
     def _get_op(self, key: str, /) -> Any:
         if key not in self._instances:
-            self._instances[key] = self._registry[key](self.spec)
+            self._instances[key] = self._registry[key](self.config)
         return self._instances[key]
 
     @property
@@ -165,15 +137,19 @@ class Reflector[Core: Callable](EasyCatch):
         return self._get_op("redact")
 
 
+if TYPE_CHECKING:
+    _reflect: type[_def.Reflecting] = Reflector
+
+
 class EasyAccess(Reflector, id="get"):
     """Dot Access on all Dunders"""
 
-    Dunders: type[DunderStore] = DunderSet
-    _methods: DunderStore
+    Dunders: type[_def.DunderStore] = _def.DunderSet
+    _methods: _def.DunderStore
 
-    def __init__(self, spec: LinkConfig, **kwargs: Any):
-        super().__init__(spec, **kwargs)
-        self._methods: DunderStore = self.Dunders(spec.dunders)
+    def __init__(self, config: _def.LinkConfig, **kwargs: Any):
+        super().__init__(config, **kwargs)
+        self._methods: _def.DunderStore = self.Dunders(config.dunders)
 
     def invoke(self, target: Any, *args: Any, method: str) -> Any:
         """Uniform hook for dunder shortcut calls (e.g. op.doc(target, ...))."""
@@ -199,15 +175,11 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
     def __str__(self):
         return f"{type(self).__name__}[{self.mode}]"
 
-    @contextmanager
-    def on(self, mode: Literal["soft", "hard"] = "soft") -> Generator[Self]:
-        """Temporarily switch operator mode ('soft' vs 'hard') inside a with-block."""
-        prev, self.mode = self.mode, mode
-        try:
-            with self:
-                yield self
-        finally:
-            self.mode: Literal["soft", "hard"] = prev
+    def __core__(self, target: Any, attr: str, *args: Any) -> Any:
+        if (resolved := self.pre(target, attr)) is None:
+            return None
+        result = self.strategy(resolved, attr, *args)
+        return self.post(result, attr)
 
     @property
     def strategy(self):  # NEXT: what type fits?
@@ -217,11 +189,11 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
             case "hard":
                 return self.direct
 
-    def __core__(self, target: Any, attr: str, *args: Any) -> Any:
-        if (resolved := self.pre(target, attr)) is None:
-            return None
-        result = self.strategy(resolved, attr, *args)
-        return self.post(result, attr)
+    def polite(self, *args, **kwargs):
+        raise NotImplementedError(args, kwargs)
+
+    def direct(self, *args, **kwargs):
+        raise NotImplementedError(args, kwargs)
 
     def pre(self, target: Any, attr: str, /) -> Any:
         """Unwrap descriptors when reading or writing __doc__s"""
@@ -238,23 +210,27 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
         """Hook for post-processing the strategy result."""
         return result
 
-    def direct(self, *args, **kwargs):
-        raise NotImplementedError(args, kwargs)
-
-    def polite(self, *args, **kwargs):
-        raise NotImplementedError(args, kwargs)
-
     def resolve(self, target: Any, attr: str, /) -> Any:
         return self.pre(target, attr)
+
+    @contextmanager
+    def on(self, mode: Literal["soft", "hard"] = "soft") -> Generator[Self]:
+        """Temporarily switch operator mode ('soft' vs 'hard') inside a with-block."""
+        prev, self.mode = self.mode, mode
+        try:
+            with self:
+                yield self
+        finally:
+            self.mode: Literal["soft", "hard"] = prev
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Projector(Operator[Projecting], id="project"):
+class Projector(Operator[_def.Projecting], id="project"):
     """Collect the Modificating Methods with Safety"""
 
-    __call__: Projecting
+    __call__: _def.Projecting
 
     def direct(self, target: Any, attr: str, value: Any, /) -> None:
         """object.__setattr__ for instances and type.__setattr__ for cls"""
@@ -269,10 +245,10 @@ class Projector(Operator[Projecting], id="project"):
         setattr(target, attr, value)
 
 
-class Detector(Operator[Detecting], id="detect"):
+class Detector(Operator[_def.Detecting], id="detect"):
     """Collect the Detecting and Extracting Methods"""
 
-    __call__: Reflector
+    __call__: _def.Detecting
 
     def direct(self, target: Any, attr: str, /) -> Any:
         if isinstance(target, type):
@@ -310,32 +286,34 @@ class Detector(Operator[Detecting], id="detect"):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Collector(Reflector[Collecting], id="collect"):
+class Collector(Reflector[_def.Collecting], id="collect"):
     """Run the MRO pipelines and Reflect and Inject data"""
 
-    __call__: Collecting
+    __call__: _def.Collecting
     nearest_target: type | None = None
 
-    def __core__(self, port: type, plug: type, attr: str, /) -> PortLinkCollect:
+    def __core__(
+        self, port: type, plug: type, attr: str, /
+    ) -> _def.PortLinkCollect:
         self.nearest_target = None
-        data = PortLinkCollect()
-        self.walk_mro(data, attr, SidePolicy.PLUG, plug, track_nearest=True)
+        data = _def.PortLinkCollect()
+        self.walk_mro(data, attr, _def.Side.PLUG, plug, track_nearest=True)
         if self.nearest_target is None:
             self.emit(f"Missing implementation for {plug.__name__} and {attr=}")
-        self.walk_mro(data, attr, SidePolicy.PORT, port, track_nearest=False)
+        self.walk_mro(data, attr, _def.Side.PORT, port, track_nearest=False)
         return data
 
     def stream(self, cls: type) -> Iterator[type]:
         """Yield filtered MRO bases of Cls"""
         for base in cls.__mro__:
-            if not self.spec.ignores(base):
+            if not self.config.ignores(base):
                 yield base
 
     def walk_mro(
         self,
-        data: PortLinkCollect,
+        data: _def.PortLinkCollect,
         attr: str,
-        side: SidePolicy,
+        side: _def.Side,
         /,
         cls: type,
         *,
@@ -361,14 +339,14 @@ class Collector(Reflector[Collecting], id="collect"):
 
 
 class Redactor(Reflector, id="redact"):
-    __call__: Redacting
+    __call__: _def.Redacting
 
     def __core__(self, docs: Docs, /) -> str:
-        sorted_docs: SortedDocs = SidePolicy.sort(docs)
-        self.spec.show_result(sorted_docs)
-        lines: list[str] = self.spec.merge(*sorted_docs.port_and_plug())
+        sorted_docs: _def.SortedDocs = _def.Side.sort(docs)
+        self.config.show_result(sorted_docs)
+        lines: list[str] = self.config.merge(*sorted_docs.port_and_plug())
         # LATER: show_merge_result(...)
-        self.spec.printer.panel(f"Statistic: Total Lines: {len(lines)}")
+        self.config.printer.panel(f"Statistic: Total Lines: {len(lines)}")
         return "\n".join(lines)
 
 

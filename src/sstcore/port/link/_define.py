@@ -13,9 +13,8 @@ Define the Shape and Behaviour for the Implementations
 
 __all__: list[str] = [
     "PortLinker",
-    # render
-    "PortEmit",
     "PortPrinter",
+    "PortEmit",
     # operate
     "Reflecting",
     "Detecting",
@@ -23,14 +22,22 @@ __all__: list[str] = [
     "Projecting",
     "Redacting",
     "DocMerging",
-    # storage
     "DunderStore",
     "DunderSet",
-    "Channels",
+    "DUNDERS",
+    "REFLECT",
+    # config
+    "INIT",
+    "LinkConfig",
+    "RenderTheme",
+    "DefaultTheme",
+    "LinkInput",
+    "Param",
+    # storage
     "Doc",
     "PortDoc",
     "PlugDoc",
-    "SidePolicy",
+    "Side",
     # types
     "Docs",
     "DocMap",
@@ -45,7 +52,6 @@ __all__: list[str] = [
     "LinkRegistry",
 ]
 
-import os
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
@@ -70,6 +76,18 @@ class Reflecting(Protocol):  # NEXT: this is now bigger?
     def __call__(self, target: Any, attr: str, /) -> Any:
         """Extract the attribute value from the target"""
 
+    @property
+    def detector(self) -> Detecting: ...
+
+    @property
+    def collector(self) -> Collecting: ...
+
+    @property
+    def projector(self) -> Projecting: ...
+
+    @property
+    def redactor(self) -> Redacting: ...
+
 
 class Detecting(Protocol):
     def __call__(self, target: Any, attr: str, /) -> Any:
@@ -88,18 +106,51 @@ class Collecting(Protocol):
 
 class Redacting(Protocol):
     def __call__(self, docs: Docs, /) -> str:
-        """Format and Render Protocol and Implementation docstrings"""
+        """Govern the formatting Process"""
 
 
 class DocMerging(Protocol):
-    """Callable policy that formats validated Port and Plug doc sequences into a docstring."""
+    def __call__(self, port: PortDocs, plug: PlugDocs) -> list[str]:
+        """Format and Render Protocol and Implementation Docs"""
 
-    def __call__(
-        self, port: Sequence[PortDoc], plug: Sequence[PlugDoc]
-    ) -> list[str]: ...
+
+class DunderStore(Protocol):  # MOVE: _define
+    def __init__(self, dunders: Iterable[str] = ()): ...
+    def get(self, name: str, *args, **kwargs) -> str | None: ...
+
+
+class DunderSet(frozenset):
+    @staticmethod
+    def format(item: _Stringable, /) -> str:
+        return f"__{DunderSet.extract(item)}__"
+
+    @staticmethod
+    def extract(item: _Stringable, /) -> str:
+        return str(item).strip("_")
+
+    def __new__(cls, items: Iterable[str] = (), /):
+        return super().__new__(cls, (cls.format(item) for item in items))
+
+    def __contains__(self, target: Any) -> bool:
+        return super().__contains__(self.format(target))
+
+    def get(self, item: str, default=None) -> str | None:
+        # TODO: check __getitem__ and directly bind invoke?
+        return dunder if (dunder := self.format(item)) in self else default
+
+
+DUNDERS: set[str] = {  # __getattr__ for Detector and Projector
+    "__doc__",
+    "__func__",
+    "__portlinks__",
+}
+
+REFLECT: frozenset[str] = frozenset(("detect", "collect", "project", "redact"))
 
 
 #  LINE: -- Config -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+INIT = ("__post_init__", "__init__")
 
 
 class LinkConfig(Protocol):
@@ -109,11 +160,13 @@ class LinkConfig(Protocol):
     def emit(self) -> PortEmit: ...
     @property
     def printer(self) -> PortPrinter: ...
+    @property
+    def merge(self) -> DocMerging: ...
+    @property
+    def dunders(self) -> frozenset[str]: ...
+
     def ignores(self, base: type) -> bool: ...
     def show_result(self, docs: SortedDocs, /): ...
-
-    merge: DocMerging
-    dunders: frozenset[str]
 
 
 class RenderTheme(TypedDict, total=False):
@@ -145,6 +198,19 @@ class LinkInput(TypedDict, total=False):
     dunders: frozenset[str]
 
 
+class Param(NamedTuple):  # EXTRACT: very useful param tracker
+    """Track the ongoing Actions"""
+
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+    def __str__(self):
+        return f"args={self.args}, kwargs={self.kwargs}"
+
+    def __repr__(self):
+        return str(self)  # LATER: explain each (kw)arg
+
+
 #  LINE: -- Emitting Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
@@ -167,93 +233,6 @@ class PortPrinter(Protocol):
     ) -> None: ...
     def show_sort_result(self, docs: SortedDocs, level=2): ...
     def overview(self, portlink: Any, registry: LinkRegistry, /): ...
-
-
-#  LINE: -- Dunders (PortOperator.__getattr__) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class Param(NamedTuple):
-    """Track the ongoing Actions"""
-
-    args: tuple[Any, ...]
-    kwargs: dict[str, Any]
-
-    def __str__(self):
-        return f"args={self.args}, kwargs={self.kwargs}"
-
-    def __repr__(self):
-        return str(self)  # LATER: explain each (kw)arg
-
-
-class DunderStore(Protocol):  # MOVE: _define
-    def __init__(self, dunders: Iterable[str] = ()): ...
-    def get(self, name: str, *args, **kwargs) -> str | None: ...
-
-
-class DunderSet(frozenset):
-    @staticmethod
-    def format(item: _Stringable, /) -> str:
-        return f"__{DunderSet.extract(item)}__"
-
-    @staticmethod
-    def extract(item: _Stringable, /) -> str:
-        return str(item).strip("_")
-
-    def __new__(cls, items: Iterable[str] = (), /):
-        return super().__new__(cls, (cls.format(item) for item in items))
-
-    def __contains__(self, target: Any) -> bool:
-        return super().__contains__(self.format(target))
-
-    def get(self, item: str, default=None) -> str | None:
-        # TODO: check __getitem__ and directly bind invoke?
-        return dunder if (dunder := self.format(item)) in self else default
-
-
-#  LINE: -- Debug Channels by EnvVar (Tap) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class Channels(frozenset):  # IDEA: move this to ._control?
-    """Guard the active Channels and Rules for Matching"""
-
-    def __new__(cls, env_var="SST_DEBUG", default=()):
-        env: tuple[str, ...] = (*os.getenv(env_var, "").split(","), *default)
-        return super().__new__(cls, (c for e in env if (c := cls.format(e))))
-
-    def __contains__(self, target: Any) -> bool:
-        """Check if the target matches an active channel"""
-
-        # NEXT: check what here is compared and comes out
-
-        if not self or target is None:
-            return False
-        target: str = (
-            target.lower() if isinstance(target, str) else self.key(target)
-        )
-
-        # ERROR: this looks like not working...
-        # - as soon as something is on, the full EasyCatch is spaming
-        if "port.link" in target and not self.has("link"):
-            return False
-        if self.has("*"):
-            return True
-        return any(scope in target for scope in super().__iter__())
-
-    def has(self, flag: str, /) -> bool:
-        """Check formatted flag directly (bypass wildcard/substring match)"""
-        return super().__contains__(self.format(flag))
-
-    @classmethod
-    def format(cls, target: str, /) -> str:
-        return target.strip().lower()
-
-    @classmethod
-    def key(cls, target: Any, /) -> str:
-        """The identifier for Member matching"""
-        module: str = getattr(target, "__module__", "")
-        qualname: str = getattr(target, "__qualname__", "")
-        qualname: str = qualname or getattr(type(target), "__qualname__", "")
-        return f"{module}.{qualname}"
 
 
 #  LINE: -- __doc__ Snapshot  -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -296,14 +275,14 @@ type WeakTypeDict = WeakKeyDictionary[type, WeakSet[type]]
 #  LINE: -- Side: Port-Plug -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class SidePolicy(StrEnum):
+class Side(StrEnum):
     """Define Rules for the PortDoc and PlugDoc DTO and provide Access"""
 
     PORT = auto()
     PLUG = auto()
 
     @classmethod
-    def assess(cls, data: Doc, /) -> SidePolicy:
+    def assess(cls, data: Doc, /) -> Side:
         """Get the corresponding Policy type"""
         match data:
             case PortDoc():

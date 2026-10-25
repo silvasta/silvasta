@@ -10,47 +10,55 @@ Reference the Implementations back to their Definitions in the port
 - Trigger static type checker warning on implementation mismatch
 
                                     DependencyLevel.sstcore.port[4]
-                                    (drop to 1? remove enums would be enough)
 """
 
 __all__: list[str] = [
-    "portlink",
     "PortLink",
+    "portlink",
+    "Tap",
+    "tap",
     "LinkSpec",
     "spec",
-    "tap",
-    "Tap",
     # definitions
-    "PortLinker",
     "Reflecting",
-    "Injecting",
+    "Detecting",
     "Collecting",
-    "PortEmit",
-    "DocMerger",
+    "Projecting",
+    "Redacting",
+    "DocMerging",
     # rendering
-    "MergeMachine",
-    # __doc__
-    "PortLinkStore",
-    "PortLinkCollect",
-    "PortLinkData",
-    "SidePolicy",
-    # dto
+    "PortPrinter",
+    "PortEmit",
+    "RenderTheme",
+    "DefaultTheme",
+    "LinkInput",
+    "Param",
+    # data
     "Doc",
     "PortDoc",
     "PlugDoc",
+    "Side",
+    "PortLinkStore",
+    "PortLinkCollect",
+    "PortLinkData",
+    "LinkRegistry",
 ]
 
 
+import dataclasses as _dc
 import typing as _t
-from dataclasses import dataclass as _dataclass
-from dataclasses import field as _field
-from dataclasses import replace as _replace
 
+from ..empty import VOID, MayBe
 from ._control import LinkSpec, Tap
 from ._define import (
+    Collecting,
+    DefaultTheme,
+    Detecting,
     Doc,
+    DocMerging,
     LinkInput,
     LinkRegistry,
+    Param,
     PlugDoc,
     PortDoc,
     PortEmit,
@@ -58,58 +66,47 @@ from ._define import (
     PortLinkData,
     PortLinker,
     PortLinkStore,
-    SidePolicy,
+    Projecting,
+    Redacting,
+    Reflecting,
+    RenderTheme,
+    Side,
 )
 from ._operate import Reflector, schema1
 
-# IMPORTANT: why are they needed here? move all to boot!
-spec = LinkSpec(merge=schema1)
-tap = Tap(spec=spec)
-registry = LinkRegistry()
 
-
-@_dataclass(frozen=True, slots=True)
+@_dc.dataclass(frozen=True, slots=True)
 class PortLink:
     """Anchor an Implementation to its Protocol"""
 
-    # IDEA: make this property? use portlink.tap.spec to avoid de-synced spec on portlink/tap
-    spec: LinkSpec = _field(default_factory=lambda: spec)
-
-    tap: Tap = _field(default_factory=lambda: tap)
-    registry: LinkRegistry = _field(default_factory=lambda: registry)
-    # TODO: remove all _fields, remove spec use:
-    # tap: Tap
-    # registry: LinkRegistry
+    tap: Tap
+    registry: LinkRegistry
 
     @classmethod
     def boot(
-        cls,
-        tap: Tap | None = None,
-        registry: LinkRegistry | None = None,
+        cls, tap: MayBe[Tap] = VOID, registry: MayBe[LinkRegistry] = VOID
     ) -> _t.Self:
-        if tap is None:
-            tap = Tap(LinkSpec(merge=schema1))
-        if registry is None:
-            registry = LinkRegistry()
-        # TODO: remove spec, use @property
-        return cls(tap=tap, registry=registry)
+        """Launch empty with Defaults"""
+        return cls(
+            tap=Tap(LinkSpec(merge=schema1)) if tap is VOID else tap,
+            registry=LinkRegistry() if registry is VOID else registry,
+        )
+
+    @property
+    def spec(self) -> LinkSpec:
+        """Always read the active frozen LinkSpec directly from Tap."""
+        return self.tap.spec
 
     def __str__(self):
-        return f"{type(self).__name__}[4]"
+        return f"{type(self).__name__}[4.1]"
 
     def show(self):
-        """Display Registry Overview if active Printer in Spec"""
-        self.spec.printer.overview(self, self.registry)
+        """Display Registry Overview if active Printer in Tap"""
+        self.tap.printer.overview(self, self.registry)
 
     def evolve(self, **changes: _t.Unpack[LinkInput]) -> _t.Self:
-        """Spawn a new PortLink with a derived LinkSpec and bound Tap."""
-        new_spec: LinkSpec = self.spec.derive(**changes)
-        return _replace(self, spec=new_spec, tap=Tap(spec=new_spec))
-
-    def configure(self, **changes: _t.Unpack[LinkInput]) -> _t.Self:
-        """Mutate shared LinkSpec (and Tap) in-place."""
-        self.spec.configure(**changes)
-        return self
+        """Spawn new PortLink with isolated derived Tap"""
+        return _dc.replace(self, tap=self.tap.spawn(**changes))
 
     def __call__[C, P](self, protocol: type[P], /) -> PortLinker[C, P]:
         """Merge docstrings and enforce static type check"""
@@ -117,10 +114,10 @@ class PortLink:
         def portlinker(cls: type[C & P]) -> type[C]:  # ty:ignore (experimental-syntax)
             """Catch all __doc__ merge issues and always return original Cls"""
 
-            with Reflector(spec=self.spec) as reflect:
-                self.spec.printer.panel("Start of Reflector")
-                self.spec.printer(protocol)
-                self.spec.printer(cls)
+            with Reflector(config=self.tap) as reflect:
+                self.tap.printer.panel("Start of Reflector")
+                self.tap.printer(protocol)
+                self.tap.printer(cls)
                 with reflect.detector.on(mode="hard") as detect:
                     local_data: PortLinkStore = (
                         detect.portlinks(cls) or PortLinkStore()
@@ -155,8 +152,6 @@ class PortLink:
         return portlinker
 
 
-portlink = PortLink()  # TARGET: the main object
+portlink: PortLink = PortLink.boot()  # TARGET: the main object
 
-# IDEA: with new boot setup
-portlink: PortLink = PortLink.boot()
-tap: Tap = portlink.tap
+tap: Tap = portlink.tap  # TARGET: debug probe without protocol matching

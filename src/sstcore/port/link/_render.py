@@ -11,6 +11,7 @@ from functools import lru_cache
 from typing import Any
 from weakref import WeakSet
 
+from .._types import _RichView
 from ._define import Doc, LinkRegistry, Param, PortPrinter, SortedDocs
 
 
@@ -24,9 +25,21 @@ def _loguru(*args: Any, sender: str = "", **kwargs: Any) -> None:
 
 def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
     from rich import print as rprint
+    from rich.markup import escape
 
-    prefix: str = f"[bold cyan]{sender}[/] [dim]│[/]"
-    rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
+    match sender:
+        case None:
+            _sender = "..."
+        case _RichView():
+            _sender = sender.__rich__()
+        case _:
+            _sender = escape(str(sender))
+
+    prefix: str = f"[bold cyan]{_sender}[/] [dim]│[/]" if _sender else ""
+    try:
+        rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
+    except Exception:
+        print(f"⚡{sender} │", *args, **kwargs)
 
 
 def _format_cell(val: Any) -> str:
