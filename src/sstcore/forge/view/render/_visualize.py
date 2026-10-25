@@ -9,16 +9,16 @@ Prepare Functors, 1 per DTO
 from sstcore.brick.color.box import Colors
 
 __all__: list[str] = [
-    "LogDtoRenderer",
-    "CliDtoRenderer",
-    "PanelDtoRenderer",
-    "MarkdownDtoRenderer",
-    "LineDtoRenderer",
-    "TableDtoRenderer",
+    "LogDtoVisualizer",
+    "CliDtoVisualizer",
+    "PanelDtoVisualizer",
+    "MarkdownDtoVisualizer",
+    "LineDtoVisualizer",
+    "TableDtoVisualizer",
 ]
 
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from rich.console import ConsoleRenderable, Group, RichCast
 from rich.markdown import Markdown
@@ -34,10 +34,11 @@ from ....port.event import dto
 from ....port.event.dto import DtoNames
 from ....port.link import portlink
 from ....port.represent import PydanticModel, Richable
+from ._log import render_log
 
 
 @portlink(functorial.MountableFunctor)
-class DtoRenderer[DTO: dto.EventDTO = dto.EventDTO](
+class DtoVisualizer[DTO: dto.EventDTO = dto.EventDTO](
     SafeFunctor[[DTO], Richable]
 ):
     """Visualize the DTO - handle variations"""
@@ -79,7 +80,9 @@ class DtoRenderer[DTO: dto.EventDTO = dto.EventDTO](
             title=topic,
             title_align="right",
             border_style=border_color,
-            box=frame.box.value,  # Assuming Boxes enum resolves to rich.box.Box
+            # LATER: padding=dto.padding,
+            # expand=dto.expand,
+            box=frame.box.option(),
         )
 
     def apply_header(
@@ -100,13 +103,16 @@ class DtoRenderer[DTO: dto.EventDTO = dto.EventDTO](
 #  LINE: -- Log and Cli Base -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class LogDtoRenderer(DtoRenderer[dto.LogDTO]):
+class LogDtoVisualizer(DtoVisualizer[dto.LogDTO]):
     dto_name = "log"
 
-    def __call__(self, target: dto.LogDTO, /) -> Richable: ...
+    def __call__(
+        self, target: dto.LogDTO, /, index: Literal[0, 1, 2] = 0
+    ) -> Richable:
+        return render_log(target, select=index)
 
 
-class CliDtoRenderer(DtoRenderer[dto.CliDTO]):
+class CliDtoVisualizer(DtoVisualizer[dto.CliDTO]):
     dto_name = "cli"
 
     def __call__(self, target: dto.CliDTO, /) -> Richable:
@@ -117,7 +123,7 @@ class CliDtoRenderer(DtoRenderer[dto.CliDTO]):
 #  LINE: -- Cli Specifications -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class PanelDtoRenderer(DtoRenderer[dto.PanelDTO]):
+class PanelDtoVisualizer(DtoVisualizer[dto.PanelDTO]):
     dto_name = "panel"
 
     def __call__(self, target: dto.PanelDTO, /) -> Richable:
@@ -129,18 +135,18 @@ class PanelDtoRenderer(DtoRenderer[dto.PanelDTO]):
         return self.apply_header(body, target.header, str(target.color))
 
 
-class LineDtoRenderer(DtoRenderer[dto.LineDTO]):
+class LineDtoVisualizer(DtoVisualizer[dto.LineDTO]):
     dto_name = "line"
 
     def __call__(self, target: dto.LineDTO, /) -> Richable:
         if not target.content:
-            # FIX:
+            # FIX: use --- not as default, just empty color line
             return Text("─" * 50, style=str(target.color))
         body = self.normalize(target.content)
         return self.apply_header(body, target.header, str(target.color))
 
 
-class MarkdownDtoRenderer(DtoRenderer[dto.MarkdownDTO]):
+class MarkdownDtoVisualizer(DtoVisualizer[dto.MarkdownDTO]):
     dto_name = "markdown"
 
     def __call__(self, target: dto.MarkdownDTO, /) -> Richable:
@@ -150,7 +156,7 @@ class MarkdownDtoRenderer(DtoRenderer[dto.MarkdownDTO]):
         return md
 
 
-class TableDtoRenderer(DtoRenderer[dto.TableDTO]):
+class TableDtoVisualizer(DtoVisualizer[dto.TableDTO]):
     dto_name = "table"
 
     def __call__(self, target: dto.TableDTO, /) -> Richable:

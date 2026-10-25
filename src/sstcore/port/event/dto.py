@@ -44,9 +44,8 @@ from typing import Unpack as _Unpack
 
 from loguru import logger as _logger
 
-# from ...brick.call import castarg FIX: that for sure don't work!
 from .._types import _RichView
-from .._types import event_types as _dto
+from .._types import event_types as _et
 from ..color import Color as _Color
 from ..color import ColorArg as _ColorArg
 from . import _param as _p
@@ -112,14 +111,14 @@ class LogDTO(EventDTO, name="log", kw_only=False):
 
     message: str
     level: str = "INFO"
-    metrics: _dto.Map = _dc.field(default_factory=dict)
-    extra: _dto.Map = _dc.field(default_factory=dict)
+    metrics: _et.Map = _dc.field(default_factory=dict)
+    extra: _et.Map = _dc.field(default_factory=dict)
 
 
 class LogInput(_typing.TypedDict, total=False):
     level: str
-    metrics: _dto.Map
-    extra: _dto.Map
+    metrics: _et.Map
+    extra: _et.Map
 
 
 #  LINE: -- Cli -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -130,12 +129,12 @@ class CliDTO[Content = _Content](EventDTO, name="cli", kw_only=False):
 
     content: Content
     color: _Color = _Color.AZURE  # Main Color
-    infos: _dto.Map = _dc.field(default_factory=dict)
+    infos: _et.Map = _dc.field(default_factory=dict)
 
 
 class CliInput(_typing.TypedDict, total=False):
     color: _ColorArg
-    infos: _dto.Map
+    infos: _et.Map
 
 
 #  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -155,8 +154,7 @@ class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
 
 type CliSpec = _CliSerializable | _RichView | str
 
-type _Content[Value: CliSpec | _dto.Tuple[CliSpec]] = _dto.Tuple[Value]
-type _C = _Content[_dto.Tuple[CliSpec]]  # CHECK: usable? or remove
+type _Content[Value: CliSpec | _et.Tuple[CliSpec]] = _et.Tuple[Value]
 type _Vec = _Content[CliSpec]
 type _Grid = tuple[tuple[CliSpec, ...], ...]
 

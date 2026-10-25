@@ -9,18 +9,19 @@ from collections.abc import Generator
 from contextlib import AbstractContextManager, contextmanager
 from typing import Any
 
+from ...brick import reflect
 from ...brick.color.box._colors import Colors
 from ...brick.field import RequiredField
 from ...port.config import ProjectInformation
 from ...port.link import portlink
-from ...port.printer import Print, PrinterBase, PrintMode
+from ...port.printer import PrintBase, PrintMode
 from ..path import ProjectInfo
 
 
-class PrinterModus:
-    """Control state of Modus"""
+class PrinterConfiguration:
+    """Control PrintMode State"""
 
-    mode: PrintMode = PrintMode.default()  # IDEA: PolicyField? MatchField?
+    mode: PrintMode = PrintMode.default()  # LATER: PolicyField? MatchField?
 
     def mute(self) -> None:
         """Send all prints to nowhere"""
@@ -30,11 +31,11 @@ class PrinterModus:
         """Switch to regular Printer setup"""
         self.modus: PrintMode = PrintMode.default()
 
-    def debug(self) -> None:  # TASK: split PRINT/DEBUG
+    def debug(self) -> None:  # LATER: split PRINT/DEBUG
         """Switch to Python standard print of Args"""
         self.modus: PrintMode = PrintMode.DEBUG
 
-    def muted(self) -> AbstractContextManager[None]:
+    def muted(self) -> AbstractContextManager:
         return self.in_mode(modus=PrintMode.NULL)
 
     @contextmanager
@@ -47,30 +48,33 @@ class PrinterModus:
             self.modus: PrintMode = before
 
 
-@portlink(Print)
-@portlink(PrinterBase)
-class PrinterBase(PrinterModus):
+@portlink(PrintBase)
+class PrinterBase(PrinterConfiguration):
     """Provide Base with Rich Console and Theme setup"""
 
     info: RequiredField[ProjectInformation] = RequiredField(types=ProjectInfo)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        """Extract and destroy final kwargs"""
         self.colors = Colors()
+        if kwargs:
+            self(f"{self._cb.r(f'{self}: Undestroyed Kwargs:')} {kwargs!r}")
+        super().__init__()
+
+    @property
+    def _cb(self) -> Colors:
+        return self.colors
 
     @property
     def project_info(self) -> str:
-        name: str = self.colors.azure(self.info.name)
-        # LATER: do this with __str__ or __rich__ for color
-        return f"{name} v{self.info.version}"
+        return reflect.rich(self.info)
 
-    def __call__(self, target: Any, *more, **kwargs) -> None:
+    def __call__(self, target: Any, /, *more, **kwargs):
+        """Handle all native Prints"""
         match self.modus:
             case PrintMode.NULL:
-                return
+                pass
             case PrintMode.PRINT:
                 print(target, *more, **kwargs)
-                return
             case PrintMode.DEBUG:
-                print("Target: ", target, "More: ", more, "kwargs: ", kwargs)
-                raise NotImplementedError
+                print(f"[DEBUG] target={target!r} more={more} kw={kwargs}")

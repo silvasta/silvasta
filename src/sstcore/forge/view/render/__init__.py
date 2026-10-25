@@ -23,31 +23,31 @@ from ....brick.field._functor import FunctorField
 from ....port.color import ColorBox
 from ....port.event import dto
 from ....port.event.dto import EventDTO
-from ....port.represent import CliRenderable
-from ._renderer import (
-    CliDtoRenderer,
-    DtoRenderer,
-    LineDtoRenderer,
-    LogDtoRenderer,
-    MarkdownDtoRenderer,
-    PanelDtoRenderer,
-    TableDtoRenderer,
+from ....port.represent import Richable
+from ._visualize import (
+    CliDtoVisualizer,
+    DtoVisualizer,
+    LineDtoVisualizer,
+    LogDtoVisualizer,
+    MarkdownDtoVisualizer,
+    PanelDtoVisualizer,
+    TableDtoVisualizer,
 )
 
 
 class DtoRenderHub:
-    """Mount all DTO Renderers and provide unified dispatch."""
+    """Mount all DTO Visualizers and provide unified dispatch."""
 
-    log = FunctorField(LogDtoRenderer)
-    cli = FunctorField(CliDtoRenderer)
-    panel = FunctorField(PanelDtoRenderer)
-    md = FunctorField(MarkdownDtoRenderer)
-    line = FunctorField(LineDtoRenderer)
-    table = FunctorField(TableDtoRenderer)
+    log = FunctorField(LogDtoVisualizer)
+    cli = FunctorField(CliDtoVisualizer)
+    panel = FunctorField(PanelDtoVisualizer)
+    md = FunctorField(MarkdownDtoVisualizer)
+    line = FunctorField(LineDtoVisualizer)
+    table = FunctorField(TableDtoVisualizer)
 
     def __init__(self, colors: ColorBox) -> None:
         self.colors: ColorBox = colors  # CHECK: just Colors?
-        self._dispatch: dict[str, DtoRenderer[EventDTO]] = {
+        self._dispatch: dict[str, DtoVisualizer[EventDTO]] = {
             "log": self.log,
             "cli": self.cli,
             "panel": self.panel,
@@ -56,8 +56,10 @@ class DtoRenderHub:
             "table": self.table,
         }
 
-    def __call__(self, target: dto.EventDTO) -> CliRenderable:
-        renderer: DtoRenderer[EventDTO] | None = self._dispatch.get(target.name)
+    def __call__(self, target: dto.EventDTO) -> Richable:
+        renderer: DtoVisualizer[EventDTO] | None = self._dispatch.get(
+            target.name
+        )
         if not renderer:
             raise TypeError(f"No renderer registered for DTO '{target.name}'")
         return renderer(target)

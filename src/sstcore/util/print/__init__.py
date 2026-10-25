@@ -16,5 +16,17 @@ __all__: list[str] = [
 ]
 
 
-from ._assemble import Printer, printer
+from ...port.link import portlink as _portlink
+from ...port.printer import Print
+from ._base import PrinterBase
 from ._boxes import Boxes
+from ._engine import PrinterCore
+from ._layouts import PrinterLayouts
+
+
+@_portlink(Print)
+class Printer(PrinterCore, PrinterLayouts, PrinterBase):
+    """The Final Composition"""
+
+
+printer = Printer()

@@ -6,7 +6,7 @@ Define the Shape of the System
 Combine Boot, Interface and Distribution:
 - Bus: Handler and Emitter
 - Config: Settings and Paths
-- Printer: Nice UX and DX
+- Print: Nice UX and DX
 
 System: The sst Director
                                    DependencyLevel.sstcore.port[10]
@@ -41,7 +41,7 @@ from typing import Protocol, Self, TypedDict, Unpack
 from .config import Config, HomeSetup, Paths, Settings
 from .event import BusRegistration, EventBus
 from .event.emit import Emitter
-from .printer import Printer
+from .printer import Print
 
 
 class SstSystem(Protocol):
@@ -62,7 +62,7 @@ class CliSystem[C: Config, E: Emitter](SstSystem, Protocol):
     @property
     def config(self) -> C: ...
     @property
-    def printer(self) -> Printer: ...
+    def printer(self) -> Print: ...
     @property
     def emitter(self) -> E: ...
 
@@ -102,7 +102,7 @@ class CliSystemInput(TypedDict, total=False):
 class SystemLoaderInput(TypedDict, total=False):
     config_loader: ConfigLoader
     bus_loader: BusLoader
-    printer: Printer
+    printer: Print
 
 
 class SystemBootParam(SystemLoaderInput, CliSystemInput):
@@ -126,7 +126,7 @@ class CliSystemSpec:
 class CliSystemTools:
     config_loader: ConfigLoader | None = None
     bus_loader: BusLoader | None = None
-    printer: Printer | None = None
+    printer: Print | None = None
 
 
 @dataclass

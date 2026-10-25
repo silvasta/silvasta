@@ -36,9 +36,7 @@ class PathTreeNode(SimpleTreeNode):
         return self.path
 
     @classmethod
-    def create(
-        cls, path: Path, branches: Sequence[Self] | None = None
-    ) -> Self:
+    def create(cls, path: Path, branches: Sequence[Self] | None = None) -> Self:
         """Split path and build subnodes with that"""
         if branches is None:
             branches: Sequence[Self] = []

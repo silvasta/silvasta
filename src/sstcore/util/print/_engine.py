@@ -5,54 +5,48 @@ Provide Engine for easy access to Rich Console setup
 
 """
 
-from rich.abc import RichRenderable
 from rich.console import Console
 from rich.padding import Padding
 
-from ...brick.color import colorize
-from ...port.event import CliRenderable, LogSerializable
-from ...port.event.dto import CliDTO, LogDTO
+from ...port.event.dto import CliDTO, EventDTO, LogDTO
 from ...port.link import portlink
-from ...port.printer import Print
+from ...port.printer import Print, PrintMode
+from ...port.represent import CliSerializable, LogSerializable, Richable
+from ._layouts import PrinterLayouts
 
 
 @portlink(Print)
-class PrinterCore:
+class PrinterCore(PrinterLayouts):
     """Execute the printer()"""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.console = Console()
+        super().__init__(**kwargs)
 
-    def __call__(self, target, **kwargs):
+    def __call__(self, target, *more, **kwargs) -> EventDTO:
+        # LATER: upgrade the __call__ for multiple targets, *more
         """Single entry point for printing logic"""
 
-        match target:
-            case type():
-                target: str = colorize.modules(  # MOVE: normalize
-                    target,
-                    project_color="cyan",
-                    module_color="green",
-                    target_color="purple",
-                )
-            case CliRenderable():
-                target: CliDTO = target.__cli__()
-            case LogSerializable():
-                target: LogDTO = target.__log__()
+        if self.mode != PrintMode.RICH:
+            return super.__call__(target, *more, **kwargs)
 
-        match target:
-            case CliDTO() | LogDTO():
-                renderable = self.render(target)
-            case RichRenderable():  # TEST: maybe remove this rich.abc...
-                renderable: RichRenderable = target
-            case _:  # FIX: pydantic goes trough..
-                renderable: str = self.normalize(target)
+        if isinstance(target, CliSerializable):
+            target: CliDTO = target.__cli__()
+        elif isinstance(target, LogSerializable):
+            target: LogDTO = target.__log__()
 
-        indent: int = getattr(target, "indent", kwargs.pop("indent", 0))
+        if isinstance(target, EventDTO):
+            renderable: Richable = self.render(target)
+        else:
+            renderable: Richable = self.render.cli.normalize(target)
 
-        i_hope_it_renders = (  # ty:ignore
+        if indent := kwargs.pop("indent", 0):
+            renderable = Padding(renderable, (0, 0, 0, indent))
+
+        _i_hope_it_renders = (
             Padding(renderable, (0, 0, 0, indent))
-            if indent and renderable is not None
+            if (indent := kwargs.pop("indent", 0))
             else renderable
         )
-
-        self.console.print(i_hope_it_renders, **kwargs)
+        self.console.print(_i_hope_it_renders, **kwargs)
+        return target

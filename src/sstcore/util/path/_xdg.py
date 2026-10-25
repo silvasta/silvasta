@@ -7,13 +7,14 @@ Provide defaults and basic access for XDG Homes in system environment
 __all__: list[str] = [
     "XdgHomes",
     "XdgDefaults",
+    "HomeDirs",
 ]
 
 import os
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from ...port.config import Homes
 from ...port.link import portlink
@@ -110,8 +111,3 @@ class HomeDirs:
             log=root / "logs",
             state=root / "state",
         )
-
-
-if TYPE_CHECKING:
-    _instance_check: Homes = HomeDirs(**dict())
-    _class_check: type[Homes] = HomeDirs

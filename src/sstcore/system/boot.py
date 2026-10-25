@@ -24,7 +24,7 @@ from ..port.event import BusRegistration, EventBus
 from ..port.event.dto import CliDTO
 from ..port.event.emit import Emit, Emitter, LogEmit
 from ..port.event.name import EventName
-from ..port.printer import Print, Printer, PrintInput
+from ..port.printer import Print, PrintInput
 from ..port.system import (
     BusInput,
     BusLoader,
@@ -100,7 +100,7 @@ class _SystemMixing(Protocol):
     @property
     def emitter(self) -> Emitter: ...
     @property
-    def printer(self) -> Printer: ...
+    def printer(self) -> Print: ...
     @property
     def emit(self) -> Emit: ...
     @property
@@ -125,7 +125,7 @@ class SystemMixin[C: Config = Config, E: Emitter = Emitter]:
         return self.system.emitter
 
     @property
-    def printer(self) -> Printer:
+    def printer(self) -> Print:
         return self.system.printer
 
     def emit(self, event: EventName, sender: str, **payload) -> None:

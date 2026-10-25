@@ -20,7 +20,7 @@ __all__: list[str] = [
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Self, Unpack
+from typing import Self, Unpack
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -38,7 +38,7 @@ from ...port.config import (
     Settings,
 )
 from ...port.link import portlink
-from ...port.system import ConfigInput, ConfigLoader, ConfigSpec
+from ...port.system import ConfigInput, ConfigSpec
 from ...util.log import setup_logging
 from ...util.path import ProjectInfo
 from ._homes import SstHomes
@@ -59,20 +59,20 @@ class ConfigManager[D: Defaults, N: Names, P: Paths, S: Settings]:
 
     @classmethod
     def bootstrap(cls, **data: Unpack[ConfigInput]) -> Self:
-        dto: ConfigSpec = ConfigSpec(**data)
+        spec: ConfigSpec = ConfigSpec(**data)
 
-        info: ProjectInformation = ProjectInfo.collect(dto.project_name)
+        info: ProjectInformation = ProjectInfo.collect(spec.project_name)
         homes: Homes = SstHomes.from_setup(
-            dto.home_setup, dto.project_root, info.name
+            spec.home_setup, spec.project_root, info.name
         )
-        settings_cls: type[S] = dto.settings(default=SstSettings)
-        config_file: Path = dto.setting_file or homes.config / "settings.json"
+        settings_cls: type[S] = spec.settings(default=SstSettings)
+        config_file: Path = spec.setting_file or homes.config / "settings.json"
         settings: S = (
             settings_cls.load(file=config_file)
             if config_file.exists()
             else settings_cls(file=config_file)
         )
-        paths_cls: type[P] = dto.paths(default=SstPaths)
+        paths_cls: type[P] = spec.paths(default=SstPaths)
         paths: P = paths_cls(settings.defaults, settings.names, homes)
 
         return cls(settings, paths, info)
@@ -128,9 +128,3 @@ class ConfigManager[D: Defaults, N: Names, P: Paths, S: Settings]:
     def __repr__(self) -> str:  # TODO: apply utils.view
         members: list = [self.settings, self.paths, self.defaults, self.names]
         return f"{self}[{', '.join(clsname(m) for m in members)}]"
-
-
-if TYPE_CHECKING:
-    _loader: ConfigLoader = ConfigManager.bootstrap
-    _instance_check: Config = ConfigManager.bootstrap()
-    _class_check: type[Config] = ConfigManager

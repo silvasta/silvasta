@@ -202,7 +202,12 @@ LogMatcher: RegexMatchBox[str, str] = RegexMatchBox.from_list(
             value="bold magenta",
         ),
         MatchRule.simple(
-            pattern=r".*?\b(?:ERROR|CRITICAL)\b.*",
+            pattern=r".*?\bERROR\b.*",
+            value="bold red",
+        ),
+        # AI: before I splitted the Error/Critical that where together
+        MatchRule.simple(
+            pattern=r".*?\bCRITICAL\b.*",
             value="bold red",
         ),
         MatchRule.simple(
