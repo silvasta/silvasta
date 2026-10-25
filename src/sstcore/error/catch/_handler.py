@@ -32,7 +32,7 @@ class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
         """Format str:= [(Cls)][{name}::{error}]"""
         return f"{name or super()._format_name()}::{clsname(self.error_type)}"
 
-    def handles(self, error: BaseException) -> bool:
+    def handles(self, error: BaseException, /) -> bool:
         """Check whether this handler is responsible for the given exception."""
         return isinstance(error, self.error_type)
 

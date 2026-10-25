@@ -17,7 +17,7 @@ from ...port.register import registry_types as _r
 from ._contract import VaultContract
 
 
-class VaultReader[Item, V: _r.Vault](VaultContract[Item, V]):
+class VaultReader[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
     """Pick the Items from the Vault"""
 
     @overload
@@ -59,7 +59,7 @@ class VaultReader[Item, V: _r.Vault](VaultContract[Item, V]):
         return result
 
 
-class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
+class VaultWriter[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
     """Place the Items in the Vault"""
 
     def __setitem__(self, query: _r.Selector[Item], value: Any) -> None:
@@ -95,8 +95,8 @@ class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
             self[key] = item
 
 
-class VaultAccess[Item, V: _r.Vault](
-    VaultWriter[Item, V], VaultReader[Item, V]
+class VaultAccess[Item, V: _r.Vault, K: Hashable](
+    VaultWriter[Item, V, K], VaultReader[Item, V, K]
 ):
     def __str__(self):
         return f"{type(self).__name__}[{len(self.vault)}]"

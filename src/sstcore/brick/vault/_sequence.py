@@ -11,7 +11,7 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Hashable, Iterable, Iterator, Sequence
 from typing import Any
 
 from ...port.link import portlink
@@ -20,7 +20,7 @@ from ...port.register import registry_types as _reg
 from ._base import BaseVault
 
 
-class Sequential[Item, V: Sequence](BaseVault[Item, V]):
+class Sequential[Item, V: Sequence, K: Hashable](BaseVault[Item, V, K]):
     """Implement the Contract"""
 
     def _ctor(self, items: Iterable[Item], /) -> V:
@@ -69,13 +69,13 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
         items[self._normalize_index(idx)] = item
         self.vault: V = self._ctor(items)
 
-    def _key_item(self, key: str) -> Item:
+    def _key_item(self, key: K) -> Item:
         found: list[Item] = [x for x in self if self._item_id(x) == key]
         if len(found) != 1:
             raise KeyError(key)
         return found[0]
 
-    def _box_key(self, key: str) -> V:
+    def _box_key(self, key: K) -> V:
         return self._ctor(x for x in self if self._item_id(x) == key)
 
     def _box_index(self, idx: int) -> V:
@@ -102,12 +102,12 @@ class Sequential[Item, V: Sequence](BaseVault[Item, V]):
 
 
 @portlink(ListRegister)
-class ListVault[Item](Sequential[Item, list[Item]]):
+class ListVault[Item, K: Hashable](Sequential[Item, list[Item], K]):
     def _ctor(self, items: Iterable[Item]) -> list[Item]:
         return list(items)
 
 
 @portlink(TupleRegister)
-class TupleVault[Item](Sequential[Item, tuple[Item, ...]]):
-    def _ctor(self, items: Iterable[Item]) -> tuple[Item, ...]:
+class TupleVault[Item, K: Hashable](Sequential[Item, _reg.Tuple[Item], K]):
+    def _ctor(self, items: Iterable[Item]) -> _reg.Tuple[Item]:
         return tuple(items)

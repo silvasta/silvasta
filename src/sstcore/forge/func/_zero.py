@@ -31,7 +31,7 @@ FunctorMetaInput = FunctorMetaData(color=Color.GREEN)
 
 
 @dataclass_transform(kw_only_default=True)
-class BaseParamSpec:  # TODO: compare with EventDTO::ParamSpec
+class BaseParamSpec:  # TODO: compare with EventDTO::ParamSpec, find global base
     """Setup Base for Input sanitizing DataClasses"""
 
     def __init_subclass__(cls, kw_only: bool = True, **kwargs: Any):
@@ -42,7 +42,7 @@ class BaseParamSpec:  # TODO: compare with EventDTO::ParamSpec
 class BaseInput(TypedDict, total=False): ...
 
 
-class DataClassSpec(BaseParamSpec):  # TODO: compare with EventDTO::ParamSpec
+class DataClassSpec(BaseParamSpec):
     """Define Defaults for Input and Sanitize"""
 
     @classmethod  # IDEA: combine with @castarg?

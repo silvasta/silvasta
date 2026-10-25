@@ -12,7 +12,7 @@ __all__: list[str] = [
     "DictVault",
 ]
 
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Hashable, Iterator, Mapping, Sequence
 from typing import Any
 
 from ...port.link import portlink
@@ -20,7 +20,7 @@ from ...port.register import DictRegister, registry_types
 from ._base import BaseVault
 
 
-class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
+class Mapped[Item, K: Hashable](BaseVault[Item, dict[K, Item], K]):
     """Implement the Contract"""
 
     def _coerce_key(self, key: K) -> K:
@@ -97,4 +97,4 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
 
 
 @portlink(DictRegister)
-class DictVault[Item, K](Mapped[Item, K]): ...
+class DictVault[Item, K: Hashable](Mapped[Item, K]): ...

@@ -6,7 +6,7 @@ Provide Infrastructure for Events
                             DependencyLevel.sstcore.system.event[0]
 """
 
-from typing import Self, Unpack
+from typing import Unpack
 
 __all__: list[str] = [
     "EventHandler",
@@ -17,13 +17,11 @@ __all__: list[str] = [
     "DEFAULT_HANDLERS",
 ]
 
-import fnmatch
-from collections.abc import Callable
+from fnmatch import fnmatch
 
 from loguru import logger
 
 from ...brick.field import StrategyField
-from ...brick.reflect import funcname
 from ...forge.func import SafeFunctor
 from ...forge.func._safe import SafeFunctorInput
 from ...port.event import Event, EventHandling
@@ -56,12 +54,12 @@ class EventHandler(SafeFunctor[[Event], None]):
         """Format str:= [(Cls)][{name}::{pattern}]"""
         return f"{name or super()._format_name()}::{self.pattern}"
 
-    def handles(self, event: Event | EventPattern) -> bool:
+    def handles(self, event: Event | EventPattern, /) -> bool:
         """Does the Handler match the Event?"""
         target: str = event.name if isinstance(event, Event) else event
-        return self.pattern == "*" or fnmatch.fnmatch(target, self.pattern)
+        return self.pattern == "*" or fnmatch(name=target, pat=self.pattern)
 
-    @StrategyField
+    @StrategyField(bind_to_self=True)  # LATER: remove when meta typing resolved
     def _catch(self, error: Exception, /, event: Event) -> None:
         if self.policy == ErrorPolicy.RE_RAISE:
             raise RuntimeError(f"Critical Fail: {self}") from error
@@ -69,27 +67,10 @@ class EventHandler(SafeFunctor[[Event], None]):
         logger.error(f"{self} failed for '{event.name}': {error}")
         logger.debug(f"Traceback for {self}:", exc_info=True)
 
-    @classmethod
-    def from_func(  # CHECK: benefit over EventHandler(...)? @decorator? no...
-        cls,
-        func: Callable[[Event], None],
-        *,
-        pattern: EventPattern = "*",
-        fail_loud: bool = False,
-        name: str = "",
-    ) -> Self:
-        """Build EventHandler from a plain function."""
-        # AI: for ErrorHandler this made much more sense, error_type extraction
-        return cls(
-            pattern=pattern,
-            call=func,
-            fail_loud=fail_loud,
-            name=name or funcname(func, default="CustomEventHandler"),
-        )
-
 
 def handle_cli_event(event: Event) -> None:  # TODO: printer from..??
     """Bridge __cli__ events from the EventBus to the Printer"""
+
     if cli_payload := event.payload.get("cli"):
         printer(cli_payload)
 
@@ -103,18 +84,15 @@ def telemetry(event: Event) -> None:  # CHECK: what about ndjson??
     )
 
 
-# AI: here below the verion I prefere without decorator when not clearly better
-# - can I remove the .from_func?
-
-LOG_HANDLER = EventHandler(  # CHECK: better from_func?
+LOG_HANDLER = EventHandler(
     call=handle_log_event,
     pattern="*",
     name="LoguruBridge",
     fail_loud=True,
 )
 
-CLI_HANDLER = EventHandler.from_func(  # CHECK: why from_func?
-    handle_cli_event,
+CLI_HANDLER = EventHandler(
+    call=handle_cli_event,
     pattern="*",
     name="CliPrinter",
     fail_loud=True,

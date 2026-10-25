@@ -15,9 +15,8 @@ from ..brick import reflect
 from ..brick.color.box import Colors
 from ..port.color import Color
 from ..port.event._param import FrameSpec
-from ..port.event.dto import LogDTO, PanelDTO
+from ..port.event.dto import CliSpec, LogDTO, PanelDTO
 from ..port.raising import SstCoreError
-from ..port.represent import CliRenderable
 
 c = Colors()
 
@@ -49,7 +48,7 @@ class SstError(SstCoreError):
         # - use f-string with length cut, maybe by longest title or default
         # - difficulty: sorting! derived errors want to modify order
 
-        lines: list[CliRenderable] = [
+        lines: list[CliSpec] = [
             f"{c.r(self.name)} {self.summary()}",  # ignore empty space
             f"{c.c('args')}    {self.args or 'nothing attached'}",
             f"{c.c('kwargs')}  {self.kwargs or 'nothing attached'}",
@@ -63,7 +62,7 @@ class SstError(SstCoreError):
             frame=FrameSpec(topic=self.__rich__(), topic_color=Color.RED),
         )
 
-    def _modify_scroll(self, lines: list[CliRenderable]) -> list[CliRenderable]:
+    def _modify_scroll(self, lines: list[CliSpec]) -> list[CliSpec]:
         """Customize Lines displayed inside CLI Panel"""
         return lines
 
@@ -73,9 +72,9 @@ class SstError(SstCoreError):
         return ""  # WARN: hole for empty? maybe use None
 
     @property
-    def _causing_error(self) -> list[CliRenderable]:
+    def _causing_error(self) -> list[CliSpec]:
         """Panel Lines"""
-        scroll_for_error_that_caused_this_error: list[CliRenderable] = []
+        scroll_for_error_that_caused_this_error: list[CliSpec] = []
         if reraised_error := (self.__cause__ or self.__context__):
             scroll_for_error_that_caused_this_error += [
                 f"{c.r('ReRaised')} {c.r(reflect.clsname(reraised_error))}",

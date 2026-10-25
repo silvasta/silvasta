@@ -8,14 +8,13 @@ __all__: list[str] = [
     "BusRegistry",
 ]
 
-import fnmatch
 from collections.abc import Callable
 from typing import Any
 
 from ...brick.reflect import objname
 from ...brick.vault import ListVault
 from ...port.event import Event
-from ...port.event.name import EventName, EventPattern
+from ...port.event.name import EventPattern
 from ...port.link import portlink
 from ...port.register import FuncRegister, ListRegister
 from ._handler import EventHandler
@@ -26,29 +25,43 @@ type EventDecorator = Callable[[EventFunc], EventFunc]
 
 @portlink(FuncRegister)
 @portlink(ListRegister)
-class BusRegistry(ListVault[EventHandler]):
+class BusRegistry(ListVault[EventHandler, str]):
     """
     Collect and Provide EventHandlers for the EventBus
 
     - Attach by EventHandler instance, function, or @attach Decorator
-    - Resolve matching handlers by EventName and wildcard pattern
+    - Find matching handlers via registry.find(event)
+    - Access specific handler by name via registry["HandlerName"]
+
     """
 
-    def _item_id(self, item: EventHandler, /) -> tuple[str, EventPattern]:
-        """Unique identity is (handler name, subscribed pattern)."""
-        # INFO: BaseFunctor assigns __name__ = name
-        return (item.__name__, item.pattern)  # CHECK:
+    def _item_id(self, item: EventHandler, /) -> str:
+        return item.__name__
 
     def _normalize(self, value: Any) -> EventHandler:
         """Ensure incoming items are valid EventHandler instances."""
         if isinstance(value, EventHandler):
             return value
         if callable(value) and not isinstance(value, type):
-            # IDEA: EventHandler(call=value) ??
-            return EventHandler.from_func(value)
+            return EventHandler(call=value)
         raise TypeError(
             f"Expected EventHandler or handler function, got {objname(value)}"
         )
+
+    def _box_key(self, key: Event | EventPattern) -> list[EventHandler]:
+        """Provide all matching handlers - hook for find(..) and count(..)"""
+        return [handler for handler in self.vault if handler.handles(key)]
+
+    def _key_item(self, key: str) -> EventHandler:
+        """Provide handler by __name__ or full id - hook for registry[..]"""
+        found: list[EventHandler] = [
+            handler  #
+            for handler in self.vault
+            if key in self._item_id(handler)  # CHECK: unique, why?
+        ]
+        if len(found) != 1:
+            raise KeyError(key, found)
+        return found[0]
 
     def attach(
         self,
@@ -60,26 +73,13 @@ class BusRegistry(ListVault[EventHandler]):
         """Attach handler functions by decorator."""
 
         def decorator(func: EventFunc) -> EventFunc:
-            handler = EventHandler.from_func(
-                func,
+            handler = EventHandler(
+                call=func,
                 pattern=pattern,
                 fail_loud=fail_loud,
                 name=name,
             )
-            self.add(handler)
+            self.add(handler)  # LATER: check if duplicate?
             return func
 
         return decorator
-
-    def resolve(self, event: EventName) -> list[EventHandler]:
-        """Return all handlers whose pattern matches the given EventName."""
-        # LATER: do this inside Vault where it has more effect
-        # - here it just scratches the surface
-        # - completely remove Registry.resolve, was never desired
-        # - Registry.find or Registry[...] intended for access, nothing else
-        # Exactly something like this:
-        # registry[lambda h: h.handles(event)] or registry.find(lambda h: h.pattern == "*")
-        # ...but without lambda! that should be wired internally
-        return self._where(
-            lambda h: h.pattern == "*" or fnmatch.fnmatch(event, h.pattern)
-        )

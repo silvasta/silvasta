@@ -24,7 +24,7 @@ type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
 @portlink(FuncRegister)
 @portlink(DictRegister)
-class ErrorRegistry(DictVault[ErrorHandler, type[Exception]]):
+class ErrorRegistry(DictVault[ErrorHandler, type[BaseException]]):
     """
     Collect and Provide the ErrorHandler
 
@@ -47,6 +47,32 @@ class ErrorRegistry(DictVault[ErrorHandler, type[Exception]]):
             f"Expected ErrorHandler or handler function, got {objname(value)}"
         )
 
+    def _resolve_mro(
+        self, exc: BaseException | type[BaseException]
+    ) -> tuple[type[Exception], ErrorHandler[Any]] | None:
+        exc_type = exc if isinstance(exc, type) else type(exc)
+        for cls in exc_type.__mro__:
+            if issubclass(cls, Exception) and cls in self.vault:
+                return cls, self.vault[cls]
+        return None
+
+    def _key_item(
+        self,
+        key: BaseException | type[BaseException],
+    ) -> ErrorHandler:
+        """Enable error_registry[exc] to resolve via MRO."""
+        if hit := self._resolve_mro(key):
+            return hit[1]
+        raise KeyError(key)
+
+    def _box_key(
+        self, key: BaseException | type[BaseException]
+    ) -> dict[type[BaseException], ErrorHandler]:
+        """Enable error_registry.find(exc) and .count(exc) to resolve via MRO."""
+        if hit := self._resolve_mro(key):
+            return {hit[0]: hit[1]}
+        return {}
+
     def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:
         """Attach handler functions by decorator"""
 
@@ -58,13 +84,3 @@ class ErrorRegistry(DictVault[ErrorHandler, type[Exception]]):
             return func
 
         return decorator
-
-    def resolve(  # LATER: wire this with Vault.__getitem__ or Vault.find
-        self, exc: Exception | type[Exception]
-    ) -> ErrorHandler[Any] | None:
-        """Find the most specific ErrorHandler for an Exception"""
-        exc_type: type[Exception] = exc if isinstance(exc, type) else type(exc)
-        for cls in exc_type.__mro__:
-            if issubclass(cls, Exception) and cls in self.vault:
-                return self.vault[cls]
-        return None

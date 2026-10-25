@@ -21,7 +21,7 @@ from ._access import VaultAccess
 
 
 @portlink(Register)
-class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
+class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
     """Establish the port definition for further specification"""
 
     policy: PolicyField[VaultPolicy] = PolicyField(VaultPolicy)
