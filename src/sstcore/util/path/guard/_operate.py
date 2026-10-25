@@ -52,7 +52,7 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
             return target
 
         case SyncMode.INCREMENT:
-            return _increment.unique_candidate(path=target, ensure_parent=True)
+            return _increment.unique_candidate(target, ensure_parent=True)
 
         case SyncMode.IGNORE:
             raise PathGuardError(PathGuardReason.SYNC, target=target)
@@ -190,7 +190,7 @@ Trash = DeleteStrategy(
 
 #  LINE: -- Assemble -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-# LATER: collapse this even more, castpath on functor, functor on PahtGuard
+# TASK: collapse this even more, castpath on functor, functor on PahtGuard
 
 #  INFO: -- transfer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

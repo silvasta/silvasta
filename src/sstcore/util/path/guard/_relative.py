@@ -15,13 +15,13 @@ from ....error import (
     PathGuardError,
     PathGuardReason,
 )
-from ._arg import PathArg, ResolvedPath, castpath
+from ._arg import ResolvedPath, castpath
 
 
 @castpath
 def relative_main(
     target: ResolvedPath,
-    root: ResolvedPath | None = None,  # FIX: castpath->CWD!!
+    root: ResolvedPath | None = None,
     strict: bool = True,
 ) -> Path:
     """
@@ -41,7 +41,8 @@ def relative_main(
         ) from error
 
 
-def relative_string(source: Path, target: Path):  # TODO: PathArg?
+@castpath.duo  # CHECK: is this simply fix enough?
+def relative_string(source: Path, target: Path):
     """Search relative Path in both direction and provide any rendering"""
     relative: Path = relative_duo(source, target) or relative_main(
         target=target, root=source, strict=False
@@ -49,8 +50,8 @@ def relative_string(source: Path, target: Path):  # TODO: PathArg?
     return f"{source.name} -> {relative}"
 
 
-@castpath
-def relative_duo(path1: PathArg, path2: PathArg) -> Path | None:
+@castpath.duo  # CHECK: is this simply fix enough?
+def relative_duo(path1: Path, path2: Path) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 
     try:
@@ -87,7 +88,7 @@ def split(target, local_root: Path | None = None):
 
 @split.register
 def _(target: list, local_root: Path | None = None) -> list[tuple[Path, Path]]:
-    # TASK: filter for existing return paths
+    # LATER: filter for existing return paths
     return [split(path, local_root) for path in target]
 
 

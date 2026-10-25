@@ -64,7 +64,7 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
             return target
 
         case SyncMode.INCREMENT:
-            return _increment.unique_candidate(path=target, ensure_parent=True)
+            return _increment.unique_candidate(target, ensure_parent=True)
 
         case SyncMode.IGNORE:
             raise PathGuardError(PathGuardReason.SYNC, target=target)
@@ -155,7 +155,7 @@ class DeleteStrategy(SafeFunctor[[Path], bool]):
 def _copy_excl(source: Path, candidate: Path) -> Path:
     """Copy `source` to `candidate` exclusively (raises FileExistsError if candidate exists)."""
     if source.is_dir():
-        with _lock.lock(candidate):
+        with _lock.Lock(candidate):
             if candidate.exists():
                 raise FileExistsError(
                     errno.EEXIST, "Directory exists", str(candidate)
@@ -177,7 +177,7 @@ def _copy_excl(source: Path, candidate: Path) -> Path:
 def _rotate_excl(source: Path, candidate: Path) -> Path:
     """Move `source` to `candidate` exclusively (raises FileExistsError if candidate exists)."""
     if source.is_dir():
-        with _lock.lock(candidate):
+        with _lock.Lock(candidate):
             if candidate.exists():
                 raise FileExistsError(
                     errno.EEXIST, "Directory exists", str(candidate)

@@ -19,6 +19,7 @@ from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.files import SyncMode
+from ....port.link import tap
 from . import _ensure, _field, _increment, _lock, _operate, _relative
 from ._arg import PathArg, PathSpec
 
@@ -114,3 +115,9 @@ if __name__ == "__main__":
     print(_relative)
 
     PathGuard.remove(_my_file())
+
+    tap.printer(PathGuard)
+
+    print(f"{tap.watches(PathGuard)=}")
+    print(f"{tap.spec.channels=}")
+    print(f"{tap.spec.channels.key(PathGuard)}")
