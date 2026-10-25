@@ -51,7 +51,7 @@ DUNDERS: set[str] = {
 }
 
 
-@dataclass
+@dataclass  # NEXT: freeze this? replace entire spec behind tap.spec property?
 class LinkSpec:
     merge: DocMerging
     channels: Channels = field(init=False)
@@ -122,14 +122,11 @@ class LinkSpec:
 
 
 if TYPE_CHECKING:
-    _: type[LinkConfig] = LinkSpec
+    _spec: type[LinkConfig] = LinkSpec
 
 
-class Tap:
+class Tap:  # NEXT: freeze this or make this changing the spec?
     """Minimal debug probe for port, brick, and forge bring-up."""
-
-    # AI: this feels more like a heavy penality for not even a minimal gain
-    # __slots__ = ("channels", "trace_init", "use_loguru", "emit")
 
     def __init__(self, spec: LinkSpec):
         """Bind once at startup: zero branching overhead when OFF"""

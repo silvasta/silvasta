@@ -213,7 +213,7 @@ class DunderSet(frozenset):
 #  LINE: -- Debug Channels by EnvVar (Tap) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class Channels(frozenset):
+class Channels(frozenset):  # IDEA: move this to ._control?
     """Guard the active Channels and Rules for Matching"""
 
     def __new__(cls, env_var="SST_DEBUG", default=()):
@@ -222,14 +222,17 @@ class Channels(frozenset):
 
     def __contains__(self, target: Any) -> bool:
         """Check if the target matches an active channel"""
+
         # NEXT: check what here is compared and comes out
+
         if not self or target is None:
             return False
         target: str = (
             target.lower() if isinstance(target, str) else self.key(target)
         )
 
-        # TEST: this looks like not working... as soon as something is on, the entire EasyCatch is starting
+        # ERROR: this looks like not working...
+        # - as soon as something is on, the full EasyCatch is spaming
         if "port.link" in target and not self.has("link"):
             return False
         if self.has("*"):

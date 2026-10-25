@@ -65,10 +65,12 @@ pythonpath = ["src"]
 [tool.ty.src]
 include = ["src", "examples"]
 exclude = [
-  # Match all files/dirs starting with 3+ underscores anywhere
+  # Match rules: ignore ____* in outer branch, ignore ___* in core branch
   "**/____*",
-  # Specific directory branches (if you prefer explicit paths)
+  "**/___*",
+  # Explicit paths (temporary)
   "src/sstcore/util/write",
+  "src/sstcore/util/print",
 ]
 
 [tool.ruff]
@@ -76,9 +78,10 @@ line-length = 80
 exclude = ["tests"]
 extend-exclude = [
   "tests",
-  # Catch any file or folder starting with 3+ underscores
+  # Match rules: ignore ____* in outer branch
   "**/____*",
-  "src/sstcore/util/write",
+  # Explicit paths (temporary)
+  # "src/sstcore/util/write",
 ]
 
 [tool.ruff.lint.pydocstyle]

@@ -51,6 +51,10 @@ from ._define import (
     SortedDocs,
 )
 
+TEMPORARY_FIX = False
+
+COUNTER = 0
+
 
 class EasyNote:
     """Stable Base for all Easy Member"""
@@ -58,7 +62,10 @@ class EasyNote:
     spec: LinkConfig
 
     def emit(self, *args, **kwargs):
-        self.spec.emit(*args, sender=self, **kwargs)
+        global COUNTER
+        COUNTER += 1
+        if TEMPORARY_FIX:
+            self.spec.emit(*args, sender=self, **kwargs)
 
     def __str__(self):
         return f"{type(self).__name__}"

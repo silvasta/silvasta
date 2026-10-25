@@ -62,6 +62,7 @@ from ._define import (
 )
 from ._operate import Reflector, schema1
 
+# IMPORTANT: why are they needed here? move all to boot!
 spec = LinkSpec(merge=schema1)
 tap = Tap(spec=spec)
 registry = LinkRegistry()
@@ -71,9 +72,27 @@ registry = LinkRegistry()
 class PortLink:
     """Anchor an Implementation to its Protocol"""
 
+    # IDEA: make this property? use portlink.tap.spec to avoid de-synced spec on portlink/tap
     spec: LinkSpec = _field(default_factory=lambda: spec)
+
     tap: Tap = _field(default_factory=lambda: tap)
     registry: LinkRegistry = _field(default_factory=lambda: registry)
+    # TODO: remove all _fields, remove spec use:
+    # tap: Tap
+    # registry: LinkRegistry
+
+    @classmethod
+    def boot(
+        cls,
+        tap: Tap | None = None,
+        registry: LinkRegistry | None = None,
+    ) -> _t.Self:
+        if tap is None:
+            tap = Tap(LinkSpec(merge=schema1))
+        if registry is None:
+            registry = LinkRegistry()
+        # TODO: remove spec, use @property
+        return cls(tap=tap, registry=registry)
 
     def __str__(self):
         return f"{type(self).__name__}[4]"
@@ -137,3 +156,7 @@ class PortLink:
 
 
 portlink = PortLink()  # TARGET: the main object
+
+# IDEA: with new boot setup
+portlink: PortLink = PortLink.boot()
+tap: Tap = portlink.tap
