@@ -20,13 +20,14 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Iterator
-from enum import StrEnum, auto
+from enum import auto
 from pathlib import Path
 from typing import Protocol, Self
 
 from .filter import Filter, KeyWord, KeyWords, PathFiltering  # 4
 from .register import ListRegister  # 5
 from .scanner import FolderScan  # 5
+from .solid import EnumMode
 from .tree import PathTree  # 0
 
 
@@ -35,8 +36,7 @@ class FileFiltering[FileT: File](Filter[str, FileT], Protocol):
         """Filter Registry Files by their Keyword Sets"""
 
 
-# IMPORTANT: compare with .register.SyncMode
-class SyncMode(StrEnum):
+class SyncMode(EnumMode):
     """Conflict Resolution Strategy for PathGuard File Transfers"""
 
     INCREMENT = auto()

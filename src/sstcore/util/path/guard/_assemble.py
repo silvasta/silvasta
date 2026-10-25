@@ -40,8 +40,6 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     """Safety and Comfort for Path access and File System operations"""
 
     # NEXT: add PathCast
-    # NEXT: add PathCast
-    # NEXT: add PathCast
 
     Spec: type[PathSpec] = PathSpec
     SyncMode: type[SyncMode] = SyncMode
@@ -59,10 +57,10 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
 
     Lock = _lock.Lock
 
-    Dir = _field.Dir
-    Fil = _field.File
-    Unique = _field.Unique
-    SpecField = _field.SpecField
+    Dir = _field.DirField
+    Fil = _field.FileField
+    Unique = _field.UniqueField
+    SpecField = _field.PathSpecField
 
     """Category 2: Perform File Transfer operations with comfort and safety"""
 
@@ -116,8 +114,10 @@ if __name__ == "__main__":
 
     PathGuard.remove(_my_file())
 
-    tap.printer(PathGuard)
+    tap.emit(PathGuard)
 
+    # NOTE: use: export SST_DEBUG=__main__
+    # (color still missing...)
     print(f"{tap.watches(PathGuard)=}")
     print(f"{tap.spec.channels=}")
     print(f"{tap.spec.channels.key(PathGuard)}")

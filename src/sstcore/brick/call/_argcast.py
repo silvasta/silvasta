@@ -10,38 +10,6 @@ What is the meaning of "cast" in this context?
 
 """
 
-# TASK: Registry
-# - no import of sstcore.brick.vault.* as core of registry here!
-# - assemble in sstcore.forge.func, maybe with additional later on registration
-# - use a new data type that allows for standardized Type handling:
-#   - something like a toggle for sure, some statistics
-# - registry:
-#   - ensures or warns for (not) loaded entries
-#   - shows explanation short and clear or detailed on request
-# - overall ensure that nothing is casted that is not wanted,
-#   and as many options are easily selectable as possible
-
-# IDEA: make each item a Rule:
-# - each Rule has a name, a field in Spec and Input and a resolver
-# - maybe even as some IntFlag that can be switched fast
-
-# TASK: Components
-# - CastInput: TypedDict kwargs
-# - CastSpec: holds validation and confirmed data of 1 interception
-#   data-structure ideas:
-#     - (auto-)dataclass with normalize/validate(/sanitize)
-#     - registry with flags: each flag corresponds to 1 casting rule
-# - ArgCaster: the loop function:
-#   - executes (spec-)validation or regular function, mapped in ArgCast
-#   - maybe some caching, preparing new values from ArgCast for CastSpec
-
-# TASK: Main
-# - ArgCast: orchestrate plan generation, global registry and decorator
-#   - keep plan extendable by subclasses but with guided execution
-#   - use BisectRegistry for different changeable levels of casting
-#     - maybe CasterRegistry containing FlagRuleRegistries per topic
-# - later: check all hybrid combinations of cls, unit, even meta
-
 __all__: list[str] = [
     "ArgCast",
     "castarg",
@@ -74,6 +42,10 @@ class ArgCast:
         if pass_defaults is not None:
             self.pass_defaults: bool = pass_defaults
         self.overrides: CastPlan = overrides
+
+    def casts(self, target_type, /) -> bool:
+        """Check if type is registered for casting"""
+        return target_type in self._registry
 
     def __call__[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
         """Compile CastPlan once at Startup for continuous Execution"""

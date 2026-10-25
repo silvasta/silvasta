@@ -82,7 +82,7 @@ class EnumMachine(BaseEnum):  # TODO: sketch StubMachine(Machine)
 #  LINE: -- boundaries unclear... -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class EnumMode(BaseEnum, walk=True):  # CHECK: same as Option?
+class EnumMode(BaseEnum):  # CHECK: same as Option?
     """Task Toggle"""
 
 

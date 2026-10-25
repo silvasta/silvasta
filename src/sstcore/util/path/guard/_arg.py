@@ -5,8 +5,6 @@ Input Normalization
 
 """
 
-# NEXT: Decide which parts go to Base in brick.call._argcast or port.calling
-
 __all__: list[str] = [
     "CastInput",
     "PathInput",
@@ -115,8 +113,7 @@ class PathSpec:
 
         """
         if target is VOID:
-            # FIX: when return cls(target=Path.cwd(), **kwargs)???
-            raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
+            return cls(target=Path.cwd(), **kwargs)
 
         match target:
             case PathSpec():
@@ -125,8 +122,6 @@ class PathSpec:
                 return cls(target, **kwargs)
             case str():
                 return cls(target=Path(target), **kwargs)
-            # case VOID:
-            #     return cls(target=Path.cwd(), **kwargs)
 
         raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
 
@@ -157,12 +152,8 @@ class PathCaster:
         self.default: Any | VOID = kwargs.pop("default", VOID)
         self.kwargs: PathInput = kwargs
 
-    def __call__(  # WARN: VOID/None for getting cwd or fail??
-        self,
-        target: MayBe[PathArg] = VOID,
-        /,
-        *,
-        default: MayBe[Path] = VOID,
+    def __call__(
+        self, target: MayBe[PathArg] = VOID, /, *, default: MayBe[Path] = VOID
     ) -> Path:
         # MOVE: base for orchestration?
         """Prepare incoming Args and cast with PathSpec"""
@@ -184,7 +175,6 @@ class PathCaster:
 
 
 class PathCast(ArgCast):
-    # NEXT: test the intersector
     """Specialized ArgCast with its own isolated path_registry and walk_plan."""
 
     def __init__(
@@ -194,10 +184,10 @@ class PathCast(ArgCast):
         self.path_registry: dict[Any, ArgCasting] = {
             Path: PathCaster(),
             PathArg: PathCaster(),
-            SyncMode: _cast.sync_mode,
+            SyncMode: SyncMode.resolve,
         }  # LATER: sync with ArgCast - global registry (plus local?)
 
-    def casts(self, target_type, /) -> bool:  # MOVE: to base
+    def casts(self, target_type, /) -> bool:
         """Check if type is registered for casting"""
         return target_type in self.path_registry
 
@@ -229,6 +219,8 @@ class PathCast(ArgCast):
                 self._sync(plan, name, registry_lookup=annotation)
 
         return plan
+
+    #  LINE: -- Domain specific -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def uno(self, func: Callable[[Path], Path]) -> Callable[[PathArg], Path]:
         # WARN: when is self.plan used?

@@ -81,7 +81,8 @@ def _file_logic(
 
 
 if TYPE_CHECKING:
-    _file_logic("path", raise_error=False)  # ty:ignore FIX: missing default_content??
+    # FIX: missing default_content??
+    _file_logic("path", raise_error=False)
     _file_logic("path", raise_error=False, default_content="")
 
 
