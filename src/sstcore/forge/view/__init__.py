@@ -49,25 +49,3 @@ class ViewComposer(ViewInjector, ViewBuilder, ViewPresets):
 
 
 view = ViewComposer()
-
-if __name__ == "__main__":
-    from .catalog import Cli, Log, Repr, Rich, Str
-
-    class Dummy1: ...
-
-    view(Dummy1, Cli.DEBUG)
-
-    @view.printer
-    class Dummy2: ...
-
-    @view.functor
-    class Dummy3: ...
-
-    @view(Cli.DEBUG, Log.DEBUG, Str.NAME, Repr.DEBUG, Rich.OFF)
-    class Dummy4: ...
-
-    @view.functor.plus(Cli.DEBUG)
-    class Dummy5: ...
-
-    @view()
-    class Dummy6: ...

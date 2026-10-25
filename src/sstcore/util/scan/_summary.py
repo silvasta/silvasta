@@ -18,7 +18,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from ...forge.view import Cli, Str, view
+from ...forge.view import view
+from ...forge.view.catalog import Cli, Str
 from ..path.guard import PathGuard
 from ..print import printer
 from ._file import FileScanner, ScanMode
