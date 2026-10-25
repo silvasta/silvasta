@@ -41,7 +41,7 @@ class FilterSpec[SetType](Protocol):
     return_opposite: bool
 
     @classmethod
-    def from_args(cls, args: FilterSpec[SetType]) -> Self:
+    def clone(cls, args: FilterSpec[SetType]) -> Self:
         """Build derived class from data containing base"""
 
     def merge(self, args: Self) -> Self:
@@ -81,7 +81,7 @@ class Filter[SetType, TargetType](FilterSpec, Protocol):
 
 type KeyWords = list[str] | set[str]
 type KeyWord = list[str] | set[str] | str
-# TASK: generalize for FilterSet, str->hashable, with parameter
+# LATER: generalize for FilterSet, str->hashable, with parameter
 
 
 class PathFiltering(Filter[str, Path], Protocol):
@@ -94,7 +94,7 @@ class ProjectFiltering(PathFiltering, Protocol):
         """Filter Project by Dir and File Paths"""
 
 
-class FilterArgs(IntEnum):  # IDEA: FilterData -> FilterInput??
+class FilterArgs(IntEnum):  # CHECK: EnumOption?
     """Select Presets for Path- and Project Filter"""
 
     # LATER: FilterBox: provide -> PathFilter,FileFilter...
@@ -108,7 +108,17 @@ class FilterArgs(IntEnum):  # IDEA: FilterData -> FilterInput??
     NONE = auto()
     ALL = auto()
 
-    def __call__(self) -> FilterSpec:
+    def __call__(
+        self,
+        *,
+        include: KeyWords | None = None,
+        exclude: KeyWords | None = None,
+        require_all: KeyWords | None = None,
+        unexclude: KeyWords | None = None,
+        allow_hidden: bool = False,
+        invert: bool = False,
+    ) -> FilterSpec[str]:
+        _ = (include, exclude, require_all, unexclude, allow_hidden, invert)
         raise FailedHackError("Import sstcore.util.filter to attach args")
 
 

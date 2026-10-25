@@ -115,14 +115,12 @@ class OptionRegister(EnumZero, walk=True):
         )
 
     def option(self, fallback: _MayBe[_Any] = _VOID):
-        # AI: sentinel from Level[0] package, allows for None as fallback
         """Get Option that is registered for current Member"""
         try:
             return self._registry[self.value]
         except KeyError as err:
             if fallback is not _VOID:
                 return fallback
-            # AI: no custom error, .raising imports from here
             raise RuntimeError(f"Unregistered {type(self).__name__}") from err
 
 

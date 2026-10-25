@@ -2,7 +2,8 @@
 FilterSet: Core Engine as Base for Specifications
 
 - Prepare Cascade of Filters
-                                                 DependencyLevel[1]
+
+                             DependencyLevel.sstcore.util.filter[1]
 """
 
 __all__: list[str] = [
@@ -30,9 +31,7 @@ class FilterSet[SetType: str | Path | int, TargetT: Any](FilterData[SetType]):
     @overload
     def __call__(self, target: set[TargetT]) -> set[TargetT]: ...
 
-    def __call__(
-        self, target: TargetT | list[TargetT]
-    ) -> bool | list[TargetT]:
+    def __call__(self, target: TargetT | list[TargetT]) -> bool | list[TargetT]:
         """Dispatch to single item (bool) or list filtering"""
         if isinstance(target, (list, set)):
             return self._fulfill_filter(target)

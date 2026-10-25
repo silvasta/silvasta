@@ -3,13 +3,15 @@ Prepare Cascade of Filters
 
 - FilterData: Set Container with Arguments and Modification
   (No Filtering here)
-                                                 DependencyLevel[0]
+
+                             DependencyLevel.sstcore.util.filter[0]
 """
 
 __all__: list[str] = [
     "FilterData",
 ]
 
+from collections.abc import Set
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -28,13 +30,32 @@ class FilterData[SetType]:
     return_opposite: bool = False
 
     @classmethod
-    def from_args(cls, args: FilterSpec[SetType]) -> Self:
+    def clone(cls, args: FilterSpec[SetType]) -> Self:
         return cls(
             exclude=set(args.exclude),
             require_all=set(args.require_all),
             require_any=set(args.require_any),
             allow_hidden_files=args.allow_hidden_files,
             return_opposite=args.return_opposite,
+        )
+
+    @classmethod
+    def defrost(
+        cls,
+        exclude: Set[SetType] | None = None,
+        require_all: Set[SetType] | None = None,
+        require_any: Set[SetType] | None = None,
+        *,
+        allow_hidden_files: bool = False,
+        return_opposite: bool = False,
+    ) -> Self:
+        """Create Filter from (Frozen-)Set"""
+        return cls(
+            exclude=set(exclude) if exclude is not None else set(),
+            require_all=set(require_all) if require_all is not None else set(),
+            require_any=set(require_any) if require_any is not None else set(),
+            allow_hidden_files=allow_hidden_files,
+            return_opposite=return_opposite,
         )
 
     def merge(self, args: Self) -> Self:

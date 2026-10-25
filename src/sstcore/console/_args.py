@@ -16,23 +16,39 @@ Example with module import:
 
 """
 
+__all__: list[str] = [
+    # Option Factories
+    "enum_opt",
+    "file_opt",
+    "files_opt",
+    "flag_opt",
+    "filter_opt",
+    # Boot Annotations
+    "SettingFile",
+    "Verbose",
+    "Quiet",
+    # Frequently Used Annotations
+    "CleanState",
+    "DryRun",
+    "Write",
+    "Root",
+    "OutputFile",
+    "LogFile",
+    "File",
+    "Files",
+    # Filter Annotations
+    "Include",
+    "Exclude",
+    "RequireAll",
+    "Hidden",
+]
+
+
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
 
 import typer
-
-# TODO: Find proper generalized annotations
-# - check:
-#   - sachmis
-#   - grab
-#   - file-analyzer
-#   - tyrus
-#   - sysco
-
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-###  Factories
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
 def enum_opt[EnumT: Enum](
@@ -42,6 +58,21 @@ def enum_opt[EnumT: Enum](
     mapping: str = ", ".join(f"{m.value}: {m.name}" for m in enum_class)
     full_help_text: str = f"{help_text} [{mapping}]".strip()
     return typer.Option(None, *flags, help=full_help_text)
+
+
+def flag_opt(help_text: str, *flags: str, default: bool = False) -> Any:
+    """Generates Typer metadata for boolean flags."""
+    return typer.Option(default, *flags, help=help_text)
+
+
+def filter_opt(help_text: str, *flags: str) -> Any:  # LATER: other than Filter?
+    """Generates Typer metadata for filter lists supporting comma-separated strings."""
+    return typer.Option(
+        None,
+        *flags,
+        help=help_text,
+        callback=_parse_keywords,
+    )
 
 
 def file_opt(
@@ -69,95 +100,41 @@ def files_opt(desc: str, *flags: str, exists: bool = False) -> Any:
     )
 
 
-def flag_opt(help_text: str, *flags: str, default: bool = False) -> Any:
-    """Generates Typer metadata for boolean flags."""
-    return typer.Option(default, *flags, help=help_text)
+#  LINE: -- Boot -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-###  Boot
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+SettingFile = Annotated[
+    Path | None,
+    file_opt("json settings", "--json", "-j"),
+]
 
-# TEST:
-SettingFile = Annotated[Path | None, file_opt("json settings", "--json", "-j")]
-# SettingFile = Annotated[ # REMOVE: after test
-#     Path | None,
-#     typer.Option(
-#         "--json",
-#         "-j",
-#         help="Override path to json settings file",
-#     ),
-# ]
-
-# TEST:
 Verbose = Annotated[
     bool,
     flag_opt("Force verbose DEBUG logs", "--verbose", "-v"),
 ]
-# Verbose = Annotated[ # REMOVE: after test
-#     bool,
-#     typer.Option(
-#         "--verbose",
-#         "-v",
-#         help="Force verbose DEBUG logs",
-#     ),
-# ]
 
-# TEST:
 Quiet = Annotated[
     bool,
     flag_opt("Silence terminal outputs", "--quiet", "-q"),
 ]
-# Quiet = Annotated[ # REMOVE: after test
-#     bool,
-#     typer.Option(
-#         "--quiet",
-#         "-q",
-#         help="Silence terminal outputs",
-#     ),
-# ]
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-###  Common
-### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-# TEST:
+
+
+#  LINE: -- Frequently Used -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 CleanState = Annotated[
     bool,
     flag_opt("Clean existing and start from fresh state", "--clean", "-c"),
 ]
-# CleanState = Annotated[
-#     bool,
-#     typer.Option(
-#         "--clean",
-#         "-c",
-#         help="Clean existing and start from fresh state ",
-#     ),
-# ]
-# TEST:
+
 DryRun = Annotated[
     bool, flag_opt("Simulate pipeline without execution", "--dry")
 ]
-# DryRun = Annotated[
-#     bool,
-#     typer.Option(
-#         "--dry",
-#         help="Simulate pipeline without execution",
-#     ),
-# ]
-# TEST:
+
 Write = Annotated[
     bool, flag_opt("Write the current status to disk", "--write", "-w")
 ]
-# Write = Annotated[
-#     bool,
-#     typer.Option(
-#         "--write",
-#         "-w",
-#         help="Write the current status to disk",
-#     ),
-# ]
 
-
-# TEST:
 Root = Annotated[
     Path | None,
     typer.Option(
@@ -166,53 +143,21 @@ Root = Annotated[
         "-r",
         help="Select root for current task",
         dir_okay=True,
+        # IDEA: flag_opt **kwargs??
         file_okay=False,
     ),
 ]
-# Root = Annotated[
-#     Path | None,
-#     typer.Option(
-#         "--root",
-#         "-r",
-#         help="Select root for current task",
-#     ),
-# ]
 
-# TEST:
 OutputFile = Annotated[
     Path | None,
     file_opt("Output", "--out", "-o"),
 ]
-# OutputFile = Annotated[
-#     Path | None,
-#     typer.Option(
-#         "--out",
-#         "-o",
-#         help="Select OutputFile",
-#     ),
-# ]
 
-# TEST:
 LogFile = Annotated[
     Path | None,
     file_opt("Log", "--log", "-l"),
 ]
-# LogFile = Annotated[
-#     Path | None,
-#     typer.Option(
-#         "--log",
-#         "-l",
-#         help="Select Log File",
-#     ),
-# ]
-# File = Annotated[
-#     Path | None,
-#     typer.Option(
-#         "--file",
-#         "-f",
-#         help="Add file from path",
-#     ),
-# ]
+
 # TEST:
 File = Annotated[
     Path | None,
@@ -223,11 +168,45 @@ Files = Annotated[
     list[Path] | None,
     files_opt("target"),
 ]
-# Files = Annotated[
-#     list[Path] | None,
-#     typer.Option(
-#         "--files",
-#         "-f",
-#         help="Add files from paths",
-#     ),
-# ]
+
+
+#  LINE: -- Filter -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _parse_keywords(values: list[str] | None) -> list[str]:
+    """
+    Allows both: -i .py -i .rs  AND  -i .py,.rs
+
+    Returns a list to match type annotations while maintaining order and dropping duplicates
+    """
+    if not values:
+        return []
+    return list(
+        dict.fromkeys(
+            item.strip()
+            for v in values
+            for item in v.split(",")
+            if item.strip()
+        )
+    )
+
+
+Include = Annotated[
+    list[str] | None,
+    filter_opt("Add to require_any ", "--include", "-i"),
+]
+
+Exclude = Annotated[
+    list[str] | None,
+    filter_opt("Add to exclude ", "--exclude", "-e"),
+]
+
+RequireAll = Annotated[
+    list[str] | None,
+    filter_opt("Require all tokens", "--all", "-a"),
+]
+
+Hidden = Annotated[
+    bool,
+    flag_opt("Allow hidden files/dotfiles", "--hidden"),
+]
