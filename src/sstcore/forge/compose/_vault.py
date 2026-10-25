@@ -11,6 +11,7 @@ __all__: list[str] = [
 
 from typing import Any, Literal
 
+from ...brick.color import colorize
 from ...brick.vault import TupleVault
 from ...port.link import portlink
 from ...port.register import MixinRegister
@@ -28,6 +29,12 @@ class MixinRegistry[MixinT: type](TupleVault[MixinT]):
     @property
     def mixins(self) -> tuple[type, ...]:
         return self.vault
+
+    def display(self) -> str:
+        """Show all selected Mixins colorized in Order"""
+        mixins: str = "\n".join(colorize.modules(m) for m in self.mixins)
+        # IDEA: Console().print(mixins)
+        return mixins
 
 
 @portlink(MixinRegister)

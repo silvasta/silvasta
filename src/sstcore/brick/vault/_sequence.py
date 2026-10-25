@@ -102,12 +102,14 @@ class Sequential[Item, V: Sequence, K: Hashable](BaseVault[Item, V, K]):
 
 
 @portlink(ListRegister)
-class ListVault[Item, K: Hashable](Sequential[Item, list[Item], K]):
+class ListVault[Item, K: Hashable = Any](Sequential[Item, list[Item], K]):
     def _ctor(self, items: Iterable[Item]) -> list[Item]:
         return list(items)
 
 
 @portlink(TupleRegister)
-class TupleVault[Item, K: Hashable](Sequential[Item, _reg.Tuple[Item], K]):
+class TupleVault[Item, K: Hashable = Any](
+    Sequential[Item, _reg.Tuple[Item], K]
+):
     def _ctor(self, items: Iterable[Item]) -> _reg.Tuple[Item]:
         return tuple(items)
