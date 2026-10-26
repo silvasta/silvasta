@@ -8,6 +8,8 @@ Scan Folder and assemble Summary
 
 """
 
+from src.sstcore.data.cache._proto import ScannerCaching
+
 __all__: list[str] = [
     "folder_scanner",
 ]
@@ -24,14 +26,6 @@ from ...util.print import printer as _printer
 from ...util.scan import FolderScanner, SummaryFile
 from ..select import TreeSelectorApp
 
-# TASK: global setup
-# - issue with project root
-#   - if not found:
-#     - improve fix with HomeSetup
-#   - if found:
-#     - avoid creating configs there
-#     - check if data/summary.md is proper
-
 
 def folder_scanner(
     scan_root: Path,
@@ -39,14 +33,13 @@ def folder_scanner(
     cache_file: Path,
     cache_reset: bool = False,
     sort: str = TreeSelectorApp.Sort.SELECTION,
-    local_printer: Printer | None = None,
+    printer: Printer | None = None,
     filter: PathFilter | None = None,
     scan_mode: ScanMode = ScanMode.READ,
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
-    _x = _printer
-    if (printer := local_printer) is None:
-        raise NotImplementedError
+
+    printer: Printer = printer or _printer
 
     if filter is None:
         filter = ProjectFilter(require_all=set(), require_any=set())
@@ -60,7 +53,8 @@ def folder_scanner(
         printer.warn("No files selected...")
         raise typer.Exit()
 
-    printer.lines_with_len(name="Selected Files", lines=selected_files)
+    printer.lines(name="Selected Files", lines=selected_files)
+
     _save_to_cache(cache_file, selected_files, printer)
     printer(
         target=(
@@ -73,7 +67,7 @@ def folder_scanner(
         )
     )
     summary_file.write()
-    printer.title(
+    printer.header(
         text=f"Summary File created! Total Lines: {summary_file.n_lines}",
         title=summary_file.name,
         style="green",
@@ -107,3 +101,42 @@ if __name__ == "__main__":
         output_file=Path("summary.xml"),
         cache_file=Path(".scanner.json"),
     )
+
+
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+# NEXT:
+def ___folder_scanner(
+    scan_root: Path,
+    cache: ScannerCaching,
+    preset: str | None = None,
+    cache_reset: bool = False,
+    sort: str = TreeSelectorApp.Sort.SELECTION,
+    printer: Printer | None = None,
+    filter: PathFilter | None = None,
+) -> None:
+    """Launch Scanner, select from Filesystem Tree and write to file"""
+
+    printer: Printer = printer or _printer
+
+    if filter is None:
+        filter = ProjectFilter(require_all=set(), require_any=set())
+
+    target_preset = preset or cache.LAST
+
+    with cache:
+        pre_select = [] if cache_reset else cache.load(name=target_preset)
+
+        selector = TreeSelectorApp(
+            sst_tree=FolderScanner(scan_root, filter).tree(),
+            sort_method=sort,
+            pre_select=pre_select,
+        )
+        if not (selected_files := selector.run()):
+            printer.warn("No files selected...")
+            raise typer.Exit()
+
+        printer.lines.len(name="Selected Files", lines=selected_files)
+        cache.save(selected_files, name=target_preset)

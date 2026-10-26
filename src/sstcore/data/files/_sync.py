@@ -27,18 +27,14 @@ from ._file import SstFile
 type _PathS = Path | list[Path]
 
 
-@portlink(SyncRegister)  # ty:ignore FIX:
+@portlink(SyncRegister)
 class FileSyncMixin[File: SstFile]:
     """Execute File System Operations supported by PathGuard"""
 
-    # --- Mixin Dependencies (Expected from Host & SstFiles) ---
     root_dir: Path
     clear: Callable[..., int]
     attach_from_path: Callable[[Path], File]
     files: list[File]
-    # filtered: Callable[[FileFilter | None], list[File]]
-    # paths: Callable[..., set[Path]]
-    # ----------------------------------------------------------
 
     sync_mode: PathGuard.SyncMode = SyncMode.IGNORE
 
@@ -46,7 +42,7 @@ class FileSyncMixin[File: SstFile]:
         self, source: _PathS, sync_mode: SyncMode = SyncMode.IGNORE
     ) -> list[File]:
         """Copy external files from into local_root and add to registry"""
-        self.sync_mode = SyncMode(sync_mode)
+        self.sync_mode: SyncMode = SyncMode.resolve(sync_mode)
 
         return self._sync_external_files(
             source,
@@ -59,7 +55,8 @@ class FileSyncMixin[File: SstFile]:
         self, source: _PathS, sync_mode: SyncMode = SyncMode.IGNORE
     ) -> list[File]:
         """Move external files from into local_root and add to registry"""
-        self.sync_mode = SyncMode(sync_mode)
+        self.sync_mode: SyncMode = SyncMode.resolve(sync_mode)
+
         return self._sync_external_files(
             source,
             transfer_strategy=PathGuard.rotate,  # LATER:
@@ -69,14 +66,16 @@ class FileSyncMixin[File: SstFile]:
         self, external: Self, sync_mode: SyncMode = SyncMode.IGNORE
     ) -> list[File]:
         """Copy files of external registry into local_root and attach"""
-        self.sync_mode = SyncMode(sync_mode)
+        self.sync_mode: SyncMode = SyncMode.resolve(sync_mode)
+
         return self._sync_registry(external, transfer_strategy=Copy)
 
     def absorb_from_registry(
         self, external: Self, sync_mode: SyncMode = SyncMode.INCREMENT
     ) -> list[File]:
         """Move files of external registry into local_root and attach"""
-        self.sync_mode = SyncMode(sync_mode)
+        self.sync_mode: SyncMode = SyncMode.resolve(sync_mode)
+
         return self._sync_registry(external, transfer_strategy=Rotate)  # LATER:
 
     ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -118,7 +117,7 @@ class FileSyncMixin[File: SstFile]:
 
         if source.is_dir():
             temp_registry: Self = self.clone_empty_registry(local_root=source)
-            # WARN: behavoiur out
+            # WARN: behavoiur out:
             # temp_registry.attach_new_files_from_local_folder()
             return self._sync_registry(
                 external=temp_registry,
@@ -168,13 +167,13 @@ class FileSyncMixin[File: SstFile]:
         new_local_path: Path | str | None = None,
     ) -> File | None:
         """Copy or Move file into local_root and load new File into registry"""
-        # FIX: something is strange....
+        # CHECK: something looks strange... SyncMode still needed?
 
         target: Path = self.root_dir / (new_local_path or source.name)
 
-        if result := transfer_strategy.safe(
-            source, target
-        ):  # FIX:, self.sync_mode):
+        if result := transfer_strategy.synced(
+            source, target, mode=self.sync_mode
+        ):
             return self.attach_from_path(result)
 
         if self.sync_mode == SyncMode.IGNORE:
@@ -186,9 +185,7 @@ class FileSyncMixin[File: SstFile]:
 
         return self.attach_from_path(target)
 
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
-    ### Clone
-    ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
+    #  LINE: -- clone -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def clone_empty_registry(
         self,

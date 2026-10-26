@@ -78,6 +78,7 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     """Category 3: Use infrastructure for Relative Path and minor helpers.."""
 
     relative: Callable = _relative.relative_main
+    absolute: Callable = _relative.absolute_main
     relative_duo: Callable = _relative.relative_duo
     relative_string: Callable = _relative.relative_string
     split: Callable = _relative.split

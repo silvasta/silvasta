@@ -9,6 +9,7 @@ from typing import Annotated
 
 from typer import Context, Option
 
+from ...data.cache import DiskScanCache
 from ...port.config import Config, Paths
 from ...port.event.dto import LogDTO
 from ...port.filter import FilterArgs
@@ -65,13 +66,19 @@ def launch_folder_scanner(
     """Folder Scanner with TreeSelector: Write combined file!"""
     system: System = ctx.obj["system"]
     paths: Paths = system.config.paths
+    scan_root: Path = scan_root or any_root()
+    cache_dir: Path = paths.scanner_cache_file(scan_root).parent
+
+    _next = DiskScanCache(cache_dir, scan_root, system.printer)
+
+    paths.scanner_cache_file()
     folder_scanner(
-        scan_root=(root := scan_root or any_root()),
+        scan_root=scan_root,
         output_file=output_file or paths.summary_file(suffix=file_type),
-        cache_file=paths.scanner_cache_file(root),
+        cache_file=paths.scanner_cache_file(scan_root),
         cache_reset=reset,
         sort=sort,
-        local_printer=system.printer,
+        printer=system.printer,
         filter=ProjectFilter.clone(
             filter_box(
                 include=include,
@@ -123,7 +130,7 @@ def config_details_and_write(ctx: Context, write_config: args.Write = False):
 @app.command("print")
 def print_file(path: Path):
     """Print Prompt, Response or any Markdown File in Rich style"""
-    printer.title(path.name)
+    printer.header(path.name)
     match path.suffix:
         case ".json":
             printer(path.read_text())

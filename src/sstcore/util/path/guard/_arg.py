@@ -222,6 +222,9 @@ class PathCast(ArgCast):
 
     #  LINE: -- Domain specific -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+    # NEXT: check what here actually works
+    # REMOVE: All below: scales bad and works medium
+
     def uno(self, func: Callable[[Path], Path]) -> Callable[[PathArg], Path]:
         # WARN: when is self.plan used?
         def wrapper(

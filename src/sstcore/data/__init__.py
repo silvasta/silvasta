@@ -1,7 +1,7 @@
 """
 Provide Infrastructure for Data Operations and Modeling
 
-                                                       DependencyLevel[4]
+                                         DependencyLevel.sstcore[5]
 """
 
 __all__: list[str] = [

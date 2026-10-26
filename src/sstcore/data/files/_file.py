@@ -22,7 +22,7 @@ from ...port.files import File
 
 
 @view(Cli.HEADER, Str.NAME, Rich.MODULE, Log.DATA)
-class SstFile(BaseModel):
+class SstFile(BaseModel):  # CHECK: .._model.SstModel
     """Local file for upload and usage in prompt"""
 
     # NOTE: uuid? as option?
