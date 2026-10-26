@@ -95,8 +95,19 @@ class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
     def __iter__(self) -> Iterator[Item]:
         yield from self._iter_items()
 
-    def __contains__(self, target: Item) -> bool:
-        return any(item == target for item in self._iter_items())
+    def __contains__(self, target: Any) -> bool:
+        if any(item == target for item in self._iter_items()):
+            return True
+        if (  # MOVE: make this as function with explaining name
+            isinstance(target, Hashable)
+            and not callable(target)
+            or isinstance(target, type)
+        ):
+            return bool(self._box_key(target))
+        try:
+            return bool(self._collisions(self._as_vault(target)))
+        except Exception:
+            return False
 
     #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

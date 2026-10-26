@@ -16,7 +16,7 @@ from ...brick.reflect import objname
 from ...brick.vault import DictVault
 from ...port.link import portlink
 from ...port.register import DictRegister, FuncRegister
-from ._handler import ErrorHandler
+from ._handler import DEFAULT_ERROR_HANDLER, ErrorHandler
 
 type HandlerFunc[Error: Exception] = Callable[[Error], None]
 type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
@@ -35,46 +35,43 @@ class ErrorRegistry(DictVault[ErrorHandler, type[BaseException]]):
 
     def _item_id(self, item: ErrorHandler, /) -> type[Exception]:
         """Extract the exception class as the unique mapping key"""
+
         return item.error_type
 
     def _normalize(self, value: Any) -> ErrorHandler:
         """Ensure incoming items are valid ErrorHandler instances"""
+
         if isinstance(value, ErrorHandler):
             return value
+
         if callable(value) and not isinstance(value, type):
             return ErrorHandler.from_func(value)
+
         raise TypeError(
-            f"Expected ErrorHandler or handler function, got {objname(value)}"
+            f"Expected ErrorHandler or function, got {objname(value)}"
         )
 
-    def _resolve_mro(
-        self, exc: BaseException | type[BaseException]
-    ) -> tuple[type[Exception], ErrorHandler[Any]] | None:
-        exc_type = exc if isinstance(exc, type) else type(exc)
-        for cls in exc_type.__mro__:
-            if issubclass(cls, Exception) and cls in self.vault:
-                return cls, self.vault[cls]
-        return None
-
-    def _key_item(
-        self,
-        key: BaseException | type[BaseException],
-    ) -> ErrorHandler:
-        """Enable error_registry[exc] to resolve via MRO."""
-        if hit := self._resolve_mro(key):
-            return hit[1]
-        raise KeyError(key)
-
-    def _box_key(
+    def _coerce_key(
         self, key: BaseException | type[BaseException]
-    ) -> dict[type[BaseException], ErrorHandler]:
-        """Enable error_registry.find(exc) and .count(exc) to resolve via MRO."""
-        if hit := self._resolve_mro(key):
-            return {hit[0]: hit[1]}
-        return {}
+    ) -> type[BaseException]:
+        """Resolve Error to most specific registered MRO Key"""
+
+        _error_type = key if isinstance(key, type) else type(key)
+
+        for cls in _error_type.__mro__:
+            if issubclass(cls, BaseException) and cls in self.vault:
+                return cls
+
+        return _error_type
+
+    def use_default_shield(self) -> None:
+        """Register fallback to Exception if not already present"""
+
+        if Exception not in self.vault:
+            self.add(DEFAULT_ERROR_HANDLER)
 
     def attach(self, exit_code: int = 2, name: str = "") -> HandlerDecorator:
-        """Attach handler functions by decorator"""
+        """Register Functions as ErrorHandler Functors"""
 
         def decorator[E: Exception](func: HandlerFunc[E]):
             handler: ErrorHandler[E] = ErrorHandler.from_func(

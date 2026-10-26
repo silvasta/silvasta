@@ -35,9 +35,6 @@ class BusRegistry(ListVault[EventHandler, str]):
 
     """
 
-    def _item_id(self, item: EventHandler, /) -> str:
-        return item.__name__
-
     def _normalize(self, value: Any) -> EventHandler:
         """Ensure incoming items are valid EventHandler instances."""
         if isinstance(value, EventHandler):
@@ -52,15 +49,18 @@ class BusRegistry(ListVault[EventHandler, str]):
         """Provide all matching handlers - hook for find(..) and count(..)"""
         return [handler for handler in self.vault if handler.handles(key)]
 
+    def _item_id(self, item: EventHandler, /) -> str:
+        return item.__name__
+
     def _key_item(self, key: str) -> EventHandler:
         """Provide handler by __name__ or full id - hook for registry[..]"""
         found: list[EventHandler] = [
             handler  #
             for handler in self.vault
-            if key in self._item_id(handler)  # CHECK: unique, why?
+            if handler.__name__ == key or handler._base_name == key
         ]
         if len(found) != 1:
-            raise KeyError(key, found)
+            raise KeyError(f"Duplicated Handler for {key=}! {found=}")
         return found[0]
 
     def attach(

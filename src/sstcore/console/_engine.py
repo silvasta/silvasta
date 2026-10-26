@@ -34,7 +34,6 @@ class SafeTyper(typer.Typer):
     """
 
     system: System
-    errors: ErrorRegistry
 
     def __init__(
         self,
@@ -48,13 +47,15 @@ class SafeTyper(typer.Typer):
         super().__init__(**kwargs)
 
         self._system_loader: SystemLoader | None = system_loader
-
-        if error_registry is None:
-            error_registry = ErrorRegistry()
-
-        self.errors: ErrorRegistry = error_registry or ErrorRegistry()
+        self._error_registry: ErrorRegistry | None = error_registry
 
         self._attach_internal_callback()
+
+    @property
+    def errors(self) -> ErrorRegistry:
+        if self._error_registry is None:
+            self._error_registry = ErrorRegistry()
+        return self._error_registry
 
     def _attach_internal_callback(self):
         """Dispatch callback for Main or Subapp"""
@@ -88,8 +89,11 @@ class SafeTyper(typer.Typer):
         self.system: CliSystem = loader(**cli_args)
         self._update_system_context(ctx)
 
+        if self.system.config.defaults.shield_typer:
+            self.errors.use_default_shield()
+
+        # LATER: split quiet: scroll prints, subapps, general, ...
         # if not quiet:
-        # TASK: split quiet: scroll prints, subapps, general, ...
         #     scroll.safe_typer.intro(ctx.info_name)
         #     scroll.safe_typer.setup(self.system.config, loader)
 
@@ -118,13 +122,13 @@ class SafeTyper(typer.Typer):
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
         try:
-            print(f"{args=},{kwargs=}")
             return super().__call__(*args, **kwargs)
 
         except Exception as error:
-            if type(error) in self.errors.vault:
-                handler: ErrorHandler = self.errors[type(error)]
+            if error in self.errors:
+                handler: ErrorHandler = self.errors[error]
                 handler(error)
+                sys.exit(4)  # SafeFunctor handled it, still -> exit
 
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)

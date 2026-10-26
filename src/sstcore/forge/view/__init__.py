@@ -31,6 +31,11 @@ __all__: list[str] = [
     "ViewInjector",
     "ViewComposer",
     "catalog",
+    "Cli",
+    "Str",
+    "Rich",
+    "Repr",
+    "Log",
     "views",
 ]
 
@@ -41,6 +46,7 @@ from . import _views as views
 from . import catalog
 from ._compose import ViewBuilder, ViewInjector
 from ._preset import ViewPresets
+from .catalog import Cli, Log, Repr, Rich, Str
 
 
 @_portlink(Injector)

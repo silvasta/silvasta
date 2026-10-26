@@ -39,13 +39,12 @@ class BaseFunctor[**Args, Result](
     def __init__(self, **kwargs: Unpack[FunctorInput[Args, Result]]):
         spec: FunctorSpec[Args, Result] = FunctorSpec.absorb(kwargs)
 
-        if spec.call is not None:
-            self._call: Callable[Args, Result] = spec.call
-
         name: str = self._format_name(spec.name)
-
         self.__name__: str = name
         self.__qualname__: str = name
+
+        if spec.call is not None:
+            self._call: Callable[Args, Result] = spec.call
 
         if kwargs:
             self._emit(f"Undestroyed kwargs: {kwargs!r}")

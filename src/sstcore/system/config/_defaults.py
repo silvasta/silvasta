@@ -23,4 +23,6 @@ class SstDefaults(BaseSettings):
 
     timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]  # parse dates
+
     dot_env_content: str = ""
+    shield_typer: bool = True

@@ -6,11 +6,14 @@ Build the Functor for the Exception handling
 
 __all__: list[str] = [
     "ErrorHandler",
+    "DEFAULT_ERROR_HANDLER",
 ]
 
 import inspect
 from collections.abc import Callable
 from typing import Self, Unpack, get_type_hints
+
+from loguru import logger
 
 from ...brick.field._strategy import StrategyField
 from ...brick.reflect import clsname, funcname
@@ -83,3 +86,22 @@ def _is_valid(_error_type):
 def _find_error_type(func: Callable, param, /):
     _hints = get_type_hints(func)
     return _hints.get(param.name, param.annotation)
+
+
+def handle_uncaught_error(self, error: Exception) -> None:
+    # IMPORTANT: fix the self, somewhere in Field
+    """Last-shield fallback: log critical error info and allow graceful exit."""
+    logger.opt(exception=error).critical(
+        "CLI Shield caught unhandled {err_type}: {msg}",
+        err_type=clsname(error),
+        msg=error,
+    )
+
+
+DEFAULT_ERROR_HANDLER: ErrorHandler[Exception] = ErrorHandler(
+    error_type=Exception,
+    call=handle_uncaught_error,
+    policy=ErrorPolicy.LOG_AND_EXIT,
+    exit_code=1,
+    name="DefaultErrorShield",
+)

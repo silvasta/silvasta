@@ -12,7 +12,6 @@ __all__: list = [
     "System",
 ]
 
-from dataclasses import asdict
 from typing import Any, Self, Unpack
 
 from ..port.config import Config
@@ -59,7 +58,7 @@ class System:
         setup_minimal_logging(level="DEBUG" if param.verbose else "WARNING")
 
         loader: ConfigLoader = param.config_loader or ConfigManager.bootstrap
-        config: Config = loader(**asdict(param.cli_data))
+        config: Config = loader(**param.cli_data.config_input)
         config.launch_log_setup(verbose=param.verbose, quiet=param.quiet)
 
         bus_loader: BusLoader = param.bus_loader or Bus.ready

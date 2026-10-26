@@ -52,7 +52,8 @@ class EventHandler(SafeFunctor[[Event], None]):
 
     def _format_name(self, name: str = "") -> str:
         """Format str:= [(Cls)][{name}::{pattern}]"""
-        return f"{name or super()._format_name()}::{self.pattern}"
+        self._base_name: str = name or super()._format_name()
+        return f"{self._base_name}::{self.pattern}"
 
     def handles(self, event: Event | EventPattern, /) -> bool:
         """Does the Handler match the Event?"""

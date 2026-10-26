@@ -121,6 +121,14 @@ class CliSystemSpec:
     settings: Path | None = None
     home: HomeSetup = HomeSetup.PROJECT
 
+    @property
+    def config_input(self) -> ConfigInput:
+        """Map CLI arguments to ConfigInput keys."""
+        return {
+            "setting_file": self.settings,
+            "home_setup": self.home,
+        }
+
 
 @dataclass
 class CliSystemTools:

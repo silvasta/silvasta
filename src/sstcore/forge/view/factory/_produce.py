@@ -48,7 +48,6 @@ class DtoProducer[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
 #  LINE: -- Log and Cli Base -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@portlink(functorial.MountableFunctor)
 class LogDtoProducer(DtoProducer[dto.LogDTO]):
     dto_name: dto.DtoNames = "log"
 
@@ -58,7 +57,6 @@ class LogDtoProducer(DtoProducer[dto.LogDTO]):
         return self.dto_cls.create(message=message, **kw)
 
 
-@portlink(functorial.MountableFunctor)
 class CliDtoProducer(DtoProducer[dto.CliDTO]):
     dto_name: dto.DtoNames = "cli"
 
@@ -71,7 +69,10 @@ class CliDtoProducer(DtoProducer[dto.CliDTO]):
 #  LINE: -- Cli Specifications -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@portlink(functorial.MountableFunctor)
+def _t(x: PanelDtoProducer):  # REMOVE:
+    x("")
+
+
 class PanelDtoProducer(DtoProducer[dto.PanelDTO]):
     dto_name: dto.DtoNames = "panel"
 
@@ -81,7 +82,6 @@ class PanelDtoProducer(DtoProducer[dto.PanelDTO]):
         return self.dto_cls.create(*content, **kw)
 
 
-@portlink(functorial.MountableFunctor)
 class MarkdownDtoProducer(DtoProducer[dto.MarkdownDTO]):
     dto_name: dto.DtoNames = "markdown"
 
@@ -91,7 +91,6 @@ class MarkdownDtoProducer(DtoProducer[dto.MarkdownDTO]):
         return self.dto_cls.create(content, **kw)
 
 
-@portlink(functorial.MountableFunctor)
 class LineDtoProducer(DtoProducer[dto.LineDTO]):
     dto_name: dto.DtoNames = "line"
 
@@ -101,7 +100,6 @@ class LineDtoProducer(DtoProducer[dto.LineDTO]):
         return self.dto_cls.create(content, **kw)
 
 
-@portlink(functorial.MountableFunctor)
 class TableDtoProducer(DtoProducer[TableViewDTO]):
     dto_name: dto.DtoNames = "table"
 
