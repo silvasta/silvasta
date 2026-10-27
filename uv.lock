@@ -487,7 +487,7 @@ wheels = [
 ]
 
 [[package]]
-name = "sstcore-py"
+name = "silvasta"
 version = "0.4.0a1"
 source = { editable = "." }
 dependencies = [

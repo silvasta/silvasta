@@ -1,5 +1,5 @@
 [project]
-name = "sstcore-py"
+name = "silvasta"
 version = "0.4.0a1"
 description = "Generalized Function and Tools combined as Project Setup Boost"
 readme = "README.md"
@@ -43,7 +43,7 @@ dependencies = [
 
 [project.scripts]
 sst = "sstcore.__main__:main"
-sstcore-py = "sstcore.__main__:main" # invoked on uvx
+silvasta = "sstcore.__main__:main" # invoked on uvx
 
 [project.urls]
 Repository = "https://github.com/silvasta/silvasta"

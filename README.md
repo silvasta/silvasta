@@ -1,28 +1,28 @@
 # Base of all Projects — `sstcore`
 
-[![PyPI version](https://img.shields.io/pypi/v/sstcore-py.svg)](https://pypi.org/project/sstcore-py/)
-[![Python versions](https://img.shields.io/pypi/pyversions/sstcore-py.svg)](https://pypi.org/project/sstcore-py/)
+[![PyPI version](https://img.shields.io/pypi/v/silvasta.svg)](https://pypi.org/project/silvasta/)
+[![Python versions](https://img.shields.io/pypi/pyversions/silvasta.svg)](https://pypi.org/project/silvasta/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **Generalize Project Patterns and Bootstrap with Batteries.**
 
-`sstcore` (distributed on PyPI as `sstcore-py`) is a strictly layered Python architecture and utility framework (`>=3.14`). It serves as the foundation across projects by uniting configuration bootstrapping, structured console output, event buses, CLI/TUI pipelines, and filesystem safety behind a lazy-loaded root facade.
+`sstcore` (distributed on PyPI as `silvasta`) is a strictly layered Python architecture and utility framework (`>=3.14`). It serves as the foundation across projects by uniting configuration bootstrapping, structured console output, event buses, CLI/TUI pipelines, and filesystem safety behind a lazy-loaded root facade.
 
 ---
 
 ## Installation
 
-> **Note:** The PyPI distribution name is **`sstcore-py`**, while the Python import module is **`sstcore`**.
+> **Note:** The PyPI distribution name is **`silvasta`**, while the Python import module is **`sstcore`**.
 
 ```bash
 # Core library (System, ConfigManager, PathGuard, printer, Emitter, portlink)
-uv add sstcore-py
+uv add silvasta
 
 # Recommended: includes Typer + Textual for SafeTyper and the `sst` CLI tools
-uv add "sstcore-py[cli]"
+uv add "silvasta[cli]"
 
 # With all optional extras
-uv add "sstcore-py[all]"
+uv add "silvasta[all]"
 ```
 
 **Install from TestPyPI:**
@@ -34,7 +34,7 @@ uv add \
   --index https://test.pypi.org/simple/ \
   --default-index https://pypi.org/simple/ \
   --index-strategy unsafe-best-match \
-  "sstcore-py[all]"
+  "silvasta[all]"
 ```
 
 ---
@@ -111,7 +111,7 @@ from sstcore import ConfigManager
 
 ### 5. `SafeTyper` — CLI Pipeline with Defaults
 
-Seamless CLI execution pipeline wrapping `Typer` with automatic error boundaries, logging callbacks, and system wiring. _(Requires `sstcore-py[cli]`)_
+Seamless CLI execution pipeline wrapping `Typer` with automatic error boundaries, logging callbacks, and system wiring. _(Requires `silvasta[cli]`)_
 
 ```python
 from sstcore import SafeTyper
