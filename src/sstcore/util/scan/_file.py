@@ -16,14 +16,14 @@ from pathlib import Path
 
 from loguru import logger
 
-from ...port.scanner import FileScan, ScanMode
+from ...port.scanner import FileScanning, ScanMode
 from ...port.tree import ApiStyle, ScanModeG45
 from ..path.guard import PathGuard
 from ..tree._ast import AstOptions
 from ._folder import FolderScanner
 
 
-def get_extractor(mode: ScanMode) -> FileScan:
+def get_extractor(mode: ScanMode) -> FileScanning:
     """Provide the right tool for the right task"""
     match mode:
         case ScanMode.READ:
@@ -66,7 +66,7 @@ class FileScanner:
 
         for read_path, show_path in self.split_paths():
             try:
-                extractor: FileScan = get_extractor(self.mode)
+                extractor: FileScanning = get_extractor(self.mode)
                 text: str = str(extractor(read_path))
             except (UnicodeDecodeError, OSError) as error:
                 logger.debug(f"skip {read_path}: {error}")

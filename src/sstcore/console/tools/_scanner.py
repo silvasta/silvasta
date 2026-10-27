@@ -8,8 +8,6 @@ Scan Folder and assemble Summary
 
 """
 
-from src.sstcore.data.cache._proto import ScannerCaching
-
 __all__: list[str] = [
     "folder_scanner",
 ]
@@ -19,7 +17,7 @@ from pathlib import Path
 
 import typer
 
-from ...port.scanner import ScanMode
+from ...port.scanner import ScanCaching, ScanMode
 from ...util.filter import PathFilter, ProjectFilter
 from ...util.print import Printer
 from ...util.print import printer as _printer
@@ -110,7 +108,7 @@ if __name__ == "__main__":
 # NEXT:
 def ___folder_scanner(
     scan_root: Path,
-    cache: ScannerCaching,
+    cache: ScanCaching,
     preset: str | None = None,
     cache_reset: bool = False,
     sort: str = TreeSelectorApp.Sort.SELECTION,

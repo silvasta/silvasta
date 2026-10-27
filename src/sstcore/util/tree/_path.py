@@ -13,10 +13,10 @@ __all__: list[str] = [
 
 
 from collections import defaultdict, deque
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from ...port.link import portlink
 from ...port.tree import PathTree
@@ -44,11 +44,7 @@ class PathTreeNode(SimpleTreeNode):
         return cls(name=path.name, path=path, branches=branches)
 
 
-if TYPE_CHECKING:
-    _path_tree: PathTree = PathTreeNode.create(Path())
-
-
-def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
+def build_path_tree(paths: Iterable[Path], root_name: str = "") -> PathTreeNode:
     """Build Tree from raw paths with stacked nodes at empty directories"""
 
     path_parts: list[deque[str]] = [deque(path.parts) for path in paths]
@@ -57,7 +53,7 @@ def build_path_tree(paths: list[Path], root_name: str = "") -> PathTreeNode:
 
 
 def _recursive_path_tree(  # NEXT: generalize, first for SimpleTreeNode
-    path_parts: list[deque[str]],
+    path_parts: Iterable[deque[str]],
     current_node_name: str = "",
     current_node_path: Path = Path(),
 ) -> PathTreeNode:
@@ -99,7 +95,7 @@ def _recursive_path_tree(  # NEXT: generalize, first for SimpleTreeNode
     )
 
 
-def _pop_left(path_parts: list[deque]) -> dict[str, list[deque]]:
+def _pop_left(path_parts: Iterable[deque]) -> dict[str, list[deque]]:
     """
     Squash all top left path elements into branched dict.
 

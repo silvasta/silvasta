@@ -25,9 +25,9 @@ class PrinterLayouts(PrinterBase):
     """Assemble DtoFactory, Render and many Presets"""
 
     def __init__(self, factory: DtoFactory = dto_factory, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.dto: DtoFactory = factory
         self.render = DtoRenderHub(colors=self.colors)
-        super().__init__(**kwargs)
 
     def panel(
         self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]

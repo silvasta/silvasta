@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ...port.tree import AstKind, AsTree
-from ..scan._ast import AstVisitor  # WARN: Bad Dependency
+
+# from ..scan._ast import AstVisitor  # WARN: Bad Dependency
 from ..tree import SimpleTreeNode
 
 
@@ -87,14 +88,14 @@ def build_ast_tree(
     if path.suffix not in {".py", ".pyi"}:
         return None
 
-    config = config or AstExtractionConfig()
+    _config = config or AstExtractionConfig()
     try:
         source = path.read_text(encoding="utf-8")
-        tree = ast.parse(source, filename=str(path))
+        _tree = ast.parse(source, filename=str(path))
         # AI: this is probably only dependency in this direction
-        visitor = AstVisitor(config)  # WARN: Bad Dependency
-        visitor.visit(tree)
-        return visitor.root
+        # visitor = AstVisitor(config)  # WARN: Bad Dependency
+        # visitor.visit(tree)
+        # return visitor.root
     except SyntaxError, UnicodeDecodeError, OSError:
         return AstTreeNode(
             name=path.name,

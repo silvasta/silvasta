@@ -5,8 +5,8 @@ Scan Folders, Files, ... parsed with(out) syntax and context grouping
 """
 
 __all__: list[str] = [
-    "FolderScan",
-    "FileScan",
+    "FolderScanning",
+    "FileScanning",
     "ScanMode",
     # IDEAS:
     # "AstExtract",
@@ -29,7 +29,7 @@ from .represent import Stringable  # 0
 from .tree import PathTree  # 0
 
 
-class FolderScan(Protocol):
+class FolderScanning(Protocol):
     """Scans a directory with a PathFilter/ProjectFilter."""
 
     scan_root: Path
@@ -40,7 +40,7 @@ class FolderScan(Protocol):
     def tree(self) -> PathTree: ...
 
 
-class FileScan(Protocol):
+class FileScanning(Protocol):
     """Define the Shape of the File extraction Engine"""
 
     def __call__(self, path: Path) -> Stringable:
@@ -49,7 +49,7 @@ class FileScan(Protocol):
 
 # TASK: setup that works for all scanner
 class ScanMode(StrEnum):
-    """Govern the execution modes of FileScanner"""
+    """Govern the execution modes of FileScanningner"""
 
     READ = auto()
     AST = auto()

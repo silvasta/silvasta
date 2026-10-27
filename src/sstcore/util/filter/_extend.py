@@ -36,6 +36,7 @@ class PathFilter(FilterSet[str, Path]):
 
 
 @portlink(ProjectFiltering)
+@portlink(PathFiltering)
 @dataclass
 class ProjectFilter(PathFilter):
     """Reject unwanted Folders and include desired Files"""
