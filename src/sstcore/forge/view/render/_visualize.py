@@ -146,11 +146,17 @@ class LineDtoVisualizer(DtoVisualizer[dto.LineDTO]):
     dto_name = "line"
 
     def __call__(self, target: dto.LineDTO, /) -> Richable:
-        # REMOVE: no --- line, no Rule!
-        # TODO: just an empty line with nothing but background color
-        # if not target.content:
-        #     return Text("─" * 50, style=str(target.color))
-        body = self.normalize(target.content)
+        if not target.content:
+            bg_style = f"on {self.colors.paint(target.color)}"
+            body: Richable = Text(" ", style=bg_style, justify="full")
+        else:
+            body: Richable = self.normalize(target.content)
+            if target.stat is not None:
+                stat_line = Text(
+                    target.stat(target.content),
+                    style=self.colors.paint(target.color),
+                )
+                body = Group(body, stat_line)
         return self.apply_header(body, target.header, target.color)
 
 

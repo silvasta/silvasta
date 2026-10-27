@@ -36,8 +36,8 @@ def _render_log_1(log: LogDTO):
     """For the NDJSON log monitor (and optionally for console)."""
     # LATER: fix with colorbox
     text = f"[{_match_color(log)}]{log.level:5}[/] {log.message}"
-    if log.metrics or log.extra:
-        text += f"  [dim]{log.metainfo}[/]"
+    if metainfo := log.metainfo():
+        text += f"  [dim]{metainfo}[/]"
     return Text.from_markup(text)
 
 

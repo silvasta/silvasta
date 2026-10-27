@@ -1,13 +1,11 @@
 """
 Interactive PrintFunctors mounted on PrinterLayouts.
 
-Replaces _old_layout_todos.py by turning layout methods into rich Functors
-with sub-commands and multi-level presets.
-"""
+-
+"""  # TODO:
 
 __all__: list[str] = [
     "PrintFunctor",
-    "PanelPrintFunctor",
     "LinePrintFunctor",
     "BoxPrintFunctor",
     "TablePrintFunctor",
@@ -23,43 +21,16 @@ from ...forge.view.factory._table import TableViewDTO
 from ...port import functorial
 from ...port.color import Color, ColorArg
 from ...port.event import dto
-from ...port.event._param import FrameInput, HeaderFrameInput, HeaderInput
-from ...port.event.dto import CliInput
 from ...port.link import portlink
-from ...port.printer import Print
 from ._boxes import Boxes
-
-
-# MOVE: to final input design assembly
-class UntitledPanelInput(CliInput, HeaderFrameInput, FrameInput, total=False):
-    """PanelInput without 'title' (for presets taking title positionally)."""
-
-
-# MOVE: to final input design assembly
-class ColoredHeaderInput(HeaderFrameInput, FrameInput, total=False):
-    """PanelInput without 'title' and 'color' (for semantic presets like success/warn/danger)."""
-
-    infos: Mapping
-
-
-# MOVE: to final input design assembly
-class BoxlessPanelInput(CliInput, HeaderInput, total=False):
-    """PanelInput without 'box' (for box presets where box is pre-selected)."""
-
-    topic: str
-    topic_color: ColorArg
 
 
 @portlink(functorial.MountableFunctor)
 class PrintFunctor[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
     """Base Functor bound to the Printer instance."""
 
-    def __init__(
-        self,
-        host: Print,  # WARN: annotate with :Print might be a bad idea here...
-        **kwargs: Any,
-    ) -> None:
-        self.host: Print = host
+    def __init__(self, host: Any, **kwargs: Any) -> None:
+        self.host: Any = host
         super().__init__(**kwargs)
 
     @classmethod
@@ -67,33 +38,13 @@ class PrintFunctor[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
         return cls(host=host, name=name, **kwargs)
 
 
-# ---------------------------------------------------------------------------
-# 1. PANEL FUNCTOR (Level 1 & Invert-Header support)
-# ---------------------------------------------------------------------------
-
-
-@portlink(functorial.MountableFunctor)
-class PanelPrintFunctor(PrintFunctor[dto.PanelDTO]):
-    """Direct Panel printing + quick variations."""
-
-    def __call__(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]
-    ) -> dto.PanelDTO:
-        return self.host(self.host.dto.panel(*content, **kw))
-
-
-# ---------------------------------------------------------------------------
-# 2. LINE FUNCTOR (Unboxed lines, rules, and counted line blocks)
-# ---------------------------------------------------------------------------
-
-
 @portlink(functorial.MountableFunctor)
 class LinePrintFunctor(PrintFunctor[dto.LineDTO]):
     """
-    Handle single separator lines, sequential lines, and counted blocks.
+    Handle single separator lines, sequential lines, and counted line blocks.
 
     Examples:
-        printer.lines()                           # Prints horizontal rule
+        printer.line()                            # Empty line with bg color
         printer.lines("a", "b", title="Items")    # Sequential lines with header
         printer.lines.len("Files", file_list)     # Header "Files: 12" + lines
     """
@@ -103,63 +54,79 @@ class LinePrintFunctor(PrintFunctor[dto.LineDTO]):
     ) -> dto.LineDTO:
         return self.host(self.host.dto.line(*content, **kw))
 
-    def rule(self, color: ColorArg = Color.AZURE) -> dto.LineDTO:
-        """Print a clean horizontal divider line."""
-        return self(color=color)
-
     def len(
         self,
         name: str,
-        lines: Sequence[dto.CliSpec],
-        **kw: Unpack[UntitledPanelInput],
-    ) -> dto.PanelDTO:
-        """Renders a panel with 'name: <count>' as header and 'name' as frame topic."""
+        *content: dto.CliSpec | Sequence[dto.CliSpec],
+        **kw: Unpack[dto.LinePresetInput],
+    ) -> dto.LineDTO:
+        if (
+            len(content) == 1
+            and isinstance(content[0], Sequence)
+            and not isinstance(content[0], (str, bytes))
+        ):
+            items: tuple[dto.CliSpec, ...] = tuple(content[0])
+        else:
+            items: tuple[dto.CliSpec, ...] = tuple(
+                c
+                for c in content
+                if not isinstance(c, Sequence) or isinstance(c, str)
+            )
 
-        header_title = f"{name}: {len(lines)}"
-        kw.setdefault("topic", name)
-        return self.host.panel(*lines, title=header_title, **kw)
-
-
-# ---------------------------------------------------------------------------
-# 3. BOX FUNCTOR (Open, Top, Bottom, Mini variations)
-# ---------------------------------------------------------------------------
+        header_title = f"{name}: {len(items)}"
+        merged: dict[str, Any] = dict(kw)
+        merged.setdefault("header_topic", name)
+        return self(
+            *items,
+            title=header_title,
+            stat=lambda vec: f"{name}: {len(vec)}",
+            **merged,
+        )
 
 
 @portlink(functorial.MountableFunctor)
 class BoxPrintFunctor(PrintFunctor[dto.PanelDTO]):
+    """Mid-level structural functor for Box variations."""
+
     def __call__(
         self,
         *content: dto.CliSpec,
         box: Boxes = Boxes.OPEN,
-        **kw: Unpack[BoxlessPanelInput],
+        **kw: Unpack[dto.BoxInput],
     ) -> dto.PanelDTO:
         return self.host.panel(*content, box=box, **kw)
 
-    def top(
-        self, *content: dto.CliSpec, **kw: Unpack[BoxlessPanelInput]
+    def open(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
     ) -> dto.PanelDTO:
-        """Box with top border focus (Boxes.UP)."""
-        return self(*content, box=Boxes.UP, **kw)
-
-    def bottom(
-        self, *content: dto.CliSpec, **kw: Unpack[BoxlessPanelInput]
-    ) -> dto.PanelDTO:
-        """Box with bottom border focus (Boxes.DOWN)."""
-        return self(*content, box=Boxes.DOWN, **kw)
+        return self(*content, box=Boxes.OPEN, **kw)
 
     def round(
-        self, *content: dto.CliSpec, **kw: Unpack[BoxlessPanelInput]
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
     ) -> dto.PanelDTO:
-        """Box with rounded corners (Boxes.ROUND)."""
         return self(*content, box=Boxes.ROUND, **kw)
+
+    def corner(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO:
+        return self(*content, box=Boxes.CORNER, **kw)
+
+    def up(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO:
+        return self(*content, box=Boxes.UP, **kw)
+
+    def down(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO:
+        return self(*content, box=Boxes.DOWN, **kw)
 
     def mini(
         self,
         *content: dto.CliSpec,
         mode: Literal["up", "down", "both"] = "both",
-        **kw: Unpack[BoxlessPanelInput],
+        **kw: Unpack[dto.BoxInput],
     ) -> dto.PanelDTO:
-        """Minimalist box borders (up, down, or both)."""
         box_map: dict[str, Boxes] = {
             "up": Boxes.MINI_UP,
             "down": Boxes.MINI_DOWN,
@@ -167,79 +134,78 @@ class BoxPrintFunctor(PrintFunctor[dto.PanelDTO]):
         }
         return self(*content, box=box_map[mode], **kw)
 
+    def mini_up(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO:
+        return self(*content, box=Boxes.MINI_UP, **kw)
 
-# ---------------------------------------------------------------------------
-# 4. TABLE FUNCTOR (Direct Grid + Ergonomic Builders from _table.py)
-# ---------------------------------------------------------------------------
+    def mini_down(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO:
+        return self(*content, box=Boxes.MINI_DOWN, **kw)
 
 
 @portlink(functorial.MountableFunctor)
 class TablePrintFunctor(PrintFunctor[TableViewDTO]):
+    """Exposes all TableDtoProducer builders directly on `printer.table.*`."""
+
     def __call__(
         self, content: dto._Grid, /, **kw: Unpack[dto.TableInput]
     ) -> TableViewDTO:
         return self.host(self.host.dto.table(content, **kw))
 
-    def cols(
+    def matrix(
         self,
-        cols: dict[str, Sequence[Any]],
-        *,
-        corner: str = "",
-        title: str | None = None,
-        color: ColorArg = Color.AZURE,
+        matrix: Sequence[Sequence[dto.CliSpec]],
+        /,
+        **kw: Unpack[dto.TablePresetInput],
     ) -> TableViewDTO:
-        """Create and print a table from a dictionary of columns {col_name: values}."""
-        table_dto = TableViewDTO.from_cols(cols, corner=corner)
-        if title is not None:
-            table_dto.header.title = title
-        table_dto.color = Color(color)
-        return self.host(table_dto)
+        return self.host(self.host.dto.table.matrix(matrix, **kw))
 
     def rows(
         self,
-        rows: dict[str, dto.CliSpec | list[dto.CliSpec]],
-        *,
-        title: str | None = None,
-        color: ColorArg = Color.AZURE,
+        rows: Mapping[str, dto.CliSpec | Sequence[dto.CliSpec]],
+        /,
+        **kw: Unpack[dto.TablePresetInput],
     ) -> TableViewDTO:
-        """Create and print a table from a dictionary of rows {row_name: cells}."""
-        table_dto = TableViewDTO.from_rows(rows)
-        if title is not None:
-            table_dto.header.title = title
-        table_dto.color = Color(color)
-        return self.host(table_dto)
+        return self.host(self.host.dto.table.rows(rows, **kw))
+
+    def cols(
+        self,
+        cols: Mapping[str, Sequence[Any]],
+        /,
+        *,
+        corner: str = "",
+        **kw: Unpack[dto.TablePresetInput],
+    ) -> TableViewDTO:
+        return self.host(self.host.dto.table.cols(cols, corner=corner, **kw))
 
     def records(
         self,
-        records: Sequence[dict[str, Any]],
-        headers: list[str] | None = None,
+        records: Sequence[Mapping[str, Any]],
+        /,
         *,
-        title: str | None = None,
-        color: ColorArg = Color.AZURE,
+        headers: Sequence[str] | None = None,
+        **kw: Unpack[dto.TablePresetInput],
     ) -> TableViewDTO:
-        """Create and print a table from a list of row dicts."""
-        table_dto = TableViewDTO.from_records(records, headers=headers)
-        if title is not None:
-            table_dto.header.title = title
-        table_dto.color = Color(color)
-        return self.host(table_dto)
+        return self.host(
+            self.host.dto.table.records(records, headers=headers, **kw)
+        )
 
-    def matrix(
+    def kv(
         self,
-        matrix: list[list[dto.CliSpec]],
+        mapping: Mapping[str, Any],
+        /,
         *,
-        title: str | None = None,
-        color: ColorArg = Color.AZURE,
+        key_col: str = "Key",
+        val_col: str = "Value",
+        **kw: Unpack[dto.TablePresetInput],
     ) -> TableViewDTO:
-        """Create and print a table from a 2D list."""
-        table_dto = TableViewDTO.from_matrix(matrix, title=title)
-        table_dto.color = Color(color)
-        return self.host(table_dto)
-
-
-# ---------------------------------------------------------------------------
-# 5. HEADER & DIP FUNCTORS (Standalone Banner vs Titled Panel + Color Dip)
-# ---------------------------------------------------------------------------
+        return self.host(
+            self.host.dto.table.kv(
+                mapping, key_col=key_col, val_col=val_col, **kw
+            )
+        )
 
 
 @portlink(functorial.MountableFunctor)
@@ -248,7 +214,7 @@ class HeaderPrintFunctor(PrintFunctor[dto.PanelDTO]):
         self,
         title: str,
         *content: dto.CliSpec,
-        **kw: Unpack[UntitledPanelInput],
+        **kw: Unpack[dto.HeaderPresetInput],
     ) -> dto.PanelDTO:
         if not content:
             styled_title = self.host.colors(title, Color.WHITE)
@@ -264,7 +230,7 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
         text: str,
         *content: dto.CliSpec,
         color: ColorArg = Color.AZURE,
-        **kw: Unpack[ColoredHeaderInput],
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
         colored_head = self.host.colors(head, color)
         white_text = self.host.colors(text, Color.WHITE)
@@ -273,13 +239,12 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
             return self.host.panel(banner, color=color, **kw)
         return self.host.panel(*content, title=banner, color=color, **kw)
 
-    # LATER: make them below accessable by StackingCore
     def azure(
         self,
         head: str,
         text: str,
         *content: dto.CliSpec,
-        **kw: Unpack[ColoredHeaderInput],
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
         return self(head, text, *content, color=Color.AZURE, **kw)
 
@@ -288,7 +253,7 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
         head: str,
         text: str,
         *content: dto.CliSpec,
-        **kw: Unpack[ColoredHeaderInput],
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
         return self(head, text, *content, color=Color.GREEN, **kw)
 
@@ -297,7 +262,7 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
         head: str,
         text: str,
         *content: dto.CliSpec,
-        **kw: Unpack[ColoredHeaderInput],
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
         return self(head, text, *content, color=Color.YELLOW, **kw)
 
@@ -306,7 +271,7 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
         head: str,
         text: str,
         *content: dto.CliSpec,
-        **kw: Unpack[ColoredHeaderInput],
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
         return self(head, text, *content, color=Color.RED, **kw)
 
@@ -315,6 +280,6 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
         head: str,
         text: str,
         *content: dto.CliSpec,
-        **kw: Unpack[ColoredHeaderInput],
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
         return self(head, text, *content, color=Color.PURPLE, **kw)

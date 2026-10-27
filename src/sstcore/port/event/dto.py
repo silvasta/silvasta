@@ -1,13 +1,6 @@
 """
 Define the Event DTOs for Log and Print
 
-- CliDTO: CliRenderable snapshot with __cli__ to Printer
-- LogDTO: LogSerializable message with __log__ to Loguru
-
-Rendering Protocols with Runtime check
-- LogSerializable
-- CliRenderable
-
                               DependencyLevel.sstcore.port.event[1]
 """
 
@@ -219,14 +212,10 @@ class MarkdownInput(CliInput, _p.FrameInput, total=False):
 
 
 class LineDTO(CliDTO[_Vec], name="line"):
-    """Store Lines for Sequential unboxed Rendering"""
+    """Store Lines for Sequential unboxed Rendering."""
 
     header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
     stat: _Callable[[_Vec], str] | None = None
-    # LATER: check default?
-    # stat: _Callable[[_Vec], str] | None = lambda lines: (
-    #     f"Total Lines: {len(lines)}"
-    # )
 
 
 class LinePresetInput(CliInput, _p.HeaderFrameInput, total=False):
@@ -234,8 +223,6 @@ class LinePresetInput(CliInput, _p.HeaderFrameInput, total=False):
 
 
 class LineInput(CliInput, _p.HeaderInput, total=False):
-    """Line and Lines"""
-
     stat: _Callable[[_Vec], str]
 
 

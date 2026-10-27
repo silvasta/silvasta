@@ -13,20 +13,32 @@ __all__: list[str] = [
 ]
 
 
+from collections.abc import Callable, Sequence
 from enum import auto
 from string.templatelib import Template
-from typing import Any, TypedDict, Unpack
-from typing import Protocol as Protocol
+from typing import Any, Literal, Protocol, TypedDict, Unpack
 
-from rich.box import Box
-
-from .color import ColorBox, ColorId
+from ._types import _Stringable
+from .color import ColorArg, ColorBox, ColorId
 from .config import ProjectInformation
-from .event.dto import CliDTO, LineDTO, MarkdownDTO, PanelDTO
-from .event.factory import EventDtoFactory
+from .event import dto
+from .event._param import _Boxes
+from .event.dto import CliDTO, EventDTO
+from .event.factory import EventDtoFactory, TableDelivering
 from .solid import EnumMode
 
-# AI: ignore everything marked with # LATER: ...
+
+class PrintMode(EnumMode):
+    """Define the Execution Mode"""
+
+    RICH = auto()
+    DEBUG = auto()
+    PRINT = auto()
+    NULL = auto()
+
+    @classmethod
+    def default(cls) -> PrintMode:  # LATER: this on BaseEnum?
+        return cls.RICH
 
 
 class PrintBase(Protocol):
@@ -51,17 +63,174 @@ class PrintBase(Protocol):
     def in_mode(self, modus: PrintMode): ...
 
 
-class PrintMode(EnumMode):
-    """Define the Execution Mode"""
+class LinePrinting(Protocol):
+    def __call__(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.LineInput]
+    ) -> dto.LineDTO: ...
 
-    RICH = auto()
-    DEBUG = auto()
-    PRINT = auto()
-    NULL = auto()
+    def len(
+        self,
+        name: str,
+        *content: dto.CliSpec | Sequence[dto.CliSpec],
+        **kw: Unpack[dto.LinePresetInput],
+    ) -> dto.LineDTO: ...
 
-    @classmethod
-    def default(cls) -> PrintMode:  # LATER: this on BaseEnum?
-        return cls.RICH
+
+class BoxPrinting(Protocol):
+    def __call__(
+        self,
+        *content: dto.CliSpec,
+        box: _Boxes = _Boxes.OPEN,
+        **kw: Unpack[dto.BoxInput],
+    ) -> dto.PanelDTO: ...
+
+    def open(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+    def round(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+    def corner(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+    def up(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+    def down(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+    def mini(
+        self,
+        *content: dto.CliSpec,
+        mode: Literal["up", "down", "both"] = "both",
+        **kw: Unpack[dto.BoxInput],
+    ) -> dto.PanelDTO: ...
+    def mini_up(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+    def mini_down(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+    ) -> dto.PanelDTO: ...
+
+
+class HeaderPrinting(Protocol):
+    def __call__(
+        self,
+        title: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.HeaderPresetInput],
+    ) -> dto.PanelDTO: ...
+
+
+class DipPrinting(Protocol):
+    def __call__(
+        self,
+        head: str,
+        text: str,
+        *content: dto.CliSpec,
+        color: ColorArg = ...,
+        **kw: Unpack[dto.StatusInput],
+    ) -> dto.PanelDTO: ...
+
+    def azure(
+        self,
+        head: str,
+        text: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
+    ) -> dto.PanelDTO: ...
+    def green(
+        self,
+        head: str,
+        text: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
+    ) -> dto.PanelDTO: ...
+    def yellow(
+        self,
+        head: str,
+        text: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
+    ) -> dto.PanelDTO: ...
+    def red(
+        self,
+        head: str,
+        text: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
+    ) -> dto.PanelDTO: ...
+    def purple(
+        self,
+        head: str,
+        text: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
+    ) -> dto.PanelDTO: ...
+
+
+class PrintLayouts(Protocol):
+    @property
+    def lines(self) -> LinePrinting: ...
+    @property
+    def box(self) -> BoxPrinting: ...
+    @property
+    def table(self) -> TableDelivering: ...
+    @property
+    def header(self) -> HeaderPrinting: ...
+    @property
+    def dip(self) -> DipPrinting: ...
+
+    def panel(
+        self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]
+    ) -> dto.PanelDTO:
+        """Render Panel with full configuration."""
+
+    def md(
+        self, content: _Stringable, /, **kw: Unpack[dto.MarkdownInput]
+    ) -> dto.MarkdownDTO:
+        """Render Markdown."""
+
+    def title(
+        self,
+        title: str,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.HeaderPresetInput],
+    ) -> dto.PanelDTO:
+        """Single Slim Panel with Semantic Coloring"""
+
+    def success(
+        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+    ) -> dto.PanelDTO: ...
+
+    def warn(
+        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+    ) -> dto.PanelDTO: ...
+
+    def danger(
+        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+    ) -> dto.PanelDTO: ...
+
+    def special(
+        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+    ) -> dto.PanelDTO: ...
+
+
+class Print(PrintLayouts, PrintBase, Protocol):
+    """Define Minimal functionality for Optimal Workflow"""
+
+    @property
+    def dto(self) -> EventDtoFactory:
+        """DtoFactory with Producer for all DTOs"""
+
+    @property
+    def render(self) -> Callable[[EventDTO], Any]:
+        """DtoRenderHub with Visualizer for all DTOs"""
+
+
+# LATER:
+class TuiPrinter(Print):
+    """Future Development..."""
 
 
 class Printing(Protocol):
@@ -92,71 +261,3 @@ class PrintInput(StdPrintInput, SstPrintInput):
 # LATER:
 class TemplatePrint(Protocol):  # TASK: TemplateEngine!
     def __call__(self, target: Template, /, **kwargs) -> CliDTO: ...
-
-
-# TODO: resolve
-class TitleInput(TypedDict, total=False):
-    title: str | None
-    text_color: ColorId
-    title_color: ColorId
-
-
-# TODO: resolve
-class HeaderInput(TitleInput, total=False):
-    color: ColorId
-
-
-# TODO: resolve
-class PanelInput(HeaderInput, total=False):
-    header: str | None
-
-
-# AI: this must show the most important methods and inputs
-class PrintLayouts(Protocol):
-    def lines(self, *lines, **kwargs: Unpack[PanelInput]) -> LineDTO:
-        """Render Single, Zero or Multiple Lines from Iterable"""
-
-    def md(self, text: str, *args, header: int = 0, **kwargs) -> MarkdownDTO:
-        """Render Markdown"""
-
-    def panel(self, content: Any, **kwargs) -> PanelDTO:
-        """Render Multiple Lines from Iterable"""
-
-    def box(self, content: Any, frame: str = "", box: Box = ...) -> PanelDTO:
-        """Check Difference to Panel"""
-
-    def dip(self, head: str, text: str, color: str) -> PanelDTO:
-        """Special Title with Nose of Text in Frame Color"""
-
-    def header(self, content: Any, **kwargs: Unpack[HeaderInput]) -> PanelDTO:
-        """Define Single Slim Panel"""
-
-    #  LINE: -- Below with StackingCore? SemanticColorNames -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    def title(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
-        """Single Slim Panel with Semantic Coloring"""
-
-    def success(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
-        """Single Slim Panel with Semantic Coloring"""
-
-    def danger(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
-        """Single Slim Panel with Semantic Coloring"""
-
-    def warn(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
-        """Single Slim Panel with Semantic Coloring"""
-
-    def special(self, text: Any, **kwargs: Unpack[TitleInput]) -> PanelDTO:
-        """Single Slim Panel with Semantic Coloring"""
-
-
-# IMPORTANT: this must hold, used in System and many other annotations for printer
-class Print(PrintLayouts, PrintBase):
-    """Define Minimal functionality for Optimal Workflow"""
-
-    dto: EventDtoFactory
-    render: EventDtoFactory
-
-
-# LATER:
-class TuiPrinter(Print):
-    """Future Development..."""

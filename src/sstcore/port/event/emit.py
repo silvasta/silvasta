@@ -17,6 +17,7 @@ from typing import Any as _Any
 from typing import Protocol as _Protocol
 
 from ._core import EventBus as _EventBus
+from .factory import EventDtoFactory as _EventDtoFactory
 from .name import EventName as _EventName
 
 
@@ -27,8 +28,8 @@ class Emit(_Protocol):
     def __call__(self) -> Emitting: ...
 
     bus: _EventBus
+    dto: _EventDtoFactory
     log: LogEmit
-    # IDEA: mount the EventDtoFactory! (latest in implementation)
 
     def make(self, **defaults) -> LogEmit: ...
     def bind(self, event: _EventName, sender: str, **kwargs) -> BoundEmit: ...

@@ -9,13 +9,13 @@ Create Global RenderHub that visualizes all EventDTOs
 
 __all__: list[str] = [
     "DtoRenderHub",
-    #
-    "LogDtoProducer",
-    "CliDtoProducer",
-    "PanelDtoProducer",
-    "MarkdownDtoProducer",
-    "LineDtoProducer",
-    "TableDtoProducer",
+    "DtoVisualizer",
+    "LogDtoVisualizer",
+    "CliDtoVisualizer",
+    "PanelDtoVisualizer",
+    "MarkdownDtoVisualizer",
+    "LineDtoVisualizer",
+    "TableDtoVisualizer",
 ]
 
 
@@ -35,9 +35,6 @@ from ._visualize import (
 )
 
 
-# AI_TASK: maybe protocol for this one as well?
-# - not bad for completenes but unlikely needed often (EventDtoFactory needed multiple times)
-# - if it can be avoided then drop the idea
 class DtoRenderHub:
     """Mount all DTO Visualizers and provide unified dispatch."""
 

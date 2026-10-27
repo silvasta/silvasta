@@ -43,9 +43,6 @@ class DtoFactory:
     log = _FunctorField(LogDtoProducer)
     cli = _FunctorField(CliDtoProducer)
     panel = _FunctorField(PanelDtoProducer)
-    # AI: the below special panels are undesired on this factory
-    # box = FunctorField(BoxDtoProducer)
-    # header = FunctorField(HeaderDtoProducer)
     md = _FunctorField(MarkdownDtoProducer)
     line = _FunctorField(LineDtoProducer)
     table = _FunctorField(TableDtoProducer)

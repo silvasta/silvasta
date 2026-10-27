@@ -11,7 +11,6 @@ __all__: list[str] = [
 from collections.abc import Mapping, Sequence
 from typing import Any, Self, Unpack
 
-from ....port.event._param import HeaderSpec
 from ....port.event.dto import CliSpec, TableDTO, TablePresetInput
 
 
@@ -30,12 +29,14 @@ class TableViewDTO(TableDTO, name="table"):
     @classmethod
     def from_rows(
         cls,
-        rows: dict[str, CliSpec | list[CliSpec] | tuple[CliSpec]],
+        rows: Mapping[str, CliSpec | Sequence[CliSpec]],
         **kwargs: Unpack[TablePresetInput],
     ) -> Self:
         return cls.create(
             content=tuple(
-                tuple(v) if isinstance(v, (list, tuple)) else (v,)
+                tuple(v)
+                if isinstance(v, Sequence) and not isinstance(v, (str, bytes))
+                else (v,)
                 for v in rows.values()
             ),
             row_names=tuple(rows.keys()),
@@ -45,15 +46,13 @@ class TableViewDTO(TableDTO, name="table"):
     @classmethod
     def from_cols(
         cls,
-        cols: dict[str, Sequence[Any]],
+        cols: Mapping[str, Sequence[Any]],
         *,
         corner: str = "",
         **kwargs: Unpack[TablePresetInput],
     ) -> Self:
-        """Transform dict of {col_name: column_values} into a cls (transposed)."""
-
+        """Transform mapping of {col_name: column_values} into a transposed table."""
         return cls.create(
-            header=HeaderSpec(title="Table From Cols"),
             content=tuple(
                 tuple(val for val in row)
                 for row in zip(*cols.values(), strict=True)
@@ -66,11 +65,11 @@ class TableViewDTO(TableDTO, name="table"):
     @classmethod
     def from_records(
         cls,
-        records: Sequence[dict[str, Any]],
-        headers: list[str] | None = None,
+        records: Sequence[Mapping[str, Any]],
+        headers: Sequence[str] | None = None,
         **kwargs: Unpack[TablePresetInput],
     ) -> Self:
-        """Transform list of row dicts [{'ColA': 1, 'ColB': 2}] into a cls."""
+        """Transform sequence of row dicts [{'ColA': 1, 'ColB': 2}] into a table."""
         if not records:
             return cls.create(((),), **kwargs)
 
@@ -80,7 +79,6 @@ class TableViewDTO(TableDTO, name="table"):
             else tuple(dict.fromkeys(k for row in records for k in row.keys()))
         )
         return cls.create(
-            header=HeaderSpec(title="Table from Records"),
             content=tuple(
                 tuple(str(row.get(h, "")) for h in resolved_headers)
                 for row in records
