@@ -14,7 +14,7 @@ __all__: list[str] = [
 from typing import Any
 
 from ..brick.color.box import Colors
-from ..port.represent import CliRenderable
+from ..port.event.dto import CliSpec
 from ._base import SstError
 
 c = Colors()
@@ -39,9 +39,7 @@ class PropertyNotInitializedError(SstError):
         msg = f"Missing '{attribute_name}' for property '{property_name}'"
         super().__init__(msg)
 
-    def _modify_scroll(
-        self, lines: list[CliRenderable]
-    ) -> list[CliRenderable]:
+    def _modify_scroll(self, lines: list[CliSpec]) -> list[CliSpec]:
         """Inject property and attribute details into Error Panel"""
 
         property: str = c.y(self.property)
@@ -61,9 +59,7 @@ class NotImplementedDispatchError(SstError, NotImplementedError):
         msg = f"Missing dispatch target for {type(first).__name__}"
         super().__init__(msg, *(first, *args), **kwargs)
 
-    def _modify_scroll(
-        self, lines: list[CliRenderable]
-    ) -> list[CliRenderable]:
+    def _modify_scroll(self, lines: list[CliSpec]) -> list[CliSpec]:
         """Inject dispatch target type and value into Error Panel"""
 
         missing: str = c.red("Missing match for Target")

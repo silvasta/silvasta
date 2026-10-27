@@ -31,11 +31,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from ....brick.field import PolicyField
+from ....brick.field import StrategyField
 from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
-from ....forge.func._tor import FunctorInput
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
 from . import _ensure, _increment
@@ -53,39 +52,36 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
             return target
 
         case SyncMode.INCREMENT:
-            return _increment.unique_candidate(path=target, ensure_parent=True)
+            return _increment.unique_candidate(target, ensure_parent=True)
 
         case SyncMode.IGNORE:
             raise PathGuardError(PathGuardReason.SYNC, target=target)
+    raise
 
 
 #  LINE: -- Functors -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class TransferStrategy(
-    SafeFunctor[[Path, Path], Path],
-    data=FunctorInput,  # TODO: handle by Base!
-):
+class PathStrategy[**Args, Result](SafeFunctor[Args, Result]):
+    """Intermediate Base"""
+
+    def _format_name(self, name: str = "") -> str:
+        return f"PathGuard::{name or super()._format_name()}"
+
+
+class TransferStrategy(PathStrategy[[Path, Path], Path]):
     """Execute Transfer Operation in Safe Environment"""
-
-    policy = PolicyField(ErrorPolicy.RE_RAISE)
-
-    def __init__(self, **kwargs):
-        kwargs.setdefault("error_policy", ErrorPolicy.RE_RAISE)
-        super().__init__(**kwargs)
 
     def synced(self, source: Path, target: Path, mode: SyncMode) -> Path:
         """Apply SyncMode and Transfer Source to confirmed Target"""
         return self(source, check_sync_mode(target, mode))
 
 
-class DeleteStrategy(
-    SafeFunctor[[Path], bool],
-    data=FunctorInput,  # TODO: handle by Base!
-):
+class DeleteStrategy(PathStrategy[[Path], bool]):
     """Execute Delete Operation in Safe Environment"""
 
-    def on_error(self, error: Exception, target: PathArg) -> bool:
+    @StrategyField
+    def _catch(self, error: Exception, target: PathArg) -> bool:
         # LATER: add some nice views! maybe to intermediate PathStrategy?
         logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
         return False
@@ -156,20 +152,25 @@ def _trash(path: Path):
 
 
 Symlink = TransferStrategy(
-    name="PathGuard::Simlink",
+    name="Simlink",
     call=_symlink,
+    policy=ErrorPolicy.RE_RAISE,
 )
 Copy = TransferStrategy(
-    name="PathGuard::Copy",
+    name="Copy",
     call=_copy,
+    policy=ErrorPolicy.RE_RAISE,
 )
 Rotate: TransferStrategy = TransferStrategy(
-    name="PathGuard::Rotate", call=_rotate
+    name="Rotate",
+    call=_rotate,
+    policy=ErrorPolicy.RE_RAISE,
 )
 Hardlink = TransferStrategy(
-    name="PathGuard::Hardlink",
+    name="Hardlink",
     call=_hardlink,
     catch=_handle_hardlink,
+    policy=ErrorPolicy.RE_RAISE,
 )
 
 
@@ -177,17 +178,20 @@ Hardlink = TransferStrategy(
 
 
 Remove = DeleteStrategy(
-    name="PathGuard::Remove",
+    name="Remove",
     call=_remove,
+    policy=ErrorPolicy.LOG_AND_CONTINUE,
 )
 Trash = DeleteStrategy(
-    name="PathGuard::Trash",
+    name="Trash",
     call=_trash,
+    policy=ErrorPolicy.LOG_AND_CONTINUE,
 )
 
 
 #  LINE: -- Assemble -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+# TASK: collapse this even more, castpath on functor, functor on PahtGuard
 
 #  INFO: -- transfer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

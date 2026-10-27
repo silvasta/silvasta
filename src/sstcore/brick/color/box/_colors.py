@@ -24,9 +24,6 @@ class Colors:
     def __init__(self, manager: ColorHub | None = None) -> None:
         self._hub: ColorHub = manager or ColorManager.boot()
 
-    def debug(self):
-        self._hub.debug()  # ty: ignore[unresolved-attribute]
-
     @property
     def hub(self) -> ColorHub:
         return self._hub

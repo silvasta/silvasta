@@ -18,13 +18,14 @@ from pathlib import Path
 
 from loguru import logger
 
-from ...brick.view import Cli, Str, view
+from ...forge.view import view
+from ...forge.view.catalog import Cli, Str
 from ..path.guard import PathGuard
 from ..print import printer
 from ._file import FileScanner, ScanMode
 
 
-@view(cli=Cli.MARKDOWN, str=Str.NAME)
+@view(Cli.MARKDOWN, Str.NAME)
 @dataclass
 class SummaryFile:
     output_file: Path
@@ -127,7 +128,9 @@ class SummaryFileMachine(StrEnum):
         try:
             return cls(output_file.suffix.strip("."))
         except ValueError:
-            printer.danger(["Unknown file type of output_file:", output_file])
+            printer.danger(
+                f"Unknown file type of output_file: {output_file}"
+            )  # LATER: tstring!
             logger.warning(f"Unknown file type of output_file: {output_file}")
             return SummaryFileMachine.TXT
 

@@ -17,8 +17,10 @@ __all__: list[str] = [
 
 from pathlib import Path
 
+from ....brick import reflect
 from ....brick.color import colorize
-from ....brick.labor import invoke, reflect, scan, transform
+from ....brick.format import norm
+from ....brick.reflect import scan
 from ....port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
 
 
@@ -56,13 +58,12 @@ class PanelMixin:
         # def _panel_data(self) -> str | list[str]:
         # TASK: new concept for that
         """Provide subhook for override custom panel data"""
-        return transform.dict_to_list(scan.data(self), sep=": ")
+        return norm.dict_to_list(scan.data(self), sep=": ")
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
             self._panel_data,
-            title=invoke.rich(self),
-            frame="cyan",  # NEXT: color not hardcoded!!
+            # TODO:
         )
 
 
@@ -71,9 +72,8 @@ class SlimPanelMixin:
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
-            colorize.modules(self),
-            title=invoke.rich(self),
-            frame="cyan",  # NEXT: color not hardcoded!!
+            tuple(colorize.modules(self)),
+            # TODO:
         )
 
 
@@ -82,10 +82,10 @@ class FullPanelMixin:
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
-            # FIX: Renderable
-            "hwllo,",  # colorize.dict_table(target=vars(self), show_type=True),
-            title=invoke.rich(self),
-            frame="cyan",  # NEXT: color not hardcoded!!
+            tuple("OutOfOrder..."),
+            # tuple(colorize.dict_table(target=vars(self), show_type=True)),
+            # title=invoke.rich(self),
+            # TODO:
         )
 
 
@@ -98,8 +98,7 @@ class PathPanelMixin:
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(
-            # FIX: Renderable
-            "hello",  # colorize.path_exists_table(self._panel_paths),
-            title=invoke.rich(self),
-            frame="cyan",  # NEXT: color not hardcoded!!
+            tuple(colorize.path(p) for p in self._panel_paths),
+            # title=invoke.rich(self),
+            # frame="cyan",  # NEXT: color not hardcoded!!
         )

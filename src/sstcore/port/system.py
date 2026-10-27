@@ -4,9 +4,9 @@ Define the Shape of the System
 - Central Layer of the Core Orchestration
 
 Combine Boot, Interface and Distribution:
-- Bus: Handler and Emitter
+- Bus: Handler and Emit
 - Config: Settings and Paths
-- Printer: Nice UX and DX
+- Print: Nice UX and DX
 
 System: The sst Director
                                    DependencyLevel.sstcore.port[10]
@@ -15,10 +15,23 @@ System: The sst Director
 __all__: list[str] = [
     "SstSystem",
     "CliSystem",
-    # Loader
     "SystemLoader",
+    "SystemLoading",
+    #
+    "CliSystemInput",
+    "SystemLoaderInput",
+    "SystemBootParam",
+    "CliSystemSpec",
+    "CliSystemTools",
+    "SystemBootSpec",
+    # config
     "ConfigLoader",
+    "ConfigInput",
+    "ConfigSpec",
+    #
     "BusLoader",
+    "BusInput",
+    "BusSpec",
 ]
 
 from dataclasses import asdict, dataclass, fields
@@ -27,8 +40,8 @@ from typing import Protocol, Self, TypedDict, Unpack
 
 from .config import Config, HomeSetup, Paths, Settings
 from .event import BusRegistration, EventBus
-from .event.emit import Emitter
-from .printer import Printer
+from .event.emit import Emit
+from .printer import Print
 
 
 class SstSystem(Protocol):
@@ -43,13 +56,13 @@ class SstSystem(Protocol):
         """- Boot without Input"""
 
 
-class CliSystem[C: Config, E: Emitter](SstSystem, Protocol):
+class CliSystem[C: Config, E: Emit](SstSystem, Protocol):
     """The SstSystem provides ..."""
 
     @property
     def config(self) -> C: ...
     @property
-    def printer(self) -> Printer: ...
+    def printer(self) -> Print: ...
     @property
     def emitter(self) -> E: ...
 
@@ -89,7 +102,7 @@ class CliSystemInput(TypedDict, total=False):
 class SystemLoaderInput(TypedDict, total=False):
     config_loader: ConfigLoader
     bus_loader: BusLoader
-    printer: Printer
+    printer: Print
 
 
 class SystemBootParam(SystemLoaderInput, CliSystemInput):
@@ -108,12 +121,20 @@ class CliSystemSpec:
     settings: Path | None = None
     home: HomeSetup = HomeSetup.PROJECT
 
+    @property
+    def config_input(self) -> ConfigInput:
+        """Map CLI arguments to ConfigInput keys."""
+        return {
+            "setting_file": self.settings,
+            "home_setup": self.home,
+        }
+
 
 @dataclass
 class CliSystemTools:
     config_loader: ConfigLoader | None = None
     bus_loader: BusLoader | None = None
-    printer: Printer | None = None
+    printer: Print | None = None
 
 
 @dataclass

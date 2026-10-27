@@ -12,37 +12,33 @@ __all__: list[str] = [
     "DictVault",
 ]
 
-# FIX: Vault BROKEN!!!
-# FIX: Vault BROKEN!!!
-
-from collections.abc import Iterator, Mapping, Sequence
-from typing import Any, cast
+from collections.abc import Hashable, Iterator, Mapping, Sequence
+from typing import Any
 
 from ...port.link import portlink
 from ...port.register import DictRegister, registry_types
 from ._base import BaseVault
 
 
-class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
+class Mapped[Item, K: Hashable](BaseVault[Item, dict[K, Item], K]):
     """Implement the Contract"""
 
-    def _coerce_key(self, key: str) -> K:  # CHECK: this is a solution?
-        return cast(K, key)
+    def _coerce_key(self, key: K) -> K:
+        return key
 
     def _empty(self) -> dict[K, Item]:
         return {}
 
     def _as_vault(self, data: Any) -> dict[K, Item]:
-        # NEXT: remove cast?
         if data is None:
             return {}
         if isinstance(data, Mapping):
-            return {cast(K, k): self._normalize(v) for k, v in data.items()}
+            return {k: self._normalize(v) for k, v in data.items()}
         if isinstance(data, Sequence) and not isinstance(data, (str, bytes)):
             items: list[Item] = [self._normalize(x) for x in data]
-            return {cast(K, self._item_id(item)): item for item in items}
+            return {self._item_id(item): item for item in items}
         item: Item = self._normalize(data)
-        return {cast(K, self._item_id(item)): item}
+        return {self._item_id(item): item}
 
     def _merge(
         self, vault: dict[K, Item], incoming: dict[K, Item]
@@ -72,22 +68,21 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
         key: K = list(self.vault)[self._normalize_index(idx)]
         self.vault[key] = item
 
-    def _key_item(self, key: str) -> Item:
-        k: K = self._coerce_key(key)
-        if k not in self.vault:
+    def _key_item(self, key) -> Item:
+        if (k := self._coerce_key(key)) not in self.vault:
             raise KeyError(key)
         return self.vault[k]
 
-    def _key_put(self, key: str, item: Item) -> None:
+    def _key_put(self, key, item: Item) -> None:
         self.vault[self._coerce_key(key)] = item
 
     def _box_index(self, idx: int) -> dict[K, Item]:
         key: K = list(self.vault)[self._normalize_index(idx)]
         return {key: self.vault[key]}
 
-    def _box_key(self, key: str) -> dict[K, Item]:
+    def _box_key(self, key: Any) -> dict[K, Item]:
         k: K = self._coerce_key(key)
-        return {k: self.vault[k]}
+        return {k: self.vault[k]} if k in self.vault else {}
 
     def _slice(self, s: slice) -> dict[K, Item]:
         return {k: self.vault[k] for k in list(self.vault)[s]}
@@ -101,5 +96,5 @@ class Mapped[Item, K](BaseVault[Item, dict[K, Item]]):
         return {k: v for k, v in self.vault.items() if fn(v)}
 
 
-@portlink(DictRegister)  # ty:ignore
-class DictVault[Item, K](Mapped[Item, K]): ...
+@portlink(DictRegister)
+class DictVault[Item, K: Hashable](Mapped[Item, K]): ...

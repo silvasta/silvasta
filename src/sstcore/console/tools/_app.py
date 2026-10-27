@@ -9,6 +9,7 @@ from typing import Annotated
 
 from typer import Context, Option
 
+from ...data.cache import DiskScanCache
 from ...port.config import Config, Paths
 from ...port.event.dto import LogDTO
 from ...port.filter import FilterArgs
@@ -17,7 +18,6 @@ from ...util.filter import ProjectFilter
 from ...util.path import any_root
 from ...util.print import printer
 from ...util.scan import SummaryFileMachine
-from ...util.write._engine import StubFileMachine
 from .. import _args as args
 from .._engine import SafeTyper
 from ..select import TreeSelectorApp
@@ -26,14 +26,17 @@ from ._monitor import log_monitor
 from ._scanner import folder_scanner
 from ._writer import stub_typer
 
-app = SafeTyper(name="tools", help="Basic Equipment for Development")
+app = SafeTyper(
+    name="tools",
+    help="Basic Equipment for Development",
+)
 
 
 @app.command("writer")
 def launch_stub_engine(
     ctx: Context,
     _output_file: args.OutputFile = None,
-    _file_type: StubFileMachine = StubFileMachine.TYPE,
+    # _file_type: StubFileMachine = StubFileMachine.TYPE,
     _reset: args.CleanState = False,
     _select: bool = False,
 ):
@@ -56,24 +59,33 @@ def launch_folder_scanner(
     reset: args.CleanState = False,
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
     filter_box: _FilterArg = FilterArgs.PROJECT,
-    # scan_mode: ScanMode = ScanMode.Zero,
+    include: args.Include = None,
+    exclude: args.Exclude = None,
+    hidden: args.Hidden = False,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
     system: System = ctx.obj["system"]
     paths: Paths = system.config.paths
+    scan_root: Path = scan_root or any_root()
+    cache_dir: Path = paths.scanner_cache_file(scan_root).parent
+
+    cache = DiskScanCache(cache_dir, scan_root, system.printer)
+
     folder_scanner(
-        scan_root=(root := scan_root or any_root()),
+        scan_root=scan_root,
         output_file=output_file or paths.summary_file(suffix=file_type),
-        cache_file=paths.scanner_cache_file(root),
+        cache=cache,
+        preset=filter_box.name.lower(),
         cache_reset=reset,
         sort=sort,
-        local_printer=system.printer,
-        filter=ProjectFilter.from_args(
-            filter_box(
-                # LATER: include/exclude
+        printer=system.printer,
+        filter=ProjectFilter.clone(
+            filter_box.build(
+                include=include,
+                exclude=exclude,
+                allow_hidden=hidden,
             )
         ),
-        # scan_mode=scan_mode,
     )
 
 
@@ -118,7 +130,7 @@ def config_details_and_write(ctx: Context, write_config: args.Write = False):
 @app.command("print")
 def print_file(path: Path):
     """Print Prompt, Response or any Markdown File in Rich style"""
-    printer.title(path.name)
+    printer.header(path.name)
     match path.suffix:
         case ".json":
             printer(path.read_text())

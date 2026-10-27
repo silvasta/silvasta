@@ -11,16 +11,16 @@ from typing import Unpack
 import typer
 from loguru import logger
 
-from ..error.catch import ErrorRegistry
+from ..error.catch import ErrorHandler, ErrorRegistry
 from ..forge.view import view
-from ..port.system import SstSystem, SystemCliArgs
+from ..port.system import CliSystem, SystemLoaderInput
 from ..system.boot import System, SystemLoader, sst_system_loader
 from ..system.config import HomeSetup
 from . import _args as args
 from .cli import _scroll as scroll
 
 
-@view.safe_typer  # ty:ignore
+@view.safe_typer
 class SafeTyper(typer.Typer):
     """
     Lead the CLI execution and distribute the booted System
@@ -34,7 +34,6 @@ class SafeTyper(typer.Typer):
     """
 
     system: System
-    errors: ErrorRegistry
 
     def __init__(
         self,
@@ -51,6 +50,12 @@ class SafeTyper(typer.Typer):
         self._error_registry: ErrorRegistry | None = error_registry
 
         self._attach_internal_callback()
+
+    @property
+    def errors(self) -> ErrorRegistry:
+        if self._error_registry is None:
+            self._error_registry = ErrorRegistry()
+        return self._error_registry
 
     def _attach_internal_callback(self):
         """Dispatch callback for Main or Subapp"""
@@ -75,29 +80,28 @@ class SafeTyper(typer.Typer):
             else:
                 self._run_sub_callback(ctx)
 
-    # AI: Input spectrum must be No DTO!
     def _run_main_callback(
-        self, ctx: typer.Context, **cli_args: Unpack[SystemCliArgs]
+        self, ctx: typer.Context, **cli_args: Unpack[SystemLoaderInput]
     ):
         """Setup Config and Logging and show Status"""
 
-        self.errors: ErrorRegistry = self._error_registry or ErrorRegistry()
-
         loader: SystemLoader = self._system_loader or sst_system_loader()
-        self.system: SstSystem = loader(**cli_args)
+        self.system: CliSystem = loader(**cli_args)
         self._update_system_context(ctx)
 
-        # LATER: update input scroll prints
-        # if not quiet:  # TODO: send system! (emit!)
-        #     scroll.safe_typer.intro(ctx.info_name)  # FIX: info_name
-        #     # TASK: split quiet: scroll prints, subapps, general, ...
+        if self.system.config.defaults.shield_typer:
+            self.errors.use_default_shield()
+
+        # LATER: split quiet: scroll prints, subapps, general, ...
+        # if not quiet:
+        #     scroll.safe_typer.intro(ctx.info_name)
         #     scroll.safe_typer.setup(self.system.config, loader)
 
     def _update_system_context(
-        self, ctx: typer.Context, system: SstSystem | None = None
+        self, ctx: typer.Context, system: CliSystem | None = None
     ) -> None:
         ctx.obj = ctx.obj or {}
-        system: SstSystem = system or self.system
+        system: CliSystem = system or self.system
         system_context: dict = {
             "system": system,
             "config": system.config,
@@ -109,12 +113,11 @@ class SafeTyper(typer.Typer):
 
     def _run_sub_callback(self, ctx: typer.Context):
         """Print Nice subapp title"""
-        # LATER: what about Error Handler in subapps?
         scroll.safe_typer.sub_callback(ctx.info_name or "subapp")
 
     def print_setup_status(self, show_all_exceptions=False):
         """Print summary of status after assembly"""
-        scroll.safe_typer.status(self, self.errors.all, show_all_exceptions)
+        scroll.safe_typer.status(self, self.errors, show_all_exceptions)
 
     def __call__(self, *args, **kwargs):
         """Run Typer app as usual but intercept critical Errors"""
@@ -122,10 +125,10 @@ class SafeTyper(typer.Typer):
             return super().__call__(*args, **kwargs)
 
         except Exception as error:
-            if handler := self.errors.get(exception_type=type(error)):
-                handler.execute_safe(error)  # -> NoReturn!
-                # LATER: check __mro__ for derived exceptions!
+            if error in self.errors:
+                handler: ErrorHandler = self.errors[error]
+                handler(error)
+                sys.exit(4)  # SafeFunctor handled it, still -> exit
 
-            # Fallback for unhandled structural issues
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)

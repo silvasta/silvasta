@@ -5,19 +5,19 @@ Construct Components, Bases and MetaMixins
 
 """
 
-from typing import Any
-
 __all__: list[str] = [
     "ClsViewBase",
     "ClsViewData",
 ]
 
 from collections.abc import Callable
+from typing import Any
 
 from ...brick.call import just_return
 from ...brick.color.box import Colors
 from ...brick.reflect import clsname
 from ...port.color import Color, ColorId
+from ...port.event._param import FrameSpec
 from ...port.event.dto import CliDTO, LogDTO, PanelDTO
 from ...port.link import portlink
 from ...port.represent import CliDtoCreator, ClsRendering, SstFullView
@@ -31,19 +31,17 @@ class ClsViewBase(SstMeta):
     """Provide all Views for Classes"""
 
     toolkit: Callable[[], list[str]]
-    _data: ClsViewData
+    _data: ClsViewData  # ty:ignore # FIX: how to narrow? (without type mounting!!!)
 
     def __new__(
-        mcs,
+        mcls,
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
         data: ClsViewData,
     ):
-        cls = super().__new__(mcs, name, bases, namespace, data)
-
+        cls = super().__new__(mcls, name, bases, namespace, data)
         cls._data = data
-
         return cls
 
     def __cli__(cls) -> CliDTO:  # noqa:N805
@@ -71,7 +69,7 @@ class ClsViewBase(SstMeta):
 class ClsViewData(SstMetaData):
     """Base DTO for Class-Level Views."""
 
-    # IMPORTANT: improve defaults!
+    # TODO: improve defaults!
 
     name: ClsRendering
     rich: ClsRendering
@@ -103,7 +101,7 @@ class ClsViewData(SstMetaData):
             if isinstance(cli, CliDtoCreator)
             else self._default_cli_loader(content=cli)
         )
-        super().__init__(color)  # TODO: here or at beginning?
+        super().__init__(color)  # CHECK: here or at beginning?
 
     def _default_name(self, cls) -> str:
         return clsname(cls)
@@ -116,9 +114,9 @@ class ClsViewData(SstMetaData):
 
         def _default_cli(cls) -> CliDTO:
             return PanelDTO(
-                content=content or cls.toolkit(),  # FIX:
-                title=cls.__rich__(),
-                frame=Color.resolve(self.color),
+                content=tuple(content or cls.toolkit()),
+                frame=FrameSpec(topic=cls.__rich__()),
+                color=self.color,
             )
 
         return _default_cli

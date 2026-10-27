@@ -2,13 +2,15 @@
 FilterSet: Core Engine as Base for Specifications
 
 - Prepare Cascade of Filters
-                                                 DependencyLevel[1]
+
+                             DependencyLevel.sstcore.util.filter[1]
 """
 
 __all__: list[str] = [
     "FilterSet",
 ]
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, overload
@@ -29,22 +31,33 @@ class FilterSet[SetType: str | Path | int, TargetT: Any](FilterData[SetType]):
     def __call__(self, target: list[TargetT]) -> list[TargetT]: ...
     @overload
     def __call__(self, target: set[TargetT]) -> set[TargetT]: ...
+    @overload  # TODO: Check Iterator/Iterable
+    def __call__(self, target: Iterable[TargetT]) -> Iterable[TargetT]: ...
 
     def __call__(
-        self, target: TargetT | list[TargetT]
-    ) -> bool | list[TargetT]:
+        self, target: TargetT | Iterable[TargetT]
+    ) -> bool | Iterable[TargetT]:
         """Dispatch to single item (bool) or list filtering"""
-        if isinstance(target, (list, set)):
-            return self._fulfill_filter(target)
-        return self._fulfill(target)
+        match target:
+            case list():
+                return list(self._fulfill_filter(target))
+            case set():
+                return set(self._fulfill_filter(target))
+            case Iterable() if not isinstance(target, (str, bytes, Path)):
+                return self._fulfill_filter(target)
+            case _:
+                return self._fulfill(target) != self.return_opposite  # ty:ignore FIX:
 
     def _fulfill(self, target: TargetT) -> bool:
         """Override for custom validation"""
         return self.fulfills_trio({target})
 
-    def _fulfill_filter(self, target: list) -> list[TargetT]:
-        """Provide 'hit' or 'missing' items depending on flag"""
-        return [item for item in target if self(item) != self.return_opposite]
+    def _fulfill_filter(self, target: Iterable[TargetT]) -> Iterable[TargetT]:
+        # TODO: Check Iterator/Iterable
+        """Provide 'hits' or 'missing' items depending on flag"""
+        for item in target:
+            if self._fulfill(item) != self.return_opposite:
+                yield item
 
     def fulfills_exclude(self, target_set: set[SetType]) -> bool:
         if self.exclude:

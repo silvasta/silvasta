@@ -1,7 +1,7 @@
 """
 Provide Tools for FileS ystem Operations
 
-                                                       DependencyLevel[0]
+                                    DependencyLevel.sstcore.data[0]
 """
 
 __all__: list[str] = [
@@ -13,14 +13,23 @@ __all__: list[str] = [
     "FileScanMixin",
     "FileSyncMixin",
     "SstFileRegistry",
-    #
-    "RegistryBuilder",
 ]
 
+# TASK: ListRegister/Vault changed heavily
+# - adapt to new setup and methods
+# - think about wiring with pydantic
+# - Composition: where, how, Builder?
 
-from .____compose import RegistryBuilder, SstFileRegistry
 from ._base import SstFiles
 from ._file import SstFile
-from ._query import QueryRegisterMixin
+from ._query import FileQueryRegistry
 from ._scan import FileScanMixin
 from ._sync import FileSyncMixin
+
+
+class SstFileRegistry(
+    FileSyncMixin,
+    FileScanMixin,
+    FileQueryRegistry,
+    SstFiles,
+): ...

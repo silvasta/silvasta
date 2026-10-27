@@ -1,13 +1,6 @@
 """
 Define the Event DTOs for Log and Print
 
-- CliDTO: CliRenderable snapshot with __cli__ to Printer
-- LogDTO: LogSerializable message with __log__ to Loguru
-
-Rendering Protocols with Runtime check
-- LogSerializable
-- CliRenderable
-
                               DependencyLevel.sstcore.port.event[1]
 """
 
@@ -21,17 +14,23 @@ __all__: list[str] = [
     "LogDTO",
     "LogInput",
     "CliDTO",
+    "CliInfoInput",
     "CliInput",
     "CliSpec",
     # cli extensions
     "PanelDTO",
     "PanelInput",
+    "BoxInput",
+    "HeaderPresetInput",
+    "StatusInput",
     "MarkdownDTO",
     "MarkdownInput",
     "LineDTO",
     "LineInput",
+    "LinePresetInput",
     "TableDTO",
     "TableInput",
+    "TablePresetInput",
     "MergedDtoInputs",
 ]
 
@@ -44,9 +43,8 @@ from typing import Unpack as _Unpack
 
 from loguru import logger as _logger
 
-# from ...brick.call import castarg FIX: that for sure don't work!
 from .._types import _RichView
-from .._types import event_types as _dto
+from .._types import event_types as _et
 from ..color import Color as _Color
 from ..color import ColorArg as _ColorArg
 from . import _param as _p
@@ -62,7 +60,7 @@ type DtoNames = _typing.Literal[
 class BaseEventDTO:
     """Establish DTO Registry and auto-transform all Member to SpecClass"""
 
-    @property  # CHECK: is this useful on any DTO instance? maybe remove
+    @property
     def registry(self) -> DtoTable:
         return self._registry
 
@@ -73,7 +71,7 @@ class BaseEventDTO:
         super().__init_subclass__(**kwargs)
 
         if replaced := cls._registry.get(name):
-            _logger.info(f"Replacing: {name=},{replaced=}")
+            _logger.info(f"Replacing: {name=},{replaced=}")  # REMOVE:
 
         cls._registry[name] = cls
         cls.name = name
@@ -92,8 +90,7 @@ class EventDTO(BaseEventDTO, name="ctor"):
         sanitized: dict[str, _Any] = target_cls._sanitize_kwargs(**kwargs)
         return target_cls(*args, **sanitized)
 
-    @classmethod
-    # @castarg FIX: adapt the setup or export the sanitizing!
+    @classmethod  # LATER: where to apply @castarg?
     def _sanitize_kwargs(
         cls, **kwargs: _Unpack[MergedDtoInputs]
     ) -> dict[str, _Any]:
@@ -112,14 +109,17 @@ class LogDTO(EventDTO, name="log", kw_only=False):
 
     message: str
     level: str = "INFO"
-    metrics: _dto.Map = _dc.field(default_factory=dict)
-    extra: _dto.Map = _dc.field(default_factory=dict)
+    metrics: _et.Map = _dc.field(default_factory=dict)
+    extra: _et.Map = _dc.field(default_factory=dict)
+
+    def metainfo(self) -> dict[str, _Any]:  # LATER: here or in derived?
+        return {**self.extra, **self.metrics}
 
 
 class LogInput(_typing.TypedDict, total=False):
     level: str
-    metrics: _dto.Map
-    extra: _dto.Map
+    metrics: _et.Map
+    extra: _et.Map
 
 
 #  LINE: -- Cli -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -130,12 +130,15 @@ class CliDTO[Content = _Content](EventDTO, name="cli", kw_only=False):
 
     content: Content
     color: _Color = _Color.AZURE  # Main Color
-    infos: _dto.Map = _dc.field(default_factory=dict)
+    infos: _et.Map = _dc.field(default_factory=dict)
 
 
-class CliInput(_typing.TypedDict, total=False):
+class CliInfoInput(_typing.TypedDict, total=False):
+    infos: _et.Map
+
+
+class CliInput(CliInfoInput, total=False):
     color: _ColorArg
-    infos: _dto.Map
 
 
 #  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -155,8 +158,7 @@ class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
 
 type CliSpec = _CliSerializable | _RichView | str
 
-type _Content[Value: CliSpec | _dto.Tuple[CliSpec]] = _dto.Tuple[Value]
-type _C = _Content[_dto.Tuple[CliSpec]]  # CHECK: usable? or remove
+type _Content[Value: CliSpec | _et.Tuple[CliSpec]] = _et.Tuple[Value]
 type _Vec = _Content[CliSpec]
 type _Grid = tuple[tuple[CliSpec, ...], ...]
 
@@ -171,13 +173,29 @@ class PanelDTO(CliDTO[_Vec], name="panel"):
 
 
 class PanelInput(CliInput, _p.HeaderInput, _p.FrameInput, total=False):
-    """Box-Like"""
+    """Full manual Panel configuration"""
+
+
+class BoxInput(CliInput, _p.HeaderInput, _p.FrameTopicInput, total=False):
+    """Panel configuration when `box` style is fixed by a Box preset."""
+
+
+class HeaderPresetInput(
+    CliInput, _p.HeaderFrameInput, _p.FrameInput, total=False
+):
+    """Panel configuration when `title` is passed positionally."""
+
+
+class StatusInput(
+    CliInfoInput, _p.HeaderFrameInput, _p.FrameInput, total=False
+):
+    """Panel configuration when `title` and `color` are fixed by preset."""
 
 
 #  LINE: -- Markdown --- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class MarkdownDTO(CliDTO[tuple[CliSpec]], name="markdown"):
+class MarkdownDTO(CliDTO[CliSpec], name="markdown"):
     """Store one Formatted Markdown SpecPoint"""
 
     frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
@@ -194,17 +212,17 @@ class MarkdownInput(CliInput, _p.FrameInput, total=False):
 
 
 class LineDTO(CliDTO[_Vec], name="line"):
-    """Store Lines for Sequential unboxed Rendering"""
+    """Store Lines for Sequential unboxed Rendering."""
 
     header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
-    stat: _Callable[[_Vec], str] | None = lambda lines: (
-        f"Total Lines: {len(lines)}"
-    )
+    stat: _Callable[[_Vec], str] | None = None
+
+
+class LinePresetInput(CliInput, _p.HeaderFrameInput, total=False):
+    """Line options when `title`/`stat` are computed by a preset."""
 
 
 class LineInput(CliInput, _p.HeaderInput, total=False):
-    """Line and Lines"""
-
     stat: _Callable[[_Vec], str]
 
 
@@ -234,8 +252,12 @@ class TableDTO(CliDTO[_Grid], name="table"):  # TODO: Input
     frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
 
 
-class TableInput(CliInput, _p.HeaderInput, _p.FrameInput, total=False):
-    """Line and Lines"""
+class TablePresetInput(CliInput, _p.HeaderInput, _p.FrameInput, total=False):
+    """Table styling options when grid/headers are built by a factory method."""
+
+
+class TableInput(TablePresetInput, total=False):
+    """Full manual Table configuration."""
 
     col_names: _Content[str]
     row_names: _Content[str]

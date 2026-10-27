@@ -22,7 +22,7 @@ from loguru import logger
 from ._arg import TargetPath, castpath
 
 
-@castpath
+@castpath.uno_plus
 def unique_candidate(path: TargetPath, ensure_parent: bool) -> Path:
     """PathGuard.unique implementation logic: Increment until Path is unique"""
 

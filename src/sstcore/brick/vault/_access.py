@@ -10,13 +10,14 @@ __all__: list[str] = [
     "VaultWriter",
 ]
 
+from collections.abc import Hashable
 from typing import Any, overload
 
 from ...port.register import registry_types as _r
 from ._contract import VaultContract
 
 
-class VaultReader[Item, V: _r.Vault](VaultContract[Item, V]):
+class VaultReader[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
     """Pick the Items from the Vault"""
 
     @overload
@@ -26,7 +27,7 @@ class VaultReader[Item, V: _r.Vault](VaultContract[Item, V]):
         self, query: slice | _r.Predicate | tuple[Any, ...]
     ) -> V: ...
     @overload
-    def __getitem__(self, query: str) -> Item: ...
+    def __getitem__(self, query: str | Hashable) -> Item: ...
 
     def __getitem__(self, query: _r.Selector[Item]) -> Item | V:
         return self._dispatch_get(query)
@@ -39,19 +40,26 @@ class VaultReader[Item, V: _r.Vault](VaultContract[Item, V]):
             case slice() as sl:
                 return self._slice(sl)
 
-            case str() as key:
-                return self._key_item(key)
-
             case tuple() as keys:
                 return self._gather(keys)
 
-            case fn if callable(fn):
+            case fn if callable(fn) and not isinstance(fn, type):
                 return self._where(fn)
+
+            case Hashable() as key:
+                return self._key_item(key)
+
             case _:
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
+    def _gather(self, keys: tuple[Any, ...]) -> V:
+        result: V = self._empty()
+        for k in keys:
+            result: V = self._merge(result, self[k])  # TEST:
+        return result
 
-class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
+
+class VaultWriter[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
     """Place the Items in the Vault"""
 
     def __setitem__(self, query: _r.Selector[Item], value: Any) -> None:
@@ -65,14 +73,15 @@ class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
             case slice() as sl:
                 self._slice_put(sl, value)
 
-            case str() as key:
-                self._key_put(key, self._normalize(value))
-
             case tuple() as keys:
                 self._scatter(keys, value)
 
-            case fn if callable(fn):
+            case fn if callable(fn) and not isinstance(fn, type):
                 self._replace_where(fn, self._normalize(value))
+
+            case Hashable() as key:
+                self._key_put(key, self._normalize(value))
+
             case _:
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
@@ -86,10 +95,9 @@ class VaultWriter[Item, V: _r.Vault](VaultContract[Item, V]):
             self[key] = item
 
 
-class VaultAccess[Item, V: _r.Vault](
-    VaultWriter[Item, V], VaultReader[Item, V]
+class VaultAccess[Item, V: _r.Vault, K: Hashable](
+    VaultWriter[Item, V, K], VaultReader[Item, V, K]
 ):
-    # AI: here i just reused some empty imtermediate base
     def __str__(self):
         return f"{type(self).__name__}[{len(self.vault)}]"
 

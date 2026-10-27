@@ -2,11 +2,18 @@ from pathlib import Path
 
 import fire
 
+from sstcore import printer
+from sstcore.console.select import TreeSelectorApp
 from sstcore.error import TuiSelectorError
-from sstcore.tui.tree_selector import TreeSelectorApp
-from sstcore.utils import FolderScanner, PathTreeNode, SimpleTreeNode, printer
-from sstcore.utils.path import get_project_root
-from sstcore.utils.tree import examples
+from sstcore.util.path import get_project_root
+from sstcore.util.scan import (
+    FolderScanner,
+)
+from sstcore.util.tree import (
+    PathTreeNode,
+    SimpleTreeNode,
+    example_trees,
+)
 
 SCAN_ROOT: Path = get_project_root()
 
@@ -18,11 +25,11 @@ def main():
 
 class SelectTreeTasks:
     def simple(self):
-        tree: SimpleTreeNode = examples.simple_tree()
+        tree: SimpleTreeNode = example_trees.simple_tree()
         launch_selector(tree)
 
     def big(self):
-        tree: SimpleTreeNode = examples.big_tree()
+        tree: SimpleTreeNode = example_trees.big_tree()
         launch_selector(tree)
 
     def scan(self):

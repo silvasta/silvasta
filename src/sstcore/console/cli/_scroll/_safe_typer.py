@@ -19,16 +19,14 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Literal
 
-from rich.box import Box
-
 from ....brick.color import colorize
 from ....brick.color.box import Colors
 from ....port.config import Config
 from ....system.boot import ConfigLoader
 from ....util.log import fetch_log_result
 from ....util.path.guard import PathGuard
-from ....util.print import boxes, printer
-from ..___print_option import PrintOption, SelectMode
+from ....util.print import Boxes, printer
+from ._print_option import PrintOption, SelectMode
 
 # TASK: system and bus!
 
@@ -52,21 +50,21 @@ toggle: dict[str, SelectMode] = {
 class MainIntroScroll(PrintOption[Callable[[str], None]]):
     def _load_default_function(self):
         return partial(
-            self._template, outer="white", inner="cyan", box=boxes.OPEN
+            self._template, outer="white", inner="cyan", box=Boxes.OPEN
         )
 
     def _template(
-        self, project_name: str, outer: str, inner: str, box: Box
+        self, project_name: str, outer: str, inner: str, box: Boxes
     ) -> None:
-        project: str = c(project_name, color=inner)
+        project: str = c(project_name, inner)
 
-        text: str = c(f"Welcome to {project}", color=outer)
+        text: str = c(f"Welcome to {project}", outer)
 
-        printer.title(text, box=box, frame="cyan")
+        printer.panel(text, box=box, frame="cyan")
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
-            "box": [boxes.OPEN, boxes.CORNER],
+            "box": [Boxes.OPEN, Boxes.CORNER],
         }
         kwargs: dict[str, str] = {"outer": "white", "inner": "cyan"}
         self.grid(self._template, param_grid, common_kwargs=kwargs)
@@ -104,7 +102,7 @@ class ConfigLoaderScroll(PrintOption[ConfigSignature]):
 
         text: str = f"{_config} loaded via {_loader}"
 
-        printer.mini_box(text, mode=mode)
+        printer.box(text, mode=mode)
 
     def _set_more_if_desired(self):
         self.register(self._config_modules_1(mode="both"))
@@ -132,7 +130,7 @@ def _config_modules_2(config: Config, loader: ConfigLoader) -> None:
     module: str = ".".join([c.a(project), *modules])
     _loader = f"{c.white(getattr(loader, '__name__', 'loader_func'))}"
     text: str = f"{c.a(config)} loaded via {module}::{loader}"
-    printer.mini_box(text, mode="both")
+    printer.box(text, mode="both")
 
 
 type PathSignature = Callable[[Path, Literal["log", "config"]], None]
@@ -145,14 +143,14 @@ class ConfigAndLogPanel(PrintOption[PathSignature]):
     """Create Log and Config path in same style"""
 
     def _load_default_function(self):
-        return partial(self._template, frame="blue", box=boxes.ROUND)
+        return partial(self._template, frame="blue", box=Boxes.ROUND)
 
     def _template(
         self,
         path: Path,
         mode: Literal["log", "config"],
         frame: str = "blue",
-        box: Box = boxes.ROUND,
+        box: Boxes = Boxes.ROUND,
     ):
         table: dict[str, str] = {
             "log": f"{c.blue('Log')} ",
@@ -160,13 +158,13 @@ class ConfigAndLogPanel(PrintOption[PathSignature]):
         }
 
         relative: Path = PathGuard.relative(path)
-        printer.title(relative, title=table[mode], frame=frame, box=box)
+        printer.panel(relative, title=table[mode], frame=frame, box=box)  # ty:ignore FIX:
         # TODO: check absolute path as option
         # printer.title(path, title=table[mode], frame=frame, box=box)
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
-            "box": [boxes.OPEN, boxes.CORNER],
+            "box": [Boxes.OPEN, Boxes.CORNER],
             "frame": ["white", "blue"],
         }
         self.grid(self._template, param_grid=param_grid)
@@ -195,21 +193,20 @@ def setup(config: Config, loader: Callable):
         if log_result.log_to_json:
             log_or_config_path(log_result.struct_log_file, mode="log")
 
-    else:
-        printer.dip("LogFile", "No setup active for tracking Events", "yellow")
+    # else:
+    # IMPORTANT:
+    #     printer.dip("LogFile", "No setup active for tracking Events", "yellow")
 
 
 def sub_callback(name: str):
-    printer.title(f"Launching attached App: {name}!")
+    printer.header(f"Launching attached App: {name}!")
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Status
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
-type StatusSignature = Callable[
-    [object, list[type[BaseException]], bool], None
-]
+type StatusSignature = Callable[[object, list[type[BaseException]], bool], None]
 type ExceptionFormatter = Callable[[type[BaseException]], str]
 
 
@@ -219,7 +216,7 @@ class SetupStatus(PrintOption[StatusSignature]):
     def _load_default_function(self):
         return partial(
             self._template,
-            box1=boxes.CORNER,
+            box1=Boxes.CORNER,
             color1="yellow",
             exc_formatter=self._format_colorful,
         )
@@ -229,7 +226,7 @@ class SetupStatus(PrintOption[StatusSignature]):
         safe_typer: object,
         exceptions: list[BaseException],
         show_all: bool,
-        box1: Box,  # LATER: handle default box other than with None...
+        box1: Boxes,  # LATER: handle default box other than with None...
         color1: str,
         exc_formatter: ExceptionFormatter,
     ):
@@ -244,11 +241,11 @@ class SetupStatus(PrintOption[StatusSignature]):
                 printer(exc_formatter(type(exception)), _i=4)
 
         printer("Some statistics: ...", _i=2)
-        printer.line("yellow")
+        printer.lines("yellow")
 
     def _set_more_if_desired(self):
         param_grid: dict[str, Any] = {
-            "box1": [boxes.OPEN, boxes.CORNER, None],
+            "box1": [Boxes.OPEN, Boxes.CORNER, None],
             "exc_formatter": [self._format_raw, self._format_colorful],
         }
         kwargs: dict[str, str] = {"color1": "yellow"}

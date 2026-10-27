@@ -6,11 +6,10 @@ from rich.color import ANSI_COLOR_NAMES, Color
 from rich.style import Style
 
 from sstcore import printer
-from sstcore.utils.color import ColorBox
-from sstcore.utils.color.style import TextStyle
-from sstcore.utils.tree import SimpleTreeNode, examples
+from sstcore.brick.color.box import Colors
+from sstcore.util.tree import example_trees
 
-c: ColorBox = ColorBox()
+c: Colors = Colors()
 
 
 def main():  # LATER: use fire.Fire for cli? Or selector?
@@ -24,7 +23,6 @@ def main():  # LATER: use fire.Fire for cli? Or selector?
         show_tree_graph,
         show_headers,
         show_colors,
-        show_attributes,
         experiment_t_string,
         show_all_rich_colors,  # INFO: good one
         show_rich_style_attributes,
@@ -85,9 +83,8 @@ def show_all_rich_colors():
 
 def show_tree_graph():
     printer.title("Print the SimpleTree", title="SimpleTree")
-    example_tree: SimpleTreeNode = examples.simple_tree()
-    printer.tree_graph(example_tree)
-    printer.tree_graph(examples.big_tree())
+    printer.tree_graph(example_trees)
+    printer.tree_graph(example_trees.big_tree())
 
 
 def show_headers(text="Selected Models"):
@@ -115,13 +112,6 @@ def show_colors():
     for color_print in colors:
         printer(f"{color_print.__name__.capitalize():>7}", end=" ")  # ty:ignore
         color_print("This is so Colorful")
-
-
-def show_attributes():
-    for style in TextStyle:
-        printer.color_box.switch(style=style)
-        printer.header(f"This is the {style}")
-        printer.cyan(style)
 
 
 def experiment_t_string():

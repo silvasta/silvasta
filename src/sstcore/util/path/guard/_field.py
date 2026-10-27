@@ -8,6 +8,7 @@ Mound Magic Fields to PathGuard for Hybrid Usage
 # - regular decorator
 # - field, how to mount?
 # - where is the spec defined?
+
 # NEXT: check how to use and prepara a few examples
 
 __all__: list[str] = [
@@ -16,11 +17,6 @@ __all__: list[str] = [
     "FileField",
     "UniqueField",
     "PathSpecField",
-    # TODO: give alias in _assemble, why here??
-    "Dir",
-    "File",
-    "Unique",
-    "SpecField",
 ]
 
 from collections.abc import Callable
@@ -185,10 +181,3 @@ class PathSpecField(ReadField[Path], ValidField[PathArg]):
             self._set_val(unit, validated)
             return validated
         return super().read(unit)
-
-
-# Aliases for PathGuard class assembly
-Dir = DirField
-File = FileField
-Unique = UniqueField
-SpecField = PathSpecField

@@ -13,7 +13,7 @@ _LAZY_IMPORTS = {
     "portlink": ".port.link",
     "System": ".system",
     "ConfigManager": ".system.config",
-    "EmitCore": ".system.event",
+    "Emitter": ".system.event",
     "PathGuard": ".util.path.guard",
     "printer": ".util.print",
 }
@@ -32,6 +32,6 @@ def __dir__():
 
 
 try:
-    __version__: str = version(distribution_name="sstcore-py")  # CHECK: name
+    __version__: str = version(distribution_name="silvasta")  # CHECK: name
 except PackageNotFoundError:
     __version__ = "unknown"

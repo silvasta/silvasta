@@ -43,8 +43,8 @@ class StaticFuncMeta(ClsViewBase):
     ):
         """Attach all methods as staticmethod and load input for dunder data"""
 
-        # EXTRACT: auto-staticmethods, add config for _private,...
         new_static_methods: dict[str, Any] = {
+            # EXTRACT: auto-staticmethods, add config for _private,...
             key: staticmethod(value)
             for key, value in namespace.items()
             if not key.startswith("_") and isinstance(value, FunctionType)
@@ -56,11 +56,11 @@ class StaticFuncMeta(ClsViewBase):
     def __call__(cls, *_, **__) -> Any:  # noqa:N805
         raise TypeError(f"StaticFunc[{cls}] is Not available as Instance!")
 
-    def toolkit(cls, sort: bool = True) -> list[str]:  # noqa:N805
+    def toolkit(cls, sort: bool = True) -> list[str]:  # ty:ignore # FIX: # noqa:N805
         """Provide names of all public staticmethods"""
 
         names: list[str] = [
-            # TODO: candidate for format.reflect
+            # EXTRACT: candidate for format.reflect
             # Parameter: - public/private
             # - {static|class}method|property, what else?
             name

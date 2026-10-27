@@ -20,7 +20,7 @@ from enum import StrEnum
 from typing import Any
 
 from ..brick.color.box import Colors
-from ..port.represent import CliRenderable
+from ..port.event.dto import CliSpec
 from ._base import SstError
 
 c = Colors()
@@ -52,9 +52,7 @@ class PathGuardError(SstError):
     def _short(self):
         return self.reason
 
-    def _modify_scroll(
-        self, lines: list[CliRenderable]
-    ) -> list[CliRenderable]:
+    def _modify_scroll(self, lines: list[CliSpec]) -> list[CliSpec]:
         """Format PathGuard fail for CLI"""
         return [
             lines[0],

@@ -81,7 +81,7 @@ class Exceptor:
         printer.box(self)
 
         for task in self.tasks:
-            printer.box(f"{c.cyan('Next')} {task}")
+            printer.box(f"{c.azure('Next')} {task}")
             printer(task.error)
             printer(task)
 
@@ -90,7 +90,7 @@ class Exceptor:
             else:
                 self._raise_exception(task)
 
-            printer(c(f"  Finished {task}\n", color="dim italic"))
+            printer(c(f"  Finished {task}\n", "dim italic"))
 
     # NEXT: here Exceptor
     def __rich__(self) -> str:
@@ -118,7 +118,7 @@ class Exceptor:
         def throw():
             self._current_task()
 
-        n_handler: int = self.app.errors.n_handler
+        n_handler: int = len(self.app.errors)
         n_tasks: int = len(self.tasks)
 
         printer.header(f"{self.app} {n_handler=} for {n_tasks=}")
@@ -133,7 +133,7 @@ class Exceptor:
             printer.success(f"{c.g(self.app)} caught the Error")
 
         except SystemExit:
-            printer.yellow(f"{c.y(self.app)} triggered sys.exit(1)")
+            printer.warn(f"{c.y(self.app)} triggered sys.exit(1)")
 
         except BaseException as error:
             _error: str = type(error).__name__
@@ -186,7 +186,7 @@ class ExceptorTask:
         args: str = f"  {c.c('args')}    {self.args or 'not loaded'}"
         kwargs: str = f"  {c.c('kwargs')}  {self.kwargs or 'not loaded'}"
         _handler: str = c.clue(self.handler.__name__) if self.handler else ""  # ty:ignore
-        handler: str = f"  {c.magenta('handler')} {_handler or 'not loaded'}"
+        handler: str = f"  {c.purple('handler')} {_handler or 'not loaded'}"
         return f"  {task} {error}\n{args}\n{kwargs}\n{handler}"
 
         # HACK: check later what here is going  wrong...

@@ -1,5 +1,5 @@
 [project]
-name = "sstcore-py"
+name = "silvasta"
 version = "0.4.0a1"
 description = "Generalized Function and Tools combined as Project Setup Boost"
 readme = "README.md"
@@ -29,21 +29,21 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+  "diskcache>=5.6.3",
+  "fire>=0.7.1",
   "loguru>=0.7.3",
-  "pydantic>=2.12.5",
-  "pydantic-settings>=2.13.1",
-  "rich>=14.3.3",
+  "msgspec>=0.22.0",
+  "pydantic-settings>=2.16.1",
+  "pydantic>=2.14.1",
+  "rich>=15.0.0",
   "send2trash>=2.1.0",
-  "fire",
-  "msgspec>=0.21.1",
+  "textual>=8.2.8",
+  "typer>=0.27.3",
 ]
-
-[project.optional-dependencies]
-cli = ["typer", "textual"]
-all = ["sstcore-py[cli]"]
 
 [project.scripts]
 sst = "sstcore.__main__:main"
+silvasta = "sstcore.__main__:main" # invoked on uvx
 
 [project.urls]
 Repository = "https://github.com/silvasta/silvasta"
@@ -66,19 +66,24 @@ pythonpath = ["src"]
 [tool.ty.src]
 include = ["src", "examples"]
 exclude = [
-  # Match all files/dirs starting with 3+ underscores anywhere
+  # Match rules: ignore ____* in outer branch, ignore ___* in core branch
   "**/____*",
-  # Specific directory branches (if you prefer explicit paths)
-  # "src/sstcore/brick/field/___ideas",
+  "**/___*",
+  # Explicit paths (temporary)
+  "src/sstcore/util/write",
+  # "src/sstcore/util/print",
+  "src/sstcore/util/print/_old_layout_todos.py",
 ]
 
 [tool.ruff]
-line-length = 79
+line-length = 80
 exclude = ["tests"]
 extend-exclude = [
   "tests",
-  # Catch any file or folder starting with 3+ underscores
+  # Match rules: ignore ____* in outer branch
   "**/____*",
+  # Explicit paths (temporary)
+  # "src/sstcore/util/write",
 ]
 
 [tool.ruff.lint.pydocstyle]

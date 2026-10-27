@@ -3,18 +3,18 @@ from pathlib import Path
 import fire
 
 from sstcore import printer
-from sstcore.cli.engine import SafeTyper
+from sstcore.console import SafeTyper
+from sstcore.console.cli._exceptor import (
+    ErrorList,
+    Exceptor,
+    ExceptorTask,
+    ExceptorTaskHandler,
+)
 from sstcore.error import (
     NotImplementedDispatchError,
     RegistrySyncError,
     SstError,
     TuiSelectorError,
-)
-from sstcore.utils.exceptor import (
-    ErrorList,
-    Exceptor,
-    ExceptorTask,
-    ExceptorTaskHandler,
 )
 
 
@@ -71,7 +71,7 @@ app = SafeTyper(
 )
 
 
-@app.errors.handle()
+@app.errors.attach()
 def handle_tui_selector(error: TuiSelectorError):
     printer.danger(f"Selector failed: {error}")
 
@@ -84,7 +84,7 @@ class MissingFileError(FileNotFoundError):
         return type(self).__name__
 
 
-@app.errors.handle()
+@app.errors.attach()
 def handle_missing_file(error: MissingFileError):
     scroll: list[str] = [
         f"  Start of handling: {error}",

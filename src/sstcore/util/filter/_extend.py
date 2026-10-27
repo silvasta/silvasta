@@ -1,7 +1,7 @@
 """
 Prepare Cascade of Filters
 
-                                                       DependencyLevel[2]
+                             DependencyLevel.sstcore.util.filter[2]
 """
 
 __all__: list[str] = [
@@ -36,15 +36,16 @@ class PathFilter(FilterSet[str, Path]):
 
 
 @portlink(ProjectFiltering)
+@portlink(PathFiltering)
 @dataclass
 class ProjectFilter(PathFilter):
     """Reject unwanted Folders and include desired Files"""
 
     exclude: set[str] = field(
-        default_factory=lambda: FilterArgs.PROJECT().exclude
+        default_factory=lambda: FilterArgs.PROJECT.build().exclude
     )
     require_any: set[str] = field(
-        default_factory=lambda: FilterArgs.PROJECT().require_any
+        default_factory=lambda: FilterArgs.PROJECT.build().require_any
     )
 
     def _fulfill(self, target: Path) -> bool:

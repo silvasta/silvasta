@@ -22,7 +22,7 @@ from ..tree._ast import (
 )
 from ._render import format_api
 
-__all__ = [
+__all__: list[str] = [
     "AstVisitor",
     "extract_ast_tree",
     "AstExtractor",
@@ -367,9 +367,7 @@ class AstExtractor:
         args = ast.unparse(node.args)
         ret = ast.unparse(node.returns) if node.returns else None
         doc = (
-            ast.get_docstring(node)
-            if self.options.include_docstrings
-            else None
+            ast.get_docstring(node) if self.options.include_docstrings else None
         )
         return AstTreeNodeG45(
             name=node.name,
