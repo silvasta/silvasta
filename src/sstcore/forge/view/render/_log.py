@@ -5,20 +5,17 @@ Visualize the Log DTO for different Levels of Inspection
 
 """
 
-from typing import Any
-
 from rich.text import Text
 from rich.tree import Tree
 
 from ....port.event.dto import LogDTO
 from ....util.parse._match import LogMatcher
 
-
-class LogViewDTO(LogDTO, name="log"):  # TASK: how to annotate this here?
-    """Extend features for rendering"""
-
-    def metainfo(self) -> dict[str, Any]:
-        return {**self.extra, **self.metrics}
+# INFO: probably drop LogViewDTO, LogDTO.metainfo might be better
+# class LogViewDTO(LogDTO, name="log"):
+#     """Extend features for rendering"""
+#     def metainfo(self) -> dict[str, Any]:
+#         return {**self.extra, **self.metrics}
 
 
 def render_log(log: LogDTO, select=0):
@@ -40,7 +37,7 @@ def _render_log_1(log: LogDTO):
     # LATER: fix with colorbox
     text = f"[{_match_color(log)}]{log.level:5}[/] {log.message}"
     if log.metrics or log.extra:
-        text += f"  [dim]{log.metainfo}[/]"  # CHECK:
+        text += f"  [dim]{log.metainfo}[/]"
     return Text.from_markup(text)
 
 
@@ -53,7 +50,7 @@ def _render_log_2(log: LogDTO):
         f" {log.message}",
         style="bold white" if log.level in ("ERROR", "CRITICAL") else "white",
     )
-    if not log.metrics and not log.extra:
+    if not log.metainfo():
         return header
 
     tree = Tree(header, guide_style="dim white")
@@ -84,9 +81,7 @@ def _render_log_3(log: LogDTO):
     text.append(f"[{log.level.upper():^8}] ", style=_match_color(log))
     text.append(f"{log.message} ", style="white")
 
-    if log.metrics or log.extra:
-        # IDEA: metadata:= metrics/extra as function of (Derived)LogDTO
-        metadata = log.metainfo()
+    if metadata := log.metainfo():
         meta_str = " ".join(f"{k}={v}" for k, v in metadata.items())
         text.append(f"({meta_str})", style="dim italic")
 

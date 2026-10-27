@@ -6,8 +6,6 @@ Prepare Functors, 1 per DTO
 
 """
 
-from sstcore.brick.color.box import Colors
-
 __all__: list[str] = [
     "LogDtoVisualizer",
     "CliDtoVisualizer",
@@ -20,20 +18,22 @@ __all__: list[str] = [
 from pathlib import Path
 from typing import Any, Literal, Self
 
-from rich.console import ConsoleRenderable, Group, RichCast
+from rich.console import Group
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
 from ....brick.color import colorize
+from ....brick.color.box import Colors
 from ....forge.func import SafeFunctor
 from ....port import functorial
+from ....port.color import Color
 from ....port.event import _param as _p
 from ....port.event import dto
 from ....port.event.dto import DtoNames
 from ....port.link import portlink
-from ....port.represent import PydanticModel, Richable
+from ....port.represent import PydanticModel, Richable, RichConsolable, RichView
 from ._log import render_log
 
 
@@ -54,9 +54,9 @@ class DtoVisualizer[DTO: dto.EventDTO = dto.EventDTO](
     def __mount__(cls, host: Any, /, *, name: str = "", **kwargs: Any) -> Self:
         return cls(colors=host.colors, name=name, **kwargs)
 
-    def normalize(self, target: Any) -> Richable:
+    def normalize(self, target: Any, /) -> Richable:
         match target:
-            case ConsoleRenderable() | RichCast() | str() | PydanticModel():
+            case RichView() | RichConsolable() | str() | PydanticModel():
                 return target
             case tuple() | list() as items:
                 return "\n".join(str(self.normalize(i)) for i in items)
@@ -68,34 +68,35 @@ class DtoVisualizer[DTO: dto.EventDTO = dto.EventDTO](
                 return str(target)
 
     def build_panel(
-        self, content: Any, frame: _p.FrameSpec, border_color: str
+        self, content: Any, frame: _p.FrameSpec, color: Color
     ) -> Panel:
         """Wrap any renderable in a FrameSpec-configured Rich Panel."""
-        topic = (
-            # FIX:
-            f"[{frame.topic_color}]{frame.topic}[/]" if frame.topic else None
+        topic: str | None = (
+            self.colors(frame.topic, frame.topic_color)  #
+            if frame.topic
+            else None
         )
         return Panel(
             renderable=self.normalize(content),
             title=topic,
             title_align="right",
-            border_style=border_color,
+            border_style=self.colors.paint(color),
             # LATER: padding=dto.padding,
-            # expand=dto.expand,
-            box=frame.box.option(),
+            # LATER: expand=dto.expand,
+            box=frame.box.get(),
         )
 
     def apply_header(
-        self, main_renderable: Richable, header: _p.HeaderSpec, color: str
+        self, main_renderable: Richable, /, header: _p.HeaderSpec, color: Color
     ) -> Richable:
         """If HeaderSpec has a title, stack a header Panel above the main content."""
         if not header.title:
             return main_renderable
 
-        header_panel = self.build_panel(
+        header_panel: Panel = self.build_panel(
             content=Text(header.title, style="bold white"),
             frame=header.frame,
-            border_color=color,
+            color=color,
         )
         return Group(header_panel, main_renderable)
 
@@ -116,8 +117,14 @@ class CliDtoVisualizer(DtoVisualizer[dto.CliDTO]):
     dto_name = "cli"
 
     def __call__(self, target: dto.CliDTO, /) -> Richable:
-        text = str(self.normalize(target.content))
-        return Text.from_markup(f"[{target.color}]{text}[/]")
+        if isinstance(target, RichView):
+            # CHECK: avoids __rich__ view is flattened to text?
+            # - maybe include in normalize
+            text = target.__rich__()
+        else:
+            text = str(self.normalize(target.content))
+
+        return Text(text, style=self.colors.paint(target.color))
 
 
 #  LINE: -- Cli Specifications -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -130,49 +137,57 @@ class PanelDtoVisualizer(DtoVisualizer[dto.PanelDTO]):
         body: Panel = self.build_panel(
             target.content,
             target.frame,
-            str(target.color),  # FIX:
+            target.color,
         )
-        return self.apply_header(body, target.header, str(target.color))
+        return self.apply_header(body, target.header, target.color)
 
 
 class LineDtoVisualizer(DtoVisualizer[dto.LineDTO]):
     dto_name = "line"
 
     def __call__(self, target: dto.LineDTO, /) -> Richable:
-        if not target.content:
-            # FIX: use --- not as default, just empty color line
-            return Text("─" * 50, style=str(target.color))
+        # REMOVE: no --- line, no Rule!
+        # TODO: just an empty line with nothing but background color
+        # if not target.content:
+        #     return Text("─" * 50, style=str(target.color))
         body = self.normalize(target.content)
-        return self.apply_header(body, target.header, str(target.color))
+        return self.apply_header(body, target.header, target.color)
 
 
 class MarkdownDtoVisualizer(DtoVisualizer[dto.MarkdownDTO]):
     dto_name = "markdown"
 
     def __call__(self, target: dto.MarkdownDTO, /) -> Richable:
-        md = Markdown(str(target.content))
+        content = Markdown(str(target.content))
         if target.frame.topic:
-            return self.build_panel(md, target.frame, str(target.color))
-        return md
+            return self.build_panel(content, target.frame, target.color)
+        return content
 
 
 class TableDtoVisualizer(DtoVisualizer[dto.TableDTO]):
     dto_name = "table"
 
     def __call__(self, target: dto.TableDTO, /) -> Richable:
+        topic: str | None = (
+            self.colors(target.frame.topic, target.frame.topic_color)
+            if target.frame.topic
+            else None
+        )
         table = Table(
-            border_style=str(target.color), box=target.frame.box.value
+            title=topic,
+            border_style=self.colors.paint(target.color),
+            box=target.frame.box.get(),
         )
 
         if target.row_names:
-            table.add_column(target.corner, style="bold magenta")
+            table.add_column(target.corner, style=self.colors.orange)
         for col in target.col_names:
-            table.add_column(str(col), style="cyan")
+            table.add_column(str(col), style=self.colors.azure)
 
         for idx, row in enumerate(target.content):
-            cells = [str(self.normalize(c)) for c in row]
+            cells: list[str] = [str(self.normalize(c)) for c in row]
             if target.row_names and idx < len(target.row_names):
                 cells.insert(0, str(target.row_names[idx]))
             table.add_row(*cells)
 
-        return self.apply_header(table, target.header, str(target.color))
+        return self.apply_header(table, target.header, target.color)

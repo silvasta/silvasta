@@ -12,11 +12,12 @@ from ...port.event.dto import CliDTO, EventDTO, LogDTO
 from ...port.link import portlink
 from ...port.printer import Print, PrintMode
 from ...port.represent import CliSerializable, LogSerializable, Richable
-from ._layouts import PrinterLayouts
+
+# NEXT: from ._layouts import PrinterLayouts
 
 
 @portlink(Print)
-class PrinterCore(PrinterLayouts):
+class PrinterCore:  # NEXT: continue MRO here
     """Execute the printer()"""
 
     def __init__(self, **kwargs):

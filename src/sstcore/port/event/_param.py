@@ -20,8 +20,8 @@ __all__: list[str] = [
 ]
 
 import dataclasses as _dc
-import enum as _e
 import typing as _typing
+from enum import auto
 from typing import Any as _Any
 
 from ..color import Color, ColorArg
@@ -30,24 +30,29 @@ from ..solid import OptionRegister
 
 @_typing.dataclass_transform(kw_only_default=True)
 class ParamSpec:  # TODO: compare with Functor::ParamSpec
-    """Base for stacked configuration dataclasses (FrameSpec, HeaderSpec, etc.)."""
+    """Base for dataclasses that parse Param Input (FrameSpec, HeaderSpec,..)"""
 
     def __init_subclass__(cls, kw_only: bool = True, **kwargs: _Any):
         super().__init_subclass__(**kwargs)
         _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
 
 
-class _Boxes(OptionRegister):  # INFO: exposed in util.print(._boxes set public)
-    """Select the Box around the Visualization"""
+class _Boxes(OptionRegister):
+    """
+    Select the Box around the Visualization
 
-    CORNER = _e.auto()
-    ROUND = _e.auto()
-    UP = _e.auto()
-    DOWN = _e.auto()
-    MINI = _e.auto()
-    MINI_UP = _e.auto()
-    MINI_DOWN = _e.auto()
-    OPEN = _e.auto()
+    - configured in util.print._boxes
+    - exposed in util.print
+    """
+
+    CORNER = auto()
+    ROUND = auto()
+    UP = auto()
+    DOWN = auto()
+    MINI = auto()
+    MINI_UP = auto()
+    MINI_DOWN = auto()
+    OPEN = auto()
 
 
 class FrameSpec(ParamSpec):
@@ -58,11 +63,14 @@ class FrameSpec(ParamSpec):
     box: _Boxes = _Boxes.CORNER
 
 
-class FrameInput(_typing.TypedDict, total=False):
-    """Define the Border of one Header or Main Content"""
-
+class FrameTopicInput(_typing.TypedDict, total=False):
     topic: str
     topic_color: ColorArg
+
+
+class FrameInput(FrameTopicInput, total=False):
+    """Define the Border of one Header or Main Content"""
+
     box: _Boxes
 
 
@@ -89,8 +97,6 @@ class HeaderBaseInput(_typing.TypedDict, total=False):
 
 
 class HeaderFrameInput(_typing.TypedDict, total=False):
-    """Test"""
-
     header_topic: str
     header_topic_color: ColorArg
     header_box: _Boxes | None  # None = Same as Main Content
@@ -100,9 +106,9 @@ class HeaderInput(HeaderBaseInput, HeaderFrameInput, total=False):
     """Combine Header with Frame Args"""
 
 
-# MOVE: somehow into brick or forge, but how?
-# TODO: compare with Functor::ParamSpec
-def sanitize_specs(fields: set[str], **kwargs):
+def sanitize_specs(fields: set[str], **kwargs: _Any) -> dict[str, _Any]:
+    # MOVE: somehow into brick or forge, but how?
+    # TODO: compare with Functor::ParamSpec
     spec: dict[str, _Any] = dict(kwargs)
 
     if "frame" in fields and "frame" not in spec:
@@ -133,13 +139,9 @@ def sanitize_specs(fields: set[str], **kwargs):
                 title=title,
                 frame=FrameSpec(**header_frame_kw)
                 if header_frame_kw
-                else FrameSpec(),
+                else FrameSpec(
+                    box=main_frame.box if main_frame else _Boxes.CORNER
+                ),
             )
 
     return spec
-
-
-if __name__ == "__main__":
-    print(_Boxes)
-    for f in _Boxes:
-        print(f, f.value)

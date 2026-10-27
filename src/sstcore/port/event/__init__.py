@@ -20,4 +20,3 @@ __all__: list[str] = [
 
 
 from ._core import BusRegistration, Event, EventBus, EventHandling
-from ._fabric import EventDtoFactory

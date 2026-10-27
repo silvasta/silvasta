@@ -134,4 +134,4 @@ Boxes.register(BOX_MAP)
 if __name__ == "__main__":
     print(Boxes)
     for f in Boxes:
-        print(f, f.option())
+        print(f, f.get())

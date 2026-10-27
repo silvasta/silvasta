@@ -21,9 +21,9 @@ __all__: list[str] = [
     "TableViewDTO",
 ]
 
-from ....brick.field._functor import FunctorField
-from ....port.event import _fabric
+from ....brick.field import FunctorField as _FunctorField
 from ....port.event import dto as _dto
+from ....port.event.factory import EventDtoFactory as _EventDtoFactory
 from ....port.link import portlink as _portlink
 from ._produce import (
     CliDtoProducer,
@@ -36,16 +36,19 @@ from ._produce import (
 from ._table import TableViewDTO  # ensure module loaded
 
 
-@_portlink(_fabric.EventDtoFactory)
+@_portlink(_EventDtoFactory)
 class DtoFactory:
     """Mount all DTO Producer"""
 
-    log = FunctorField(LogDtoProducer)
-    cli = FunctorField(CliDtoProducer)
-    panel = FunctorField(PanelDtoProducer)
-    md = FunctorField(MarkdownDtoProducer)
-    line = FunctorField(LineDtoProducer)
-    table = FunctorField(TableDtoProducer)
+    log = _FunctorField(LogDtoProducer)
+    cli = _FunctorField(CliDtoProducer)
+    panel = _FunctorField(PanelDtoProducer)
+    # AI: the below special panels are undesired on this factory
+    # box = FunctorField(BoxDtoProducer)
+    # header = FunctorField(HeaderDtoProducer)
+    md = _FunctorField(MarkdownDtoProducer)
+    line = _FunctorField(LineDtoProducer)
+    table = _FunctorField(TableDtoProducer)
 
     def __init__(self, registry: _dto.DtoTable[_dto.EventDTO]) -> None:
         """Reference to the BaseEventDTO subclass registry"""

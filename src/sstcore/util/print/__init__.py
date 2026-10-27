@@ -15,18 +15,29 @@ __all__: list[str] = [
     "Boxes",
 ]
 
+# AI_TASK: the final goal is: printer
+# - resolve both versions to 1 resulting Printer
 
 from ...port.link import portlink as _portlink
 from ...port.printer import Print
 from ._base import PrinterBase
 from ._boxes import Boxes
 from ._engine import PrinterCore
-from ._layouts import PrinterLayouts
+from ._layouts1 import PrinterLayouts1
+from ._layouts2 import PrinterLayouts2
 
 
 @_portlink(Print)
-class Printer(PrinterCore, PrinterLayouts, PrinterBase):
+class Printer1(PrinterCore, PrinterLayouts1, PrinterBase):
     """The Final Composition"""
 
 
-printer = Printer()
+printer1 = Printer1()
+
+
+@_portlink(Print)
+class Printer2(PrinterCore, PrinterLayouts2, PrinterBase):
+    """The Final Composition"""
+
+
+printer2 = Printer2()

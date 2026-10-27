@@ -38,11 +38,11 @@ class BoxMixin:
 
     def box_top(self, target, frame=""):
         """LATER: make with dot-access, wait fro __getattr__ stack"""
-        return self.box(target, frame, box=Boxes.UP.option())
+        return self.box(target, frame, box=Boxes.UP.get())
 
     def box_bottom(self, target, frame=""):
         """LATER: make with dot-access, wait fro __getattr__ stack"""
-        return self.box(target, frame, box=Boxes.DOWN.option())
+        return self.box(target, frame, box=Boxes.DOWN.get())
 
     def mini_box(
         self,
@@ -53,11 +53,11 @@ class BoxMixin:
         """LATER: make with (double?) dot-access, wait fro __getattr__ stack"""
         match mode:
             case "up":
-                box: Box = Boxes.MINI_UP.option()
+                box: Box = Boxes.MINI_UP.get()
             case "down":
-                box: Box = Boxes.MINI_DOWN.option()
+                box: Box = Boxes.MINI_DOWN.get()
             case "both":
-                box: Box = Boxes.MINI.option()
+                box: Box = Boxes.MINI.get()
         return self.box(target, frame, box)
 
 

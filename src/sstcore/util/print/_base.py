@@ -54,6 +54,10 @@ class PrinterBase(PrinterConfiguration):
 
     info: RequiredField[ProjectInformation] = RequiredField(types=ProjectInfo)
 
+    @property
+    def project_info(self) -> str:
+        return reflect.rich(self.info)
+
     def __init__(self, **kwargs):
         """Extract and destroy final kwargs"""
         self.colors = Colors()
@@ -64,10 +68,6 @@ class PrinterBase(PrinterConfiguration):
     @property
     def _cb(self) -> Colors:
         return self.colors
-
-    @property
-    def project_info(self) -> str:
-        return reflect.rich(self.info)
 
     def __call__(self, target: Any, /, *more, **kwargs):
         """Handle all native Prints"""

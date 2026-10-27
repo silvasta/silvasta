@@ -114,7 +114,7 @@ class OptionRegister(EnumZero, walk=True):
             {enum.value: option for enum, option in mapping.items()}
         )
 
-    def option(self, fallback: _MayBe[_Any] = _VOID):
+    def get(self, fallback: _MayBe[_Any] = _VOID):
         """Get Option that is registered for current Member"""
         try:
             return self._registry[self.value]
