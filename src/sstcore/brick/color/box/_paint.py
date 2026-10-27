@@ -36,16 +36,12 @@ class Paint(str):
 
     __slots__ = ("color", "adapter", "_paint")
 
-    def __new__(cls, color: Color, /, *_args, **_kwargs):
-        return super().__new__(cls, color.name.lower())
+    def __new__(cls, color: Color, palette_color: str, /, *_args, **_kwargs):
+        return super().__new__(cls, palette_color)
 
-    def __init__(self, color: Color, paint: Colorizing):
+    def __init__(self, color: Color, palette_color: str, paint: Colorizing):
         self.color: Color = color
         self._paint: Colorizing = paint
-
-        # TARGET:
-        # print(f"[{self}]Created[/]::{self!r}")  # REMOVE: after debug
-        # TARGET:
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self}][{self._paint('painted')}]"
@@ -70,22 +66,12 @@ class ColorPalette:
         self.func: Coloring = data.func
         self.colors: TupleVault[str] = TupleVault(data.colors)
 
-        # TARGET:
-        # print("[bold red]Colors[/]")
-        # for c in self.colors:
-        #     print(f"[{c}]{self} loaded: {c}[/]")
-        # TARGET:
-
         self.paints: TupleVault[Painter] = TupleVault(
-            Paint(color, paint=self.mount(color.value))  #
+            Paint(
+                color, self.colors[color.value], paint=self.mount(color.value)
+            )
             for color in Color
         )
-
-        # TARGET:
-        # print("[bold blue]Paints[/]")
-        # for p in self.paints:
-        #     print(p(f"paint ready: {p!r}"))
-        # TARGET:
 
     def mount(self, index: int, /) -> Colorizing:
 

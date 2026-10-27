@@ -28,7 +28,7 @@ class PrinterCore(PrinterLayouts):
         """Single entry point for printing logic"""
 
         if self.mode != PrintMode.RICH:
-            return super.__call__(target, *more, **kwargs)
+            return super().__call__(target, *more, **kwargs)
 
         if isinstance(target, CliSerializable):
             target: CliDTO = target.__cli__()
@@ -39,9 +39,6 @@ class PrinterCore(PrinterLayouts):
             renderable: Richable = self.render(target)
         else:
             renderable: Richable = self.render.cli.normalize(target)
-
-        if indent := kwargs.pop("indent", 0):
-            renderable = Padding(renderable, (0, 0, 0, indent))
 
         _i_hope_it_renders = (
             Padding(renderable, (0, 0, 0, indent))

@@ -42,8 +42,6 @@ def folder_scanner(
     if filter is None:
         filter = ProjectFilter(require_all=set(), require_any=set())
 
-    printer(filter)  # AI: this I added for the filter
-
     target_preset = preset or cache.LAST
 
     with cache:
@@ -59,7 +57,7 @@ def folder_scanner(
             printer.warn("No files selected...")
             raise typer.Exit()
 
-        printer.lines.len(name="Selected Files", lines=selected_files)
+        printer.lines.len("Selected Files", selected_files)
         cache.save(selected_files, name=target_preset)
 
     printer(
@@ -71,8 +69,7 @@ def folder_scanner(
         )
     )
     summary_file.write()
-    printer.title(
-        text=f"Summary File created! Total Lines: {summary_file.n_lines}",
-        title=summary_file.name,
-        style="green",
+    printer.success(
+        summary_file.name,
+        f"Summary File created! Total Lines: {summary_file.n_lines}",
     )
