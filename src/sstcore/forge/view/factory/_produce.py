@@ -55,6 +55,7 @@ class LogDtoProducer(DtoProducer[dto.LogDTO]):
     def __call__(
         self, message: str, /, **kwargs: Unpack[dto.LogInput]
     ) -> dto.LogDTO:
+        # LATER: prepare more stuff here instead of e.g. LogEmitter
         return self.dto_cls.create(message=message, **kwargs)
 
 

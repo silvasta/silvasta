@@ -9,8 +9,9 @@ __all__: list[str] = [
     "Emitting",
     "BoundEmit",
     #
-    "LogEmit",
     "Log",
+    "BoundLog",
+    "LogEmit",
 ]
 
 from typing import Any as _Any
@@ -21,20 +22,6 @@ from .factory import EventDtoFactory as _EventDtoFactory
 from .name import EventName as _EventName
 
 
-class Emit(_Protocol):
-    """Define the Structure of the Emitter"""
-
-    @property
-    def __call__(self) -> Emitting: ...
-
-    bus: _EventBus
-    dto: _EventDtoFactory
-    log: LogEmit
-
-    def make(self, **defaults) -> LogEmit: ...
-    def bind(self, event: _EventName, sender: str, **kwargs) -> BoundEmit: ...
-
-
 class Emitting(_Protocol):
     def __call__(
         self, event: _EventName, /, *, sender: str, **payload
@@ -42,9 +29,42 @@ class Emitting(_Protocol):
         """Default Call to EventBus"""
 
 
+class Emit(_Protocol):
+    """Define the Structure of the Emitter"""
+
+    @property
+    def bus(self) -> _EventBus: ...
+    @property
+    def dto(self) -> _EventDtoFactory: ...
+    @property
+    def log(self) -> LogEmit: ...
+
+    def __call__(
+        self, event: _EventName, /, *, sender: str, **payload: _Any
+    ) -> None:
+        """Fire an Event on the Bus"""
+
+    def bind(
+        self, event: _EventName, sender: str, /, **defaults: _Any
+    ) -> BoundEmit:
+        """Create a pre-bound Emitter for a specific EventName and sender."""
+
+    def make(
+        self, event: _EventName | None = None, sender: str = ""
+    ) -> LogEmit:
+        """Create a pre-bound LogEmitter for a specific EventName and sender."""
+
+
 class BoundEmit(_Protocol):
-    def __call__(self, **payload) -> _Any | None:
-        """Call to EventBus with predefined Event and Sender"""
+    """Pre-bound Emitter for a specific (event, sender) context."""
+
+    @property
+    def event(self) -> _EventName: ...
+    @property
+    def sender(self) -> str: ...
+
+    def __call__(self, **payload: _Any) -> None:
+        """Fire pre-bound Event with payload"""
 
 
 class Log(_Protocol):
@@ -56,23 +76,37 @@ class Log(_Protocol):
         event: _EventName,
         sender: str,
         level: str = "INFO",
-        **extra,
-    ) -> _Any | None:
-        """Log to EventBus"""
+        metrics: dict[str, _Any] | None = None,
+        **extra: _Any,
+    ) -> None:
+        """Unbound Log call to EventBus"""
 
 
-class LogEmit(_Protocol):
+class BoundLog(_Protocol):
+    def __call__(
+        self,
+        message: str,
+        /,
+        *,
+        level: str = "INFO",
+        metrics: dict[str, _Any] | None = None,
+        **extra: _Any,
+    ) -> None:
+        """Pre-bound Log call to EventBus"""
+
+
+class LogEmit[Logging: Log | BoundLog](_Protocol):
     """Call to Bus with predefined log emits"""
 
     @property
-    def __call__(self) -> Log: ...
+    def __call__(self) -> Logging: ...
     @property
-    def debug(self) -> Log: ...
+    def debug(self) -> Logging: ...
     @property
-    def info(self) -> Log: ...
+    def info(self) -> Logging: ...
     @property
-    def warning(self) -> Log: ...
+    def warning(self) -> Logging: ...
     @property
-    def error(self) -> Log: ...
+    def error(self) -> Logging: ...
     @property
-    def success(self) -> Log: ...
+    def success(self) -> Logging: ...

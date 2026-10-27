@@ -16,7 +16,7 @@ from typing import Any, Self, Unpack
 
 from ..port.config import Config
 from ..port.event import EventBus
-from ..port.event.emit import Emitter
+from ..port.event.emit import Emit
 from ..port.event.name import CoreEvent, EventName
 from ..port.link import portlink
 from ..port.printer import Print
@@ -31,7 +31,7 @@ from ..port.system import (
 from ..util.log import setup_minimal_logging
 from ..util.print import printer as _printer
 from .config import ConfigManager
-from .event import Bus, EmitCore
+from .event import Bus, Emitter
 
 
 @portlink(CliSystem)
@@ -43,7 +43,7 @@ class System:
         self.bus: EventBus = bus
         self.config: Config = config
         self.printer: Print = printer
-        self.emitter: Emitter = EmitCore(self.bus)  # ty:ignore
+        self.emitter: Emit = Emitter(self.bus)
 
     def emit(self, event: EventName, sender: str, **payload: Any) -> None:
         """Provide direct bus access"""

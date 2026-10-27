@@ -35,9 +35,14 @@ class EventName(_StrEnum):
 class CliEvent(EventName):
     """Use Payload (log=... or cli=...) for dispatch to Printer/Loguru"""
 
+    # TODO:
     RENDER = "cli.render"
     INPUT = "cli.input"
     EXEC_FAIL = "cli.exec.fail"
+
+
+class LogEvent(EventName):
+    NONE = "log.send.empty"
 
 
 class CoreEvent(EventName):

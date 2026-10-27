@@ -39,7 +39,7 @@ class BusRegistration(Protocol):
 class EventBus(Protocol):
     """Enable decoupled state propagation for synchronous Events"""
 
-    def emit(self, event: EventName, sender: str, /, **payload: Any) -> None:
+    def emit(self, event: EventName, /, *, sender: str, **payload: Any) -> None:
         """Fire an Event to all global and event-specific subscribers"""
 
     def subscribe(self, handler: EventHandling, pattern: EventPattern) -> None:

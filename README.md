@@ -15,7 +15,7 @@
 > **Note:** The PyPI distribution name is **`sstcore-py`**, while the Python import module is **`sstcore`**.
 
 ```bash
-# Core library (System, ConfigManager, PathGuard, printer, EmitCore, portlink)
+# Core library (System, ConfigManager, PathGuard, printer, Emitter, portlink)
 uv add sstcore-py
 
 # Recommended: includes Typer + Textual for SafeTyper and the `sst` CLI tools
@@ -60,7 +60,7 @@ All primary framework entry points are exposed directly on `sstcore` via lazy lo
 ```python
 from sstcore import (
     System,
-    EmitCore,
+    Emitter,
     printer,
     ConfigManager,
     SafeTyper,
@@ -79,14 +79,14 @@ from sstcore import System
 # TODO: Add v0.4.0 System bootstrap example
 ```
 
-### 2. `EmitCore` — Ergonomic Event Facade
+### 2. `Emitter` — Ergonomic Event Facade
 
 Launch and subscribe to system-wide events from a decoupled facade.
 
 ```python
-from sstcore import EmitCore
+from sstcore import Emitter
 
-# TODO: Add v0.4.0 EmitCore event emission example
+# TODO: Add v0.4.0 Emitter event emission example
 ```
 
 ### 3. `printer` — Fast Terminal Visualization

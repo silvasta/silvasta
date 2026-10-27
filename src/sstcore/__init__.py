@@ -13,7 +13,7 @@ _LAZY_IMPORTS = {
     "portlink": ".port.link",
     "System": ".system",
     "ConfigManager": ".system.config",
-    "EmitCore": ".system.event",
+    "Emitter": ".system.event",
     "PathGuard": ".util.path.guard",
     "printer": ".util.print",
 }
