@@ -12,7 +12,7 @@ __all__: list[str] = [
 from dataclasses import dataclass
 from pathlib import Path
 from types import new_class
-from typing import TYPE_CHECKING, Any, Literal, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -124,23 +124,21 @@ class RegistryBuilder[ItemT: SstFile, P]:
 
     def essential(self) -> RegistryBuilder[ItemT, P]:
         """Identity + path + query — minimum useful file registry."""
-        from ._mixins import FileIdentityMixin, FilePathMixin, FileQueryMixin
+        # FIX:
+        # from ._mixins import FileIdentityMixin, FilePathMixin, FileQueryMixin
+        # return (
+        #     self.add(FileIdentityMixin, ListingRegistry)
+        #     .add(FilePathMixin, FilePathOps)
+        #     .add(FileQueryMixin, FileQueryOps)
+        # )
 
-        return (
-            self.add(FileIdentityMixin, ListingRegistry)
-            .add(FilePathMixin, FilePathOps)
-            .add(FileQueryMixin, FileQueryOps)
-        )
-
-    def with_scan(self) -> RegistryBuilder[ItemT, P]:
-        from ._mixins import FileScanMixin
-
-        return self.add(FileScanMixin, FileScanOps)
-
-    def with_sync(self) -> RegistryBuilder[ItemT, P]:
-        from ._mixins import FileSyncMixin
-
-        return self.add(FileSyncMixin, FileSyncOps)
+    # FIX:
+    # def with_scan(self) -> RegistryBuilder[ItemT, P]:
+    #     from ._mixins import FileScanMixin
+    #     return self.add(FileScanMixin, FileScanOps)
+    # def with_sync(self) -> RegistryBuilder[ItemT, P]:
+    #     from ._mixins import FileSyncMixin
+    #     return self.add(FileSyncMixin, FileSyncOps)
 
     # ----- assembly ------------------------------------------------------
 
@@ -201,29 +199,26 @@ class RegistryBuilder[ItemT: SstFile, P]:
 
     # ----- typed products (what you export) ------------------------------
 
-    def build_core(self) -> type[FileQueryOps[ItemT]]:
-        self._slots.clear()
-        self.essential().with_model(True)
-        return cast(type[FileQueryOps[ItemT]], self.build())
+    # FIX:
+    # def build_core(self) -> type[FileQueryOps[ItemT]]:
+    #     self._slots.clear()
+    #     self.essential().with_model(True)
+    #     return cast(type[FileQueryOps[ItemT]], self.build())
+    # def build_scan(self) -> type[FileScanOps[ItemT]]:
+    #     self._slots.clear()
+    #     self.essential().with_scan().with_model(True)
+    #     return cast(type[FileScanOps[ItemT]], self.build())
+    # def build_full(self) -> type[FileSyncOps[ItemT]]:
+    #     self._slots.clear()
+    #     self.essential().with_scan().with_sync().with_model(True)
+    #     return cast(type[FileSyncOps[ItemT]], self.build())
 
-    def build_scan(self) -> type[FileScanOps[ItemT]]:
-        self._slots.clear()
-        self.essential().with_scan().with_model(True)
-        return cast(type[FileScanOps[ItemT]], self.build())
-
-    def build_full(self) -> type[FileSyncOps[ItemT]]:
-        self._slots.clear()
-        self.essential().with_scan().with_sync().with_model(True)
-        return cast(type[FileSyncOps[ItemT]], self.build())
-
-    @overload
-    def product(
-        self, preset: Literal["core"]
-    ) -> type[FileQueryOps[ItemT]]: ...
-    @overload
-    def product(self, preset: Literal["scan"]) -> type[FileScanOps[ItemT]]: ...
-    @overload
-    def product(self, preset: Literal["full"]) -> type[FileSyncOps[ItemT]]: ...
+    # @overload
+    # def product(self, preset: Literal["core"]) -> type[FileQueryOps[ItemT]]: ...
+    # @overload
+    # def product(self, preset: Literal["scan"]) -> type[FileScanOps[ItemT]]: ...
+    # @overload
+    # def product(self, preset: Literal["full"]) -> type[FileSyncOps[ItemT]]: ...
     @overload
     def product(self, preset: None = None) -> type[Any]: ...
     # TODO: simplify
@@ -249,7 +244,7 @@ _FilesView = ViewBuilder(
 @view(cli=Cli.PATHS, str=Str.MODULE, rich=Rich.NAME, log=Log.DATA)
 class _FilesView:
     @property
-    def _panel_paths(self: Files) -> list[Path]:
+    def _panel_paths(self) -> list[Path]:
         return list(self.paths())
 
 

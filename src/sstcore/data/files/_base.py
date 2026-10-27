@@ -12,28 +12,30 @@ from pathlib import Path
 
 from ...brick.vault import ListVault
 from ...error import PathGuardError, RegistrySyncError
-from ...port.files import File, Files
+from ...port.files import File, FileRegister
 from ...port.link import portlink
 from ...util.path.guard import PathGuard
 
 
-@portlink(Files)  # ty:ignore FIX:
-class SstFiles(ListVault):
+@portlink(FileRegister)
+class SstFiles(ListVault):  # TASK: where to mix it in?
     """Provide basic registry access and confirmation"""
 
     root_dir: Path
 
     @property
     def files(self) -> list[File]:
+        # NEXT: adapt to new Vaults
         return self.items
 
     @files.setter
     def files(self, value: list[File]) -> None:
+        # NEXT: adapt to new Vaults
         self.items: list[File] = value
 
     def _item_identifier(self, item: File) -> Path:
         """Plug ListVault identity into SstFile.path"""
-
+        # NEXT: adapt to new Vaults
         return item.path
 
     def ensure_path(self, path: Path) -> Path:
