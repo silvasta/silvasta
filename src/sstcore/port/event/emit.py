@@ -16,6 +16,7 @@ __all__: list[str] = [
 
 from typing import Any as _Any
 from typing import Protocol as _Protocol
+from typing import Self as _Self
 
 from ._core import EventBus as _EventBus
 from .factory import EventDtoFactory as _EventDtoFactory
@@ -39,14 +40,13 @@ class Emit(_Protocol):
     @property
     def log(self) -> LogEmit: ...
 
-    def __call__(
-        self, event: _EventName, /, *, sender: str, **payload: _Any
-    ) -> None:
+    @classmethod
+    def boot(cls, bus: _EventBus, dto: _EventDtoFactory) -> _Self: ...
+
+    def __call__(self, event: _EventName, /, *, sender: str, **payload) -> None:
         """Fire an Event on the Bus"""
 
-    def bind(
-        self, event: _EventName, sender: str, /, **defaults: _Any
-    ) -> BoundEmit:
+    def bind(self, event: _EventName, sender: str, /) -> BoundEmit:
         """Create a pre-bound Emitter for a specific EventName and sender."""
 
     def make(

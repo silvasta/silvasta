@@ -11,7 +11,7 @@ __all__: list[str] = [
     "LogEmitter",
 ]
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Self
 
 from ...forge.view import view
 from ...forge.view.catalog import Repr, Str
@@ -58,13 +58,15 @@ class LogEmitter:
     ) -> None:
         event: EventName = event or self.event or LogEvent.NONE
         sender: str = sender or self.sender or repr(self)
+        resolved_event: EventName = event or self.event or LogEvent.NONE
+        resolved_sender: str = sender or self.sender or repr(self)
         dto: LogDTO = self.producer(
             message,
             level=level,
             metrics=metrics or {},
             extra=extra,
         )
-        self.emit(event, sender=sender, log=dto)
+        self.emit(resolved_event, sender=resolved_sender, log=dto)
 
     def debug(self, message: str, /, **kwargs) -> None:
         self(message, level="DEBUG", **kwargs)
@@ -101,17 +103,18 @@ class Emitter:
     """Lead the Distribution of globally wired Bus Entry Points"""
 
     bus: EventBus
-    dto: EventDtoFactory = dto_factory
-    log: LogEmitter  # AI_TASK: default for this needed
+    dto: EventDtoFactory
+    log: LogEmitter
 
     @property
     def emit(self) -> Emitting:
         return self.bus.emit
 
-    # REMOVE: log is intended to give access to unbound log emitter!
-    # @property
-    # def log(self) -> LogEmitter:
-    #     return LogEmitter(emit=self.bus.emit, dto=self.dto)
+    @classmethod
+    def boot(cls, bus: EventBus, dto: EventDtoFactory = dto_factory) -> Self:
+        return cls(
+            bus=bus, dto=dto, log=LogEmitter(emit=bus.emit, producer=dto.log)
+        )
 
     def __call__(self, event: EventName, /, *, sender: str, **payload) -> None:
         self.bus.emit(event, sender=sender, **payload)

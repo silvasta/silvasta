@@ -17,12 +17,12 @@ __all__: list[str] = [
 
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, Unpack
+from typing import Any, Protocol, Unpack
 
 from ..port.config import Config
 from ..port.event import BusRegistration, EventBus
 from ..port.event.dto import CliDTO
-from ..port.event.emit import Emit, Emitter, LogEmit
+from ..port.event.emit import Emit, Emitting, LogEmit
 from ..port.event.name import EventName
 from ..port.printer import Print, PrintInput
 from ..port.system import (
@@ -98,19 +98,19 @@ class _SystemMixing(Protocol):
     @property
     def config(self) -> Config: ...
     @property
-    def emitter(self) -> Emitter: ...
+    def emitter(self) -> Emit: ...
     @property
     def printer(self) -> Print: ...
     @property
-    def emit(self) -> Emit: ...
+    def emit(self) -> Emitting: ...
     @property
     def log(self) -> LogEmit: ...
     @property
     def print(self) -> Print: ...
 
 
-# @portlink(_SystemMixing)
-class SystemMixin[C: Config = Config, E: Emitter = Emitter]:
+# TODO: @portlink(_SystemMixing)
+class SystemMixin[C: Config = Config, E: Emit = Emit]:
     """Exfiltrate and Provide the Core Tools of the System"""
 
     def __init__(self, system: CliSystem) -> None:
@@ -129,7 +129,7 @@ class SystemMixin[C: Config = Config, E: Emitter = Emitter]:
         return self.system.printer
 
     def emit(self, event: EventName, sender: str, **payload) -> None:
-        return self.emitter(event, sender, **payload)
+        return self.emitter(event, sender=sender, **payload)
 
     def log(
         self,
@@ -146,18 +146,3 @@ class SystemMixin[C: Config = Config, E: Emitter = Emitter]:
         self, target: Any, /, *more: Any, **spec: Unpack[PrintInput]
     ) -> CliDTO:
         return self.printer(target, *more, **spec)
-
-
-if TYPE_CHECKING:
-    x: CliSystem = sst_system_loader()()
-    sap = SystemMixin(x)
-    config = sap.config
-    emitter = sap.emitter
-    printer = sap.printer
-    # _log: LogEmit = sap.log
-    _print: Print = sap.print
-    _emit: Emit = sap.emit
-    sap3: SystemMixin[Config, Emitter] = SystemMixin(x)
-    config3 = sap3.config
-    emitter = sap3.emitter
-    printer = sap3.printer

@@ -43,11 +43,11 @@ class System:
         self.bus: EventBus = bus
         self.config: Config = config
         self.printer: Print = printer
-        self.emitter: Emit = Emitter(self.bus)
+        self.emitter: Emit = Emitter.boot(self.bus)
 
     def emit(self, event: EventName, sender: str, **payload: Any) -> None:
         """Provide direct bus access"""
-        self.bus.emit(event, sender, **payload)
+        self.bus.emit(event, sender=sender, **payload)
 
     @classmethod
     def boot(cls, **data: Unpack[SystemBootParam]) -> Self:
