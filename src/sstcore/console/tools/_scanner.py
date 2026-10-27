@@ -12,14 +12,13 @@ __all__: list[str] = [
     "folder_scanner",
 ]
 
-import json
 from pathlib import Path
 
 import typer
 
+from ...port.printer import Print
 from ...port.scanner import ScanCaching, ScanMode
 from ...util.filter import PathFilter, ProjectFilter
-from ...util.print import Printer
 from ...util.print import printer as _printer
 from ...util.scan import FolderScanner, SummaryFile
 from ..select import TreeSelectorApp
@@ -28,105 +27,29 @@ from ..select import TreeSelectorApp
 def folder_scanner(
     scan_root: Path,
     output_file: Path,
-    cache_file: Path,
+    cache: ScanCaching,
+    preset: str | None = None,
     cache_reset: bool = False,
     sort: str = TreeSelectorApp.Sort.SELECTION,
-    printer: Printer | None = None,
+    printer: Print | None = None,
     filter: PathFilter | None = None,
     scan_mode: ScanMode = ScanMode.READ,
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
 
-    printer: Printer = printer or _printer
+    printer: Print = printer or _printer
 
     if filter is None:
         filter = ProjectFilter(require_all=set(), require_any=set())
 
-    selector = TreeSelectorApp(
-        sst_tree=FolderScanner(scan_root, filter).tree(),
-        sort_method=sort,
-        pre_select=[] if cache_reset else _load_scan(cache_file, printer),
-    )
-    if not (selected_files := selector.run()):
-        printer.warn("No files selected...")
-        raise typer.Exit()
-
-    printer.lines(name="Selected Files", lines=selected_files)
-
-    _save_to_cache(cache_file, selected_files, printer)
-    printer(
-        target=(
-            summary_file := SummaryFile.with_scanner(
-                output_file,
-                target_files=selected_files,
-                local_root=scan_root,
-                scan_mode=scan_mode,
-            )
-        )
-    )
-    summary_file.write()
-    printer.header(
-        text=f"Summary File created! Total Lines: {summary_file.n_lines}",
-        title=summary_file.name,
-        style="green",
-    )
-
-
-def _load_scan(cache_file: Path, printer: Printer) -> list[Path]:
-    if cache_file.exists():
-        try:
-            with open(cache_file, encoding="utf-8") as f:
-                paths_str = json.load(f)
-                return [Path(p) for p in paths_str if Path(p).exists()]
-        except json.JSONDecodeError, OSError:
-            printer.warn("Failed to read scanner cache. Starting fresh.")
-    return []
-
-
-def _save_to_cache(
-    cache_file: Path, selected: list[Path], printer: Printer
-) -> None:
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump([str(p) for p in selected], f, indent=2)
-    except OSError as e:
-        printer.warn(f"Could not save selection cache: {e}")
-
-
-if __name__ == "__main__":
-    folder_scanner(
-        scan_root=Path.cwd(),
-        output_file=Path("summary.xml"),
-        cache_file=Path(".scanner.json"),
-    )
-
-
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-# NEXT:
-def ___folder_scanner(
-    scan_root: Path,
-    cache: ScanCaching,
-    preset: str | None = None,
-    cache_reset: bool = False,
-    sort: str = TreeSelectorApp.Sort.SELECTION,
-    printer: Printer | None = None,
-    filter: PathFilter | None = None,
-) -> None:
-    """Launch Scanner, select from Filesystem Tree and write to file"""
-
-    printer: Printer = printer or _printer
-
-    if filter is None:
-        filter = ProjectFilter(require_all=set(), require_any=set())
+    printer(filter)  # AI: this I added for the filter
 
     target_preset = preset or cache.LAST
 
     with cache:
-        pre_select = [] if cache_reset else cache.load(name=target_preset)
-
+        pre_select: list[Path] = (
+            [] if cache_reset else cache.load(name=target_preset)
+        )
         selector = TreeSelectorApp(
             sst_tree=FolderScanner(scan_root, filter).tree(),
             sort_method=sort,
@@ -138,3 +61,18 @@ def ___folder_scanner(
 
         printer.lines.len(name="Selected Files", lines=selected_files)
         cache.save(selected_files, name=target_preset)
+
+    printer(
+        summary_file := SummaryFile.with_scanner(
+            output_file,
+            target_files=selected_files,
+            local_root=scan_root,
+            scan_mode=scan_mode,
+        )
+    )
+    summary_file.write()
+    printer.title(
+        text=f"Summary File created! Total Lines: {summary_file.n_lines}",
+        title=summary_file.name,
+        style="green",
+    )

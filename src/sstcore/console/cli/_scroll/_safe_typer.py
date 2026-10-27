@@ -158,7 +158,7 @@ class ConfigAndLogPanel(PrintOption[PathSignature]):
         }
 
         relative: Path = PathGuard.relative(path)
-        printer.panel(relative, title=table[mode], frame=frame, box=box)
+        printer.panel(relative, title=table[mode], frame=frame, box=box)  # ty:ignore FIX:
         # TODO: check absolute path as option
         # printer.title(path, title=table[mode], frame=frame, box=box)
 

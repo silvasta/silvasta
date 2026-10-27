@@ -128,7 +128,9 @@ class SummaryFileMachine(StrEnum):
         try:
             return cls(output_file.suffix.strip("."))
         except ValueError:
-            printer.danger(["Unknown file type of output_file:", output_file])
+            printer.danger(
+                f"Unknown file type of output_file: {output_file}"
+            )  # LATER: tstring!
             logger.warning(f"Unknown file type of output_file: {output_file}")
             return SummaryFileMachine.TXT
 

@@ -206,5 +206,5 @@ if __name__ == "__main__":
     )
     """
     portlink.show()
-    portlink.spec.printer(NameParser.__doc__)
-    portlink.spec.printer(portlink.registry[BidirectionalName])
+    portlink.tap.printer(NameParser.__doc__)
+    portlink.tap.printer(portlink.registry[BidirectionalName])

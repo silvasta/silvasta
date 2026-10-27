@@ -69,18 +69,18 @@ def launch_folder_scanner(
     scan_root: Path = scan_root or any_root()
     cache_dir: Path = paths.scanner_cache_file(scan_root).parent
 
-    _next = DiskScanCache(cache_dir, scan_root, system.printer)
+    cache = DiskScanCache(cache_dir, scan_root, system.printer)
 
-    paths.scanner_cache_file()
     folder_scanner(
         scan_root=scan_root,
         output_file=output_file or paths.summary_file(suffix=file_type),
-        cache_file=paths.scanner_cache_file(scan_root),
+        cache=cache,
+        preset=filter_box.name.lower(),
         cache_reset=reset,
         sort=sort,
         printer=system.printer,
         filter=ProjectFilter.clone(
-            filter_box(
+            filter_box.build(
                 include=include,
                 exclude=exclude,
                 allow_hidden=hidden,

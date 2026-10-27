@@ -4,7 +4,7 @@ Define the Shape of the System
 - Central Layer of the Core Orchestration
 
 Combine Boot, Interface and Distribution:
-- Bus: Handler and Emitter
+- Bus: Handler and Emit
 - Config: Settings and Paths
 - Print: Nice UX and DX
 
@@ -40,7 +40,7 @@ from typing import Protocol, Self, TypedDict, Unpack
 
 from .config import Config, HomeSetup, Paths, Settings
 from .event import BusRegistration, EventBus
-from .event.emit import Emitter
+from .event.emit import Emit
 from .printer import Print
 
 
@@ -56,7 +56,7 @@ class SstSystem(Protocol):
         """- Boot without Input"""
 
 
-class CliSystem[C: Config, E: Emitter](SstSystem, Protocol):
+class CliSystem[C: Config, E: Emit](SstSystem, Protocol):
     """The SstSystem provides ..."""
 
     @property

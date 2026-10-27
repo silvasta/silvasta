@@ -43,10 +43,10 @@ class FilterSet[SetType: str | Path | int, TargetT: Any](FilterData[SetType]):
                 return list(self._fulfill_filter(target))
             case set():
                 return set(self._fulfill_filter(target))
-            case Iterable():
-                yield self._fulfill_filter(target)
+            case Iterable() if not isinstance(target, (str, bytes, Path)):
+                return self._fulfill_filter(target)
             case _:
-                return self._fulfill(target)
+                return self._fulfill(target) != self.return_opposite
 
     def _fulfill(self, target: TargetT) -> bool:
         """Override for custom validation"""

@@ -133,7 +133,7 @@ class Exceptor:
             printer.success(f"{c.g(self.app)} caught the Error")
 
         except SystemExit:
-            printer.yellow(f"{c.y(self.app)} triggered sys.exit(1)")
+            printer.warn(f"{c.y(self.app)} triggered sys.exit(1)")
 
         except BaseException as error:
             _error: str = type(error).__name__

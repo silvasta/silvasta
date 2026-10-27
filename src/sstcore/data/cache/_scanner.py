@@ -35,7 +35,7 @@ class DiskScanCache:
     ) -> None:
         self._cache_dir = cache_dir
         self._scan_root = scan_root.resolve()
-        self._printer: Print = printer or Printer()  # ty:ignore will match soon
+        self._printer: Print = printer or Printer()
         self._cache = Cache(self._cache_dir)
 
     @property

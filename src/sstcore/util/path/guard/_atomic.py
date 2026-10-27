@@ -68,6 +68,7 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
 
         case SyncMode.IGNORE:
             raise PathGuardError(PathGuardReason.SYNC, target=target)
+    raise
 
 
 #  LINE: -- Functors -- -- - -- -- - -- -- - -- -- - -- -- - -- --

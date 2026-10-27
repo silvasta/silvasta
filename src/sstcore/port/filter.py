@@ -108,7 +108,7 @@ class FilterArgs(IntEnum):  # CHECK: EnumOption?
     NONE = auto()
     ALL = auto()
 
-    def __call__(
+    def build(
         self,
         *,
         include: KeyWords | None = None,
@@ -120,6 +120,10 @@ class FilterArgs(IntEnum):  # CHECK: EnumOption?
     ) -> FilterSpec[str]:
         _ = (include, exclude, require_all, unexclude, allow_hidden, invert)
         raise FailedHackError("Import sstcore.util.filter to attach args")
+
+    @property
+    def label(self):
+        return self.name.capitalize()
 
 
 class NameGate(Protocol):

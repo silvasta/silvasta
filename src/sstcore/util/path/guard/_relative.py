@@ -45,6 +45,8 @@ def _relative_one(
         ) from error
 
 
+# AI: this is mounted to PathGuard.relative
+# - before it handled only 1 Path at a time
 def relative_main(
     target: SinglePath | MultiPath,
     root: PathArg | None = None,
@@ -58,14 +60,15 @@ def relative_main(
     - If not strict: walking upwards via '..' is permitted
     """
     if isinstance(target, (Path, str, PathSpec)):
-        return _relative_one(target, root, strict=strict)
+        return _relative_one(target, root, strict=strict)  # ty:ignore FIX:
 
     if isinstance(target, Iterable):
         resolved_root: Path = (
             PathSpec.ok(root, resolve=True) if root is not None else Path.cwd()
         )
         return [
-            _relative_one(item, resolved_root, strict=strict) for item in target
+            _relative_one(item, resolved_root, strict=strict)  # ty:ignore FIX:
+            for item in target
         ]
 
     raise NotImplementedDispatchError(target, root)

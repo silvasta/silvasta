@@ -137,15 +137,12 @@ class PydanticModel(_typing.Protocol):
 
 class _Richable(_typing.Protocol):
     def __rich__(self): ...
-    def __rich_console__(self):
+    def __rich_console__(self, console, options):
         """Just extend the Renderable type"""
 
 
 @_portlink(_Richable)
-class _RichDummy(
-    RichView,
-    RichConsolable,
-):  # LATER: actually needed? will dunder ever change? maybe hide somehow below
+class _RichDummy(RichView, RichConsolable):
     """Ensure the distributed view types match Richable"""
 
 

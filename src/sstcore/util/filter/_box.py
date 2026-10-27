@@ -40,13 +40,6 @@ EXPERIMENT: frozenset[str] = frozenset({"____"})
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def attach_str_to_filter_args(self) -> str:
-    return self.name.capitalize()
-
-
-setattr(FilterArgs, "__str__", attach_str_to_filter_args)  # noqa: B010
-
-
 def _resolve_preset(enum: FilterArgs) -> FilterData[str]:
     """Create a configured filter. Overrides are applied after defaults."""
     match enum:
@@ -124,9 +117,9 @@ def create_filter_args(
     return data
 
 
-setattr(FilterArgs, "__call__", create_filter_args)  # noqa: B010
+setattr(FilterArgs, "build", create_filter_args)  # noqa: B010
 
 if __name__ == "__main__":
     print(FilterArgs)
     for f in FilterArgs:
-        print(f, f.value, f())
+        print(f, f.value, f.build())
