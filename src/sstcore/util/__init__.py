@@ -13,7 +13,7 @@ Built on top of these major external dependencies:
 - rich
 - loguru
 
-                                                       DependencyLevel[3]
+                                         DependencyLevel.sstcore[4]
 """
 
 __all__: list = [

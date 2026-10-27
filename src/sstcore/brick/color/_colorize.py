@@ -58,7 +58,7 @@ def modules(
     return ".".join((project, *modules, cls_or_instance))
 
 
-def path(target: Path) -> str:
+def path(target: Path, /) -> str:
     """Make folder parts blue and file name colored by type or white"""
 
     if str(target).endswith("/") or (not target.suffix and not target.name):

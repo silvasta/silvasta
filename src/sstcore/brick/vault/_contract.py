@@ -9,13 +9,13 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Iterator
+from collections.abc import Hashable, Iterator
 from typing import Any
 
 from ...port.register import registry_types as _r
 
 
-class VaultContract[Item, V: _r.Vault]:
+class VaultContract[Item, V: _r.Vault, K: Hashable]:
     """
     Set the direction and prepare the main processes (no abc here!)
 
@@ -57,11 +57,11 @@ class VaultContract[Item, V: _r.Vault]:
         """Store an item at the specified integer index"""
         raise NotImplementedError(idx, item)
 
-    def _key_item(self, key: str) -> Item:
+    def _key_item(self, key: K) -> Item:
         """Retrieve the unique item associated with a key identifier"""
         raise NotImplementedError(key)
 
-    def _key_put(self, key: str, item: Item) -> None:
+    def _key_put(self, key: K, item: Item) -> None:
         """Store an item under the specified key identifier"""
         raise NotImplementedError(key, item)
 
@@ -69,7 +69,7 @@ class VaultContract[Item, V: _r.Vault]:
         """Return the item at the specified index wrapped in a vault"""
         raise NotImplementedError(idx)
 
-    def _box_key(self, key: str) -> V:
+    def _box_key(self, key: K) -> V:
         """Return the item matching the key wrapped in a vault"""
         raise NotImplementedError(key)
 

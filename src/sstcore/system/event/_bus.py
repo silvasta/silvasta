@@ -2,55 +2,62 @@
 Provide Infrastructure for Events
 
 - EventBus: Route Events by name to registered EventHandling
-- XXX EventHandling: Process Event with optional Error handling
-                                                       DependencyLevel[1]
+
+                            DependencyLevel.sstcore.system.event[2]
 """
 
 __all__: list[str] = [
     "Bus",
 ]
 
-import fnmatch
-from functools import lru_cache
-from typing import TYPE_CHECKING, Self, Unpack
+from typing import Self, Unpack
 
 from ...brick.reflect import clsname
 from ...port.event import Event, EventBus, EventHandling
 from ...port.event.name import CoreEvent, EventName, EventPattern
 from ...port.link import portlink
-from ...port.system import BusData, BusInput, BusLoader
-from ._handler import register_default_event_handler
+from ...port.system import BusInput, BusSpec
+from ._handler import DEFAULT_HANDLERS, EventHandler
+from ._registry import BusRegistry
 
 
 @portlink(EventBus)
 class Bus:
-    def __init__(self) -> None:
-        self._subscribers: dict[EventPattern, list[EventHandling]] = {}
-        self._global_subscribers: list[EventHandling] = []
+    def __init__(self, registry: BusRegistry | None = None) -> None:
+        self.registry: BusRegistry = (
+            registry if registry is not None else BusRegistry()
+        )
 
     def emit(self, event: EventName, /, sender: str, **payload) -> None:
+        """Root of all Emits"""
 
         core_event = Event(name=event, sender=sender, payload=payload)
 
-        for handler in self._global_subscribers:
+        for handler in self.registry.find(core_event):
             handler(core_event)
 
-        for handler in self._match_subscribers(event):
-            handler(core_event)
-
-    def subscribe(self, name: EventPattern, handler: EventHandling) -> None:
-        self._subscribers.setdefault(name, []).append(handler)
+    def subscribe(
+        self, handler: EventHandling, pattern: EventPattern | None = None
+    ) -> None:
+        if isinstance(handler, EventHandler):
+            if pattern is not None:
+                handler.pattern = pattern
+            self.registry.add(handler)
+        else:
+            if pattern is None:
+                raise ValueError("Need Pattern for raw Function!")
+            self.registry.add(EventHandler(call=handler, pattern=pattern))
 
     def subscribe_all(self, handler: EventHandling) -> None:
-        self._global_subscribers.append(handler)
-
-    @property
-    def n_handler(self) -> int:
-        return len(self._subscribers)
+        self.subscribe(handler, pattern="*")
 
     @property
     def n_global_handler(self) -> int:
-        return len(self._global_subscribers)
+        return self.registry.count("*")
+
+    @property
+    def n_handler(self) -> int:
+        return len(self.registry) - self.n_global_handler
 
     def __str__(self) -> str:
         return clsname(self)
@@ -58,57 +65,20 @@ class Bus:
     def __repr__(self) -> str:
         return f"{self}(  {self.n_global_handler} 󰌌 {self.n_handler} 󰍹 )"
 
-    def _match_subscribers(
-        self, event: EventName
-    ) -> tuple[EventHandling, ...]:
-        """Filter subscribers by event name and wildcard pattern"""
-
-        subscribers: tuple[EventPattern, ...] = tuple(self._subscribers.keys())
-
-        matched_handlers: list[EventHandling] = [
-            handler
-            for pattern in _get_patterns(event, subscribers)
-            for handler in self._subscribers[pattern]
-        ]
-
-        return tuple(dict.fromkeys(matched_handlers))
-
-    # IMPORTANT: @portlink(BusLoader)
-    # TASK: portlink.func?
-    # - this but for methods instead of classes!
     @classmethod
-    def ready(cls, **data: Unpack[BusInput]) -> Self:
-
+    def ready(cls, **kwargs: Unpack[BusInput]) -> Self:
         bus: Self = cls()
-        spec = BusData(**data)
+        spec = BusSpec(**kwargs)
 
         if spec.use_default_registration:
-            register_default_event_handler(bus)
+            bus.registry.add(list(DEFAULT_HANDLERS))
 
-        if spec.bus_registration:
+        if spec.bus_registration:  # LATER: just inject prepared registry?
             spec.bus_registration(bus)
 
         bus.emit(
-            CoreEvent.BUS_DIAG,
+            CoreEvent.BUS_READY,
             sender=f"{bus}",
             log="EventBus setup complete",
         )
         return bus
-
-
-@lru_cache(maxsize=256)
-def _get_patterns(
-    event: EventName, active_patterns: tuple[EventPattern, ...]
-) -> tuple[EventPattern, ...]:  # tuple for lru_cache (immutable)
-    """Match pattern and cache results decoupled from the Bus"""
-    return tuple(
-        pattern
-        for pattern in active_patterns
-        if fnmatch.fnmatch(event, pattern)
-    )
-
-
-if TYPE_CHECKING:
-    _loader: BusLoader = Bus.ready
-    _instance_check: EventBus = Bus()
-    _class_check: type[EventBus] = Bus

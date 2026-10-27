@@ -12,37 +12,45 @@ import os
 import time
 from pathlib import Path
 
+from ....brick.color import colorize
+from ....brick.color.box import Colors
 from ....error import PathGuardError, PathGuardReason
-from ._arg import PathSpec
+from ....port.link import PortEmit, tap
+from ._arg import PathArg, PathSpec
+
+c = Colors()
 
 
+@tap.trace
 class Lock:
     """Cross-process exclusive lock context using atomic O_CREAT | O_EXCL."""
 
+    _debug: PortEmit
+
     def __init__(
         self,
-        target: Path,  # LATER: accept spec, PathSpec or something else
+        target: PathArg,  # LATER: accept spec, PathSpec or something else
+        /,
         *,
         timeout: float = 5.0,
         poll_interval: float = 0.02,
     ) -> None:
-        self.target: Path = PathSpec.ok(target, ensure_parent=True)
+        target: Path = PathSpec.ok(target, ensure_parent=True)
         self.lock_file: Path = target.with_name(f".{target.name}.lock")
         self.timeout: float = timeout
         self.poll_interval: float = poll_interval
-        #
-        # self.debug = True
+        self.target: Path = target
 
-    # NEXT:
-    # NEXT:
-    # NEXT:
-    def _debug(self, *args, **kwargs):
-        if hasattr(self, "debug") and self.debug:
-            print(*args, **kwargs)
+    def __str__(self):
+        return f"{type(self).__name__}[{self.lock_file}]"
+
+    def __rich__(self):
+        return f"{c.teal(type(self).__name__)}[{colorize.path(self.lock_file)}]"
 
     def __enter__(self) -> Path:
         start: float = time.monotonic()
-        self._debug(f"Start : {time.monotonic()}")
+        self._debug(f"Locking at : {time.monotonic()}")
+        print(self._debug)
 
         while True:
             try:
@@ -82,8 +90,8 @@ if __name__ == "__main__":
     #  LINE: -- Examples -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     class _PathG:
-        lock = Lock
+        Lock = Lock
 
-    with _PathG.lock(Path.cwd() / "my_file.md") as path:
+    with _PathG.Lock(Path.cwd() / "my_file.md") as path:
         print(f"Inside: {time.monotonic()}")
         print(path)

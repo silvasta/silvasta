@@ -1,109 +1,132 @@
 """
-The Docstring Merging Render Engine
+Render the Output with Lazy Loaded external Libraries
 
-- Setup prepared with possibilities to grow
+- rich.(Console.)print: direct feedback inside active terminal session
+- loguru: when it needs to be retained for longer than just one window
 
-                               DependencyLevel.sstcore.port.link[2]
+                               DependencyLevel.sstcore.port.link[1]
 """
 
-# TASK: remove QuickPrinter asap
-
-from collections.abc import Iterable
-from contextlib import contextmanager
+from functools import lru_cache
 from typing import Any
+from weakref import WeakSet
 
-from .._types import _Stringable
+from .._types import _RichView
+from ._define import Doc, LinkRegistry, Param, PortPrinter, SortedDocs
 
-printer: Any = None  # REMOVE:
+
+def _loguru(*args: Any, sender: str = "", **kwargs: Any) -> None:
+    from loguru import logger
+
+    message: str = " ".join(a if isinstance(a, str) else repr(a) for a in args)
+    info: str = ", ".join(f"{k}{v}" for k, v in kwargs.items())
+    logger.opt(depth=3).debug(f"[{sender}] {message} ({info})")
 
 
-def _load_printer():
-    # NEXT: portlog -> writes ndjson -> render from loaded file!
+def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
+    from rich import print as rprint
+    from rich.markup import escape
+
+    match sender:
+        case None:
+            _sender = "..."
+        case _RichView():
+            _sender = sender.__rich__()
+        case _:
+            _sender = escape(str(sender))
+
+    prefix: str = f"[bold cyan]{_sender}[/] [dim]│[/]" if _sender else ""
+    try:
+        rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
+    except Exception:
+        print(f"⚡{sender} │", *args, **kwargs)
+
+
+def _format_cell(val: Any) -> str:
+    """Format types, WeakSets, and Docs cleanly for Rich panels and tables."""
+    if isinstance(val, type):
+        return val.__name__
+    if isinstance(val, WeakSet):
+        return ", ".join(c.__name__ for c in val) or "∅"
+    if isinstance(val, Doc):
+        attr_suffix: str = f".{val.attr}" if val.attr else ""
+        return f"[bold]{val.source.__name__}{attr_suffix}[/]: {val.text!r}"
+    return str(val)
+
+
+class _NoopPrinter:
+    """Zero-cost printer sink when rendering is disabled."""
+
+    def __call__(self, *args, **kwargs): ...
+    def line(self, *args, **kwargs): ...
+    def panel(self, *args, **kwargs): ...
+    def table(self, *args, **kwargs): ...
+    def show_sort_result(self, *args, **kwargs): ...
+    def overview(self, *args, **kwargs): ...
+
+
+NOOP_PRINTER: PortPrinter = _NoopPrinter()
+
+
+@lru_cache(maxsize=1)
+def _load_printer() -> PortPrinter:
+    """From here Only Printer"""
+
     from rich.console import Console
+    from rich.errors import NotRenderableError
     from rich.panel import Panel
-    from rich.rule import Rule
     from rich.table import Table
 
-    class QuickPrinter:
-        console = None
+    class MiniPrinter:
+        console = Console()
 
         def __call__(self, *args, **kwargs):
-            if self.console is None:
-                self.console = Console()
-            self.console.print(*args, **kwargs)
-
-        def lines(self, target: Iterable[_Stringable], /):
-            match target:
-                case dict():
-                    _lines = (f"{k}: {v}" for k, v in target.items())
-                case _:
-                    _lines = (str(i) for i in target)
-            self("\n".join(_lines))
-
-        @contextmanager
-        def topic(self, title, /):
-            self.panel(f"Start of: {title}", frame="green", title=title)
             try:
-                yield
-            finally:
-                self.line()
+                self.console.print(*args, **kwargs)
+            except NotRenderableError as error:
+                param = Param(args, kwargs)
+                self.panel(str(param), title=str(error), color="red")
 
-        #  LINE: -- Layouts -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+        def line(self, *target, color: str = "yellow"):
+            self("\n".join(str(i) for i in target), style=color)
 
-        def section(self, title, content):
-            self.panel(title, frame="yellow")
-            self(content)
-
-        def panel(
-            self, content, /, text="bold white", title=None, frame="cyan"
-        ):
+        def panel(self, *content: Any, title: Any = None, color: str = "cyan"):
+            body: str = (
+                "\n".join(_format_cell(c) for c in content)
+                if content
+                else "[dim]Empty[/]"
+            )
             panel = Panel(
-                renderable=content,
-                style=text,
+                renderable=body,
                 title=f"[bold white]{title}[/]" if title else None,
                 title_align="right",
-                border_style=frame,
+                border_style=color,
             )
             self(panel)
 
-        def line(self, char="-- --- --", color="red"):
-            self(Rule(style=color, characters=char))
-
-        #  LINE: -- Specialized -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-        def vars(self, target, /):
-            self(vars(target), title=f"vars({clsname(target)})")
-
-        def repr(self, target, /):
-            self(repr(target))
-
-        def debug(
+        def table(
             self,
             target: dict,
             /,
-            header="Dict Inspection",
-            show_type: bool | tuple[bool, bool] = (True, True),
-            style="yellow",
+            show_key_type: bool = False,
+            show_value_type: bool = False,
+            color: str = "green",
         ) -> None:
             """Render colorful Debug Dict, optional with Key or Value Type"""
-            if header:
-                self.panel(header, title="Dict Inspection", frame=style)
-            show_key_type, show_value_type = (
-                show_type
-                if isinstance(show_type, tuple)
-                else (show_type, show_type)
-            )
-            table = Table(style=style)
+
+            table = Table(style=color)
+
             table.add_column("Key", justify="left", style="green")
             if show_key_type:
                 table.add_column("Type Key", justify="center", style="magenta")
+
             table.add_column("Value", style="blue", justify="left")
             if show_value_type:
                 table.add_column("Type Value", style="magenta")
 
             for key, value in target.items():
                 row: list[str] = [
-                    key,
+                    str(key),
                     *([type(key).__name__] if show_key_type else []),
                     str(value),
                     *([type(value).__name__] if show_value_type else []),
@@ -111,9 +134,46 @@ def _load_printer():
                 table.add_row(*row)
             self(table)
 
-    def clsname(target, /, default="") -> str:
-        """Extract name from instance or class"""
-        default: str = default or type(target).__name__
-        return getattr(target, "__name__", default)
+        def show_sort_result(  # MOVE: printer?
+            self,
+            docs: SortedDocs,
+            level=2,
+            stat="cyan",
+            fail="orange_red1",
+            port="purple",
+            plug="green",
+        ):
+            if level < 1:
+                return
 
-    return QuickPrinter
+            if not docs:
+                self.panel("Nothing to print...", color="blue")
+                return
+
+            self.panel(
+                f"[{stat}]Statistics[/] {docs!r}", title=docs, color=stat
+            )
+
+            if level < 2:
+                return
+
+            self.panel(f"[{fail}]Failed[/]", color=fail, title=repr(docs))
+            self.panel(*docs.fail, color=fail, title=f"[{fail}]Fails[/]")
+
+            if level < 3:
+                return
+
+            self.panel(f"[{port}]PortDocs[/]", color=port, title=repr(docs))
+            self.panel(*docs.port, color=port, title=f"[{port}]Protocol[/]")
+
+            self.panel(f"[{plug}]PlugDocs[/]", color=plug, title=repr(docs))
+            self.panel(
+                *docs.plug, color=plug, title=f"[{plug}]Implementation[/]"
+            )
+
+        def overview(self, portlink: Any, registry: LinkRegistry, /):
+            self.panel(f"{portlink}::{registry}")
+            self.table(dict(registry._by_port))
+            self.table(dict(registry._by_plug))
+
+    return MiniPrinter()

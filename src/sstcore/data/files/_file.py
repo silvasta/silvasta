@@ -12,18 +12,18 @@ import filecmp
 import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from ...brick.views import Cli, Log, Rich, Str
-from ...forge.view import view
+from ...forge.view import Cli, Log, Rich, Str, view
 from ...port.files import File
+from ...port.link import portlink
 
 
-@view(cli=Cli.HEADER, str=Str.NAME, rich=Rich.MODULE, log=Log.DATA)
-class SstFile(BaseModel):
+@portlink(File)
+@view(Cli.HEADER, Str.NAME, Rich.MODULE, Log.DATA)
+class SstFile(BaseModel):  # CHECK: .._model.SstModel
     """Local file for upload and usage in prompt"""
 
     # NOTE: uuid? as option?
@@ -96,8 +96,3 @@ class SstFile(BaseModel):
             for chunk in iter(lambda: f.read(4096), b""):
                 hasher.update(chunk)
         return hasher.hexdigest()
-
-
-if TYPE_CHECKING:
-    _instance_check: File = SstFile(path=Path())
-    _class_check: type[File] = SstFile

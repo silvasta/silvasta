@@ -52,9 +52,7 @@ class ForgeTyper1:
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-ForgeTyperMetaInput = StaticFuncMetaData(
-    name=lambda cls: f" 🛠️{clsname(cls)} 🛠️"
-)
+ForgeTyperMetaInput = StaticFuncMetaData(name=lambda cls: f" 🛠️{clsname(cls)} 🛠️")
 
 
 @portlink(Typer)

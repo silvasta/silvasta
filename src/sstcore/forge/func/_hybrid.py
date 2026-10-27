@@ -28,7 +28,7 @@ class HybridFunctor[In, Out, **P](
     """Extend Call for Hybrid3 and use Init for Hybrid2"""
 
     def __init__(self, detect: Detect[In] | None = None, **kwargs) -> None:
-        if detect is not None:
+        if detect is not None:  # LATER: FunctorInput(TypedDict) ??
             self._detect = detect
         super().__init__(**kwargs)
 
@@ -50,9 +50,7 @@ class HybridFunctor[In, Out, **P](
         return wrapper
 
     @MorphingField(bind_to_self=True)
-    def _bind(
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> BoundWrapper[In, Out]:
+    def _bind(self, *args: P.args, **kwargs: P.kwargs) -> BoundWrapper[In, Out]:
         """Case 3: Bind additional input to case 2"""
         return lambda fn: self._wrap(fn, *args, **kwargs)
 

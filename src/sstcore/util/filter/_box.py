@@ -2,11 +2,11 @@
 Prepare default sets for Filters
 
 - Attach dispatch to port.filter.FilterArgs
-                                                       DependencyLevel[1]
+
+                             DependencyLevel.sstcore.util.filter[1]
 """
 
-# IMPORTANT: check monkey patch
-# LATER: dispatch text-binary file eg: {".pdf"}
+# TASK: dispatch text-binary file eg: {".pdf"}
 
 __all__: list[str] = [
     "FilterArgs",
@@ -17,67 +17,60 @@ from ._base import FilterData
 
 _Folder_Exclude = "default undesired"
 
-DIR_CODE: set[str] = {"env", ".git"}
-DIR_PYTHON: set[str] = {"__pycache__", ".venv", "venv"}
-DIR_RUST: set[str] = {"target"}
-DIR_LATEX: set[str] = {"build", "dist", "_build", "out"}
+DIR_CODE: frozenset[str] = frozenset({"env", ".git"})
+DIR_PYTHON: frozenset[str] = frozenset({"__pycache__", ".venv", "venv"})
+DIR_RUST: frozenset[str] = frozenset({"target"})
+DIR_LATEX: frozenset[str] = frozenset({"build", "dist", "_build", "out"})
 
 
 _File_Include = "default targets"
 
-FILE_PYTHON: set[str] = {".py", ".pyi", ".toml"}
-FILE_RUST: set[str] = {".rs", ".toml"}
-FILE_LATEX: set[str] = {".tex", ".cls", ".sty", ".bib"}
-FILE_DOCS: set[str] = {".md", ".rst", ".txt"}
-FILE_CONFIG: set[str] = {".json", ".yaml", ".toml", ".lua"}
+FILE_PYTHON: frozenset[str] = frozenset({".py", ".pyi", ".toml"})
+FILE_RUST: frozenset[str] = frozenset({".rs", ".toml"})
+FILE_LATEX: frozenset[str] = frozenset({".tex", ".cls", ".sty", ".bib"})
+FILE_DOCS: frozenset[str] = frozenset({".md", ".rst", ".txt"})
+FILE_CONFIG: frozenset[str] = frozenset({".json", ".yaml", ".toml", ".lua"})
 
-# NEXT: integratre:
-IDEA: set[str] = {"___"}
-EXPERIMENT: set[str] = {"____"}
+# LATER: where to apply? or just use -i"___" in cli?
+IDEA: frozenset[str] = frozenset({"___"})
+EXPERIMENT: frozenset[str] = frozenset({"____"})
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Shadow Patch
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-def attach_str_to_filter_args(self) -> str:
-    return self.name.capitalize()
-
-
-setattr(FilterArgs, "__str__", attach_str_to_filter_args)  # noqa: B010
-
-
-def attach_call_to_filter_args(self: FilterArgs) -> FilterData:
+def _resolve_preset(enum: FilterArgs) -> FilterData[str]:
     """Create a configured filter. Overrides are applied after defaults."""
-    match self:
+    match enum:
         case FilterArgs.PROJECT:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_PYTHON | DIR_CODE | DIR_RUST,
                 require_any=FILE_PYTHON | FILE_RUST,
             )
 
         case FilterArgs.PYTHON:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_PYTHON | DIR_CODE,
                 require_any=FILE_PYTHON,
             )
         case FilterArgs.RUST:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_CODE | DIR_RUST,
                 require_any=FILE_RUST,
             )
         case FilterArgs.LATEX:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_LATEX | DIR_CODE,
                 require_any=FILE_LATEX,
             )
         case FilterArgs.CONFIG:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_CODE | DIR_PYTHON,
                 require_any=FILE_CONFIG,
             )
         case FilterArgs.DOCS:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_CODE,
                 require_any=FILE_DOCS,
             )
@@ -85,7 +78,7 @@ def attach_call_to_filter_args(self: FilterArgs) -> FilterData:
             return FilterData()
 
         case FilterArgs.ALL:
-            return FilterData(
+            return FilterData.defrost(
                 exclude=DIR_CODE | DIR_PYTHON | DIR_LATEX | DIR_RUST,
                 require_any=FILE_PYTHON
                 | FILE_RUST
@@ -95,4 +88,38 @@ def attach_call_to_filter_args(self: FilterArgs) -> FilterData:
             )
 
 
-setattr(FilterArgs, "__call__", attach_call_to_filter_args)  # noqa: B010
+def create_filter_args(
+    self: FilterArgs,
+    *,
+    include: list[str] | set[str] | None = None,
+    exclude: list[str] | set[str] | None = None,
+    require_all: list[str] | set[str] | None = None,
+    unexclude: list[str] | set[str] | None = None,
+    allow_hidden: bool = False,
+    invert: bool = False,
+) -> FilterData[str]:
+    """Create a configured filter. Overrides are applied after defaults."""
+    data: FilterData[str] = _resolve_preset(self)
+
+    if include:
+        data.require_any.update(include)
+    if exclude:
+        data.exclude.update(exclude)
+    if require_all:
+        data.require_all.update(require_all)
+    if unexclude:
+        data.exclude.difference_update(unexclude)
+    if allow_hidden:
+        data.allow_hidden_files = True
+    if invert:
+        data.return_opposite = True
+
+    return data
+
+
+setattr(FilterArgs, "build", create_filter_args)  # noqa: B010
+
+if __name__ == "__main__":
+    print(FilterArgs)
+    for f in FilterArgs:
+        print(f, f.value, f.build())

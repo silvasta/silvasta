@@ -6,71 +6,29 @@ Unite all Path Tools under  PathGuard 
 
 __all__: list[str] = [
     "PathGuard",
-    "PathSpec",
-    "PathArg",
-    "PathGuardField",
-    #
     "StubFileGuard",
 ]
 
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from types import ModuleType
-from typing import Any, NoReturn, Self, overload
+from typing import Any, NoReturn, overload
 
 from ....error import PathGuardReason
 from ....port.event.dto import LogDTO, PanelDTO
 from ....port.files import SyncMode
+from ._arg import PathArg, PathSpec
+from ._field import DirField, FileField, UniqueField
 
 # ---------------------------------------------------------------------------
 # Input layer (public)
 # ---------------------------------------------------------------------------
 
-@dataclass(frozen=True, slots=True)
-class PathSpec:
-    """Normalize and validate input for PathGuard execution."""
-
-    target: Path
-    resolve: bool = False
-    must_exists: bool = False
-
-    @classmethod
-    def ok(
-        cls,
-        target: PathArg | None = None,
-        *,
-        resolve: bool | None = None,
-        must_exists: bool | None = None,
-    ) -> Path:
-        """Normalize + validate; return a concrete Path."""
-        ...
-
-    @classmethod
-    def normalized(
-        cls,
-        target: PathArg | None = None,
-        *,
-        resolve: bool | None = None,
-        must_exists: bool | None = None,
-    ) -> Self:
-        """Build a PathSpec from PathArg (with optional policy overrides)."""
-        ...
-
-    def validate(self) -> Path:
-        """Apply resolve / must_exists policy; return Path."""
-        ...
-
-type PathArg = str | Path | PathSpec
-
-class PathGuardField[T]:
-    def __get__(self, unit: T, objtype: type[T] | None = None) -> Path: ...
-    def __set__(self, unit: T, value: object) -> NoReturn: ...
-    def __set_name__(self, owner: type, name: str) -> None: ...
-
 # ---------------------------------------------------------------------------
 # Mini
 # ---------------------------------------------------------------------------
+
+# NEXT: Move to own file??
 
 class StubFileGuard:
     @staticmethod
@@ -174,35 +132,35 @@ class PathGuard:
     # -----------------------------------------------------------------------
     @overload
     @staticmethod
-    def Dir(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    def Dir(fget: Callable[[Any], Path]) -> DirField: ...
     @overload
     @staticmethod
-    def Dir() -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    def Dir() -> Callable[[Callable[[Any], Path]], DirField]: ...
     @staticmethod
     def Dir(fget: Callable[[Any], Path] | None = None) -> Any: ...  # noqa: N802
     @overload
     @staticmethod
-    def File(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    def File(fget: Callable[[Any], Path]) -> FileField: ...
     @overload
     @staticmethod
     def File(
         *,
         raise_error: bool = True,
         default_content: str | None = None,
-    ) -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    ) -> Callable[[Callable[[Any], Path]], FileField]: ...
     @staticmethod
     def File(  # noqa: N802
         fget: Callable[[Any], Path] | None = None, **policy: Any
     ) -> Any: ...
     @overload
     @staticmethod
-    def Unique(fget: Callable[[Any], Path]) -> PathGuardField[Any]: ...
+    def Unique(fget: Callable[[Any], Path]) -> UniqueField: ...
     @overload
     @staticmethod
     def Unique(
         *,
         ensure_parent: bool = False,
-    ) -> Callable[[Callable[[Any], Path]], PathGuardField[Any]]: ...
+    ) -> Callable[[Callable[[Any], Path]], UniqueField]: ...
     @staticmethod
     def Unique(  # noqa: N802
         fget: Callable[[Any], Path] | None = None, **policy: Any
@@ -251,12 +209,54 @@ class PathGuard:
     # Category 3: relative helpers
     # -----------------------------------------------------------------------
 
+    @overload
     @staticmethod
     def relative(
         target: PathArg,
         root: PathArg | None = None,
         strict: bool = True,
     ) -> Path: ...
+    @overload
+    @staticmethod
+    def relative(
+        target: Iterable[PathArg],
+        root: PathArg | None = None,
+        strict: bool = True,
+    ) -> list[Path]: ...
+    @staticmethod
+    def relative(
+        target: PathArg | Iterable[PathArg],
+        root: PathArg | None = None,
+        strict: bool = True,
+    ) -> Path | list[Path]: ...
+    @overload
+    @staticmethod
+    def absolute(
+        target: PathArg,
+        root: PathArg | None = None,
+        *,
+        resolve: bool = True,
+        must_exists: bool = False,
+    ) -> Path: ...
+    @overload
+    @staticmethod
+    def absolute(
+        target: Iterable[PathArg],
+        root: PathArg | None = None,
+        *,
+        resolve: bool = True,
+        must_exists: bool = False,
+        filter_exists: bool = False,
+    ) -> list[Path]: ...
+    @staticmethod
+    def absolute(
+        target: PathArg | Iterable[PathArg],
+        root: PathArg | None = None,
+        *,
+        resolve: bool = True,
+        must_exists: bool = False,
+        filter_exists: bool = False,
+    ) -> Path | list[Path]: ...
     @staticmethod
     def relative_duo(path1: PathArg, path2: PathArg) -> Path | None: ...
     @staticmethod

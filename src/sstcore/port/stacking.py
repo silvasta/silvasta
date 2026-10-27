@@ -19,7 +19,7 @@ __all__: list[str] = [
 ]
 
 
-# TASK: make all imports _private
+# TODO: make all imports _private
 from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 from enum import Enum, auto
 from typing import Any, Protocol, Self, runtime_checkable

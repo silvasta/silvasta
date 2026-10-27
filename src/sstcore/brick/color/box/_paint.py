@@ -54,7 +54,7 @@ class Paint(str):
         return self._paint(text)
 
 
-@portlink(ColorSchema)  # ty:ignore
+@portlink(ColorSchema)
 class ColorPalette:
     colors: TupleVault[str]
     paints: TupleVault[Painter]  # LATER: ReadOnlyField?
@@ -113,7 +113,7 @@ class ColorFactory:
     def setup(self, palette: Palette) -> ColorSchema:
         # LATER: exchange theme if palette already in _cache
         if palette not in self._cache:
-            self._cache[palette] = ColorPalette(palette.data())  # ty:ignore
+            self._cache[palette] = ColorPalette(palette.data())
         return self._cache[palette]
 
     def paint(self, color: Color, palette) -> Painter:

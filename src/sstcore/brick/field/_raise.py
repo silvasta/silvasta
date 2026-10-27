@@ -49,7 +49,7 @@ class FieldError(raising.SstCoreError):
         self.field: Descriptor | None = field
         self.kwargs: FieldErrorInput = kwargs
         self.panic: MayBe[FieldRaiser] = panic
-        super().__init__(*args)
+        super().__init__(message, *args)
 
 
 class FieldErrorInput[UnitT: Any](raising.ErrorInput, total=False):
@@ -183,7 +183,8 @@ class FieldRaiser(Raiser, zero=True):
                 return f"Not Callable, {value=}! {self.name}"
 
             case FieldRaiser.Signature:
-                return f"{data}: expected {field=}, but got {value=}"
+                # TODO:
+                return f"{data}: {field=}, but got {value=}"
 
             case FieldRaiser.Transition:
                 return f"Failed transfer for {data}: {field}"

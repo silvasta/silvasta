@@ -34,6 +34,8 @@ __all__: list[str] = [
 import sys
 from typing import TYPE_CHECKING as _TYPECHECKING
 
+# INFO: no internal imports here, VOID is exported to .solid! No bump allowed!
+
 if sys.version_info >= (3, 15):
     from builtins import sentinel
 else:
@@ -140,23 +142,3 @@ if __name__ == "__main__" or _TYPECHECKING and VOID:  # ty:ignore
         class _TypeCheckerGhost(*classes): ...  # ty:ignore
 
         return _TypeCheckerGhost
-
-    def _senti_check():
-        #
-        #  LINE: -- Tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-        print(f"Sentinel {sys.version_info} prepared: {sentinel}")
-
-        def _narrow_type(path: int | VOID = VOID):
-            from typing import reveal_type
-
-            if path is VOID:
-                reveal_type(path)
-            else:
-                reveal_type(path)
-
-        print(VOID)
-        print("\n", "repr:")
-        print(repr(VOID))
-        print("\n", "dir:")
-        print(dir(VOID))

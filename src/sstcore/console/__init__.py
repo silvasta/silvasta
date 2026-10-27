@@ -10,7 +10,7 @@ Provide Setup for quick access to advanced Terminal features
   - folder_scanner: FolderScanner -> Treeselector -> SummaryFile
   - log_monitor: LogFile / EventBus -> Interactive TUI
 
-                                                       DependencyLevel[5]
+                                         DependencyLevel.sstcore[6]
 """
 
 __all__: list = [

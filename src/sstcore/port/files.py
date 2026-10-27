@@ -11,7 +11,6 @@ __all__: list[str] = [
     "File",
     "FileRegister",  # MERGE: with Query?
     "QueryRegister",
-    "FilterRegister",
     "SyncRegister",
     "ScanRegister",
     #
@@ -20,23 +19,20 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Iterator
-from enum import StrEnum, auto
+from enum import auto
 from pathlib import Path
 from typing import Protocol, Self
 
-from .filter import Filter, KeyWord, KeyWords, PathFiltering  # 4
+from .filter import Filter, PathFiltering  # 4
 from .register import ListRegister  # 5
-from .scanner import FolderScan  # 5
+from .scanner import FolderScanning  # 5
+from .solid import EnumMode
 from .tree import PathTree  # 0
 
-
-class FileFiltering[FileT: File](Filter[str, FileT], Protocol):
-    def _fulfill(self, target: FileT) -> bool:
-        """Filter Registry Files by their Keyword Sets"""
+type PathS = Path | list[Path]  # IDEA: Sequence|Iterable?
 
 
-# IMPORTANT: compare with .register.SyncMode
-class SyncMode(StrEnum):
+class SyncMode(EnumMode):
     """Conflict Resolution Strategy for PathGuard File Transfers"""
 
     INCREMENT = auto()
@@ -59,6 +55,11 @@ class File(Protocol):
 
     def confirm_local_status(self, root_dir: Path) -> bool:
         """Compose global path and check if your File is still there"""
+
+
+class FileFiltering[FileT: File](Filter[str, FileT], Protocol):
+    def _fulfill(self, target: FileT) -> bool:
+        """Filter Registry Files by their Keyword Sets"""
 
 
 class FileRegister(Protocol):
@@ -98,52 +99,40 @@ class QueryRegister(Protocol):
         """Compose Root Dir of Registry and Local Path of File"""
 
     @property
-    def file_names(self) -> list[str]:
+    def names(self) -> list[str]:
         """Collect all file names (inkl. suffix)"""
 
-    def get_by_name(self, name: str) -> list[File]:
+    def by_name(self, name: str) -> list[File]:
         """Filter by filenames"""
 
-    def confirmed_files(self, local_dir: Path | None = None) -> list[File]:
+    def confirmed(self, local_dir: Path | None = None) -> list[File]:
         """Check Status on Disk and provide confirmed Files"""
 
-    def unconfirmed_files(self, local_dir: Path | None = None) -> list[File]:
+    def unconfirmed(self, local_dir: Path | None = None) -> list[File]:
         """Check Status on Disk and provide unconfirmed Files"""
 
 
-class FilterRegister(Protocol):
-    """Keyword-based filtering queries (Filter)."""
-
-    def get_by_keyword(self, keyword: KeyWord) -> list[File]: ...
-    def get_by_all_keywords(self, keywords: KeyWords) -> list[File]: ...
-
-
 class ScanRegister(Protocol):
-    # NEXT:
-    # NEXT:
     """Scanner / tree / reload logic (Scan). Prepares for SyncModes."""
 
+    # TODO: Scanner as Field (same for Filter)
+    # scanner: FolderScanning
+    # filter: PathFiltering
     @property
-    def scanner(self) -> FolderScan | None: ...
-    def setup_scanner(self, path_filter: PathFiltering) -> FolderScan: ...
-    def get_scanner(self) -> FolderScan: ...
+    def scanner(self) -> FolderScanning: ...
+    @property
+    def filter(self) -> PathFiltering: ...
+    # def setup_scanner(self, path_filter: PathFiltering) -> FolderScanning: ...
+    # def get_scanner(self) -> FolderScanning: ...
     def scan_local_dir(self) -> list[Path]: ...
     def walk_from_root(self) -> Iterator[Path]: ...
     @classmethod
     def sprout_at(cls, scan_root: Path) -> Self: ...
     def attach_local_files(self, *, clear: bool = False) -> list[File]: ...
-    def tree(
-        self, root_name: str = "", file_filter: FileFiltering | None = None
-    ) -> PathTree: ...
-
-
-type PathS = Path | list[Path]
+    def tree(self, root_name: str = "") -> PathTree: ...
 
 
 class SyncRegister(Protocol):
-    # NEXT:
-    # NEXT:
-    # NEXT:
     """Sync operations (mirror/absorb) using PathGuard (FileSync)."""
 
     mode: SyncMode
@@ -167,6 +156,8 @@ class SyncRegister(Protocol):
     def clone_empty_registry(
         self,
         root_dir: Path,
+        /,
+        *,
         exclude: set[str] | None = None,
         add_to_exclude: set[str] | None = None,
         exclude_unset: bool = False,
@@ -175,7 +166,6 @@ class SyncRegister(Protocol):
 
 class ScanFiles[FileT: File](
     ScanRegister,
-    FilterRegister,
     QueryRegister,
     FileRegister,
     ListRegister[File],
@@ -183,10 +173,12 @@ class ScanFiles[FileT: File](
 ): ...
 
 
+# TASK: ListRegister changed heavily, adapt to this
+
+
 class Files(
     SyncRegister,
     ScanRegister,
-    FilterRegister,
     QueryRegister,
     FileRegister,
     ListRegister[File],

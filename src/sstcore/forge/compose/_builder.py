@@ -77,7 +77,7 @@ class MixinBuilder[BaseT: type]:
         clsname: str = self.clsname(cls.__name__)
         # LATER: better handling of different strategies
         bases: tuple[type, ...] = (
-            self.mixins + (cls,) if prepend else (cls,) + self.vault.mixins
+            self.mixins + (cls,) if prepend else (cls,) + self.mixins
         )
         # LATER: better handling of different strategies
         namespace: dict[str, Any] = mix.NameSpace.injection(

@@ -31,25 +31,22 @@ from ._types import _Stringable
 #  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@_runtime_checkable
+@_runtime_checkable  # LATER: check where used/needed
 class Normalizing(Protocol):
-    # TODO: check where used/needed
     def __call__(self, text: Any) -> _Stringable:
         """Forward text-like object after processing and ensuring string"""
 
 
-@_runtime_checkable
+@_runtime_checkable  # LATER: check where used/needed
 class Sanitize[ExpectedT, UnexpectedT, TargeT](Protocol):
-    # TODO: check where used/needed
     def __call__(self, target: ExpectedT | UnexpectedT) -> TargeT:
         """Forward object after processing and ensuring types"""
 
 
-@_runtime_checkable
+@_runtime_checkable  # LATER: check where used/needed
 class NormalizingMaybe[ExpectedT: _Stringable](
     Sanitize[ExpectedT, Any, _Stringable], Protocol
 ):
-    # TODO: check where used/needed
     """Forward text after processing and ensuring string(able)"""
 
 
@@ -65,10 +62,6 @@ class NamingPattern(Protocol):
 
     def extract(self, name: str) -> dict[str, str]:
         """Extract keywords from string or Raise"""  # LATER: safe mode with -> None ?
-
-    # AI: Safe-Mode: where to apply?
-    # - maybe both format/extract
-    # - but catch here? maybe as feature of BidirectNaming?
 
     def update_pattern(self, pattern: str) -> None:
         """Recompile internal pattern and keywords"""

@@ -11,7 +11,6 @@ __all__: list[str] = [
 ]
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from ...port.config import Defaults, Homes, Names, Paths
 from ...port.link import portlink
@@ -75,8 +74,3 @@ class SstPaths:
 
     def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
         return (scan_root or self.state_dir) / self._names.scanner_cache_file
-
-
-if TYPE_CHECKING:
-    _instance_check: Paths = SstPaths()
-    _class_check: type[Paths] = SstPaths

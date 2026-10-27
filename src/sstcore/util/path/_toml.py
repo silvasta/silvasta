@@ -24,35 +24,40 @@ from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from loguru import logger
 
-from ...port.config import HomeSetup, ProjectInformation
+from ...brick.color.box import Colors
+from ...port.config import ProjectInformation
 from ...port.link import portlink
 from ._search import get_project_root
 
-_x: HomeSetup  # NEXT: no issues without this in collect?
+c = Colors()
 
 
 @portlink(ProjectInformation)
 @dataclass
 class ProjectInfo:
+    # LATER: add home_setup, maybe paths, store here for config and printer
+    # LATER: __mount__ field with color overhanding from printer
     """Check toml to provide Config and Printer with Info"""
 
     name: str = "sstcore"
     version: str = "0.0.0"
-    # CHECK: home_setup,
+
+    def __str__(self):
+        return f"{self.name} v{self.version}"
+
+    def __rich__(self):
+        return f"{c.p(self.name)} v{c.o(self.version)}"
 
     @classmethod
-    def collect(  # CHECK: home_setup,
-        cls, name: str | None = None
-    ) -> Self:
+    def collect(cls, name: str | None = None) -> Self:
         try:
             name: str = name or pyproject_name()
             info: Self = cls(name=name)
         except Exception as error:
-            # CHECK: if home_setup == HomeSetup.GLOBAL:
             raise RuntimeError("Project Name Missing!") from error
         return info._update_version()
 
@@ -66,11 +71,6 @@ class ProjectInfo:
                 "Are you running in dev mode without 'uv tool install -e .'?"
             )
         return self
-
-
-if TYPE_CHECKING:
-    _instance_check: ProjectInformation = ProjectInfo()
-    _class_check: type[ProjectInformation] = ProjectInfo
 
 
 def pyproject_path() -> Path:
@@ -100,7 +100,7 @@ def pyproject_sns(pyproject_toml_path: Path | None = None) -> SimpleNamespace:
     return dict_to_sns(toml)
 
 
-def dict_to_sns(data):  # LATER: move somewhere else if ever needed again
+def dict_to_sns(data):
     """Transform nested dict to SimpleNamespace with dot access"""
     if isinstance(data, dict):
         # Recursive conversion of dict to unpack all nested values

@@ -15,10 +15,11 @@ __all__: list[str] = [
     "PathTreeNode",
     "build_path_tree",
     #
-    "AstNode",
+    # "AstNode",
 ]
 
 from . import _show as example_trees
-from ._ast import AstNode
+
+# from ._ast import AstNode
 from ._path import PathTreeNode, build_path_tree
 from ._simple import SimpleTreeNode

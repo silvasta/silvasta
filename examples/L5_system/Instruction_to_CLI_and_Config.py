@@ -1,23 +1,25 @@
 from pathlib import Path
 
 from pydantic import Field
-from sstcore.cli import SafeTyper, tools
-from sstcore.cli.tools.app import launch_folder_scanner, launch_log_monitor_2
-from sstcore.config import (
+
+from sstcore import PathGuard, printer
+from sstcore.console import SafeTyper, tools
+from sstcore.console.tools._app import (
+    launch_folder_scanner,
+    launch_log_monitor_2,
+)
+from sstcore.error import TuiSelectorError
+from sstcore.system.boot import (
+    sst_config_loader,
+    sst_system_loader,
+)
+from sstcore.system.config import (
     ConfigManager,
     SstDefaults,
     SstNames,
     SstPaths,
     SstSettings,
 )
-from sstcore.config.setup import (
-    sst_config_loader,
-)
-from sstcore.system.core import sst_system_loader
-from sstcore.utils import printer
-
-from sstcore import PathGuard
-from sstcore.error import TuiSelectorError
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 ### Example and Instruction: Setup Custom Config and CLI
@@ -45,7 +47,7 @@ class Defaults(SstDefaults):
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class Paths(SstPaths[Names, Defaults]):
+class Paths(SstPaths):
     """Provide assembled and optional ensured dynamic Paths"""
 
     @property
@@ -61,11 +63,11 @@ class Paths(SstPaths[Names, Defaults]):
 class Settings(SstSettings):
     """Assemble everything and provide the json"""
 
-    names: Names = Field(default_factory=Names)
-    defaults: Defaults = Field(default_factory=Defaults)
+    names: Names = Field(default_factory=Names)  # ty:ignore FIX:
+    defaults: Defaults = Field(default_factory=Defaults)  # ty:ignore FIX:
 
 
-type CustomConfig = ConfigManager[Settings, Names, Defaults, Paths]
+type CustomConfig = ConfigManager[Settings, Names, Defaults, Paths]  # ty:ignore FIX:
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -90,7 +92,7 @@ app.command(name="monitor")(launch_log_monitor_2)
 
 
 # Attach SubApp with new Level of Namespace
-app.add_typer(typer_instance=tools)
+app.add_typer(typer_instance=tools)  # ty:ignore FIX:
 
 
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
@@ -101,7 +103,7 @@ app.add_typer(typer_instance=tools)
 def attach_handlers(app: SafeTyper) -> None:
     """Assemble Handler in separate file and attach to app with this"""
 
-    @app.errors.handle(exit_code=2, name="Tui Selector")
+    @app.errors.handle(exit_code=2, name="Tui Selector")  # ty:ignore FIX:
     def handle_tui_selector(error: TuiSelectorError):
         printer.danger(f"Selector failed: {error}")
 

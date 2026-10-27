@@ -147,9 +147,7 @@ class Injector[BaseT: type](Builder, Protocol):
     @overload
     def __call__(self, *mixins: Any) -> Self: ...
 
-    def __call__[Cls: type](
-        self, cls: Cls | None = None, *mixins: type
-    ) -> Any:
+    def __call__[Cls: type](self, cls: Cls | None = None, *mixins: type) -> Any:
         """Inject Mixins to Cls including changeable Presets"""
 
     def plus(self, *mixins: Any) -> Self:

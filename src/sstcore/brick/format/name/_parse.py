@@ -195,3 +195,16 @@ if TYPE_CHECKING:  # REMOVE: when portlink confirmed superior
     _extraat: normalize.ExtractNormalize = ExtractNormalizer(pattern="h{name}")
     _call: normalize.BidirectNaming = BidirectionalName(pattern="hello {name}")
     _parser: normalize.NameParsing = NameParser(pattern="hello {name}")
+
+if __name__ == "__main__":
+    """Activate this for test:
+
+    HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
+        "report",
+        # "init",
+        "name",
+    )
+    """
+    portlink.show()
+    portlink.tap.printer(NameParser.__doc__)
+    portlink.tap.printer(portlink.registry[BidirectionalName])

@@ -4,7 +4,7 @@ Error handling
 .
 """
 
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from functools import wraps
 from typing import Self
@@ -21,17 +21,18 @@ class BaseScopedService:
         self._on_enter()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, _type, error, _tb):
         print(f"Enter __exit__: {self}")
         try:
-            return self._on_exit(exc_type, exc_val, exc_tb)
+            return self._on_exit(error)
         finally:
             self._is_active = False
 
     def _on_enter(self):
         pass
 
-    def _on_exit(self, exc_type, exc_val, exc_tb):
+    def _on_exit(self, error):
+        print(error)
         return False
 
 
@@ -67,12 +68,12 @@ class DataProcessor(BaseScopedService):
 
 class BaseWorker:
     @contextmanager
-    def _lifecycle_boundary(self) -> Iterator[None]:
+    def _lifecycle_boundary(self) -> Generator[None]:
         self._setup_guard()
         try:
             yield
-        except Exception as e:
-            self._on_failure(e)
+        except Exception as error:
+            self._on_failure(error)
             raise
         finally:
             self._teardown_guard()
@@ -80,7 +81,7 @@ class BaseWorker:
     def _setup_guard(self):
         pass
 
-    def _on_failure(self, err: Exception):
+    def _on_failure(self, error: Exception):
         pass
 
     def _teardown_guard(self):
@@ -115,21 +116,22 @@ class MultiWorker(BaseWorker):
         self._active_depth += 1
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, _type, error, _tb):
         self._active_depth -= 1
         if self._active_depth == 0:
             self._teardown_guard()  # Only run on the VERY LAST exit
+        print(error)
         return False
 
 
 class MultiBaseWorker:
     @contextmanager
-    def protect(self) -> Iterator[None]:
+    def protect(self) -> Generator[None]:
         self._setup_guard()
         try:
             yield
-        except Exception as e:
-            self._on_failure(e)
+        except Exception as error:
+            self._on_failure(error)
             raise
         finally:
             self._teardown_guard()
@@ -137,15 +139,15 @@ class MultiBaseWorker:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
+    def __exit__(self, _type, error, _tb):
+        if _type is None:
             return True
-        self._on_failure(exc_type)
+        self._on_failure(error)
 
     def _setup_guard(self):
         pass
 
-    def _on_failure(self, err: Exception):
+    def _on_failure(self, error: Exception):
         pass
 
     def _teardown_guard(self):
@@ -225,12 +227,12 @@ class _DataProcessor(BaseScopedService):
         for x in range(self.options.get("repeats", 0)):
             print(f"{self} executes... run: {x}")
 
-    def _on_exit(self, exc_type, exc_val, exc_tb):
+    def _on_exit(self, _type, error, _tb):  # ty:ignore
         print(f"Enter _on_exit: {self}")
-        if exc_type is None:
+        if _type is None:
             return True
-        if issubclass(exc_type, TypeError):
-            print(f"Caught: [{exc_type.__name__}] {exc_val}")
+        if issubclass(_type, TypeError):
+            print(f"Caught: [{_type.__name__}] {error}")
             return True
         return False
 
@@ -273,8 +275,6 @@ def _tests():
     except Exception as error:
         print(f"Caught: [{type(error).__name__}] {error}")
 
-    # AI: it looks like the w3 is continuig without problems...
-    # - how stable is it to reuse a w* after the with block it was created?
     safe_debug(worker, w1, w2, w3)
     w3.prepare()
 

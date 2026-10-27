@@ -38,7 +38,7 @@ class ColorManager:
         return f"{self}[{self._factory}]"
 
     def debug(self):
-        self._factory.debug()  # ty: ignore[unresolved-attribute]
+        self._factory.debug()  # ty: ignore # FIX:
 
     @property
     def active(self) -> Palette:  # LATER: directly access self.palette

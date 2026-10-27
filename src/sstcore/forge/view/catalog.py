@@ -61,7 +61,7 @@ class Cli(_solid.MixinCatalog):
                 return _views.cli.FullPanelMixin
 
             case self.MARKDOWN:
-                return _views.cli.MarkdownMixin
+                return _views.cli.MarkdownMixin  # ty:ignore FIX:
 
             case self.OFF:
                 return ViewSentinel

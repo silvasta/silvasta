@@ -4,21 +4,21 @@ Provide defaults and basic access for XDG Homes in system environment
                                DependencyLevel.sstcore.util.path[0]
 """
 
-from typing import TYPE_CHECKING, Self
-
-from sstcore.port.config import Homes
-
-from ._search import get_project_root
-
 __all__: list[str] = [
     "XdgHomes",
     "XdgDefaults",
+    "HomeDirs",
 ]
 
 import os
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from pathlib import Path
+from typing import Self
+
+from ...port.config import Homes
+from ...port.link import portlink
+from ._search import get_project_root
 
 
 @dataclass
@@ -67,6 +67,7 @@ class XdgHomes(StrEnum):
         return Path.home() / mapping[self]
 
 
+@portlink(Homes)
 @dataclass
 class HomeDirs:
     root: Path
@@ -110,8 +111,3 @@ class HomeDirs:
             log=root / "logs",
             state=root / "state",
         )
-
-
-if TYPE_CHECKING:
-    _instance_check: Homes = HomeDirs(**dict())
-    _class_check: type[Homes] = HomeDirs

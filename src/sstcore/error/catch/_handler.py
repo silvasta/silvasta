@@ -1,54 +1,107 @@
 """
 Build the Functor for the Exception handling
 
-                                                       DependencyLevel[0]
+                             DependencyLevel.sstcore.error.catch[0]
 """
 
 __all__: list[str] = [
     "ErrorHandler",
+    "DEFAULT_ERROR_HANDLER",
 ]
 
 import inspect
-import sys
 from collections.abc import Callable
-from typing import NoReturn, Self
+from typing import Self, Unpack, get_type_hints
 
-from ...brick.labor import clsname
+from loguru import logger
+
+from ...brick.field._strategy import StrategyField
+from ...brick.reflect import clsname, funcname
 from ...forge.func import SafeFunctor
-from ...port.functor import ErrorPolicy
+from ...forge.func._safe import SafeFunctorInput
+from ...port.functorial import ErrorPolicy
 
 
 class ErrorHandler[Error: BaseException](SafeFunctor[[Error], None]):
     """Handle CLI Exception and Terminate"""
 
-    def __init__(self, exception_type: type[Error], **kwargs):
-        self.exception_type: type[Error] = exception_type
-        kwargs.setdefault("exit_code", 1)
-        kwargs.setdefault("error_policy", ErrorPolicy.LOG_AND_EXIT)
+    def __init__(
+        self, error_type: type[Error], **kwargs: Unpack[SafeFunctorInput]
+    ):
+        self.error_type: type[Error] = error_type
         super().__init__(**kwargs)
 
-    @property
-    def _inside_brackets(self) -> str:
-        return clsname(self.exception_type)
+    def _format_name(self, name: str = "") -> str:
+        """Format str:= [(Cls)][{name}::{error}]"""
+        return f"{name or super()._format_name()}::{clsname(self.error_type)}"
+
+    def handles(self, error: BaseException, /) -> bool:
+        """Check whether this handler is responsible for the given exception."""
+        return isinstance(error, self.error_type)
+
+    @StrategyField(bind_to_self=False)
+    def _call(self, error: Error) -> None:
+        self._emit(
+            f"Unhandled {clsname(error)}: {error}",
+            level="ERROR",
+            exception=error,
+        )
 
     @classmethod
     def from_func(
-        cls, func: Callable[[Error], None], exit_code: int = 1, name: str = ""
+        cls,
+        func: Callable[[Error], None],
+        *,
+        exit_code: int = 1,
+        policy: ErrorPolicy = ErrorPolicy.LOG_AND_EXIT,
+        name: str = "",
     ) -> Self:
-        """Build with Exception type from signature"""
+        """Build ErrorHandler by inferring the Exception type from the first parameter."""
 
-        sig: inspect.Signature = inspect.signature(func)
-        first_param: inspect.Parameter = next(iter(sig.parameters.values()))
-        inferred_type: type[Error] = first_param.annotation
+        if not (params := list(inspect.signature(func).parameters.values())):
+            raise TypeError(f"Cannot infer error_type: {funcname(func)}")
 
+        if not _is_valid(error_type := _find_error_type(func, params[0])):
+            raise TypeError(
+                f"First parameter '{params[0].name}' of '{funcname(func)}' "
+                f"must be annotated with a BaseException subclass, got {error_type!r}."
+            )
         return cls(
-            func=func,
-            name=name or getattr(func, "__name__", "handler"),
-            exception_type=inferred_type,
+            error_type=error_type,
+            call=func,
             exit_code=exit_code,
+            policy=policy,
+            name=name or funcname(func, default="CustomErrorHandler"),
         )
 
-    def execute_safe(self, error: Error) -> NoReturn:
-        """Executes the handler, then terminates the CLI safely."""
-        self.safe(error)
-        sys.exit(self.exit_code)
+
+def _is_valid(_error_type):
+    return (
+        _error_type is not inspect.Parameter.empty
+        and isinstance(_error_type, type)
+        and issubclass(_error_type, BaseException)
+    )
+
+
+def _find_error_type(func: Callable, param, /):
+    _hints = get_type_hints(func)
+    return _hints.get(param.name, param.annotation)
+
+
+def handle_uncaught_error(self, error: Exception) -> None:
+    # IMPORTANT: fix the self, somewhere in Field
+    """Last-shield fallback: log critical error info and allow graceful exit."""
+    logger.opt(exception=error).critical(
+        "CLI Shield caught unhandled {err_type}: {msg}",
+        err_type=clsname(error),
+        msg=error,
+    )
+
+
+DEFAULT_ERROR_HANDLER: ErrorHandler[Exception] = ErrorHandler(
+    error_type=Exception,
+    call=handle_uncaught_error,
+    policy=ErrorPolicy.LOG_AND_EXIT,
+    exit_code=1,
+    name="DefaultErrorShield",
+)

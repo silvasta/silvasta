@@ -10,14 +10,14 @@ Things to keep in mind:
 - everything stands and falls with the synchronization
 """
 
-from ....port.color import ColorHub, ColorId, Painter
+from ....port.color import ColorHub, ColorId
 from ....port.represent import Stringable
 from ._paint import Paint
 
 class Colors:
     @property
     def hub(self) -> ColorHub: ...
-    def paint(self, color: ColorId, /) -> Painter: ...
+    def paint(self, color: ColorId, /) -> Paint: ...
     def __call__(self, text: Stringable, color: ColorId, /) -> str: ...
 
     a: Paint

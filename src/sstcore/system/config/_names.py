@@ -14,8 +14,7 @@ __all__: list[str] = [
 
 from functools import cached_property
 
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ...brick.format.name import NameParser
 from ...brick.time import day_count
@@ -26,7 +25,7 @@ from ...port.represent import Stringable
 
 @portlink(Names)
 class SstNames(BaseSettings):
-    model_config = ConfigDict(extra="allow")
+    model_config = SettingsConfigDict(extra="allow")
 
     # Directories in local root
     data_dir: str = "data"

@@ -181,7 +181,6 @@ EnumRepr = EnumRepr1
 
 
 if __name__ == "__main__":
-    #
     #  LINE: -- TESTS -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     from dataclasses import dataclass

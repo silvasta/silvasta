@@ -22,18 +22,23 @@ class MixInjector(MixinBuilder):
     def __call__(self, *mixins: Any) -> Self: ...
 
     def __call__[Cls: type, Mix: type | MixinCatalog](
-        self, cls: Cls | None = None, /, *mixins: Mix
+        self, target: Cls | Mix | None = None, /, *mixins: Mix
     ) -> Any:
-
-        match cls, mixins:
+        match target, mixins:
             case None, ():
                 return self
             case None, _:
                 return self.plus(*mixins)
-            case type() as target, ():
-                return self.inject(target)
-            case type() as target, _:
-                return self.plus(*mixins).inject(target)
+            case type() as cls, ():
+                return self.inject(cls)
+            case type() as cls, _:
+                return self.plus(*mixins).inject(cls)
+            case MixinCatalog() as spec, rest:
+                return self.plus(spec, *rest)
+            case _:
+                raise TypeError(
+                    f"view() expected a class or catalog specs, got {target!r}, {mixins!r}"
+                )
 
     def plus[Mix: type | MixinCatalog](self, *mixins: Mix) -> Self:
         raise NotImplementedError(f"Cannot process: {mixins=}")

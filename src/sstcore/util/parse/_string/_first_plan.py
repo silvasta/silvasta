@@ -15,7 +15,7 @@ from typing import Any, Protocol
 
 from msgspec import Struct
 
-from ....port.calling import Stringable
+from ....port.represent import Stringable
 
 
 class Tstring(Struct):

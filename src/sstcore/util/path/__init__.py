@@ -4,6 +4,9 @@ Handle basic File System Operations, find and extract from Paths
                                     DependencyLevel.sstcore.util[X]
 """
 
+# IMPORTANT: all of this is loaded before any PathGuard
+# - check if it makes sense to load certain parts lazy
+
 __all__: list[str] = [
     # search
     "recursive_root",

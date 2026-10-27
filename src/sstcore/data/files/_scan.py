@@ -4,14 +4,11 @@ Provide Container for Files and Tools for FileSystem Operations
                                                        DependencyLevel[0]
 """
 
-from src.sstcore.port.link import portlink
-from src.sstcore.util.filter._extend import FileFilter
-
 __all__: list[str] = [
     "FileScanMixin",
 ]
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 from typing import Self
 
@@ -19,6 +16,7 @@ from loguru import logger
 
 from ...port.files import File, ScanRegister
 from ...port.filter import PathFiltering, ProjectFiltering
+from ...port.link import portlink
 from ...port.tree import PathTree
 from ...util.filter import ProjectFilter
 from ...util.scan import FolderScanner
@@ -29,13 +27,16 @@ from ...util.tree import build_path_tree
 class FileScanMixin:
     """Setup scanner, load directories and build tree"""
 
+    all: Iterable[File]
     root_dir: Path
     files: list[File]
     attach_from_path: Callable[[Path], File]
     clear: Callable[..., int]
     paths: Callable[..., set[Path]]
 
-    scanner: FolderScanner | None = None
+    # NEXT: Field for Scanner + Filter
+    scanner: FolderScanner
+    filter: ProjectFilter
 
     @property
     def load_default_path_filter(self) -> PathFiltering:
@@ -47,6 +48,8 @@ class FileScanMixin:
         self, path_filter: PathFiltering | None = None
     ) -> FolderScanner:
         filter: PathFiltering = (
+            # NEXT: probably LazyField, for Filter and Scanner
+            # Filter.__set__ -> del self.scanner -> reload with new filter at next hit
             self.load_default_path_filter
             if path_filter is None
             else path_filter
@@ -56,6 +59,7 @@ class FileScanMixin:
 
     def get_scanner(self) -> FolderScanner:
         if not self.scanner:
+            # NEXT: probably LazyField
             return self.setup_scanner()
         return self.scanner
 
@@ -85,11 +89,9 @@ class FileScanMixin:
             if path not in existing_paths
         ]
 
-    def tree(  # LATER: create SstFileTree?
-        self, root_name: str = "", file_filter: FileFilter | None = None
-    ) -> PathTree:
+    def tree(self, root_name: str = "") -> PathTree:  # LATER:  SstFileTree?
         return build_path_tree(
-            # NEXT: apply new, better filter
-            paths=[file.path for file in self.filtered(file_filter)],  # ty:ignore
+            # NEXT: check how to apply new filter
+            paths=self.filter(self.paths()),
             root_name=root_name or self.root_dir.name,
         )

@@ -5,8 +5,9 @@ Play around with Format
 
 """
 
-from sstcore.port.calling import Calling
+from collections.abc import Callable
 
+from src.sstcore.brick.reflect import funcname
 from sstcore.brick.format.text import case
 
 example_inputs: list[str] = [
@@ -18,7 +19,7 @@ example_inputs: list[str] = [
 ]
 
 
-strategies: list[Calling[[str], str]] = [
+strategies: list[Callable[[str], str]] = [
     # IDEA: iterate over module?
     case.to_snake,
     case.to_camel,
@@ -28,7 +29,7 @@ strategies: list[Calling[[str], str]] = [
 
 for strategy in strategies:
     print("--- " * 5)
-    print(f"Start of: {strategy.__name__}")
+    print(f"Start of: {funcname(strategy)}")
     print()
     for string in example_inputs:
         print(f"{string}\n{strategy(string)}\n")

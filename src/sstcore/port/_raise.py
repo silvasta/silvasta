@@ -60,7 +60,6 @@ class PortErrorSpec(raising.ErrorSpec):
     text: str = ""
     attr: str | None = None
     source: type | None = None
-    # IDEA: port,plug == Protocol,Cls
 
 
 class LinkRaiserCall(Protocol):

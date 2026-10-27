@@ -1,7 +1,7 @@
 """
 SstError - Root of all Errors with __cli__ and __log__ Defaults
 
-                                                       DependencyLevel[2]
+                                         DependencyLevel.sstcore[3]
 """
 
 __all__: list[str] = [

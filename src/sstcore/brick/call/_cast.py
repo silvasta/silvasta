@@ -24,8 +24,6 @@ from inspect import BoundArguments, Parameter, Signature
 from typing import Any, Unpack
 
 from ...port.casting import ArgCasting, CastPlan
-from ...port.empty import VOID
-from ...port.files import SyncMode
 
 
 def iter_type_hints(target: Callable | type, /) -> Iterator[tuple[str, Any]]:
@@ -52,29 +50,6 @@ def find_annotated_caster(plan: CastPlan, name: str, annotation) -> None:
         if isinstance(caster, ArgCasting):
             plan[name] = caster
             return
-
-
-def sync_mode(  # LATER: use directly SstEnumMeta.resolve
-    # EXTRACT: this as template for ResolvingEnum upgrade
-    # - check how to add custom default and error
-    # IDEA:  ClsDTO from BaseEnum or lower, established with __init_subclass__
-    value: SyncMode | str,
-    /,
-    *,
-    default: SyncMode | Any = VOID,
-) -> SyncMode:
-    """Coerce string or SyncMode enum into a validated SyncMode."""
-
-    try:
-        return SyncMode(value)
-    except ValueError as error:  # LATER: use MISSING
-        _ = error
-        if default is not VOID:
-            return sync_mode(default)
-        raise ValueError from error
-        # raise PathGuardError(
-        #     reason=PathGuardReason.INPUT, target=value
-        # ) from error
 
 
 def param_spec(plan: CastPlan, bound: BoundArguments, sig: Signature, /):

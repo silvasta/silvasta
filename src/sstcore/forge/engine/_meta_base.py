@@ -32,15 +32,15 @@ class SstMeta(type):
     """Level 0 Meta"""
 
     _data: SstMetaData
+    data_type: type[SstMetaData] = SstMetaData
 
     def __new__(
-        mcs,
+        mcls,
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
-        data: SstMetaData,
-        # LATER: handle or destroy kwargs?
+        data: SstMetaData,  # AI: only 1 way to insert param allowed, by the DTO
     ):
-        cls = super().__new__(mcs, name, bases, namespace)
+        cls = super().__new__(mcls, name, bases, namespace)
         cls._data = data
         return cls

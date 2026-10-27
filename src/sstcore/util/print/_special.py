@@ -1,27 +1,63 @@
 """Assemble Specialized Visualizations directly on the"""
 
 __all__: list[str] = [
-    "ToolMixin",  # Consider renaming to InspectMixin in the future!
+    "_ToolMixin",
 ]
 
 from pathlib import Path
+from typing import Protocol, Unpack
 
 from rich.console import RichCast
 from rich.table import Table
 from rich.tree import Tree
 
 from ...brick.color import colorize
+from ...port.event.dto import PanelDTO, PanelInput, TableInput
+from ...port.tree import SimpleTree
 from ..tree import SimpleTreeNode
 
-# NEXT: Refactor: input->DTO->Renderable->launch
+
+class _SpecialPrint(Protocol):
+    """Save if ever needed again"""
+
+    def path_exists_table(
+        self, paths: list[Path], **kwargs: Unpack[PanelInput]
+    ) -> PanelDTO:
+        """Render Path overview with information about Existence"""
+
+    def debug_table(
+        self,
+        target: TableInput,
+        header="Dict Inspection",
+        show_type: bool | tuple[bool, bool] = (True, True),
+        style="green",
+    ):
+        """Print colored Dict with Type Information of Key and Value"""
+
+    def tree(
+        self,
+        tree: SimpleTree,
+        max_depth: int | None = None,
+        root: str = "bold magenta",
+        node: str = "by_level",
+        guide: str = "bold white",
+        hide_root=False,
+    ) -> None:
+        """Visual Representation of the SimpleTreeNode"""
 
 
-class ToolMixin:
-    """Provide specialized Visualizations for debugging and introspection"""
+class _ToolMixin:
+    """
+    Store here, maybe decompose or transport with this one
+
+    - maybe as stacked functions on the functors table.paths(..)
+    - otherwise just for themselves with/without dto
+
+    """
 
     def path_exists_table(
         self, paths: list[Path], title=None, header="Path"
-    ) -> None:
+    ) -> Table:
         """Check if Paths Exist or Missing and render result"""
         table = Table(title=title)
         table.add_column("Status", justify="center")
@@ -31,18 +67,18 @@ class ToolMixin:
             status: str = "✅" if path.exists() else ""
             table.add_row(status, colorize.path(path))
 
-        self(table)
+        return table
 
     def dict_table(
         self,
         target: dict,
-        header="Dict Inspection",
+        # header="Dict Inspection",
         show_type: bool | tuple[bool, bool] = (True, True),
         style="green",
-    ) -> None:
+    ) -> Table:
         """Render colorful Debug Dict, optional with Key or Value Type"""
-        if header:
-            self.header(header, title="Dict Inspection", style=style)
+        # if header:
+        #     self.header(header, title="Dict Inspection", style=style)
 
         table = Table(style=style)
 
@@ -69,7 +105,7 @@ class ToolMixin:
             ]
             table.add_row(*row)
 
-        self(table)
+        return table
 
     def tree_graph(
         self,
@@ -79,7 +115,7 @@ class ToolMixin:
         node: str = "by_level",
         guide: str = "bold white",
         hide_root=False,
-    ) -> None:
+    ) -> Tree:
         """Render SimpleTreeNode as nested Rich Tree in Terminal"""
 
         _node_styles: dict[int, str] = {
@@ -120,4 +156,4 @@ class ToolMixin:
 
         build_branch(simple_tree, visual_tree, current_depth=1)
 
-        self(visual_tree)
+        return visual_tree

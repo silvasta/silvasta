@@ -19,16 +19,13 @@ from ...port.register import registry_types as _reg
 from ..field import PolicyField
 from ._access import VaultAccess
 
-# FIX: Vault BROKEN!!!
-# FIX: Vault BROKEN!!!
 
-
-@portlink(Register)  # ty:ignore
-class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
+@portlink(Register)
+class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
     """Establish the port definition for further specification"""
 
     policy: PolicyField[VaultPolicy] = PolicyField(VaultPolicy)
-    ident: StrategyField[[Item], Hashable] = StrategyField(lambda item: item)  # ty:ignore
+    ident: StrategyField = StrategyField(lambda item: item)
 
     def __init__(
         self,
@@ -43,11 +40,6 @@ class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
         if policy is not None:
             self.policy: VaultPolicy = policy
         self.vault: V = self._as_vault(initial)
-
-        # TARGET:
-        # print(f"End of Init: {self}")
-        # print(self.vault)
-        # TARGET:
 
     def add(self, data: Item | V) -> V:
         incoming: V = self._as_vault(data)
@@ -85,19 +77,17 @@ class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
         match q:
             case int() as idx if not isinstance(idx, bool):
                 return self._box_index(idx)
-            case str() as key:
-                return self._box_key(key)
             case slice() | tuple() as many:
                 return self[many]
-            case fn if callable(fn):
+            case fn if callable(fn) and not isinstance(fn, type):
                 return self._where(fn)
+            case Hashable() as key:
+                return self._box_key(key)
             case _:
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
     def count(self, query: _reg.Selector[Item]) -> int:
         return len(self.find(query))
-
-    # NOTE: beside the gap here (filled by core) it follows perfectly the protocol
 
     def __len__(self) -> int:
         return len(self.vault)
@@ -105,8 +95,19 @@ class BaseVault[Item, V: _reg.Vault](VaultAccess[Item, V]):
     def __iter__(self) -> Iterator[Item]:
         yield from self._iter_items()
 
-    def __contains__(self, target: Item) -> bool:
-        return any(item == target for item in self._iter_items())
+    def __contains__(self, target: Any) -> bool:
+        if any(item == target for item in self._iter_items()):
+            return True
+        if (  # MOVE: make this as function with explaining name
+            isinstance(target, Hashable)
+            and not callable(target)
+            or isinstance(target, type)
+        ):
+            return bool(self._box_key(target))
+        try:
+            return bool(self._collisions(self._as_vault(target)))
+        except Exception:
+            return False
 
     #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 

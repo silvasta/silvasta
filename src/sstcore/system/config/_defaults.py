@@ -11,8 +11,7 @@ __all__: list[str] = [
 ]
 
 
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ...port.config import Defaults
 from ...port.link import portlink
@@ -20,8 +19,10 @@ from ...port.link import portlink
 
 @portlink(Defaults)
 class SstDefaults(BaseSettings):
-    model_config = ConfigDict(extra="allow")
+    model_config = SettingsConfigDict(extra="allow")
 
     timestamp_format: str = "%Y-%m-%d_%H-%M-%S"
     input_date_formats: list[str] = ["%d-%m-%Y", "%Y-%m-%d"]  # parse dates
+
     dot_env_content: str = ""
+    shield_typer: bool = True

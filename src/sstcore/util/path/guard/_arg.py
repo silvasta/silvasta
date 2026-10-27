@@ -5,8 +5,6 @@ Input Normalization
 
 """
 
-# NEXT: Decide which parts go to Base in brick.call._argcast or port.calling
-
 __all__: list[str] = [
     "CastInput",
     "PathInput",
@@ -32,10 +30,10 @@ from pathlib import Path
 from typing import (
     Annotated,
     Any,
+    Concatenate,
     Self,
     TypedDict,
     Unpack,
-    reveal_type,
 )
 
 from ....brick.call import ArgCast, _cast
@@ -115,8 +113,7 @@ class PathSpec:
 
         """
         if target is VOID:
-            # FIX: which?? return cls(target=Path.cwd(), **kwargs)
-            raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
+            return cls(target=Path.cwd(), **kwargs)
 
         match target:
             case PathSpec():
@@ -125,8 +122,6 @@ class PathSpec:
                 return cls(target, **kwargs)
             case str():
                 return cls(target=Path(target), **kwargs)
-            # case VOID:
-            #     return cls(target=Path.cwd(), **kwargs)
 
         raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
 
@@ -157,12 +152,8 @@ class PathCaster:
         self.default: Any | VOID = kwargs.pop("default", VOID)
         self.kwargs: PathInput = kwargs
 
-    def __call__(  # WARN: VOID/None for getting cwd or fail??
-        self,
-        target: MayBe[PathArg] = VOID,
-        /,
-        *,
-        default: MayBe[Path] = VOID,
+    def __call__(
+        self, target: MayBe[PathArg] = VOID, /, *, default: MayBe[Path] = VOID
     ) -> Path:
         # MOVE: base for orchestration?
         """Prepare incoming Args and cast with PathSpec"""
@@ -184,7 +175,6 @@ class PathCaster:
 
 
 class PathCast(ArgCast):
-    # NEXT: test the intersector
     """Specialized ArgCast with its own isolated path_registry and walk_plan."""
 
     def __init__(
@@ -194,10 +184,10 @@ class PathCast(ArgCast):
         self.path_registry: dict[Any, ArgCasting] = {
             Path: PathCaster(),
             PathArg: PathCaster(),
-            SyncMode: _cast.sync_mode,
+            SyncMode: SyncMode.resolve,
         }  # LATER: sync with ArgCast - global registry (plus local?)
 
-    def casts(self, target_type, /) -> bool:  # MOVE: to base
+    def casts(self, target_type, /) -> bool:
         """Check if type is registered for casting"""
         return target_type in self.path_registry
 
@@ -230,73 +220,43 @@ class PathCast(ArgCast):
 
         return plan
 
-    # EXTRACT:
-    def intersect2(
-        self,
-        func: Callable[[Path], Path],
-    ) -> Callable[[PathArg], Path]:
-        # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
+    #  LINE: -- Domain specific -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    # NEXT: check what here actually works
+    # REMOVE: All below: scales bad and works medium
+
+    def uno(self, func: Callable[[Path], Path]) -> Callable[[PathArg], Path]:
+        # WARN: when is self.plan used?
         def wrapper(
             path: PathArg,
         ) -> Path:
-
-            print("\nintersector::color:", end=" ")
-            reveal_type(path)
             resolved: Path = PathSpec.ok(path)
-            print("\nintersector::resolved:", end=" ")
-            reveal_type(resolved)
             return func(resolved)
 
         # reveal_type(wrapper)
         return wrapper
 
-    # def intersect3[P = Path, Q = PathArg, R = Path](
-    #     self,
-    # EXTRACT:
-    #     func: Callable[[P], R],
-    # ) -> Callable[[P], R] & Callable[[Q], R]:
-    #     # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
-    #     def wrapper(
-    #         path: PathArg,
-    #     ) -> Path:
-    #
-    #         print("\nintersector::color:", end=" ")
-    #         reveal_type(path)
-    #         resolved = PathSpec.ok(path)
-    #         print("\nintersector::resolved:", end=" ")
-    #         reveal_type(resolved)
-    #         return func(resolved)
-    #
-    #     reveal_type(wrapper)
-    #     return wrapper
+    def uno_plus[**Other](
+        self, func: Callable[Concatenate[Path, Other], Path]
+    ) -> Callable[Concatenate[PathArg, Other], Path]:
+        # WARN: when is self.plan used?
+        def wrapper(
+            path: PathArg, *_no: Other.args, **kwargs: Other.kwargs
+        ) -> Path:
+            resolved: Path = PathSpec.ok(path)
+            return func(resolved, *_no, **kwargs)
 
-    # # EXTRACT:
-    # def intersect4(
-    #     self, p1: Path, p2: Path
-    # ) -> Callable[[Callable[[Path], Path]], Callable[[PathArg], Path]]:
-    #     # ) -> Callable[[Path], Path] & Callable[[PathArg], Path]:
-    #     def deco(
-    #         func: Callable[[Path], Path],
-    #     ) -> Callable[
-    #         [PathArg],
-    #         Path,
-    #     ]:
-    #         def wrapper(
-    #             path: PathArg,
-    #         ) -> Path:
-    #             resolved: Path = PathSpec.ok(path)
-    #
-    #             print("\nintersector::color:", end=" ")
-    #             reveal_type(path)
-    #             print("\nintersector::resolved:", end=" ")
-    #             reveal_type(resolved)
-    #             return func(p1, p2)
-    #
-    #         reveal_type(wrapper)
-    #         return wrapper
-    #
-    #     reveal_type(deco)
-    #     return deco
+        # reveal_type(wrapper)
+        return wrapper
+
+    def duo[R](
+        self, func: Callable[[Path, Path], R]
+    ) -> Callable[[PathArg, PathArg], R]:
+        # WARN: when is self.plan used?
+        def wrapper(source: PathArg, target: PathArg) -> R:
+            return func(PathSpec.ok(source), PathSpec.ok(target))
+
+        return wrapper
 
 
 castpath = PathCast()  # TARGET: usage inside Path.Guard

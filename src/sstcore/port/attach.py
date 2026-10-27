@@ -117,7 +117,7 @@ class FieldLoader[T](_Callable, _t.Protocol):  # MOVE: generalize?
 
 
 class PolicyDescriptor[EnumT: _PolicyEnum](
-    TypedDescriptor, ReadDescriptor, _t.Protocol
+    TypedDescriptor[EnumT], ReadDescriptor[EnumT], _t.Protocol
 ):
     """Govern the Enum including match and dispatch"""
 
