@@ -28,8 +28,8 @@ from functools import update_wrapper
 from itertools import product
 from typing import Any, Literal, Protocol, cast
 
-from ...brick.color import colorize
-from ...util.print import printer
+from ....brick.color import colorize
+from ....util.print import printer
 
 type PrintFunc = Callable[..., None]
 
@@ -147,7 +147,7 @@ class PrintOptionBase[FuncT: PrintFunc]:
         ]
 
     def show(self):
-        printer.lines_with_len(
+        printer.lines.len(
             name=str(self),
             lines=[self._registry[i][1] for i in self._valid_index_list()],
         )
