@@ -89,8 +89,8 @@ class Sequential[Item, V: Sequence, K: Hashable](BaseVault[Item, V, K]):
             raise KeyError(key)
         self._index_put(hits[0], item)
 
-        def _slice(self, s: slice) -> V:
-            return self._ctor(self.vault[s])
+    def _slice(self, s: slice) -> V:
+        return self._ctor(self.vault[s])
 
     def _slice_put(self, s: slice, value: Any) -> None:
         items: list[Item] = list(self._iter_items())
