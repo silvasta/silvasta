@@ -67,19 +67,21 @@ class BaseFunctor[**Args, Result](
         raise AttributeError(f"{self} has no _call!", self, args, kwargs)
 
     @MorphingField(bind_to_self=True)  # MOVE: to meta defaults when improved
-    def _emit(self, *args, **kwargs) -> None:
-        count = 0
-        if hasattr(self, "log") and self.log:
-            from loguru import logger
-
-            count += 1
-            logger.debug(*args, sender=str(self), **kwargs)
-        # LATER: check arg forwarding, see/copy port.link._render
-        if hasattr(self, "debug") and self.debug:
+    def _emit(
+        self,
+        *args,
+        level: str = "DEBUG",
+        exception: BaseException | None = None,
+        **kwargs,
+    ) -> None:
+        if getattr(self, "debug", False):
             from rich import print
 
-            count += 1
             print(*args, **kwargs)
+            return
 
-        if count == 0:  # LATER: improve this
-            raise Exception(f"Missing _emit handling! {args=}, {kwargs=}")
+        from loguru import logger
+
+        logger.opt(exception=exception).log(
+            level, *args, sender=str(self), **kwargs
+        )

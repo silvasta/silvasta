@@ -26,7 +26,7 @@ from ....system.boot import ConfigLoader
 from ....util.log import fetch_log_result
 from ....util.path.guard import PathGuard
 from ....util.print import Boxes, printer
-from ..___print_option import PrintOption, SelectMode
+from ._print_option import PrintOption, SelectMode
 
 # TASK: system and bus!
 

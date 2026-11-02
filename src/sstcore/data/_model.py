@@ -16,6 +16,10 @@ from typing import Self
 from loguru import logger
 from pydantic import BaseModel, Field
 
+# TASK: rework
+# - check with latest projects
+# - attach (optional) views
+
 
 class SstModel(BaseModel):
     # TASK: rework

@@ -19,7 +19,6 @@ __all__: list[str] = [
 # - adapt to new setup and methods
 # - think about wiring with pydantic
 # - Composition: where, how, Builder?
-#   - BaseModel mixup might be needed soon
 
 from ._base import SstFiles
 from ._file import SstFile
