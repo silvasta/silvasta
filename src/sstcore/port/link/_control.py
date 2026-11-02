@@ -126,16 +126,14 @@ class Tap:
     def __init__(self, spec: LinkSpec, /) -> None:
         self.replace(spec)
 
-    @property
-    def spec(self) -> LinkSpec:
-        return self._spec
-
     def replace(self, spec: LinkSpec) -> Self:
         """Swap the underlying frozen LinkSpec and re-bind emit/printer"""
         self._spec = spec
         self.emit: PortEmit = _prepare_emit(spec)
-        # Only activate Reflector/Redactor printer if 'report' is on AND 'link' is allowed (or report >= 3)
         self.printer: PortPrinter = (
+            # FIX: this is useless, no interaction with the channels!
+            # - so far it only prints together with thousands of (most of the time) unwanted port.link._operate prints
+            # - desired is toggle with channel, some distributed location wants to use the printer independent what happens in the port otherwise
             _render._load_printer() if spec.report > 0 else _render.NOOP_PRINTER
         )
         return self
@@ -148,13 +146,21 @@ class Tap:
         """Create an isolated new Tap with a derived LinkSpec"""
         return type(self)(self._spec.derive(**changes))
 
-    def show_result(self, docs: _def.SortedDocs, /) -> None:
-        self.printer.show_sort_result(
-            docs, level=self._spec.report, **asdict(self._spec.theme)
-        )
+    def __str__(self) -> str:
+        return f"{type(self).__name__}[{self.spec.channels}]"
 
-    def ignores(self, base: type) -> bool:
-        return base in self._spec.skip
+    def __repr__(self) -> str:
+        return f"{self}[{self.spec}]"
+
+    def __bool__(self) -> bool:
+        return bool(self._spec.channels)
+
+    def __call__(self, *args: Any, sender: Any = None, **kwargs: Any) -> None:
+        self.emit(*args, sender=sender, **kwargs)  # LATER: something better?
+
+    @property
+    def spec(self) -> LinkSpec:
+        return self._spec
 
     @property
     def merge(self) -> _def.DocMerging:
@@ -164,11 +170,8 @@ class Tap:
     def dunders(self) -> frozenset[str]:
         return self._spec.dunders
 
-    def __bool__(self) -> bool:
-        return bool(self._spec.channels)
-
-    def __call__(self, *args: Any, sender: Any = None, **kwargs: Any) -> None:
-        self.emit(*args, sender=sender, **kwargs)
+    def ignores(self, base: type) -> bool:
+        return base in self._spec.skip
 
     def watches(self, target: Any, /) -> bool:
         return target in self._spec.channels
@@ -194,6 +197,11 @@ class Tap:
 
         return _traced
 
+    def show_result(self, docs: _def.SortedDocs, /) -> None:
+        self.printer.show_sort_result(
+            docs, level=self._spec.report, **asdict(self._spec.theme)
+        )
+
     @_t.overload
     def trace[C](self, cls: type[C], /) -> type[C]: ...
     @_t.overload
@@ -205,6 +213,8 @@ class Tap:
         self, cls: type[C] | None = None, /, *, methods: Sequence[str] = ()
     ) -> type[C] | Callable[[type[C]], type[C]]:
         """Inject self._debug() and wrap target methods"""
+
+        # print(f"trace: {cls}")
 
         def _decorator(_cls: type[C]) -> type[C]:
             if not _inject_active_debug(self, _cls):

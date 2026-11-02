@@ -22,6 +22,7 @@ from ..path.guard import PathGuard
 
 
 @portlink(LogData)
+@portlink.tap.trace
 class LogParam(BaseModel):
     print_at_setup: bool = False
 
@@ -39,6 +40,7 @@ class LogParam(BaseModel):
     json_suffix: str = ".jsonl"
 
     @property
+    @portlink.tap.watch
     @PathGuard.file(default_content="", raise_error=False)
     def log_file(self) -> Path:
         return self.log_dir / f"{self.log_file_stem}{self.file_suffix}"
