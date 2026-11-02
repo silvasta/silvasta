@@ -14,7 +14,7 @@ import json
 from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from loguru import logger
 from pydantic import Field, model_validator
@@ -30,20 +30,31 @@ from ._names import SstNames
 
 @portlink(Settings)
 class SstSettings(BaseSettings):
-    file: Path  # TEST: hold the last loaded file path (useless for boot)
+    """Hold the last loaded file path (useless for boot)"""
+
+    file: Path
     defaults: SstDefaults = Field(default_factory=SstDefaults)
     names: SstNames = Field(default_factory=SstNames)
-    log: LogParam = Field(default_factory=LogParam)
+    log: LogParam = Field(default_factory=LogParam)  # WARN: defaults not seen?
 
-    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
     updates: deque[datetime] = Field(default_factory=deque)
-    update_maxlen: int = 79
+    update_maxlen: int = 80
 
     @classmethod
-    def load(cls, file: Path) -> Self:  # LATER: compare file with Setting.file
-        return cls.model_validate(json.loads(file.read_text(encoding="utf-8")))
+    def load(cls, file: Path) -> Self:
+        _data = json.loads(file.read_text(encoding="utf-8"))
+        settings: Self = cls.model_validate(_data)
+        if file != settings.file:
+            logger.info(f"Changing {settings.file=} to {file=}")
+            settings.file = file  # CHECK: here or in .save??
+            settings.save(settings.file)
+        return settings
 
-    def save(self, file: Path) -> None:
+    def save(
+        self,
+        file: Path,  # CHECK: still required as non-optional?
+    ) -> None:
         self.file: Path = file
         before: datetime = self.last_updated
         self.touch()
@@ -53,10 +64,12 @@ class SstSettings(BaseSettings):
 
     @classmethod
     def default_json_content(cls) -> str:
+        # LATER: just json and with some dispatch?
         """Get unmodified json content with all class members"""
         return cls().json_content(exclude_defaults=False)
 
     def json_content(self, exclude_defaults=False) -> str:
+        # LATER: just json?
         """Dump content of all class members with custom indent"""
         return self.model_dump_json(
             exclude_defaults=exclude_defaults,
@@ -82,8 +95,3 @@ class SstSettings(BaseSettings):
                 maxlen=desired_maxlen,
             )
         return self
-
-
-if TYPE_CHECKING:
-    _instance_check: Settings = SstSettings()
-    _class_check: type[Settings] = SstSettings

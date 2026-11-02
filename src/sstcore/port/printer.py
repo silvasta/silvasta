@@ -194,25 +194,42 @@ class PrintLayouts(Protocol):
     def title(
         self,
         title: str,
+        /,
         *content: dto.CliSpec,
         **kw: Unpack[dto.HeaderPresetInput],
     ) -> dto.PanelDTO:
         """Single Slim Panel with Semantic Coloring"""
 
     def success(
-        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+        self,
+        title: str,
+        /,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def warn(
-        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+        self,
+        title: str,
+        /,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def danger(
-        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+        self,
+        title: str,
+        /,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def special(
-        self, title: str, *content: dto.CliSpec, **kw: Unpack[dto.StatusInput]
+        self,
+        title: str,
+        /,
+        *content: dto.CliSpec,
+        **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO: ...
 
 

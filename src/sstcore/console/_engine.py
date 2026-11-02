@@ -13,7 +13,7 @@ from loguru import logger
 
 from ..error.catch import ErrorHandler, ErrorRegistry
 from ..forge.view import view
-from ..port.system import CliSystem, SystemLoaderInput
+from ..port.system import CliSystem, CliSystemInput
 from ..system.boot import System, SystemLoader, sst_system_loader
 from ..system.config import HomeSetup
 from . import _args as args
@@ -39,6 +39,7 @@ class SafeTyper(typer.Typer):
         self,
         system_loader: SystemLoader | None = None,
         error_registry: ErrorRegistry | None = None,
+        default_home: HomeSetup = HomeSetup.PROJECT,
         **kwargs,
     ):
         """Load Typer and prepare custom setup"""
@@ -48,6 +49,7 @@ class SafeTyper(typer.Typer):
 
         self._system_loader: SystemLoader | None = system_loader
         self._error_registry: ErrorRegistry | None = error_registry
+        self._default_home: HomeSetup = default_home
 
         self._attach_internal_callback()
 
@@ -66,10 +68,11 @@ class SafeTyper(typer.Typer):
             verbose: args.Verbose = False,
             quiet: args.Quiet = False,
             settings: args.SettingFile = None,
-            home: HomeSetup = HomeSetup.PROJECT,
+            home: HomeSetup = self._default_home,
         ):
             """Route and provide CLI args for Main app"""
             if ctx.parent is None:
+                # NEXT: here build spec!!
                 self._run_main_callback(
                     ctx,
                     verbose=verbose,
@@ -81,7 +84,9 @@ class SafeTyper(typer.Typer):
                 self._run_sub_callback(ctx)
 
     def _run_main_callback(
-        self, ctx: typer.Context, **cli_args: Unpack[SystemLoaderInput]
+        self,
+        ctx: typer.Context,
+        **cli_args: Unpack[CliSystemInput],  # NEXT: use Spec here!!
     ):
         """Setup Config and Logging and show Status"""
 

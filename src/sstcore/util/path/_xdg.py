@@ -95,7 +95,7 @@ class HomeDirs:
         return cls(
             root=(root := (project_root or get_project_root())),
             cache=root / "cache",
-            config=root / ".config",
+            config=root / "configs",
             data=root / "data",
             log=root / "logs",
             state=root / "state",

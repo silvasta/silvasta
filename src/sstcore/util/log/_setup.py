@@ -24,6 +24,7 @@ __all__: list[str] = [
 import sys
 
 from loguru import logger
+from rich import print  # REMOVE:
 
 from ...port.config import LogData
 from ._format import load_format_pattern, ndjson_formatter
@@ -38,7 +39,11 @@ def setup_logging(param: LogData | None = None) -> LogData:
     if _setup_param is not None:
         return _setup_param
 
+    print(param)
+
     param: LogData = param or LogParam()
+
+    print(param)
 
     logger.remove()
 
@@ -76,6 +81,8 @@ def setup_logging(param: LogData | None = None) -> LogData:
         print("Warning: Logging is completely disabled.")
 
     _setup_param = param
+
+    print(_setup_param)
 
     return _setup_param
 

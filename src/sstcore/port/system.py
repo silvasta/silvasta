@@ -155,6 +155,7 @@ class SystemBootSpec(CliSystemSpec, CliSystemTools):
     def extract_base[T](self, target_cls: type[T]) -> T:
         """Dynamically extract fields belonging to a base class"""
         field_args = {
+            # NEXT: ParamSpec Base (from functor / others...)
             f.name: getattr(self, f.name)  # LATER: DataClass(Protocol)
             for f in fields(target_cls)  # ty:ignore
         }
@@ -192,6 +193,7 @@ class ConfigInput[P: Paths, S: Settings](TypedDict, total=False):
 
 @dataclass
 class ConfigSpec[P: Paths, S: Settings]:
+    # NEXT: sync with ParamSpec
     settings_cls: type[S] | None = None
     paths_cls: type[P] | None = None
     setting_file: Path | None = None

@@ -60,6 +60,7 @@ class PrinterLayouts(PrinterBase):
     def title(
         self,
         title: str,
+        /,
         *content: dto.CliSpec,
         **kw: Unpack[dto.HeaderPresetInput],
     ) -> dto.PanelDTO:
@@ -74,6 +75,7 @@ class PrinterLayouts(PrinterBase):
     def success(
         self,
         title: str,
+        /,
         *content: dto.CliSpec,
         **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
@@ -82,6 +84,7 @@ class PrinterLayouts(PrinterBase):
     def warn(
         self,
         title: str,
+        /,
         *content: dto.CliSpec,
         **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
@@ -90,6 +93,7 @@ class PrinterLayouts(PrinterBase):
     def danger(
         self,
         title: str,
+        /,
         *content: dto.CliSpec,
         **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:
@@ -98,6 +102,7 @@ class PrinterLayouts(PrinterBase):
     def special(
         self,
         title: str,
+        /,
         *content: dto.CliSpec,
         **kw: Unpack[dto.StatusInput],
     ) -> dto.PanelDTO:

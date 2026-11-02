@@ -34,7 +34,7 @@ class LogParam(BaseModel):
     retention: str = "1 week"
     rotation: str = "5 MB"
 
-    log_dir: Path = Field(default_factory=any_root)  # TODO:
+    log_dir: Path = Field(default_factory=lambda: any_root() / "logs")
     log_file_stem: str = "debug"
     file_suffix: str = ".log"
     json_suffix: str = ".jsonl"

@@ -69,6 +69,7 @@ def launch_folder_scanner(
     scan_root: Path = scan_root or any_root()
     cache_dir: Path = paths.scanner_cache_file(scan_root).parent
 
+    # FIX: why is this a dir? way better with file??
     cache = DiskScanCache(cache_dir, scan_root, system.printer)
 
     folder_scanner(

@@ -162,8 +162,8 @@ class Paths[D: Defaults, N: Names](Protocol):
     def summary_file(self, suffix: str = "md") -> Path:
         """Ensure unique File Path for the Scanner Summary File"""
 
-    def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
-        """Find Scanner Cache Location or provide new Path"""
+    def scanner_cache(self, root: Path | None = None, suffix=".db") -> Path:
+        """Provide Scanner Cache Location"""
 
 
 class Settings[D: Defaults, N: Names](Protocol):
@@ -173,7 +173,8 @@ class Settings[D: Defaults, N: Names](Protocol):
     def file(self) -> Path:
         """Setting File Path - Needs initial Configuration"""
 
-    def __init__(self, file: Path): ...  # INFO: needed for typing!
+    def __init__(self, file: Path, *, log: LogData):
+        """Enable typing for BaseModel Settings"""
 
     @property
     def defaults(self) -> D: ...

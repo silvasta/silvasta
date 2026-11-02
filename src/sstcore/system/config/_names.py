@@ -32,7 +32,7 @@ class SstNames(BaseSettings):
     plot_dir: str = "plots"
 
     # Files
-    scanner_cache_file: str = ".sst_scanner_cache.json"
+    scanner_cache_file: str = "._sst_scanner_cache"
 
     @cached_property
     def _summary_file(self) -> NameParser:

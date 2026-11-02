@@ -109,7 +109,7 @@ class _SystemMixing(Protocol):
     def print(self) -> Print: ...
 
 
-# TODO: @portlink(_SystemMixing)
+# TODO: @portlink(SystemMixing)
 class SystemMixin[C: Config = Config, E: Emit = Emit]:
     """Exfiltrate and Provide the Core Tools of the System"""
 

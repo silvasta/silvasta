@@ -39,7 +39,7 @@ from ...port.config import (
 )
 from ...port.link import portlink
 from ...port.system import ConfigInput, ConfigSpec
-from ...util.log import setup_logging
+from ...util.log import LogParam, setup_logging
 from ...util.path import ProjectInfo
 from ._homes import SstHomes
 from ._paths import SstPaths
@@ -65,13 +65,17 @@ class ConfigManager[D: Defaults, N: Names, P: Paths, S: Settings]:
         homes: Homes = SstHomes.from_setup(
             spec.home_setup, spec.project_root, info.name
         )
-        settings_cls: type[S] = spec.settings(default=SstSettings)
+
         config_file: Path = spec.setting_file or homes.config / "settings.json"
-        settings: S = (
-            settings_cls.load(file=config_file)
-            if config_file.exists()
-            else settings_cls(file=config_file)
-        )
+        settings_cls: type[S] = spec.settings(default=SstSettings)
+
+        if config_file.exists():
+            settings: S = settings_cls.load(file=config_file)
+        else:
+            settings: S = settings_cls(
+                file=config_file,
+                log=LogParam(log_dir=homes.log, log_file_stem=info.name),
+            )
         paths_cls: type[P] = spec.paths(default=SstPaths)
         paths: P = paths_cls(settings.defaults, settings.names, homes)
 

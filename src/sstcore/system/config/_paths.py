@@ -72,5 +72,7 @@ class SstPaths:
         filename: str = self._names.summary_file(suffix=suffix)
         return self.data_dir / filename
 
-    def scanner_cache_file(self, scan_root: Path | None = None) -> Path:
-        return (scan_root or self.state_dir) / self._names.scanner_cache_file
+    def scanner_cache(self, root: Path | None = None, suffix=".db") -> Path:
+        """Work around DiskCache Folder requirement..."""
+        dir: Path = root or self.state_dir
+        return dir / f"{self._names.scanner_cache_file}{suffix}"

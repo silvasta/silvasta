@@ -43,7 +43,7 @@ class ProjectInfo:
     # LATER: __mount__ field with color overhanding from printer
     """Check toml to provide Config and Printer with Info"""
 
-    name: str = "sstcore"
+    name: str = "sstcore"  # NEXT: still valid?
     version: str = "0.0.0"
 
     def __str__(self):
