@@ -6,8 +6,6 @@ Ensure Dir or File, exists or not
 
 # IMPORTANT: Ensure in .__init__.pyi that PathArg is annotated for any Path
 
-from typing import TYPE_CHECKING
-
 __all__: list[str] = [
     "_dir_logic",
     "dir",
@@ -16,10 +14,13 @@ __all__: list[str] = [
     "unique",
 ]
 
+# LATER: use ....brick.call.hybrid_func
+
 
 import functools
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ....error import PathGuardError, PathGuardReason
 from . import _increment
@@ -29,7 +30,6 @@ from ._arg import PathArg, PathSpec, TargetPath, castpath
 @castpath.uno
 def _dir_logic(path: TargetPath, /) -> Path:
     """Ensure Directory is Writable"""
-    # reveal_type(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 

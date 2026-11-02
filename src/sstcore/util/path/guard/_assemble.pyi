@@ -213,6 +213,7 @@ class PathGuard:
     @staticmethod
     def relative(
         target: PathArg,
+        /,
         root: PathArg | None = None,
         strict: bool = True,
     ) -> Path: ...
@@ -220,12 +221,14 @@ class PathGuard:
     @staticmethod
     def relative(
         target: Iterable[PathArg],
+        /,
         root: PathArg | None = None,
         strict: bool = True,
     ) -> list[Path]: ...
     @staticmethod
     def relative(
         target: PathArg | Iterable[PathArg],
+        # CHECK: /,
         root: PathArg | None = None,
         strict: bool = True,
     ) -> Path | list[Path]: ...
@@ -233,6 +236,7 @@ class PathGuard:
     @staticmethod
     def absolute(
         target: PathArg,
+        /,
         root: PathArg | None = None,
         *,
         resolve: bool = True,
@@ -242,6 +246,7 @@ class PathGuard:
     @staticmethod
     def absolute(
         target: Iterable[PathArg],
+        /,
         root: PathArg | None = None,
         *,
         resolve: bool = True,
@@ -252,6 +257,7 @@ class PathGuard:
     def absolute(
         target: PathArg | Iterable[PathArg],
         root: PathArg | None = None,
+        # CHECK: /,
         *,
         resolve: bool = True,
         must_exists: bool = False,

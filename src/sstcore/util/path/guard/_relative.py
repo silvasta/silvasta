@@ -21,12 +21,28 @@ from ._arg import PathArg, PathSpec, ResolvedPath, castpath
 type SinglePath = PathArg
 type MultiPath = Iterable[PathArg]
 
+# STRATEGY: input handling
+# - only main function(s) handle the ResolvedPath/PathArg or any other desired but not Path input
+#   - any internal function just used Path, no @castpath there, only on any exposed function
+# - declare PathCast input opening as failed and use the stub for that
+#   - the .pyi handles the input extension of the paths: PathArg
+#   - the .pyi handles any possible overload, internally call the related subfunctions
+#   - @castarg ensures all Annotated Paths and their corresponding recipe
+# - Single/Multi is dispatched inside the corresponding exposed function
+
+# AI_QUESTION: any other PathGuard internal function that uses _relative._* that is not not _relative.main_*
+
+# AI_TASK: any overload that is not completely necessary should go to _assemble.pyi
+
 
 @castpath
 def _relative_one(
     target: ResolvedPath,
+    /,
     root: ResolvedPath | None = None,
+    *,
     strict: bool = True,
+    must_exists: bool = False,
 ) -> Path:
     """
     Find Relative Path starting at Root (or CWD) downwards to Target
@@ -35,22 +51,28 @@ def _relative_one(
     """
     root: Path = root or Path.cwd()
 
+    if must_exists:
+        _absolute_one(target, root, must_exists=True)
+
     if not strict:
         return Path(os.path.relpath(target, root))
     try:
         return target.relative_to(root)
     except ValueError as error:
+        # IDEA: move to relative_main?
         raise PathGuardError(
             PathGuardReason.RELATIVE, target=target, root=root, caught=error
         ) from error
 
 
 # AI: this is mounted to PathGuard.relative
-# - before it handled only 1 Path at a time
 def relative_main(
     target: SinglePath | MultiPath,
+    /,
     root: PathArg | None = None,
     strict: bool = True,
+    *,
+    existing: bool = False,  # AI: this is the new idea, filter (or raise) by existance on FileSystem
 ) -> Path | list[Path]:
     """
     Find Relative Path(s) starting at Root (or CWD) downwards to Target(s).
@@ -60,14 +82,25 @@ def relative_main(
     - If not strict: walking upwards via '..' is permitted
     """
     if isinstance(target, (Path, str, PathSpec)):
-        return _relative_one(target, root, strict=strict)  # ty:ignore FIX:
+        return _relative_one(
+            target,  # ty:ignore FIX: castpath / Annotated
+            root,  # ty:ignore FIX: castpath / Annotated
+            strict=strict,
+            must_exists=existing,
+        )
 
     if isinstance(target, Iterable):
-        resolved_root: Path = (
+        resolved_root: Path = (  # REMOVE: resolve somehow better
             PathSpec.ok(root, resolve=True) if root is not None else Path.cwd()
         )
         return [
             _relative_one(item, resolved_root, strict=strict)  # ty:ignore FIX:
+            # AI: here the existing should somwhow avoid the error, and just add nothing
+            # - 2 potentially contradicting flags in relative_main(...) don't work well
+            # - using existing:
+            #   - for 1 input: -> result or error
+            #   - for muliple: -> pruned to [0,len(input)] paths
+            # - but how to handle this most elegant here?
             for item in target
         ]
 
@@ -77,6 +110,7 @@ def relative_main(
 #  LINE: -- Absolut -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+# TODO: @castpath: PathArg -> Path, None? maybe just forward in castarg
 def _absolute_one(
     target: PathArg,
     root: Path | None = None,
@@ -99,27 +133,30 @@ def _absolute_one(
     return PathSpec.ok(raw_path, resolve=resolve, must_exists=must_exists)
 
 
+# REMOVE: when ensured in .pyi
+# CHECK: how it behaves in function below: split
 @overload
 def absolute_main(
     target: SinglePath,
+    /,
     root: PathArg | None = None,
     *,
     resolve: bool = True,
     must_exists: bool = False,
 ) -> Path: ...
-
-
+# REMOVE: when ensured in .pyi
+# CHECK: how it behaves in function below: split
 @overload
 def absolute_main(
     target: MultiPath,
+    /,
     root: PathArg | None = None,
     *,
     resolve: bool = True,
     must_exists: bool = False,
     filter_exists: bool = False,
 ) -> list[Path]: ...
-
-
+# AI: this is mounted to PathGuard.absolute
 def absolute_main(
     target: SinglePath | MultiPath,
     root: PathArg | None = None,
@@ -165,7 +202,7 @@ def absolute_main(
 def relative_string(source: Path, target: Path):
     """Search relative Path in both direction and provide any rendering"""
     relative: Path = relative_duo(source, target) or _relative_one(
-        target=target, root=source, strict=False
+        target, root=source, strict=False
     )
     return f"{source.name} -> {relative}"
 
@@ -195,12 +232,14 @@ def relative_duo(path1: Path, path2: Path) -> Path | None:
 
 
 @overload
+# REMOVE: when ensured in .pyi
 def split(
     target: SinglePath, local_root: Path | None = None
 ) -> tuple[Path, Path]: ...
 
 
 @overload
+# REMOVE: when ensured in .pyi
 def split(
     target: MultiPath, local_root: Path | None = None
 ) -> list[tuple[Path, Path]]: ...
