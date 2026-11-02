@@ -47,8 +47,7 @@ class FileScanning(Protocol):
         """Provide str or container object that produces str"""
 
 
-# TASK: setup that works for all scanner
-class ScanMode(StrEnum):
+class ScanMode(StrEnum):  # TASK: setup that works for all scanner
     """Govern the execution modes of FileScanningner"""
 
     READ = auto()
@@ -95,18 +94,15 @@ class ScanCaching(Protocol):
     ) -> None:
         """Save Path Selection (as next default for update_last=True)"""
 
-    def exists(self, name: str = LAST) -> bool:  # CHECK: __contains__ ?
+    def __contains__(self, name: str = LAST) -> bool:
         """Check if Preset (or last selection) exists for current scan_root"""
 
     def names(self, *, include_last: bool = False) -> Sequence[str]:
         """Show available preset names"""
 
     def presets(self, *, include_last: bool = False) -> dict[str, PresetInfo]:
-        """
-        Provide full preset records mapped by preset name
-
-        - Idea: use for preset-picker TUI before launching TreeSelector on files
-        """
+        # IDEA: use for preset-picker TUI before launching TreeSelector on files
+        """Provide full preset records mapped by preset name"""
 
     def delete(self, name: str) -> bool:  # Register.clear(key)
         """Delete one preset by name and confirm success"""
@@ -116,7 +112,6 @@ class ScanCaching(Protocol):
 
     def prune(self) -> int:
         """Remove non-existent files from stored presets and count"""
-        ...
 
     def close(self) -> None:
         """Release any underlying resources"""

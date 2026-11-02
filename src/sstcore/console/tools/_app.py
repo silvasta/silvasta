@@ -29,6 +29,8 @@ from ._writer import stub_typer
 app = SafeTyper(
     name="tools",
     help="Basic Equipment for Development",
+    # NEXT: when .._engine finiished:
+    # home=HomeSetup.GLOBAL
 )
 
 
@@ -53,10 +55,10 @@ _FilterArg = Annotated[FilterArgs, _filter_arg]
 @app.command("scanner")
 def launch_folder_scanner(
     ctx: Context,
-    scan_root: args.Root = None,
+    root: args.Root = None,
     output_file: args.OutputFile = None,
     file_type: SummaryFileMachine = SummaryFileMachine.MD,  # TODO: help text
-    reset: args.CleanState = False,
+    load_cache: args.CleanState = False,
     sort: TreeSelectorApp.Sort = TreeSelectorApp.Sort.SELECTION,
     filter_box: _FilterArg = FilterArgs.PROJECT,
     include: args.Include = None,
@@ -64,22 +66,16 @@ def launch_folder_scanner(
     hidden: args.Hidden = False,
 ):
     """Folder Scanner with TreeSelector: Write combined file!"""
+
     system: System = ctx.obj["system"]
     paths: Paths = system.config.paths
-    scan_root: Path = scan_root or any_root()
-    cache_dir: Path = paths.scanner_cache_file(scan_root).parent
-
-    # FIX: why is this a dir? way better with file??
-    cache = DiskScanCache(cache_dir, scan_root, system.printer)
+    scan_root: Path = root or any_root()
+    cache_dir: Path = paths.scanner_cache(scan_root, suffix="")
 
     folder_scanner(
         scan_root=scan_root,
         output_file=output_file or paths.summary_file(suffix=file_type),
-        cache=cache,
-        preset=filter_box.name.lower(),
-        cache_reset=reset,
-        sort=sort,
-        printer=system.printer,
+        cache=DiskScanCache(cache_dir, scan_root, system.printer),
         filter=ProjectFilter.clone(
             filter_box.build(
                 include=include,
@@ -87,6 +83,11 @@ def launch_folder_scanner(
                 allow_hidden=hidden,
             )
         ),
+        printer=system.printer,
+        preset=filter_box.name.lower(),  # CHECK:
+        load_cache=load_cache,
+        sort=sort,
+        # LATER: scan_mode
     )
 
 

@@ -18,8 +18,7 @@ import typer
 
 from ...port.printer import Print
 from ...port.scanner import ScanCaching, ScanMode
-from ...util.filter import PathFilter, ProjectFilter
-from ...util.print import printer as _printer
+from ...util.filter import PathFilter
 from ...util.scan import FolderScanner, SummaryFile
 from ..select import TreeSelectorApp
 
@@ -28,25 +27,18 @@ def folder_scanner(
     scan_root: Path,
     output_file: Path,
     cache: ScanCaching,
-    preset: str | None = None,
-    cache_reset: bool = False,
+    filter: PathFilter,
+    printer: Print,
+    preset: str = "",
+    load_cache: bool = False,
     sort: str = TreeSelectorApp.Sort.SELECTION,
-    printer: Print | None = None,
-    filter: PathFilter | None = None,
     scan_mode: ScanMode = ScanMode.READ,
 ):
     """Launch Scanner, select from Filesystem Tree and write to file"""
 
-    printer: Print = printer or _printer
-
-    if filter is None:
-        filter = ProjectFilter(require_all=set(), require_any=set())
-
-    target_preset = preset or cache.LAST
-
     with cache:
         pre_select: list[Path] = (
-            [] if cache_reset else cache.load(name=target_preset)
+            [] if not load_cache else cache.load(name=preset)
         )
         selector = TreeSelectorApp(
             sst_tree=FolderScanner(scan_root, filter).tree(),
@@ -58,9 +50,13 @@ def folder_scanner(
             raise typer.Exit()
 
         printer.lines.len("Selected Files", selected_files)
-        cache.save(selected_files, name=target_preset)
+        # NEXT: ask for preset storage (including name)! here? after which prints?
+        new_preset_name: str = input("new preset name: ")
+        # LATER: something with timestamp?
+        cache.save(selected_files, name=new_preset_name)
+        # LATER: print preset save success
 
-    printer(
+    printer(  # LATER: remove, or by toggle?
         summary_file := SummaryFile.with_scanner(
             output_file,
             target_files=selected_files,
