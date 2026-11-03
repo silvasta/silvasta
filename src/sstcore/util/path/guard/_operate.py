@@ -4,7 +4,7 @@ File System Operations
 - Transfer: from source to target
 - Delete: from target to ...
 
-                         DependencyLevel.sstcore.util.path.guard[3]
+                 DependencyLevel.sstcore.util.path.guard[c.4.3.0.3]
 """
 
 # IMPORTANT: Ensure PathArg is annotated for any Path in .__init__.pyi

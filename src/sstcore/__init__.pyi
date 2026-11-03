@@ -32,6 +32,17 @@ Package and Subpackages are considered as one Module for Imports and Exports.
 - The __init__ has always the highest level inside its package
   - its DependencyLevel[X] counts for the entire package like a module outside
 
+NEW:
+- DependencyLevel is from now on declared for the entire DependencyTree!
+  - the entire path is written out, followed by all node levels
+  - DependencyLevel.sstcore.TOPLEVEL.SUB1.SUB2.SUB3[c.TL.SL1.SL2.SL3]
+- Example: sstcore.util.path.guard._operate
+  - Levels: util=4, path=0, guard=1, _operate=3
+  - DependencyLevel.sstcore.util.path.guard[c.4.0.1.3]
+- This allows to compare any modules across the library! (start at first number)
+  - some port internal ..[0.5] shows now it has lower level as some data..[5.2]
+  - confusion about comparing just the last local level (e.g. 5 and 2) resolved
+
 Despite that dependency conflicts are already heavily relaxed due to the port:
   - Strict application is desired without any violation
 
