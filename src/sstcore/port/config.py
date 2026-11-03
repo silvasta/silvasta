@@ -17,14 +17,15 @@ __all__: list[str] = [
     "ProjectInformation",
 ]
 
-from enum import StrEnum, auto
-from pathlib import Path
-from typing import Any, Protocol, Self
+import typing as _typing
+from enum import StrEnum as _StrEnum
+from enum import auto as _auto
+from pathlib import Path as _Path
 
 from ._types import _Stringable
 
 
-class ProjectInformation(Protocol):
+class ProjectInformation(_typing.Protocol):
     """Collect Data and forward to Display"""
 
     @property
@@ -36,7 +37,7 @@ class ProjectInformation(Protocol):
         """Pyproject.toml Project Version"""
 
 
-class LogData(Protocol):
+class LogData(_typing.Protocol):
     """Handle Input Param for log and provide defaults"""
 
     log_to_console: bool
@@ -48,27 +49,27 @@ class LogData(Protocol):
     rotation: str
 
     @property
-    def log_file(self) -> Path:
-        """Ensured Path for regular logs (at least empty file)"""
+    def log_file(self) -> _Path:
+        """Ensured _Path for regular logs (at least empty file)"""
 
     @property
-    def struct_log_file(self) -> Path:
-        """Ensure Path for structured logs (at least empty file)"""
+    def struct_log_file(self) -> _Path:
+        """Ensure _Path for structured logs (at least empty file)"""
 
-    def evolve(self, verbose: bool, quiet: bool) -> Self:
+    def evolve(self, verbose: bool, quiet: bool) -> _typing.Self:
         """Create new detached DTO with runtime overrides"""
 
 
-class HomeSetup(StrEnum):
+class HomeSetup(_StrEnum):
     """Select Target HomeDir Location"""
 
-    GLOBAL = auto()
-    PROJECT = auto()
-    LOCAL = auto()
-    CUSTOM = auto()
+    GLOBAL = _auto()
+    PROJECT = _auto()
+    LOCAL = _auto()
+    CUSTOM = _auto()
 
 
-class Homes(Protocol):
+class Homes(_typing.Protocol):
     """Calculate HomeDir Paths depending on HomeSetup
 
     - Global:
@@ -82,20 +83,20 @@ class Homes(Protocol):
     """
 
     @property
-    def root(self) -> Path: ...
+    def root(self) -> _Path: ...
     @property
-    def cache(self) -> Path: ...
+    def cache(self) -> _Path: ...
     @property
-    def config(self) -> Path: ...
+    def config(self) -> _Path: ...
     @property
-    def data(self) -> Path: ...
+    def data(self) -> _Path: ...
     @property
-    def log(self) -> Path: ...
+    def log(self) -> _Path: ...
     @property
-    def state(self) -> Path: ...
+    def state(self) -> _Path: ...
 
 
-class Defaults(Protocol):
+class Defaults(_typing.Protocol):
     """Default Configurations for Project Handling"""
 
     @property
@@ -107,7 +108,7 @@ class Defaults(Protocol):
         """Provide format rule for timestamps"""
 
 
-class Names(Protocol):
+class Names(_typing.Protocol):
     """Static and Dynamic Names together with Parsing Tools"""
 
     @property
@@ -123,8 +124,8 @@ class Names(Protocol):
         """Define the Name for the Local Scanner Cache File"""
 
 
-class Paths[D: Defaults, N: Names](Protocol):
-    """Generate Paths with Defaults, Names and Homes - Ensure with PathGuard"""
+class Paths[D: Defaults, N: Names](_typing.Protocol):
+    """Generate Paths with Defaults, Names and Homes - Ensure with _PathGuard"""
 
     def __init__(self, defaults: D, names: N, homes: Homes) -> None:
         """Assemble the upgradeable specific components just here"""
@@ -142,38 +143,38 @@ class Paths[D: Defaults, N: Names](Protocol):
         """Provide Paths relative but independent of HomeSetup"""
 
     @property
-    def project_root(self) -> Path: ...
+    def project_root(self) -> _Path: ...
     @property
-    def config_dir(self) -> Path: ...
+    def config_dir(self) -> _Path: ...
     @property
-    def log_dir(self) -> Path: ...
+    def log_dir(self) -> _Path: ...
     @property
-    def data_dir(self) -> Path: ...
+    def data_dir(self) -> _Path: ...
     @property
-    def plot_dir(self) -> Path: ...
+    def plot_dir(self) -> _Path: ...
 
-    def dot_env(self) -> Path:
+    def dot_env(self) -> _Path:
         """Ensure '.env' File or create Template on Missing and Raise"""
 
     @property
-    def dot_env_unconfirmed(self) -> Path:
-        """Provide raw calculated dot_env Path without any checks"""
+    def dot_env_unconfirmed(self) -> _Path:
+        """Provide raw calculated dot_env _Path without any checks"""
 
-    def summary_file(self, suffix: str = "md") -> Path:
-        """Ensure unique File Path for the Scanner Summary File"""
+    def summary_file(self, suffix: str = "md") -> _Path:
+        """Ensure unique File _Path for the Scanner Summary File"""
 
-    def scanner_cache(self, root: Path | None = None, suffix=".db") -> Path:
+    def scanner_cache(self, root: _Path | None = None, suffix=".db") -> _Path:
         """Provide Scanner Cache Location"""
 
 
-class Settings[D: Defaults, N: Names](Protocol):
+class Settings[D: Defaults, N: Names](_typing.Protocol):
     """Collect Components and Serialize to Setting File"""
 
     @property
-    def file(self) -> Path:
-        """Setting File Path - Needs initial Configuration"""
+    def file(self) -> _Path:
+        """Setting File _Path - Needs initial Configuration"""
 
-    def __init__(self, file: Path, *, log: LogData):
+    def __init__(self, file: _Path, *, log: LogData):
         """Enable typing for BaseModel Settings"""
 
     @property
@@ -184,28 +185,28 @@ class Settings[D: Defaults, N: Names](Protocol):
     def log(self) -> LogData: ...
 
     @classmethod
-    def load(cls, file: Path) -> Self:
+    def load(cls, file: _Path) -> _typing.Self:
         """Extract and validate current state from file"""
 
-    def touch(self) -> Any:
+    def touch(self) -> _typing.Any:
         """Update datetime and check maxlen of saved updates"""
 
-    def save(self, file: Path) -> None:
+    def save(self, file: _Path) -> None:
         """Touch and save current status to json"""
 
 
-class Config[D: Defaults, N: Names, P: Paths, S: Settings](Protocol):
+class Config[D: Defaults, N: Names, P: Paths, S: Settings](_typing.Protocol):
     """Bundle Container and Factories and provide access as Singleton"""
 
     @classmethod
-    def bootstrap(cls, *args, **kwargs) -> Self:
+    def bootstrap(cls, *args, **kwargs) -> _typing.Self:
         """Collect all Data needed to Setup with all Components"""
 
     @property
     def settings(self) -> S:
         """Provide Settings by dot access: config.settings"""
 
-    def save_settings(self, file: Path | None = None) -> Any:
+    def save_settings(self, file: _Path | None = None) -> _typing.Any:
         """Save config to Settings with Names and Defaults"""
 
     @property
