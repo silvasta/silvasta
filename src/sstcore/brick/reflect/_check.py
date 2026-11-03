@@ -143,17 +143,19 @@ class AttrFilter:
             if self(name):
                 yield name
 
-    def filter_dict[V](self, mapping: Mapping[str, V]) -> dict[str, V]:
+    def filter_dict[V](self, mapping: Mapping[str, V], /) -> dict[str, V]:
         """Filter a dictionary/mapping by attribute keys."""
         return {k: v for k, v in mapping.items() if self(k)}
 
     @classmethod
-    def default(cls) -> Self:
+    def default(cls, *, exclude: Iterable[str] = ()) -> Self:
         """Public attributes only."""
-        return cls(public=True, private=False, dunder=False)
+        return cls(
+            public=True, private=False, dunder=False, exclude=frozenset(exclude)
+        )
 
     @classmethod
-    def all(cls, *, exclude: Iterable[str] = ()) -> Self:
+    def pass_all(cls, *, exclude: Iterable[str] = ()) -> Self:
         """Include everything except an explicit blacklist."""
         return cls(
             public=True, private=True, dunder=True, exclude=frozenset(exclude)

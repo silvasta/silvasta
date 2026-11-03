@@ -23,9 +23,8 @@ Use the VOID Sentinel as Value and as Type!
 __all__: list[str] = [
     "Ghost",
     "VOID",
-    "May",
-    "Maybe",
     "MayBe",
+    "MayBeNo",
     "sentinel",
     "ViewSentinel",
 ]
@@ -44,9 +43,8 @@ else:
 
 VOID = sentinel("VOID")
 
-type May[Some] = Some | VOID
 type MayBe[Some] = Some | VOID
-type Maybe[Some] = Some | VOID
+type MayBeNo[Some] = Some | VOID | None
 
 
 class _GhostBaseEradicator:
