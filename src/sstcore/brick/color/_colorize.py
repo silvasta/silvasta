@@ -12,12 +12,13 @@ Ideas:
     -> from raw to amazing to watch, track and debug in CLI
 """
 
+# TODO: DependencyLevel
+
 __all__: list[str] = [
     "modules",
     "path",
+    # TODO: file_by_type??
 ]
-
-# NEXT: make this modular feature stack of ColorBox
 
 
 from collections.abc import Callable
@@ -29,7 +30,7 @@ from .. import reflect
 from ..call import castarg
 from .box import Colors
 
-colors = Colors()
+colors = Colors()  # CHECK: how to handle?
 
 
 @castarg

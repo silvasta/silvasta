@@ -7,9 +7,11 @@ V
                                                            vault(2)
 """
 
-# STRATEGY: where to assemble the colorbox?
+# TODO: DependencyLevel
 
 __all__: list[str] = [
-    "colorize",  # WARN: unsure, maybe collect some color functions itself, but not more, assemble in forge!
+    "colorize",
+    "SEMANTIC",  # CHECK: why here, not color.box.__init__?
 ]
 from . import _colorize as colorize
+from ._mappings import SEMANTIC

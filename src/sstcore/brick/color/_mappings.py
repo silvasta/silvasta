@@ -8,6 +8,7 @@ TEMPORARY STORAGE and Internal Color Schemas and Mappings
 
 __all__: list[str] = [
     "SHORTCUTS",
+    "SEMANTIC",
 ]
 
 from ...port.color import Color

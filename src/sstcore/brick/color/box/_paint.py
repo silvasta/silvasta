@@ -6,14 +6,15 @@ Color Factory
 
 """
 
-from rich import print
-
 __all__: list[str] = [
-    "PaintMill",
     "Paint",
+    "ColorPalette",
+    "ColorFactory",
 ]
 
 from typing import ClassVar
+
+from rich import print
 
 from ....port.color import (
     Color,
@@ -36,10 +37,14 @@ class Paint(str):
 
     __slots__ = ("color", "adapter", "_paint")
 
-    def __new__(cls, color: Color, palette_color: str, /, *_args, **_kwargs):
-        return super().__new__(cls, palette_color)
+    def __new__(
+        cls, _color: Color, adapter_color_name: str, _paint: Colorizing, /
+    ):
+        return super().__new__(cls, adapter_color_name)
 
-    def __init__(self, color: Color, palette_color: str, paint: Colorizing):
+    def __init__(
+        self, color: Color, _adapter_color_name: str, paint: Colorizing, /
+    ):
         self.color: Color = color
         self._paint: Colorizing = paint
 
@@ -67,9 +72,7 @@ class ColorPalette:
         self.colors: TupleVault[str] = TupleVault(data.colors)
 
         self.paints: TupleVault[Painter] = TupleVault(
-            Paint(
-                color, self.colors[color.value], paint=self.mount(color.value)
-            )
+            Paint(color, self.colors[color.value], self.mount(color.value))
             for color in Color
         )
 

@@ -3,6 +3,8 @@ Implement the Connection to the Adapter and Schemas
 
 -
 """
+# TODO: DependencyLevel
+# NEXT: where to expose? probably .box?
 
 __all__: list[str] = [
     "RichPalette",
