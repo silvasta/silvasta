@@ -1,3 +1,16 @@
+"""
+Show SstError and all Derivatives
+
+- Explain Args and Kwargs
+- Catch with Handler
+"""
+# TODO: 5/5 merge with Raiser!!
+# NEXT: all exceptions
+# - Exceptor
+# - Bus
+# - SafeTyper
+# - Handler
+
 from pathlib import Path
 
 import fire
@@ -61,8 +74,8 @@ class ExceptorLaunch:
             printer(task.load())
 
             printer.box("the new box")
-            printer.box_bottom("the new bottom")
-            printer.box_top("the new top")
+            printer.box.down("the new bottom")
+            printer.box.up("the new top")
 
 
 app = SafeTyper(
@@ -92,7 +105,7 @@ def handle_missing_file(error: MissingFileError):
         f"  sending message to {printer._cb.yellow('DataManager')}...",
     ]
     printer(scroll)
-    printer.green("  Handle Missing Path completed")
+    printer.success("  Handle Missing Path completed")
 
 
 handled_task = ExceptorTask(

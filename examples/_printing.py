@@ -11,6 +11,8 @@ from sstcore.util.tree import example_trees
 
 c: Colors = Colors()
 
+# TODO: 2/5 remove old stuff and create order
+
 
 def main():  # LATER: use fire.Fire for cli? Or selector?
     """Dispatch tasks with manual index"""

@@ -48,7 +48,7 @@ def launch_selector(tree: SimpleTreeNode):
     if not selected_nodes:
         raise TuiSelectorError
 
-    printer.lines_with_len(
+    printer.lines.len(
         name="Successfully selected nodes",
         lines=selected_nodes,
         style="success",

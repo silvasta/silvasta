@@ -17,6 +17,9 @@ from sstcore.util.print import printer
 
 pattern1: str = "{day}_summary.{suffix}"
 
+# TODO: (2/5) update
+# - select examples
+
 
 def main():
     printer.title("Start of name_parsing")

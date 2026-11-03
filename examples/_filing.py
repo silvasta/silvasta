@@ -5,7 +5,10 @@ from typing import Self
 from pydantic import Field
 
 from sstcore import printer
-from sstcore.data import SstFile
+from sstcore.data.files import SstFile
+
+# TODO: 4/5 adapt to new setup and work derivatives out
+# NEXT: test with sachmis
 
 PATH: Path = Path.cwd() / "role.txt"
 

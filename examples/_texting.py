@@ -5,10 +5,15 @@ Play around with Format
 
 """
 
+# TODO: (3/5) update
+# - select examples
+# - make it work...
+# - PRINTER!!!
+
 from collections.abc import Callable
 
-from src.sstcore.brick.reflect import funcname
 from sstcore.brick.format.text import case
+from sstcore.brick.reflect import funcname
 
 example_inputs: list[str] = [
     "String to Cases",

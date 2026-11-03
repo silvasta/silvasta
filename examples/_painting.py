@@ -1,13 +1,16 @@
 """
 Show Examples of the painted enumerated tuple str ColorRegistry
 
-- TODO: Update this...
-  - Wired Painter(str) live in the 3-Enum Grid (color,adapter,palette)
-  - Color production, global cache and lookups happen in the Paint Mill
-  - Interchangeable Tuple Palettes operated from LightSpectrumDistributor
-  - Simple Facade and internal orchestration by the ColorManager, Colors
-
+-
 """
+
+# REMOVE: (1/5) most stuff, start from scratch with Printer
+
+# - TODO: Update this...
+#   - Wired Painter(str) live in the 3-Enum Grid (color,adapter,palette)
+#   - Color production, global cache and lookups happen in the Paint Mill
+#   - Interchangeable Tuple Palettes operated from LightSpectrumDistributor
+#   - Simple Facade and internal orchestration by the ColorManager, Colors
 
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,8 +19,7 @@ from typing import Protocol
 from fire import Fire
 from rich.console import Console
 
-from sstcore.brick.color.box import Colors
-from sstcore.brick.color.box._paint import Paint
+from sstcore.brick.color.box import Colors, Paint
 from sstcore.port.color import Color
 
 
@@ -38,21 +40,20 @@ def basic():
     text = "make me colorful"
     printy(text)
 
-    azure = Paint(Color.AZURE, lambda x: rich_markup(x, "cyan"))
+    azure = Paint(Color.AZURE, "cyan", lambda x: _r(x, "cyan"))
+    special = Paint(Color.PURPLE, "purple3", lambda x: _r(x, "purple3"))
 
-    _check_type = "yes" if isinstance(azure, str) else "no"
+    print(f"{(_check_type := 'yes' if isinstance(azure, str) else 'no')=}")
 
     with printy.section("Check Colors"):
         printy(azure(text))
+        printy(special(text))
 
     colors = Colors()
     colors.paint(3)
 
 
 #  LINE: -- Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def nop(*_, **__): ...
 
 
 class Printy:

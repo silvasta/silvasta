@@ -1,3 +1,14 @@
+"""
+System and Events
+
+-
+"""
+
+# TODO: 3/5
+# - adapt to new setup
+# - select examples for Bus
+# IDEA: show SystemMixin!!
+
 from dataclasses import dataclass
 
 import fire
