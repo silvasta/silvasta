@@ -1,0 +1,406 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.6, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/silvan/PolyBox/Code/sstcore/latest
+configfile: pyproject.toml
+plugins: platformdirs-4.13.5
+collected 27 items
+
+test_view/test_builder.py ....F.FF..                                     [ 37%]
+test_view/test_factory_render.py ...                                     [ 48%]
+test_view/test_view_mro.py ...                                           [ 59%]
+test_view/test_view_pydantic.py ..                                       [ 66%]
+test_view/test_view_single.py F.F...F.F                                  [100%]
+
+=================================== FAILURES ===================================
+____ test_view_combinations[specs0-expected_methods0-SampleEntity[test123]] ____
+
+specs = (Cli[2]::CliSstCatalog[PANEL], Str[2]::StrSstCatalog[NAME])
+expected_methods = {'__cli__', '__str__'}
+expected_str = 'SampleEntity[test123]'
+
+    @pytest.mark.parametrize(
+        ("specs", "expected_methods", "expected_str"),
+        [
+            (
+                (Cli.PANEL, Str.NAME),
+                {"__cli__", "__str__"},
+                "SampleEntity[test123]",
+            ),
+            (
+                (Rich.SHORT, Log.DEBUG),
+                {"__rich__", "__log__"},
+                None,
+            ),
+            (
+                (Cli.HEADER, Repr.DATA, Log.DATA),
+                {"__cli__", "__repr__", "__log__"},
+                None,
+            ),
+            (
+                (Cli.PANEL, Str.SHORT, Rich.NAME, Repr.DEBUG, Log.DATA),
+                {"__cli__", "__str__", "__rich__", "__repr__", "__log__"},
+                "SampleEntity",
+            ),
+        ],
+    )
+    def test_view_combinations(
+        specs: tuple,
+        expected_methods: set[str],
+        expected_str: str | None,
+    ):
+        """Valid catalog combinations inject the expected mixin methods."""
+
+        @view(*specs)
+        class SampleEntity:
+            name = "test123"
+            value = 42
+
+            def __init__(self) -> None:
+                self.instance_val = 99
+
+        obj = SampleEntity()
+        cls = type(obj)
+
+        assert cls.__name__ == "SampleEntityView"
+        assert ViewSentinel not in cls.__mro__
+
+        for method in expected_methods:
+            assert hasattr(obj, method), f"Missing expected method {method}"
+
+        if "__cli__" in expected_methods:
+            assert isinstance(obj, CliSerializable)
+            dto = obj.__cli__()
+            assert isinstance(dto, PanelDTO)
+
+        if "__str__" in expected_methods and expected_str is not None:
+>           assert expected_str in str(obj)
+E           AssertionError: assert 'SampleEntity[test123]' in 'SampleEntityView[test123]'
+E            +  where 'SampleEntityView[test123]' = str(<test_builder.test_view_combinations.<locals>.SampleEntity object at 0x7265383ab620>)
+
+test_view/test_builder.py:115: AssertionError
+____________ test_view_combinations[specs2-expected_methods2-None] _____________
+
+specs = (Cli[4]::CliSstCatalog[HEADER], Repr[2]::ReprSstCatalog[DATA], Log[1]::LogSstCatalog[DATA])
+expected_methods = {'__cli__', '__log__', '__repr__'}, expected_str = None
+
+    @pytest.mark.parametrize(
+        ("specs", "expected_methods", "expected_str"),
+        [
+            (
+                (Cli.PANEL, Str.NAME),
+                {"__cli__", "__str__"},
+                "SampleEntity[test123]",
+            ),
+            (
+                (Rich.SHORT, Log.DEBUG),
+                {"__rich__", "__log__"},
+                None,
+            ),
+            (
+                (Cli.HEADER, Repr.DATA, Log.DATA),
+                {"__cli__", "__repr__", "__log__"},
+                None,
+            ),
+            (
+                (Cli.PANEL, Str.SHORT, Rich.NAME, Repr.DEBUG, Log.DATA),
+                {"__cli__", "__str__", "__rich__", "__repr__", "__log__"},
+                "SampleEntity",
+            ),
+        ],
+    )
+    def test_view_combinations(
+        specs: tuple,
+        expected_methods: set[str],
+        expected_str: str | None,
+    ):
+        """Valid catalog combinations inject the expected mixin methods."""
+
+        @view(*specs)
+        class SampleEntity:
+            name = "test123"
+            value = 42
+
+            def __init__(self) -> None:
+                self.instance_val = 99
+
+        obj = SampleEntity()
+        cls = type(obj)
+
+        assert cls.__name__ == "SampleEntityView"
+        assert ViewSentinel not in cls.__mro__
+
+        for method in expected_methods:
+            assert hasattr(obj, method), f"Missing expected method {method}"
+
+        if "__cli__" in expected_methods:
+            assert isinstance(obj, CliSerializable)
+            dto = obj.__cli__()
+            assert isinstance(dto, PanelDTO)
+
+        if "__str__" in expected_methods and expected_str is not None:
+            assert expected_str in str(obj)
+
+        if "__log__" in expected_methods:
+            assert isinstance(obj, LogSerializable)
+>           log_dto = obj.__log__()
+                      ^^^^^^^^^^^^^
+
+test_view/test_builder.py:119:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../src/sstcore/forge/view/_views/_log.py:25: in __log__
+    message=str(self),
+            ^^^^^^^^^
+../src/sstcore/forge/view/_views/_repr.py:38: in __repr__
+    f"{reflect.clsname(self)}({norm.dict_to_str(scan.pydantic(self))})"
+                                                ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+target = <[ValueError('Target is not BaseModel!') raised in repr()] SampleEntityView object at 0x7265394a17f0>
+exclude = set()
+
+    def pydantic(
+        target: Any, /, *, exclude: set[str] | None = None
+    ) -> dict[str, Any]:
+        """Extract public Pydantic attributes filtered by exclude"""
+
+        exclude: set[str] = exclude or set()
+
+        if isinstance(target, PydanticModel):
+            # TODO: extension of data, including FilterFlags?
+            return target.model_dump(exclude=exclude)
+        else:
+            # LATER: raise or: return data(target, exclude) ??
+>           raise ValueError("Target is not BaseModel!")
+E           ValueError: Target is not BaseModel!
+
+../src/sstcore/brick/reflect/_scan.py:72: ValueError
+________ test_view_combinations[specs3-expected_methods3-SampleEntity] _________
+
+specs = (Cli[2]::CliSstCatalog[PANEL], Str[1]::StrSstCatalog[SHORT], Rich[2]::RichSstCatalog[NAME], Repr[3]::ReprSstCatalog[DEBUG], Log[1]::LogSstCatalog[DATA])
+expected_methods = {'__cli__', '__log__', '__repr__', '__rich__', '__str__'}
+expected_str = 'SampleEntity'
+
+    @pytest.mark.parametrize(
+        ("specs", "expected_methods", "expected_str"),
+        [
+            (
+                (Cli.PANEL, Str.NAME),
+                {"__cli__", "__str__"},
+                "SampleEntity[test123]",
+            ),
+            (
+                (Rich.SHORT, Log.DEBUG),
+                {"__rich__", "__log__"},
+                None,
+            ),
+            (
+                (Cli.HEADER, Repr.DATA, Log.DATA),
+                {"__cli__", "__repr__", "__log__"},
+                None,
+            ),
+            (
+                (Cli.PANEL, Str.SHORT, Rich.NAME, Repr.DEBUG, Log.DATA),
+                {"__cli__", "__str__", "__rich__", "__repr__", "__log__"},
+                "SampleEntity",
+            ),
+        ],
+    )
+    def test_view_combinations(
+        specs: tuple,
+        expected_methods: set[str],
+        expected_str: str | None,
+    ):
+        """Valid catalog combinations inject the expected mixin methods."""
+
+        @view(*specs)
+        class SampleEntity:
+            name = "test123"
+            value = 42
+
+            def __init__(self) -> None:
+                self.instance_val = 99
+
+        obj = SampleEntity()
+        cls = type(obj)
+
+        assert cls.__name__ == "SampleEntityView"
+        assert ViewSentinel not in cls.__mro__
+
+        for method in expected_methods:
+            assert hasattr(obj, method), f"Missing expected method {method}"
+
+        if "__cli__" in expected_methods:
+            assert isinstance(obj, CliSerializable)
+            dto = obj.__cli__()
+            assert isinstance(dto, PanelDTO)
+
+        if "__str__" in expected_methods and expected_str is not None:
+            assert expected_str in str(obj)
+
+        if "__log__" in expected_methods:
+            assert isinstance(obj, LogSerializable)
+>           log_dto = obj.__log__()
+                      ^^^^^^^^^^^^^
+
+test_view/test_builder.py:119:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../src/sstcore/forge/view/_views/_log.py:27: in __log__
+    metrics=scan.pydantic(self),
+            ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+target = SampleEntityView(instance_val=99), exclude = set()
+
+    def pydantic(
+        target: Any, /, *, exclude: set[str] | None = None
+    ) -> dict[str, Any]:
+        """Extract public Pydantic attributes filtered by exclude"""
+
+        exclude: set[str] = exclude or set()
+
+        if isinstance(target, PydanticModel):
+            # TODO: extension of data, including FilterFlags?
+            return target.model_dump(exclude=exclude)
+        else:
+            # LATER: raise or: return data(target, exclude) ??
+>           raise ValueError("Target is not BaseModel!")
+E           ValueError: Target is not BaseModel!
+
+../src/sstcore/brick/reflect/_scan.py:72: ValueError
+____________________________ test_single_cli_panel _____________________________
+
+    def test_single_cli_panel():
+        @view(Cli.PANEL)
+        class Boxed:
+            name = "test_panel"
+
+        obj = Boxed()
+        assert isinstance(obj, CliSerializable)
+        dto = obj.__cli__()
+        assert isinstance(dto, PanelDTO)
+>       assert any("test_panel" in str(item) for item in dto.content)
+E       assert False
+E        +  where False = any(<generator object test_single_cli_panel.<locals>.<genexpr> at 0x726538212180>)
+
+test_view/test_view_single.py:27: AssertionError
+____________________________ test_single_cli_paths _____________________________
+
+tmp_path = PosixPath('/tmp/pytest-of-silvan/pytest-3/test_single_cli_paths0')
+
+    def test_single_cli_paths(tmp_path: Path):
+        @view(Cli.PATHS)
+        class PathHolder:
+            @property
+            def _panel_paths(self) -> list[Path]:
+                return [tmp_path]
+
+        obj = PathHolder()
+        assert isinstance(obj, CliSerializable)
+        dto = obj.__cli__()
+        assert isinstance(dto, PanelDTO)
+>       assert len(dto.content) == 1
+E       AssertionError: assert 0 == 1
+E        +  where 0 = len(())
+E        +    where () = PanelDTO(content=(), color=Color[2]::AZURE, infos={}, header=HeaderSpec(title=None, frame=FrameSpec(topic='', topic_co...olor[8]::WHITE, box=_Boxes[0]::CORNER)), frame=FrameSpec(topic='', topic_color=Color[8]::WHITE, box=_Boxes[0]::CORNER)).content
+
+test_view/test_view_single.py:53: AssertionError
+__________________________ test_single_repr_variants ___________________________
+
+    def test_single_repr_variants():
+        @view(Repr.BOX)
+        class BoxRepr:
+            a = 1
+
+        @view(Repr.DATA)
+        class DataRepr:
+            a = 1
+
+        @view(Repr.DEBUG)
+        class DebugRepr:
+            def __init__(self) -> None:
+                self._secret = 42
+
+>       assert repr(BoxRepr()) == "BoxReprView[a=1]"
+               ^^^^^^^^^^^^^^^
+
+test_view/test_view_single.py:114:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../src/sstcore/forge/view/_views/_repr.py:30: in __repr__
+    return f"{reflect.clsname(self)}[{self._repr_box_text}]"
+                                      ^^^^^^^^^^^^^^^^^^^
+../src/sstcore/forge/view/_views/_repr.py:27: in _repr_box_text
+    return norm.dict_to_str(scan.pydantic(self))
+                            ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+target = <[ValueError('Target is not BaseModel!') raised in repr()] BoxReprView object at 0x7265382a4c20>
+exclude = set()
+
+    def pydantic(
+        target: Any, /, *, exclude: set[str] | None = None
+    ) -> dict[str, Any]:
+        """Extract public Pydantic attributes filtered by exclude"""
+
+        exclude: set[str] = exclude or set()
+
+        if isinstance(target, PydanticModel):
+            # TODO: extension of data, including FilterFlags?
+            return target.model_dump(exclude=exclude)
+        else:
+            # LATER: raise or: return data(target, exclude) ??
+>           raise ValueError("Target is not BaseModel!")
+E           ValueError: Target is not BaseModel!
+
+../src/sstcore/brick/reflect/_scan.py:72: ValueError
+___________________________ test_single_log_variants ___________________________
+
+    def test_single_log_variants():
+        @view(Log.DATA, Str.SHORT)
+        class LogDataEntity:
+            metric_a = 10
+
+        @view(Log.DEBUG, Str.SHORT)
+        class LogDebugEntity:
+            def __init__(self) -> None:
+                self.runtime_val = 99
+
+        data_obj = LogDataEntity()
+        assert isinstance(data_obj, LogSerializable)
+>       data_dto = data_obj.__log__()
+                   ^^^^^^^^^^^^^^^^^^
+
+test_view/test_view_single.py:148:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../src/sstcore/forge/view/_views/_log.py:27: in __log__
+    metrics=scan.pydantic(self),
+            ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+target = <test_view_single.test_single_log_variants.<locals>.LogDataEntity object at 0x7265382a57f0>
+exclude = set()
+
+    def pydantic(
+        target: Any, /, *, exclude: set[str] | None = None
+    ) -> dict[str, Any]:
+        """Extract public Pydantic attributes filtered by exclude"""
+
+        exclude: set[str] = exclude or set()
+
+        if isinstance(target, PydanticModel):
+            # TODO: extension of data, including FilterFlags?
+            return target.model_dump(exclude=exclude)
+        else:
+            # LATER: raise or: return data(target, exclude) ??
+>           raise ValueError("Target is not BaseModel!")
+E           ValueError: Target is not BaseModel!
+
+../src/sstcore/brick/reflect/_scan.py:72: ValueError
+=========================== short test summary info ============================
+FAILED test_view/test_builder.py::test_view_combinations[specs0-expected_methods0-SampleEntity[test123]]
+FAILED test_view/test_builder.py::test_view_combinations[specs2-expected_methods2-None]
+FAILED test_view/test_builder.py::test_view_combinations[specs3-expected_methods3-SampleEntity]
+FAILED test_view/test_view_single.py::test_single_cli_panel - assert False
+FAILED test_view/test_view_single.py::test_single_cli_paths - AssertionError:...
+FAILED test_view/test_view_single.py::test_single_repr_variants - ValueError:...
+FAILED test_view/test_view_single.py::test_single_log_variants - ValueError: ...
+========================= 7 failed, 20 passed in 0.20s =========================

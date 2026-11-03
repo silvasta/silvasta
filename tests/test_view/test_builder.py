@@ -1,143 +1,155 @@
 import pytest
-from pydantic import BaseModel
 
-from sstcore.contract.cli import CliRenderable, LineDTO, PanelDTO
-from sstcore.port import LogDTO, LogSerializable
-from sstcore.utils.view import ViewBuilder, view
-from sstcore.utils.view.registry import Cli, Log, Repr, Rich, Str
+from sstcore.forge.view import (
+    Cli,
+    Log,
+    Repr,
+    Rich,
+    Str,
+    ViewBuilder,
+    ViewComposer,
+    ViewInjector,
+    view,
+)
+from sstcore.port.empty import ViewSentinel
+from sstcore.port.event.dto import LogDTO, PanelDTO
+from sstcore.port.raising import SstCoreError
+from sstcore.port.represent import CliSerializable, LogSerializable
 
 
-def test_empty_viewbuilder_raises():
-    """ViewBuilder requires at least one concrete Mixin (OFF → Sentinel)."""
-    msg = "Select at least 1 Mixin for ViewBuilder!"
-    with pytest.raises(ValueError, match=msg):
-        ViewBuilder()  # all defaults = all OFF
+def test_empty_viewbuilder_defaults():
+    """Empty ViewBuilder defaults all categories to OFF and filters sentinels."""
+    builder = ViewBuilder()
+    assert builder.cli is Cli.OFF
+    assert builder.log is Log.OFF
+    assert builder.repr is Repr.OFF
+    assert builder.string is Str.OFF
+    assert builder.rich is Rich.OFF
+    assert builder.mixins == ()
+    assert ViewSentinel not in builder.mixins
 
-    with pytest.raises(ValueError, match=msg):
-        ViewBuilder(
-            cli=Cli.OFF, str=Str.OFF, rich=Rich.OFF, repr=Repr.OFF, log=Log.OFF
-        )
+
+def test_viewbuilder_evolve():
+    """ViewBuilder.evolve returns a new frozen instance with updated fields."""
+    base = ViewBuilder(cli=Cli.PANEL)
+    updated = base.evolve(log=Log.DATA, string=Str.SHORT)
+
+    assert base.log is Log.OFF
+    assert updated.cli is Cli.PANEL
+    assert updated.log is Log.DATA
+    assert updated.string is Str.SHORT
+    assert len(updated.mixins) == 3
+
+
+def test_viewinjector_plus_and_duplicate_error():
+    """ViewInjector.plus updates categories and rejects duplicates in one call."""
+    injector = ViewInjector().plus(Cli.PANEL, Log.DATA)
+    assert injector.cli is Cli.PANEL
+    assert injector.log is Log.DATA
+
+    with pytest.raises(SstCoreError, match="Duplicated"):
+        ViewInjector().plus(Cli.PANEL, Cli.LINE)
+
+
+def test_view_invalid_target_raises():
+    """Passing a non-class, non-MixinCatalog object to view() raises TypeError."""
+    with pytest.raises(TypeError, match="expected a class or catalog specs"):
+        view(123)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(
-    "spec,expected_methods,test_str_content",
+    ("specs", "expected_methods", "expected_str"),
     [
         (
-            ViewBuilder(cli=Cli.PANEL, str=Str.DEFAULT),
+            (Cli.PANEL, Str.NAME),
             {"__cli__", "__str__"},
-            "test123",
+            "SampleEntityView[test123]",
         ),
         (
-            ViewBuilder(rich=Rich.DEFAULT, log=Log.FULL),
+            (Rich.SHORT, Log.DEBUG),
             {"__rich__", "__log__"},
             None,
         ),
         (
-            ViewBuilder(cli=Cli.LINE, repr=Repr.DEFAULT, log=Log.PYDANTIC),
+            (Cli.HEADER, Repr.DATA, Log.DATA),
             {"__cli__", "__repr__", "__log__"},
-            "TestEntity",
+            None,
         ),
         (
-            ViewBuilder(
-                cli=Cli.PANEL,
-                str=Str.SHORT,
-                rich=Rich.SHORT,
-                repr=Repr.FULL,
-                log=Log.DEFAULT,
-            ),
+            (Cli.PANEL, Str.SHORT, Rich.NAME, Repr.DEBUG, Log.DATA),
             {"__cli__", "__str__", "__rich__", "__repr__", "__log__"},
-            "test123",
+            "SampleEntityView",
         ),
     ],
 )
-def test_view_combinations(spec, expected_methods, test_str_content):
-    """Test that valid combinations correctly inject mixins and behavior."""
+def test_view_combinations(
+    specs: tuple,
+    expected_methods: set[str],
+    expected_str: str | None,
+):
+    """Valid catalog combinations inject the expected mixin methods."""
 
-    @view(spec)
-    class TestEntity:
+    @view(*specs)
+    class SampleEntity:
         name = "test123"
         value = 42
 
-    obj = TestEntity()
+        def __init__(self) -> None:
+            self.instance_val = 99
+
+    obj = SampleEntity()
     cls = type(obj)
 
-    # Core guarantees
-    assert hasattr(obj, "__view_spec__")
-    assert obj.__view_spec__ is spec
-    assert not any("MixinSentinel" in b.__name__ for b in cls.__mro__)
+    assert cls.__name__ == "SampleEntityView"
+    assert ViewSentinel not in cls.__mro__
 
-    # Method injection
     for method in expected_methods:
         assert hasattr(obj, method), f"Missing expected method {method}"
 
-    # Behavior checks
     if "__cli__" in expected_methods:
-        dto = obj.__cli__()  # type: ignore
-        assert isinstance(dto, (PanelDTO, LineDTO))
+        assert isinstance(obj, CliSerializable)
+        dto = obj.__cli__()
+        assert isinstance(dto, PanelDTO)
 
-    if "__str__" in expected_methods and test_str_content:
-        s = str(obj)
-        assert test_str_content in s or "TestEntity" in s
+    if "__str__" in expected_methods and expected_str is not None:
+        assert expected_str in str(obj)
 
     if "__log__" in expected_methods:
-        assert isinstance(obj.__log__(), LogDTO)  # type: ignore
+        assert isinstance(obj, LogSerializable)
+        log_dto = obj.__log__()
+        assert isinstance(log_dto, LogDTO)
 
     if "__repr__" in expected_methods:
-        r = repr(obj)
-        assert "TestEntity" in r
-        if "FULL" in str(spec.repr):  # rough heuristic
-            assert "value=42" in r
+        rendered_repr = repr(obj)
+        assert "SampleEntity" in rendered_repr
 
 
-def test_pydantic_compatibility():
-    """Pydantic models should survive composition with model_config + rebuild."""
-    spec = ViewBuilder(cli=Cli.PANEL, log=Log.PYDANTIC, str=Str.DEFAULT)
+def test_compose_method_directly():
+    """Standalone .compose() produces a pure mixin base class without target."""
+    spec = ViewBuilder(cli=Cli.PANEL, repr=Repr.DEBUG)
+    view_base = spec.compose(name="Demo")
 
-    @view(spec)
-    class TestModel(BaseModel):
-        name: str = "pydantic-test"
-        value: int = 42
-
-    obj = TestModel()
-    assert isinstance(obj.__log__(), LogDTO)  # type: ignore
-    assert "pydantic-test" in str(obj)
-    assert obj.model_dump()["name"] == "pydantic-test"
-
-    # Model features should still work
-    validated = TestModel.model_validate({"name": "updated", "value": 99})
-    assert validated.name == "updated"
-    assert hasattr(validated, "__cli__")
-    assert hasattr(validated, "__view_spec__")
-
-
-def test_mro_and_protocols():
-    """Verify mixin ordering, protocol compliance, and sentinel filtering."""
-    spec = ViewBuilder(cli=Cli.LINE, str=Str.SHORT, log=Log.DEFAULT)
-
-    @view(spec)
-    class Test: ...
-
-    obj = Test()
-    mro_names = [b.__name__ for b in type(obj).__mro__]
-
-    assert any("CliLineMixin" in name for name in mro_names)
-    assert any("NameMixin" in name for name in mro_names)  # from string
-    assert any("LogMixin" in name for name in mro_names)
-    assert "MixinSentinel" not in mro_names
-
-    assert isinstance(obj, CliRenderable)
-    assert isinstance(obj, LogSerializable)
-
-
-def test_build_method_directly():
-    """Standalone `.build()` should produce a usable base class."""
-    spec = ViewBuilder(cli=Cli.LINE, repr=Repr.FULL)
-    view_base = spec.build("Demo")
-
-    assert view_base.__name__ == "DemoViewBase"
+    assert view_base.__name__ == "DemoView"
     assert len(spec.mixins) == 2
 
+    default_base = spec.compose()
+    assert default_base.__name__ == "ViewBase"
+
     instance = view_base()
-    assert hasattr(instance, "__cli__")
-    assert hasattr(instance, "__repr__")
-    assert not any("MixinSentinel" in b.__name__ for b in view_base.__mro__)
+    assert isinstance(instance, CliSerializable)
+    assert ViewSentinel not in view_base.__mro__
+
+
+def test_presets_attached_to_view():
+    """ViewComposer exposes pre-configured ViewInjector presets."""
+    assert isinstance(view, ViewComposer)
+    assert isinstance(view.pydantic, ViewInjector)
+    assert isinstance(view.printer, ViewInjector)
+    assert isinstance(view.safe_typer, ViewInjector)
+    assert isinstance(view.functor, ViewInjector)
+
+    assert view.pydantic.cli is Cli.TABLE
+    assert view.pydantic.log is Log.DATA
+    assert view.printer.cli is Cli.HEADER
+    assert view.safe_typer.cli is Cli.PANEL
+    assert view.functor.repr is Repr.DATA

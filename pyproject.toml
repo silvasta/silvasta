@@ -64,7 +64,11 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.ty.src]
-include = ["src", "examples"]
+include = [
+  "src",
+  "examples",
+  "tests",    # toggle
+]
 exclude = [
   # Match rules: ignore ____* in outer branch, ignore ___* in core branch
   "**/____*",
@@ -77,9 +81,8 @@ exclude = [
 
 [tool.ruff]
 line-length = 80
-exclude = ["tests"]
+# exclude = ["tests"]
 extend-exclude = [
-  "tests",
   # Match rules: ignore ____* in outer branch
   "**/____*",
   # Explicit paths (temporary)
