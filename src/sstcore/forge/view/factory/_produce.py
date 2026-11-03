@@ -4,6 +4,7 @@ Prepare Functors, 1 per DTO
 - add optional safe mode
 - handle stacked functions
 
+              DependencyLevel.sstcore.forge.view.factory[c.2.4.0.1]
 """
 
 __all__: list[str] = [

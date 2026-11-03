@@ -23,6 +23,7 @@ Examples:
     @view(Log.DATA, Repr.DEBUG, Cli.PANEL, Rich.NAME, Str.MODULE)
     class Full: ...
 
+                               DependencyLevel.sstcore.forge[c.2.4]
 """
 
 __all__: list[str] = [

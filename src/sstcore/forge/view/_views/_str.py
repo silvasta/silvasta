@@ -3,7 +3,7 @@ Compose StrMixins
 
 - Atomize: 1 class with 1 method __str__
 
-                             DependencyLevel.sstcore.brick.views[0]
+               DependencyLevel.sstcore.forge.view._views[c.2.4.0.0]
 """
 
 __all__: list[str] = [

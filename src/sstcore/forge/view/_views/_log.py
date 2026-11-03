@@ -3,7 +3,7 @@ Compose LogMixins
 
 - Atomize: 1 class with 1 method __log__
 
-                             DependencyLevel.sstcore.brick.views[0]
+               DependencyLevel.sstcore.forge.view._views[c.2.4.0.0]
 """
 
 __all__: list[str] = [
@@ -24,7 +24,7 @@ class LogDataMixin:
         return LogDTO(
             message=str(self),
             level="INFO",
-            metrics=scan.pydantic(self),
+            metrics=scan.data(self),
         )
 
 

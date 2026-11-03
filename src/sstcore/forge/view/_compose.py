@@ -4,6 +4,7 @@ Compose Views at runtime and inject them into target Classes
 - ViewBuilder: regular composition
 - ViewInjector: hybrid decorator
 
+                        DependencyLevel.sstcore.forge.view[c.2.4.2]
 """
 
 __all__: list[str] = [

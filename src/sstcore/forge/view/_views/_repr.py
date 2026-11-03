@@ -3,7 +3,7 @@ Compose ReprMixins
 
 - Atomize: 1 class with 1 method __repr__
 
-                             DependencyLevel.sstcore.brick.views[0]
+               DependencyLevel.sstcore.forge.view._views[c.2.4.0.0]
 """
 
 __all__: list[str] = [
@@ -24,7 +24,7 @@ class ReprMixin:
     @property
     def _repr_box_text(self):
         """Provide subhook for override __repr__ [box text]"""
-        return norm.dict_to_str(scan.pydantic(self))
+        return norm.dict_to_str(scan.data(self))
 
     def __repr__(self) -> str:
         return f"{reflect.clsname(self)}[{self._repr_box_text}]"
@@ -34,9 +34,7 @@ class ReprDataMixin:
     """Show all public attributes"""
 
     def __repr__(self) -> str:
-        return (
-            f"{reflect.clsname(self)}({norm.dict_to_str(scan.pydantic(self))})"
-        )
+        return f"{reflect.clsname(self)}({norm.dict_to_str(scan.data(self))})"
 
 
 class FullReprMixin:

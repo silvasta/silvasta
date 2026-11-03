@@ -5,6 +5,7 @@ Create Global RenderHub that visualizes all EventDTOs
   - Update EventDTO.registry if needed
 - Mount them reliably with DescriporFields
 
+                        DependencyLevel.sstcore.forge.view[c.2.4.0]
 """
 
 __all__: list[str] = [

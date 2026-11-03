@@ -3,6 +3,7 @@ Collect and combine default Views
 
 - ViewPresets: Support ViewInjector (maybe as mixin)
 
+                        DependencyLevel.sstcore.forge.view[c.2.4.2]
 """
 
 __all__: list[str] = [

@@ -17,7 +17,7 @@ ViewCatalog:
 - Rich : __rich__
 - Repr : __repr__
 - Log  : __log__
-                                   DependencyLevel.sstcore.brick[4]
+                        DependencyLevel.sstcore.forge.view[c.2.4.0]
 """
 
 __all__: list[str] = [

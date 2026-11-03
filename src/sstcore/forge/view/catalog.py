@@ -7,7 +7,8 @@ Store the Mixins in Proper Container
   - Rich : __rich__
   - Repr : __repr__
   - Log  : __log__
-                          TODO   DependencyLevel.sstcore.brick.views[1]
+
+                        DependencyLevel.sstcore.forge.view[c.2.4.1]
 """
 
 __all__: list[str] = [
@@ -133,7 +134,6 @@ class Repr(_solid.MixinCatalog):
         match self:
             case self.BOX:
                 return _views.repr.ReprMixin
-        match self:
             case self.DATA:
                 return _views.repr.ReprDataMixin
 

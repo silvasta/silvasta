@@ -3,6 +3,7 @@ Visualize the Log DTO for different Levels of Inspection
 
 - Prepare for CLI and as well LogMonitor
 
+               DependencyLevel.sstcore.forge.view.render[c.2.4.0.0]
 """
 
 from rich.text import Text

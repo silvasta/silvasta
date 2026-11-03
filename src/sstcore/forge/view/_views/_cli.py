@@ -3,7 +3,7 @@ Compose CliMixins
 
 - Atomize: 1 class with 1 method __cli__
 
-                             DependencyLevel.sstcore.brick.views[0]
+               DependencyLevel.sstcore.forge.view._views[c.2.4.0.0]
 """
 
 __all__: list[str] = [
@@ -15,13 +15,14 @@ __all__: list[str] = [
     "PathPanelMixin",
 ]
 
-from pathlib import Path
 
 from ....brick import reflect
 from ....brick.color import colorize
 from ....brick.format import norm
 from ....brick.reflect import scan
+from ....port.color import Color
 from ....port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
+from ..factory import TableViewDTO
 
 
 class MarkdownMixin:
@@ -40,14 +41,14 @@ class LineMixin:
     """Show classname as single colored line"""
 
     def __cli__(self) -> LineDTO:
-        return LineDTO(str(self), style="cyan")  # ty:ignore
+        return LineDTO((str(self),), color=Color.AZURE)
 
 
 class TableMixin:
     """Create table from public attributes"""
 
     def __cli__(self) -> TableDTO:
-        return TableDTO.from_row_dicts(scan.data(self))  # ty:ignore
+        return TableViewDTO.from_rows(scan.data(self))
 
 
 class PanelMixin:
@@ -92,13 +93,11 @@ class FullPanelMixin:
 class PathPanelMixin:
     """Show _panel_paths with check if they exists"""
 
-    @property
-    def _panel_paths(self) -> list[Path]:
-        return []
-
     def __cli__(self) -> PanelDTO:
+        # LATER: improve
+        paths = getattr(self, "_panel_paths", [])
+        if callable(paths) and not isinstance(paths, (list, tuple, set)):
+            paths = paths()
         return PanelDTO(
-            tuple(colorize.path(p) for p in self._panel_paths),
-            # title=invoke.rich(self),
-            # frame="cyan",  # NEXT: color not hardcoded!!
+            tuple(colorize.path(p) for p in paths),
         )
