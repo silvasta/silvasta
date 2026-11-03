@@ -15,9 +15,10 @@ __all__: list[str] = [
     # scan
     "data",
     "pydantic",
-    "scan"
+    "scan",
     # check
     "AttrFilter",
+    "Visibility",
     "is_private",
     "is_dunder",
     "is_protocol",
@@ -45,9 +46,11 @@ from typing import Any
 from . import _attr as attr
 from . import _dict as dict
 from . import _invoke as invoke
-from . import _scan as scan  # noqa:F401
+from . import _scan as scan
 from ._attr import doc, module, name, text
 from ._check import (
+    AttrFilter,
+    Visibility,
     is_dunder,
     is_private,
     is_private_not_calling,

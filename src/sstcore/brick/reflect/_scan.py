@@ -10,7 +10,7 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from ...port.empty import VOID, MayBeNo
@@ -20,20 +20,6 @@ from ._check import AttrFilter
 _IGNORE = (classmethod, staticmethod, property)
 
 
-def _prepare_filter(
-    filter: MayBeNo[AttrFilter] = VOID, exclude: Iterable[str] = ()
-) -> AttrFilter:
-    # IDEA:[1] make this Annotated and resolve by @castarg
-    # IDEA:[2] make this classmethod of AttrFilter
-    return (
-        AttrFilter.default(exclude=exclude)
-        if filter is VOID
-        else AttrFilter.pass_all(exclude=exclude)
-        if filter is None
-        else filter.excluding(*exclude)
-    )
-
-
 def data(
     target: Any,
     /,
@@ -41,22 +27,20 @@ def data(
     *,
     exclude: Iterable[str] = (),
 ) -> dict[str, Any]:
-    """Extract and Filter Object Attributes with Excludes"""
+    """
+    Extract and Filter Object Attributes with Excludes
+
+    - Use filter=None for no filtering, default for no change filter=VOID
+    """
 
     if is_basemodel(target):
-        # IDEA: extracted = _scan_pydantic(target)
         return pydantic(target, filter, exclude=exclude)
 
-    extracted: dict[str, Any] = _scan_object(target)
-
-    return _prepare_filter(filter, exclude).filter_dict(extracted)
+    active = AttrFilter.resolve(filter, exclude=exclude)
+    return _scan_object(target, active)
 
 
 def pydantic(
-    # AI: is this even worth to keep?
-    # - every caller can directly check if it is a BaseModel and directly apply model_dump
-    # - the filter needs to be created there as well, otherwise the default can be used there
-    # still 3 steps directly combined in 1 call, cheap or very cheap to keep
     target: PydanticModel,
     /,
     filter: MayBeNo[AttrFilter] = VOID,
@@ -66,34 +50,52 @@ def pydantic(
     """
     Extract and Filter pydantic.BaseModel Attributes with Excludes
 
-    - crash if BaseModel Protocol is missed (nearby confirm BaseModel)
+    - Use filter=None for no filtering, default for no change filter=VOID
     """
 
-    if is_basemodel(target):
-        dumped: dict[str, Any] = target.model_dump(exclude=set(exclude))
-        # IDEA: AttrFilter.maybeno(filter,exclude).mapped(dumped)
-        return _prepare_filter(filter, exclude).filter_dict(dumped)
+    if not is_basemodel(target):
+        raise TypeError(f"Invalid 'PydanticModel' {type(target)}::{target}")
 
-    raise ValueError(f"Invalid 'PydanticModel' {type(target)}::{target}")
+    active_filter: AttrFilter = AttrFilter.resolve(filter, exclude=exclude)
+    dump_exclude: set[str] = {
+        name  #
+        for name in target.model_fields.keys()
+        if not active_filter(name)
+    }
+    dumped: dict[str, Any] = target.model_dump(exclude=dump_exclude)
+
+    return active_filter.mapped(dumped)
 
 
-def _scan_object(target: Any) -> dict[str, Any]:  # LATER: expose?
+def _scan_object(  # LATER: expose?
+    target: Any, /, accept: Callable[[str], bool] | None = None
+) -> dict[str, Any]:
     """Extract and Filter Instance and relevant Class Attributes"""
 
-    result: dict[str, Any] = {}
-    cls: type = target if isinstance(target, type) else type(target)
+    accept: Callable[[str], bool] = accept or AttrFilter.default()
+    is_cls: bool = isinstance(target, type)
+    cls: type = target if is_cls else type(target)
 
-    # LATER: design this in Filter
-    # LATER: use ._collect or port.link._operate.Collector
+    # LATER: compare with port.link.Detector or ._detect and forge._labor
+
+    result: dict[str, Any] = {}
 
     for base in reversed(cls.__mro__):
         if base is object:
             continue
         for k, v in vars(base).items():
+            if not accept(k):
+                continue
             if not callable(v) and not isinstance(v, _IGNORE):
                 result[k] = v
+            else:
+                # If a subclass overrides a class data attribute with a
+                # property or method, ensure the shadowed data isn't kept.
+                result.pop(k, None)
 
-    if hasattr(target, "__dict__"):
-        result.update(vars(target))
+    if not is_cls and hasattr(target, "__dict__"):
+        for k, v in vars(target).items():
+            if accept(k):
+                result[k] = v
 
     return result
