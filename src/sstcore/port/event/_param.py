@@ -22,19 +22,12 @@ __all__: list[str] = [
 import dataclasses as _dc
 import typing as _typing
 from enum import auto
+from typing import TYPE_CHECKING
 from typing import Any as _Any
 
 from ..color import Color, ColorArg
+from ..iinput import DataClassSpec
 from ..solid import OptionRegister
-
-
-@_typing.dataclass_transform(kw_only_default=True)
-class ParamSpec:  # TODO: compare with Functor::ParamSpec
-    """Base for dataclasses that parse Param Input (FrameSpec, HeaderSpec,..)"""
-
-    def __init_subclass__(cls, kw_only: bool = True, **kwargs: _Any):
-        super().__init_subclass__(**kwargs)
-        _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
 
 
 class _Boxes(OptionRegister):
@@ -53,6 +46,67 @@ class _Boxes(OptionRegister):
     MINI_UP = auto()
     MINI_DOWN = auto()
     OPEN = auto()
+
+
+class FrameSpec(DataClassSpec):
+    topic: str | None = ""
+    topic_color: Color = Color.WHITE
+    box: _Boxes = _Boxes.CORNER
+
+
+class HeaderSpec(DataClassSpec):
+    title: str | None = None
+    frame: FrameSpec = _dc.field(default_factory=FrameSpec)
+
+
+def sanitize_specs(fields: frozenset[str], **kwargs: _Any) -> dict[str, _Any]:
+    spec: dict[str, _Any] = dict(kwargs)
+
+    if "frame" in fields and "frame" not in spec:
+        if frame := FrameSpec.absorb_optional(spec):
+            spec["frame"] = frame
+
+    if "header" in fields and "header" not in spec:
+        main_frame: FrameSpec | None = spec.get("frame")
+        default_box = main_frame.box if main_frame else _Boxes.CORNER
+
+        header_frame = FrameSpec.absorb_optional(
+            spec, prefix="header_", defaults={"box": default_box}
+        )
+        title: str | None = spec.pop("title", None)
+
+        if title is not None or header_frame is not None:
+            spec["header"] = HeaderSpec(
+                title=title,
+                frame=header_frame or FrameSpec(box=default_box),
+            )
+
+    return spec
+
+
+if TYPE_CHECKING:
+    from .dto import BaseEventDTO
+
+
+class EventDTO(BaseEventDTO, name="ctor"):
+    @classmethod
+    def create(cls, *args, **kwargs) -> _typing.Self:
+        target_cls: type[_typing.Self] = cls._registry.get(cls.name, cls)
+        sanitized: dict[str, _Any] = target_cls._sanitize_kwargs(**kwargs)
+        # Optional: ArgCast.cast_dict(target_cls, sanitized)
+        return target_cls(*args, **sanitized)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@_typing.dataclass_transform(kw_only_default=True)
+class ParamSpec:  # TODO: compare with Functor::ParamSpec
+    """Base for dataclasses that parse Param Input (FrameSpec, HeaderSpec,..)"""
+
+    def __init_subclass__(cls, kw_only: bool = True, **kwargs: _Any):
+        super().__init_subclass__(**kwargs)
+        _dc.dataclass(kw_only=kw_only, **kwargs)(cls)
 
 
 class FrameSpec(ParamSpec):
@@ -74,7 +128,7 @@ class FrameInput(FrameTopicInput, total=False):
     box: _Boxes
 
 
-class HeaderSpec(ParamSpec):
+class _HeaderSpec(ParamSpec):
     """
     Explain:
 
@@ -106,7 +160,7 @@ class HeaderInput(HeaderBaseInput, HeaderFrameInput, total=False):
     """Combine Header with Frame Args"""
 
 
-def sanitize_specs(fields: set[str], **kwargs: _Any) -> dict[str, _Any]:
+def _sanitize_specs(fields: set[str], **kwargs: _Any) -> dict[str, _Any]:
     # MOVE: somehow into brick or forge, but how?
     # TODO: compare with Functor::ParamSpec
     spec: dict[str, _Any] = dict(kwargs)

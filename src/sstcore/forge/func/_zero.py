@@ -57,6 +57,38 @@ class DataClassSpec(BaseParamSpec):
         )
 
 
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+# # in forge.func._safe
+# class SafeFunctorSpec[**A, R](DataClassSpec):
+#     catch: Catch[A, R] | None = None
+#     policy: ErrorPolicy | None = None
+#     exit_code: int | None = None
+#
+#
+# @portlink(SafeFunctorial)
+# class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
+#     policy: PolicyField[ErrorPolicy] = PolicyField(ErrorPolicy.LOG_AND_CONTINUE)
+#     exit_code: RequiredField[int] = RequiredField(types=int, default=1)
+#
+#     def __init__(self, **kwargs: Unpack[SafeFunctorInput[Args, Result]]):
+#         # Pops only `catch`, `policy`, `exit_code` and leaves `call`, `name` for super()
+#         _spec = SafeFunctorSpec.absorb(kwargs)
+#
+#         if _spec.catch is not None:
+#             self._catch: Catch[Args, Result] = _spec.catch
+#         if _spec.policy is not None:
+#             self.policy = _spec.policy
+#         if _spec.exit_code is not None:
+#             self.exit_code = _spec.exit_code
+#
+#         super().__init__(**kwargs)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 class FunctorView:
     _data: FunctorMetaData
 

@@ -27,11 +27,26 @@ import typing as _t
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Self, TypedDict, Unpack
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    Self,
+    TypedDict,
+    Unpack,
+)
 
 from ....brick.call import ArgCast, _cast
 from ....error import PathGuardError, PathGuardReason
-from ....port.casting import ArgCasting, CastInput, CastPlan, MayBe
+from ....port.casting import (
+    ArgCasting,
+    CastInput,
+    CastPlan,
+    MayBe,
+    register_annotated,
+    register_caster,
+)
 from ....port.empty import VOID
 from ....port.files import SyncMode
 from ....port.link import portlink
@@ -172,6 +187,30 @@ class PathCaster:
         if isinstance(target, PathArg):
             return target
         return VOID
+
+
+# NEXT:
+class _PathCaster:
+    targets: ClassVar[tuple[Any, ...]] = (Path, PathArg)
+
+    def __init_subclass__(cls, register: bool = True, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if register and cls.targets:
+            default = cls()
+            for target in cls.targets:
+                register_caster(target, default, replace=True)
+
+
+# NEXT:
+def bind_path(metadata: tuple[Any, ...]) -> ArgCasting | None:
+    for item in metadata:
+        if isinstance(item, PathCaster):
+            return item
+    return None  # no flags in metadata → let TYPE_REGISTRY supply the default
+
+
+register_annotated(Path, bind_path)
+register_caster(SyncMode, SyncMode.resolve, replace=True)
 
 
 class PathCast(ArgCast):

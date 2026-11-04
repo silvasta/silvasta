@@ -244,3 +244,50 @@ if __name__ == "__main__":
         _check_cli_input(**asdict(data))
 
     _y = _check_cli_input()  # INFO: check IDE input view here
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+from .iinput import DataClassSpec  # noqa: E402
+
+
+class CliSystemSpec(DataClassSpec, kw_only=False):
+    """Transfer validated System Input including Defaults."""
+
+    verbose: bool = False
+    quiet: bool = False
+    settings: Path | None = None
+    home: HomeSetup = HomeSetup.PROJECT
+
+    @property
+    def config_input(self) -> ConfigInput:
+        return {
+            "setting_file": self.settings,
+            "home_setup": self.home,
+        }
+
+
+class CliSystemTools(DataClassSpec, kw_only=False):
+    config_loader: ConfigLoader | None = None
+    bus_loader: BusLoader | None = None
+    printer: Print | None = None
+
+
+class _SystemBootSpec(CliSystemSpec, CliSystemTools, kw_only=False):
+    """Capture Param of both layers of System Params."""
+
+    @classmethod
+    def from_layers(
+        cls,
+        tools: CliSystemTools | None = None,
+        cli: CliSystemSpec | None = None,
+    ) -> Self:
+        return cls.from_specs(tools, cli)
+
+    @property
+    def cli_data(self) -> CliSystemSpec:
+        return self.extract(CliSystemSpec)
+
+    @property
+    def cli_tools(self) -> CliSystemTools:
+        return self.extract(CliSystemTools)

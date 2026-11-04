@@ -18,12 +18,36 @@ __all__: list[str] = [
 ]
 
 
+import dataclasses as _dc
 import typing as _t
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, MutableMapping
 from inspect import BoundArguments, Parameter, Signature
 from typing import Any, Unpack
 
-from ...port.casting import ArgCasting, CastPlan
+from ...port.casting import ArgCasting, CastPlan, SpecBase
+
+
+def pack_prefixed[P: SpecBase](
+    # NEXT: where to use this?
+    kwargs: dict,
+    prefix: str,
+    spec_cls: type[P],
+) -> P | None:
+    picked = {
+        k.removeprefix(prefix): kwargs.pop(k)
+        for k in list(kwargs)
+        if k.startswith(prefix)
+    }
+    return spec_cls(**picked) if picked else None
+
+
+def partition_fields(spec: SpecBase, *spec_clses: type) -> dict[str, dict]:
+    # NEXT: where to use this?
+    """Обобщенный аналог extract_base: разделить поля спецификации по их базовым классам."""
+    return {
+        cls.__name__: {f.name: getattr(spec, f.name) for f in _dc.fields(cls)}
+        for cls in spec_clses
+    }
 
 
 def iter_type_hints(target: Callable | type, /) -> Iterator[tuple[str, Any]]:
@@ -73,4 +97,25 @@ def typed_dict(plan: CastPlan, bound: BoundArguments):
 
     if kw := bound.kwargs:
         for key in plan.keys() & kw.keys():
-            kw[key] = plan[key](kw[key])
+            kw[key] = plan[key](kw[key])  # FIX:
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def apply_mapping(plan: CastPlan, data: MutableMapping[str, Any]) -> None:
+    for key in plan.keys() & data.keys():
+        data[key] = plan[key](data[key])
+
+
+def apply_bound(plan: CastPlan, bound: BoundArguments, sig: Signature) -> None:
+    for name in plan.keys() & bound.arguments.keys():
+        param = sig.parameters[name]
+        if param.kind is Parameter.VAR_KEYWORD:
+            apply_mapping(plan, bound.arguments[name])
+            continue
+        value = bound.arguments[name]
+        if param.default is Parameter.empty:
+            bound.arguments[name] = plan[name](value)
+        else:
+            bound.arguments[name] = plan[name](value, default=param.default)
