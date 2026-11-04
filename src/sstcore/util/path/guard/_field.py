@@ -19,7 +19,6 @@ __all__: list[str] = [
     "PathSpecField",
 ]
 
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Unpack
 
@@ -28,9 +27,7 @@ from ....port import attach
 from ....port.attach import FieldLoader
 from ....port.link import portlink
 from . import _ensure, _increment
-from ._arg import PathArg, PathInput, PathSpec
-
-type PathStrategy = Callable[..., Path]
+from ._input import PathArg, PathInput, PathSpec, PathStrategy
 
 
 @portlink(attach.ReadDescriptor)

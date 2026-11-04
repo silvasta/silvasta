@@ -16,23 +16,14 @@ from ....error import (
     PathGuardError,
     PathGuardReason,
 )
-from ._arg import PathArg, PathSpec, ResolvedPath, castpath
-
-type SinglePath = PathArg
-type MultiPath = Iterable[PathArg]
-
-# STRATEGY: input handling
-# - only main function(s) handle the ResolvedPath/PathArg or any other desired but not Path input
-#   - any internal function just used Path, no @castpath there, only on any exposed function
-# - declare PathCast input opening as failed and use the stub for that
-#   - the .pyi handles the input extension of the paths: PathArg
-#   - the .pyi handles any possible overload, internally call the related subfunctions
-#   - @castarg ensures all Annotated Paths and their corresponding recipe
-# - Single/Multi is dispatched inside the corresponding exposed function
-
-# AI_QUESTION: any other PathGuard internal function that uses _relative._* that is not not _relative.main_*
-
-# AI_TASK: any overload that is not completely necessary should go to _assemble.pyi
+from ._input import (
+    MultiPath,  # CHECK: how to resolve to Path
+    PathArg,
+    PathSpec,
+    ResolvedPath,
+    SinglePath,  # CHECK: how to resolve to Path
+    castpath,
+)
 
 
 @castpath
@@ -65,14 +56,13 @@ def _relative_one(
         ) from error
 
 
-# AI: this is mounted to PathGuard.relative
-def relative_main(
+def relative_main(  # AI: this is mounted to PathGuard.relative
     target: SinglePath | MultiPath,
     /,
     root: PathArg | None = None,
     strict: bool = True,
     *,
-    existing: bool = False,  # AI: this is the new idea, filter (or raise) by existance on FileSystem
+    existing: bool = False,
 ) -> Path | list[Path]:
     """
     Find Relative Path(s) starting at Root (or CWD) downwards to Target(s).
@@ -156,8 +146,9 @@ def absolute_main(
     must_exists: bool = False,
     filter_exists: bool = False,
 ) -> list[Path]: ...
-# AI: this is mounted to PathGuard.absolute
-def absolute_main(
+
+
+def absolute_main(  # AI: this is mounted to PathGuard.absolute
     target: SinglePath | MultiPath,
     root: PathArg | None = None,
     *,
@@ -198,7 +189,6 @@ def absolute_main(
     raise NotImplementedDispatchError(target, root)
 
 
-@castpath.duo  # CHECK: is this simply fix enough?
 def relative_string(source: Path, target: Path):
     """Search relative Path in both direction and provide any rendering"""
     relative: Path = relative_duo(source, target) or _relative_one(
@@ -207,7 +197,6 @@ def relative_string(source: Path, target: Path):
     return f"{source.name} -> {relative}"
 
 
-@castpath.duo  # CHECK: is this simply fix enough?
 def relative_duo(path1: Path, path2: Path) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 

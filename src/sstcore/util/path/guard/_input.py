@@ -24,17 +24,10 @@ __all__: list[str] = [
 ]
 
 import typing as _t
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import (
-    Annotated,
-    Any,
-    Concatenate,
-    Self,
-    TypedDict,
-    Unpack,
-)
+from typing import TYPE_CHECKING, Annotated, Any, Self, TypedDict, Unpack
 
 from ....brick.call import ArgCast, _cast
 from ....error import PathGuardError, PathGuardReason
@@ -43,10 +36,6 @@ from ....port.empty import VOID
 from ....port.files import SyncMode
 from ....port.link import portlink
 
-#
-# STRATEGY: find balance of Annotaded or regular Paths
-
-
 type TargetPath = Annotated[Path, PathCaster()]
 type SourcePath = Annotated[Path, PathCaster(must_exists=True)]
 type ResolvedPath = Annotated[Path, PathCaster(resolve=True)]
@@ -54,6 +43,14 @@ type ResolvedSource = Annotated[
     Path, PathCaster(must_exists=True, resolve=True)
 ]
 type ParentEnsuredPath = Annotated[Path, PathCaster(ensure_parent=True)]
+
+# relative (most likely for much more useful!)
+type SinglePath = PathArg
+# AI: this should be some annotated as well, maybe just in the stub?
+type MultiPath = Iterable[PathArg]
+
+# fields
+type PathStrategy = Callable[..., Path]
 
 
 class PathInput(TypedDict, total=False):
@@ -87,7 +84,7 @@ class PathSpec:
     def evolve(self, **kwargs) -> Self:  # MOVE: to base, if dataclass used
         return replace(self, **kwargs)
 
-    @classmethod  # MOVE: to base
+    @classmethod
     def ok(
         cls,
         target: MayBe[PathArg] = VOID,
@@ -99,7 +96,7 @@ class PathSpec:
         return cls.normalize(target, **kwargs).validate()
 
     @classmethod
-    def normalize(  # MOVE: maybe to base, provide subhooks
+    def normalize(
         cls,
         target: MayBe[PathArg] = VOID,
         /,
@@ -115,6 +112,9 @@ class PathSpec:
         if target is VOID:
             return cls(target=Path.cwd(), **kwargs)
 
+        if TYPE_CHECKING:  # NOTE: needed due to grey shadowing the Error...
+            target: Any = target
+
         match target:
             case PathSpec():
                 return cls(**{**asdict(target), **kwargs})
@@ -125,7 +125,7 @@ class PathSpec:
 
         raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
 
-    def validate(self) -> Path:  # MOVE: maybe to base, execute registry?
+    def validate(self) -> Path:
         """Ensure input Specification and provide resolved Path"""
 
         path: Path = self.target
@@ -220,43 +220,6 @@ class PathCast(ArgCast):
 
         return plan
 
-    #  LINE: -- Domain specific -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    # NEXT: check what here actually works
-    # REMOVE: All below: scales bad and works medium
-
-    def uno(self, func: Callable[[Path], Path]) -> Callable[[PathArg], Path]:
-        # WARN: when is self.plan used?
-        def wrapper(
-            path: PathArg,
-        ) -> Path:
-            resolved: Path = PathSpec.ok(path)
-            return func(resolved)
-
-        # reveal_type(wrapper)
-        return wrapper
-
-    def uno_plus[**Other](
-        self, func: Callable[Concatenate[Path, Other], Path]
-    ) -> Callable[Concatenate[PathArg, Other], Path]:
-        # WARN: when is self.plan used?
-        def wrapper(
-            path: PathArg, *_no: Other.args, **kwargs: Other.kwargs
-        ) -> Path:
-            resolved: Path = PathSpec.ok(path)
-            return func(resolved, *_no, **kwargs)
-
-        # reveal_type(wrapper)
-        return wrapper
-
-    def duo[R](
-        self, func: Callable[[Path, Path], R]
-    ) -> Callable[[PathArg, PathArg], R]:
-        # WARN: when is self.plan used?
-        def wrapper(source: PathArg, target: PathArg) -> R:
-            return func(PathSpec.ok(source), PathSpec.ok(target))
-
-        return wrapper
-
-
+# AI_TASK: if this can be replaced by simply @castarg that would be great
 castpath = PathCast()  # TARGET: usage inside Path.Guard

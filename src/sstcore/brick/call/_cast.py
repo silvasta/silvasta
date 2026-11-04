@@ -27,7 +27,7 @@ from ...port.casting import ArgCasting, CastPlan
 
 
 def iter_type_hints(target: Callable | type, /) -> Iterator[tuple[str, Any]]:
-    # MOVE: _inspect?
+    # LATER: move to _inspect? or .._reflect?
     """Yield (name, annotation) and if needed unpacke TypedDict"""
 
     for name, hint in _t.get_type_hints(target, include_extras=True).items():
