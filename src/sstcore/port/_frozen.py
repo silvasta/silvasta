@@ -93,7 +93,7 @@ class _HashedTupleBase(NamedTuple):
 
 
 class HashedTuple(_HashedTupleBase):
-    """Named and auto-ensured Hashable component for deterministic CacheKeys"""
+    """Named and auto-ensured Hashable Tuple for deterministic CacheKeys"""
 
     def __new__(cls, name: str, value: Any, /, *, strict=True):
         """Make value Hashable before instantiation"""
@@ -111,12 +111,12 @@ class HashedTuple(_HashedTupleBase):
     @staticmethod
     def hash(target: Any, /, *, strict=True) -> Hashable:
         """
-        Transform Mutable or nested structures into Hashable Objects
+        Transform Mutable and Nested structures to proved Hashable
 
-        - Deterministic Order for reliable Dict caching
-        - Base iterables become frozensets
-        - Final attempt: Convert unknown iterables to tuple
-          - strict=True raises while strict=False converts to (random) string
+        - Deterministic Order for any Map cached to FrozenDict
+        - Convert Set to FrozenSets and List to Tuples
+        - Final Attempt: Enforce freeze to undetected Items
+          - strict=False generates any string without Raise
 
         """
         if HashedTuple.accepts(target):
@@ -132,7 +132,7 @@ class HashedTuple(_HashedTupleBase):
                 return frozenset(_hash(value) for value in target)
 
             case Mapping():
-                return frozendict(
+                return frozendict(  # works with workaround for Python 3.14
                     {_hash(key): _hash(value) for key, value in target.items()}
                 )
         return HashedTuple._fallback(target, strict=strict)
