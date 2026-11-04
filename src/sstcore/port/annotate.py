@@ -14,6 +14,7 @@ __all__: list[str] = [
     "ProtoTyper",
     #
     "stub_types",
+    "anno_presets",
 ]
 
 
@@ -22,11 +23,13 @@ from dataclasses import dataclass, field
 from typing import Any
 from typing import Protocol as _Protocol
 
+from ._presets import anno_presets
 from ._types import stub_types
 from .shape import Typer  # 0
 from .solid import EnumMode  # 1
 
 _stub = stub_types
+_anno = anno_presets
 
 
 class MetaAnnotator(Typer, _Protocol):

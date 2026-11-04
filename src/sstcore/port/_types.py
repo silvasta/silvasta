@@ -54,6 +54,8 @@ class _RichConsolable(Protocol):
 
 #  LINE: -- Collected Definitions of: type ... = ... -- -- - -- -- - -- -- - --
 
+# NEXT: check PresetMeta, any benefit here?
+
 
 class Registry:
     """
