@@ -1,8 +1,7 @@
 """
-TAP SPEC
+Define the Configuration and Control Mechanics of PortLink
 
--
-                               DependencyLevel.sstcore.port.link[1]
+                           DependencyLevel.sstcore.port.link[0.4.1]
 """
 
 __all__: list[str] = [
@@ -213,8 +212,6 @@ class Tap:
         self, cls: type[C] | None = None, /, *, methods: Sequence[str] = ()
     ) -> type[C] | Callable[[type[C]], type[C]]:
         """Inject self._debug() and wrap target methods"""
-
-        # print(f"trace: {cls}")
 
         def _decorator(_cls: type[C]) -> type[C]:
             if not _inject_active_debug(self, _cls):

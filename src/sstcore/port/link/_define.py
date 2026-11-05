@@ -8,7 +8,7 @@ Define the Shape and Behaviour for the Implementations
 - PortLinkData: Combined Docs of one Attr or Cls
 - PortLinkRegistry: Track full PortLink Execution
 
-                               DependencyLevel.sstcore.port.link[0]
+                           DependencyLevel.sstcore.port.link[0.4.0]
 """
 
 __all__: list[str] = [
@@ -473,7 +473,7 @@ _weak_dict_field = partial(
 )
 
 
-@dataclass(slots=True)  # WARN: what about that??
+@dataclass(slots=True)
 class LinkRegistry:
     """
     Weak M:N topological index of (Protocol <-> Implementation) links

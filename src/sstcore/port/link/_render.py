@@ -4,8 +4,17 @@ Render the Output with Lazy Loaded external Libraries
 - rich.(Console.)print: direct feedback inside active terminal session
 - loguru: when it needs to be retained for longer than just one window
 
-                               DependencyLevel.sstcore.port.link[1]
+                           DependencyLevel.sstcore.port.link[0.4.1]
 """
+
+__all__: list[str] = [
+    # LATER: check what needs to be private
+    "_loguru",
+    "_rich",
+    "_NoopPrinter",
+    "_load_printer",
+]
+
 
 from functools import lru_cache
 from typing import Any
@@ -40,18 +49,6 @@ def _rich(sender: Any = None, *args: Any, **kwargs: Any) -> None:
         rprint(f"[dim]⚡[/]{prefix}", *args, **kwargs)
     except Exception:
         print(f"⚡{sender} │", *args, **kwargs)
-
-
-def _format_cell(val: Any) -> str:
-    """Format types, WeakSets, and Docs cleanly for Rich panels and tables."""
-    if isinstance(val, type):
-        return val.__name__
-    if isinstance(val, WeakSet):
-        return ", ".join(c.__name__ for c in val) or "∅"
-    if isinstance(val, Doc):
-        attr_suffix: str = f".{val.attr}" if val.attr else ""
-        return f"[bold]{val.source.__name__}{attr_suffix}[/]: {val.text!r}"
-    return str(val)
 
 
 class _NoopPrinter:
@@ -177,3 +174,15 @@ def _load_printer() -> PortPrinter:
             self.table(dict(registry._by_plug))
 
     return MiniPrinter()
+
+
+def _format_cell(val: Any) -> str:
+    """Format types, WeakSets, and Docs cleanly for Rich panels and tables."""
+    if isinstance(val, type):
+        return val.__name__
+    if isinstance(val, WeakSet):
+        return ", ".join(c.__name__ for c in val) or "∅"
+    if isinstance(val, Doc):
+        attr_suffix: str = f".{val.attr}" if val.attr else ""
+        return f"[bold]{val.source.__name__}{attr_suffix}[/]: {val.text!r}"
+    return str(val)

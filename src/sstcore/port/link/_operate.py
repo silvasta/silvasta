@@ -6,7 +6,7 @@ Create the SimpleNamespace Easy Operators
 
 - Redactor: The Docstring Merging Render Engine
 
-                               DependencyLevel.sstcore.port.link[1]
+                           DependencyLevel.sstcore.port.link[0.4.1]
 """
 
 __all__: list[str] = [
