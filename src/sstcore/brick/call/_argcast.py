@@ -57,12 +57,6 @@ class ArgCast:
             logger.debug(f"Replacing caster for {key!r}: {old!r} -> {caster!r}")
         cls._registry[key] = caster
 
-    def _fallback(self, plan: CastPlan, name: str, annotation) -> None:
-        # REMOVE: when walk resolved
-        base = _t.get_args(annotation)[0]
-        if caster := self._registry.get(base):
-            plan[name] = caster
-
     @classmethod
     def walk(
         cls,

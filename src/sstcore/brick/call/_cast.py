@@ -4,11 +4,11 @@ brick.call._cast
 -
 """
 
-__all__: list[str] = [  # TODO: when finished
+__all__: list[str] = [
     "iter_type_hints",
-    # "param_spec",
-    # "typed_dict",
-    # "cast_mapping",
+    "type_hints_from_origin",
+    # TODO:
+    "build_plan",
 ]
 
 import inspect as _inspect
@@ -18,7 +18,6 @@ from inspect import BoundArguments, Parameter, Signature
 from typing import Annotated, Any, Unpack
 
 from ...port.casting import ArgCasting, CastPlan, CastRegistry
-from . import _cast
 
 type Hintable = Callable | type  # CHECK: Castable?
 
@@ -48,7 +47,6 @@ def iter_type_hints(target: Hintable, /) -> Iterator[tuple[str, Any]]:
             yield name, hint
 
 
-# CHECK: private? or expose?
 def type_hints_from_origin(target: Hintable, /) -> Iterator[tuple[str, Any]]:
     """Unwrap Generic Aliases (FunctorInput[Args, Result] -> FunctorInput)"""
     _origin = _t.get_origin(target) or target
@@ -109,26 +107,6 @@ def find_annotated_caster(plan: CastPlan, name: str, annotation) -> None:
 #  LINE: -- build_plan for ArgCast.walk -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def _walk(target: Callable[..., Any] | type[Any], /) -> CastPlan:
-    """
-    Map all Signatures to their Annotated resolver
-
-    - reversed: first Caster overwrites any subsequent ones
-    """
-    return {  # LATER: decompose fragments and assemble, eg PathSpec
-        name: caster
-        for name, annotation in iter_type_hints(target)
-        if _t.get_origin(annotation) is Annotated
-        for caster in reversed(_t.get_args(annotation)[1:])
-        if isinstance(caster, ArgCasting)
-    }
-
-
-def _walk(cls, target: Callable[..., Any] | type[Any], /) -> CastPlan:
-    """Compile a CastPlan for a function, dataclass, or TypedDict."""
-    return build_plan(target, cls._registry)
-
-
 def build_plan(
     target: Callable[..., Any] | type[Any],
     registry: CastRegistry,
@@ -145,7 +123,7 @@ def build_plan(
 
     plan: CastPlan = {}
 
-    for name, annotation in _cast.iter_type_hints(target):
+    for name, annotation in iter_type_hints(target):
         if _t.get_origin(annotation) is Annotated:
             _args = _t.get_args(annotation)
             # 1. Explicit caster in metadata
@@ -180,7 +158,7 @@ def _walk(self, func) -> dict[str, ArgCasting]:
 
 def _walk(self, target, /) -> CastPlan:
     plan: CastPlan = {}
-    for name, annotation in _cast.iter_type_hints(target):
+    for name, annotation in iter_type_hints(target):
         if _t.get_origin(annotation) is Annotated:
             find_annotated_caster(plan, name, annotation)
             if name not in plan:
