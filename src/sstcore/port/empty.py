@@ -24,7 +24,8 @@ __all__: list[str] = [
     "Ghost",
     "VOID",
     "MayBe",
-    "MayBeNo",
+    "MayNot",
+    "MayBeNot",
     "sentinel",
     "ViewSentinel",
 ]
@@ -33,7 +34,9 @@ __all__: list[str] = [
 import sys
 from typing import TYPE_CHECKING as _TYPECHECKING
 
-# INFO: no internal imports here, VOID is exported to .solid! No bump allowed!
+# INFO: no internal imports here!
+# - VOID is exported to .solid
+
 
 if sys.version_info >= (3, 15):
     from builtins import sentinel
@@ -44,7 +47,8 @@ else:
 VOID = sentinel("VOID")
 
 type MayBe[Some] = Some | VOID
-type MayBeNo[Some] = Some | VOID | None
+type MayNot[Some] = Some | None
+type MayBeNot[Some] = Some | VOID | None
 
 
 class _GhostBaseEradicator:

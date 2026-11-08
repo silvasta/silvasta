@@ -29,9 +29,11 @@ from functools import cached_property, partial
 from inspect import cleandoc
 from typing import TYPE_CHECKING, Any, Literal, Self
 
+from .._presets import LinkPresets as _LPs
 from .._raise import LinkRaiser
 from ..empty import VOID, MayBe
 from ..raising import SstCoreError
+from ..structures import ParamSnap
 from . import _define as _def
 from ._define import Doc, Docs, PlugDocs, PortDoc, PortDocs
 
@@ -60,10 +62,10 @@ class EasyCore[Core: Callable](EasyNote):
 class EasyCatch(EasyCore):
     """Execute in Context and Safe reflecting Operations"""
 
-    _last_call: MayBe[_def.Param] = VOID
+    _last_call: MayBe[ParamSnap] = VOID
 
     def __call__(self, *args, **kwargs):
-        self._last_call = _def.Param(args, kwargs)
+        self._last_call = ParamSnap(args, kwargs)
         with self:
             return super().__call__(*args, **kwargs)
 
@@ -83,7 +85,7 @@ class EasyCatch(EasyCore):
             self.emit(f"Call context: {self._last_call}")
             self._last_call: VOID = VOID
 
-        if isinstance(error, SstCoreError):
+        if isinstance(error, SstCoreError):  # TODO: LinkError
             self.emit(f"Specific: {error=}")
             return False
 
@@ -100,7 +102,7 @@ class Reflector[Core: Callable](EasyCatch):
     _registry: dict[str, type[Self]] = {}
 
     def __init__(self, config: _def.LinkConfig):
-        if missing := _def.REFLECT - (registry := self._registry.keys()):
+        if missing := _LPs.REFLECT - (registry := self._registry.keys()):
             raise RuntimeError(f"Missing Operators! [{missing}]({registry=})")
 
         self.config: _def.LinkConfig = config
@@ -115,26 +117,26 @@ class Reflector[Core: Callable](EasyCatch):
         else:
             cls._registry[id] = cls
 
-    def _get_op(self, key: str, /) -> Any:
-        if key not in self._instances:
+    def _get_operator(self, key: str, /) -> Any:  # LATER: __getitem__?
+        if key not in self._instances:  # LATER: __setitem__?
             self._instances[key] = self._registry[key](self.config)
-        return self._instances[key]
+        return self._instances[key]  # LATER: _registry dict->ClsRegistry?
 
     @property
     def detector(self) -> Detector:
-        return self._get_op("detect")
+        return self._get_operator("detect")
 
     @property
     def collector(self) -> Collector:
-        return self._get_op("collect")
+        return self._get_operator("collect")
 
     @property
     def projector(self) -> Projector:
-        return self._get_op("project")
+        return self._get_operator("project")
 
     @property
     def redactor(self) -> Redactor:
-        return self._get_op("redact")
+        return self._get_operator("redact")
 
 
 if TYPE_CHECKING:
@@ -148,11 +150,11 @@ class EasyAccess(Reflector, id="get"):
     _methods: _def.DunderStore
 
     def __init__(self, config: _def.LinkConfig, **kwargs: Any):
-        super().__init__(config, **kwargs)
+        super().__init__(config, **kwargs)  # LATER: dunder reload?
         self._methods: _def.DunderStore = self.Dunders(config.dunders)
 
     def invoke(self, target: Any, *args: Any, method: str) -> Any:
-        """Uniform hook for dunder shortcut calls (e.g. op.doc(target, ...))."""
+        """Uniform hook for dunder shortcut calls"""
         return self(target, method, *args)
 
     def __getattr__(self, name: str) -> Callable:
@@ -182,7 +184,7 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
         return self.post(result, attr)
 
     @property
-    def strategy(self):  # NEXT: what type fits?
+    def strategy(self):  # NEXT: what type fits? parametrizable?
         match self.mode:
             case "soft":
                 return self.polite
@@ -206,7 +208,7 @@ class Operator[Core: Callable](EasyAccess, Reflector, id="base"):
                 return target.__func__
         return target
 
-    def post(self, result: Any, attr: str, /) -> Any:
+    def post(self, result: Any, _attr: str, /) -> Any:
         """Hook for post-processing the strategy result."""
         return result
 

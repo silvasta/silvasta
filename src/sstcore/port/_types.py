@@ -8,13 +8,10 @@ Group TypeDefs as Classes and Merge them to Modules
 """
 
 __all__: list[str] = [
-    "Registry",
-    "registry_types",
-    "Stack",
-    "stacking_types",
-    "Stub",
-    "stub_types",
-    "event_types",
+    "RegistryTypes",
+    "StackTypes",
+    "StubTypes",
+    "EventTypes",
 ]
 
 from collections.abc import (
@@ -25,7 +22,7 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Never, Protocol, runtime_checkable
 
 #  LINE: -- Port internal views (exposed in port.represent) -- -- - -- -- - --
 
@@ -52,12 +49,31 @@ class _RichConsolable(Protocol):
         """Just extend the Renderable type"""
 
 
+#  LINE: -- Locking -- -- - -- -- - -- -- - --
+
+
+class _LockedClsMeta(type):
+    """Disable Mutation and Instantiation for NameSpace Only Classes"""
+
+    _name: str = "Locked"
+
+    def _desc(cls, name: str = "") -> str:
+        return f"{cls._name}[{cls.__name__}{f'.{name}' if name else ''}]"
+
+    def __call__(cls, *_, **__) -> Never:
+        raise TypeError(f"{cls._desc()} is Not available as Instance!")
+
+    def __setattr__(cls, name: str, _value: Any) -> Never:
+        raise AttributeError(f"{cls._desc(name)} is read-only")
+
+    def __delattr__(cls, name: str) -> Never:
+        raise AttributeError(f"{cls._desc(name)} cannot be deleted")
+
+
 #  LINE: -- Collected Definitions of: type ... = ... -- -- - -- -- - -- -- - --
 
-# NEXT: check PresetMeta, any benefit here?
 
-
-class Registry:
+class RegistryTypes(metaclass=_LockedClsMeta):
     """
     Collect all Types for the Registry:
 
@@ -69,9 +85,9 @@ class Registry:
     type Key = str
     type Index = int | slice
     type Selector[T] = (
-        Registry.Key
-        | Registry.Index
-        | Registry.Predicate[T]
+        RegistryTypes.Key
+        | RegistryTypes.Index
+        | RegistryTypes.Predicate[T]
         | tuple[Any, ...]
         | Hashable
     )
@@ -92,7 +108,9 @@ class Registry:
 
     type Vault = Sequence | Mapping
     type TypedVault[T] = (
-        Registry.List[T] | Registry.Tuple[T] | Registry.Dict[Any, T]
+        RegistryTypes.List[T]
+        | RegistryTypes.Tuple[T]
+        | RegistryTypes.Dict[Any, T]
     )
 
     #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -102,23 +120,17 @@ class Registry:
     type Slot = tuple[Mixin, Proto] | Mixin | Proto
 
 
-registry_types = Registry()
-
-
-class Stack:
+class StackTypes(metaclass=_LockedClsMeta):
     """Types for Stacking Pipeline"""
 
     type Map[ValueT] = Mapping[str, ValueT]
     type StackData[ValueT] = ValueT | Callable[..., ValueT]
-    type LayerData[ValueT] = Stack.Map[Stack.StackData[ValueT]]
+    type LayerData[ValueT] = StackTypes.Map[StackTypes.StackData[ValueT]]
 
     type Accumulated[ValueT] = dict[str, list[ValueT]]
 
 
-stacking_types = Stack()
-
-
-class Stub:
+class StubTypes(metaclass=_LockedClsMeta):
     type ProtoType = type
     type AttrName = str
     type RawObject = object
@@ -129,12 +141,6 @@ class Stub:
     type OverLoads = Sequence[Callable[..., Any]]
 
 
-stub_types = Stub()
-
-
-class EventTypes:
-    type Map[Value] = Mapping[str, Value]  # MOVE: port._types
+class EventTypes(metaclass=_LockedClsMeta):
+    type Map[Value] = Mapping[str, Value]
     type Tuple[T] = tuple[T, ...]
-
-
-event_types = EventTypes()

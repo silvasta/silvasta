@@ -17,6 +17,7 @@ from dataclasses import asdict, dataclass, field, replace
 from functools import wraps
 from typing import Any, Generic, Protocol, Self, Unpack
 
+from .._presets import LinkPresets as _LPs
 from . import _define as _def
 from . import _render
 from ._define import LinkInput, PortEmit, PortPrinter
@@ -27,6 +28,7 @@ HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
     # "init",
     # "name",
 )
+# LATER: maybe move to .._presets ??
 META_FLAGS: frozenset[str] = frozenset({"log", "report", "init"})
 LINK_FLAGS: frozenset[str] = frozenset({"link", "port.link"})
 
@@ -80,11 +82,13 @@ class Channels(frozenset):
 
 
 @dataclass(frozen=True, slots=True)
-class LinkSpec:
+class LinkSpec:  # RENAME: spec is now something different
+    # CHECK: how does LinkSpec differ from ParamSpec/ArgSpec??
+    # TASK: compare as well with ErrorSpec, find consistent global naming
     merge: _def.DocMerging
     channels: Channels = field(init=False)
     theme: _def.DefaultTheme = field(default_factory=_def.DefaultTheme)
-    dunders: frozenset[str] = frozenset(_def.DUNDERS)
+    dunders: frozenset[str] = frozenset(_LPs.DUNDERS)
     skip: frozenset[type] = frozenset({object, Protocol, Generic})
 
     env_var: str = "SST_DEBUG"
@@ -181,7 +185,7 @@ class Tap:
             return func
 
         is_method: bool = "." in getattr(func, "__qualname__", "")
-        is_init: bool = getattr(func, "__name__", "") in _def.INIT
+        is_init: bool = getattr(func, "__name__", "") in _LPs.INIT
 
         @wraps(func)
         def _traced(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -275,7 +279,7 @@ def _dict_hits(
 
     methods: list = [cls.__dict__[a] for a in attrs if a in cls.__dict__]
 
-    if init and (_init_ := _dict_hits(cls, *_def.INIT, init=False)):
+    if init and (_init_ := _dict_hits(cls, *_LPs.INIT, init=False)):
         methods.append(_init_[0])  # prefers __post_init__ if exists
 
     return methods

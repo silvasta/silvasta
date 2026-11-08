@@ -24,15 +24,11 @@ __all__: list[str] = [
     "DocMerging",
     "DunderStore",
     "DunderSet",
-    "DUNDERS",
-    "REFLECT",
     # config
-    "INIT",
     "LinkConfig",
     "RenderTheme",
     "DefaultTheme",
     "LinkInput",
-    "Param",
     # storage
     "Doc",
     "PortDoc",
@@ -62,6 +58,7 @@ from weakref import WeakKeyDictionary, WeakSet
 
 from .._raise import PortLinkError  # TODO: use Raiser?
 from .._types import _Stringable
+from ..structures import NormSet
 
 
 class PortLinker[C, P](Protocol):
@@ -119,38 +116,14 @@ class DunderStore(Protocol):  # MOVE: _define
     def get(self, name: str, *args, **kwargs) -> str | None: ...
 
 
-class DunderSet(frozenset):
-    @staticmethod
-    def format(item: _Stringable, /) -> str:
-        return f"__{DunderSet.extract(item)}__"
-
-    @staticmethod
-    def extract(item: _Stringable, /) -> str:
-        return str(item).strip("_")
-
-    def __new__(cls, items: Iterable[str] = (), /):
-        return super().__new__(cls, (cls.format(item) for item in items))
-
-    def __contains__(self, target: Any) -> bool:
-        return super().__contains__(self.format(target))
-
-    def get(self, item: str, default=None) -> str | None:
-        # TODO: check __getitem__ and directly bind invoke?
-        return dunder if (dunder := self.format(item)) in self else default
-
-
-DUNDERS: set[str] = {  # __getattr__ for Detector and Projector
-    "__doc__",
-    "__func__",
-    "__portlinks__",
-}
-
-REFLECT: frozenset[str] = frozenset(("detect", "collect", "project", "redact"))
+class DunderSet(NormSet):
+    @classmethod
+    def normalize(cls, item: _Stringable, /) -> str:
+        """Ensure storage in FrozenSet with '__dunder__' formatting"""
+        return f"__{f'{item}'.strip('_')}__"
 
 
 #  LINE: -- Config -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-INIT = ("__post_init__", "__init__")
 
 
 class LinkConfig(Protocol):
@@ -179,7 +152,7 @@ class RenderTheme(TypedDict, total=False):
 
 
 @dataclass
-class DefaultTheme:
+class DefaultTheme:  # TODO: Spec?
     stat: str = "cyan"
     fail: str = "orange_red1"
     port: str = "purple"
@@ -196,19 +169,6 @@ class LinkInput(TypedDict, total=False):
     merge: DocMerging
     skip: frozenset[type]
     dunders: frozenset[str]
-
-
-class Param(NamedTuple):  # EXTRACT: very useful param tracker
-    """Track the ongoing Actions"""
-
-    args: tuple[Any, ...]
-    kwargs: dict[str, Any]
-
-    def __str__(self):
-        return f"args={self.args}, kwargs={self.kwargs}"
-
-    def __repr__(self):
-        return str(self)  # LATER: explain each (kw)arg
 
 
 #  LINE: -- Emitting Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -512,7 +472,7 @@ class LinkRegistry:
             for plug in tuple(plugs):
                 yield (port, plug)
 
-    def implementations_of(self, port: type) -> tuple[type, ...]:
+    def plugs_of(self, port: type) -> tuple[type, ...]:
         """Return all Implementations linked to specific Protocol"""
         plugs: WeakSet[type] | None = self._by_port.get(port)
         return tuple(plugs) if plugs is not None else ()
@@ -525,7 +485,7 @@ class LinkRegistry:
             result.extend(list(port))
         return tuple(result)
 
-    def protocols_of(self, plug: type) -> tuple[type, ...]:
+    def ports_of(self, plug: type) -> tuple[type, ...]:
         """Return all Protocols linked to specific Implementation"""
         ports: WeakSet[type] | None = self._by_plug.get(plug)
         return tuple(ports) if ports is not None else ()
@@ -533,9 +493,48 @@ class LinkRegistry:
     def __str__(self):
         return f"{type(self).__name__}[{self.stats()}]"
 
-    def stats(self) -> dict[str, int]:
+    def stats(self) -> dict[str, int]:  # TODO: TypedDict return
         return {
             "ports": len(self.ports()),
             "plugs": len(self.plugs()),
             "links": sum(len(plugs) for plugs in self._by_port.values()),
         }
+
+
+#  LINE: -- Idea for Later - Generalize WeakRegistry -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+_weak_map = partial(
+    field, default_factory=WeakKeyDictionary, init=False, repr=False
+)
+
+
+@dataclass(slots=True)
+class _WeakBiMap[K: type, V: type]:
+    """GC-safe M:N bidirectional index between two weak-referenceable types."""
+
+    _forward: WeakKeyDictionary[K, WeakSet[V]] = _weak_map()
+    _reverse: WeakKeyDictionary[V, WeakSet[K]] = _weak_map()
+
+    def link(self, left: K, right: V) -> None:
+        self._forward.setdefault(left, WeakSet()).add(right)
+        self._reverse.setdefault(right, WeakSet()).add(left)
+
+    def lefts(self) -> tuple[K, ...]:
+        return tuple(k for k, vs in self._forward.items() if vs)
+
+    def rights(self) -> tuple[V, ...]:
+        return tuple(v for v, ks in self._reverse.items() if ks)
+
+    def rights_of(self, left: K) -> tuple[V, ...]:
+        vs = self._forward.get(left)
+        return tuple(vs) if vs is not None else ()
+
+    def lefts_of(self, right: V) -> tuple[K, ...]:
+        ks = self._reverse.get(right)
+        return tuple(ks) if ks is not None else ()
+
+    def pairs(self) -> Iterator[tuple[K, V]]:
+        for left, rights in list(self._forward.items()):
+            for right in tuple(rights):
+                yield (left, right)

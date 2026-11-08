@@ -8,70 +8,15 @@ Group PreSets as Classes and Merge them to Modules
 """
 
 __all__: list[str] = [
-    "AnnoPresets",
-    "anno_presets",
-    "PresetMeta",
+    "AnnotationPresets",
+    "LinkPresets",
 ]
 
-from typing import Any, Never
 
-from ._frozen import HashedTuple
-
-# LATER: meta assembly
-# - make the body in __new__ selectable by class.__init__ arg
-# - like index or Literal to select level
-# NEXT: decide if use as Cls or as Unit
+from .structures import PresetMeta
 
 
-class PresetMeta(type):
-    """Combine Utils and SafetyTools for Presets"""
-
-    def __new__(mcls, name, bases, namespace):
-        """Attach all sets as frozensets"""  # LATER: maybe more
-
-        frozen_items: dict[str, Any] = {
-            key: frozenset(value)
-            for key, value in namespace.items()
-            if isinstance(value, set)
-        }
-        namespace.update(frozen_items)
-
-        return super().__new__(mcls, name, bases, namespace)
-
-
-class _PresetMeta(type):  # Max Freeze
-    """
-    Deep-freeze Preset namespaces and lock against runtime mutation
-
-    - Automatically converts:
-      - set  -> frozenset
-      - list -> tuple
-      - dict -> frozendict
-    """
-
-    def __new__(
-        mcls, name: str, bases: tuple[type, ...], namespace: dict[str, Any]
-    ):
-        frozen_items: dict[str, Any] = {
-            key: HashedTuple.hash(value)
-            for key, value in namespace.items()
-            if not key.startswith("_")
-        }
-        namespace.update(frozen_items)
-        namespace.setdefault("__slots__", ())
-        return super().__new__(mcls, name, bases, namespace)
-
-    def __setattr__(cls, name: str, _value: Any) -> Never:
-        raise AttributeError(f"Preset '{cls.__name__}.{name}' is read-only")
-
-    def __delattr__(cls, name: str) -> Never:
-        raise AttributeError(f"Preset '{cls.__name__}.{name}' is read-only")
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class AnnoPresets(metaclass=PresetMeta):
+class AnnotationPresets(metaclass=PresetMeta):
     """
     Collect all Presets for the Typed Annotations:
 
@@ -114,4 +59,11 @@ class AnnoPresets(metaclass=PresetMeta):
     }
 
 
-anno_presets = AnnoPresets()
+class LinkPresets(metaclass=PresetMeta):
+    DUNDERS: set[str] = {
+        "__doc__",
+        "__func__",
+        "__portlinks__",
+    }
+    REFLECT: set[str] = {"detect", "collect", "project", "redact"}
+    INIT: list[str] = ["__post_init__", "__init__"]

@@ -21,7 +21,8 @@ from typing import Any
 from weakref import WeakSet
 
 from .._types import _RichView
-from ._define import Doc, LinkRegistry, Param, PortPrinter, SortedDocs
+from ..structures import ParamSnap
+from ._define import Doc, LinkRegistry, PortPrinter, SortedDocs
 
 
 def _loguru(*args: Any, sender: str = "", **kwargs: Any) -> None:
@@ -81,8 +82,8 @@ def _load_printer() -> PortPrinter:
             try:
                 self.console.print(*args, **kwargs)
             except NotRenderableError as error:
-                param = Param(args, kwargs)
-                self.panel(str(param), title=str(error), color="red")
+                param = ParamSnap(args, kwargs)
+                self.panel(f"{param}", title=f"{error}", color="red")
 
         def line(self, *target, color: str = "yellow"):
             self("\n".join(str(i) for i in target), style=color)
