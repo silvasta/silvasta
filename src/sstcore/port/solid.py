@@ -3,7 +3,7 @@ Define the Shape and Behaviour of the Solid Objects
 
 - Collect ideas for Concepts and possible Bases
 
-                                    DependencyLevel.sstcore.port[1]
+                                  DependencyLevel.sstcore.port[0.2]
 """
 
 __all__: list[str] = [
@@ -26,9 +26,15 @@ from typing import Any as _Any
 from typing import Protocol as _Protocol
 from typing import Self as _Self
 
-from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
 from .empty import VOID as _VOID
 from .empty import MayBe as _MayBe
+from .structures._enum import (
+    EnumId,
+    EnumRelation,
+    EnumRepr,
+    EnumStr,
+    SstEnumMeta,
+)
 
 
 class EnumMeta(_Protocol):

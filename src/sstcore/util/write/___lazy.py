@@ -6,8 +6,8 @@ Generate stub files automatically
 """
 
 __all__ = [
-    "TypeForm",
-    "TypedDict",
+    # "TypeForm",
+    # "TypedDict",
 ]
 
 import importlib

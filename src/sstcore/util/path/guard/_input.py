@@ -6,15 +6,13 @@ util.path.guard._input
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Self, TypedDict, Unpack
+from typing import Annotated, Self, TypedDict, Unpack
 
-from sstcore.brick.call import ArgCast
-from sstcore.error import PathGuardError, PathGuardReason
-from sstcore.port.empty import VOID
-from sstcore.port.files import SyncMode
-from sstcore.port.link import portlink
-from sstcore.port.param.caster import ArgSpec, BaseCaster
-from sstcore.port.param.casting import ArgCasting, CastInput, MayBe
+from ....brick.call import ArgCast, ArgCaster
+from ....error import PathGuardError, PathGuardReason
+from ....port.casting import ArgCasting, ArgSpec, CastInput, MayBe
+from ....port.empty import VOID
+from ....port.link import portlink
 
 
 class PathInput(TypedDict, total=False):
@@ -24,7 +22,7 @@ class PathInput(TypedDict, total=False):
 
 
 class PathCastInput(PathInput, CastInput[Path], total=False):
-    """Configuration flags for PathCaster."""
+    """Extend Path with Default Casting Input"""
 
 
 class PathSpec(ArgSpec[Path], frozen=True, slots=True):
@@ -35,15 +33,6 @@ class PathSpec(ArgSpec[Path], frozen=True, slots=True):
     ensure_parent: bool = False
 
     @classmethod
-    def ok(
-        cls,
-        target: MayBe[PathArg] = VOID,
-        /,
-        **kwargs: Unpack[PathInput],
-    ) -> Path:
-        return cls.normalize(target, **kwargs).validate()
-
-    @classmethod
     def normalize(
         cls,
         target: MayBe[PathArg] = VOID,
@@ -52,10 +41,8 @@ class PathSpec(ArgSpec[Path], frozen=True, slots=True):
     ) -> Self:
         if target is VOID:
             return cls(target=Path.cwd(), **kwargs)
-
-        if TYPE_CHECKING:
-            target: Any = target
-
+        # if TYPE_CHECKING:
+        #     target: Any = target
         match target:
             case PathSpec():
                 return cls(**{**asdict(target), **kwargs})
@@ -63,7 +50,6 @@ class PathSpec(ArgSpec[Path], frozen=True, slots=True):
                 return cls(target=target, **kwargs)
             case str():
                 return cls(target=Path(target), **kwargs)
-
         raise PathGuardError(PathGuardReason.INPUT, target, **kwargs)
 
     def validate(self) -> Path:
@@ -77,11 +63,20 @@ class PathSpec(ArgSpec[Path], frozen=True, slots=True):
         return path
 
 
+type TargetPath = Annotated[Path, PathCaster()]
+type SourcePath = Annotated[Path, PathCaster(must_exists=True)]
+type ResolvedPath = Annotated[Path, PathCaster(resolve=True)]
+type ResolvedSource = Annotated[
+    Path, PathCaster(must_exists=True, resolve=True)
+]
+type ParentEnsuredPath = Annotated[Path, PathCaster(ensure_parent=True)]
+
+
 PathArg = str | Path | PathSpec
 
 
 @portlink(ArgCasting)
-class PathCaster(BaseCaster[PathArg, Path]):
+class PathCaster(ArgCaster[PathArg, Path]):
     input_types = (str, Path, PathSpec)
 
     def __init__(self, **kwargs: Unpack[PathCastInput]) -> None:
@@ -91,21 +86,5 @@ class PathCaster(BaseCaster[PathArg, Path]):
         return PathSpec.ok(target, **self.kwargs)
 
 
-class _PathCastPlugin(
-    ArgCast,
-    register={
-        Path: PathCaster(),
-        PathArg: PathCaster(),
-        SyncMode: SyncMode.resolve,
-    },
-):
-    """Auto-registers Path, PathArg, and SyncMode in ArgCast._registry on import."""
-
-
-type TargetPath = Annotated[Path, PathCaster()]
-type SourcePath = Annotated[Path, PathCaster(must_exists=True)]
-type ResolvedPath = Annotated[Path, PathCaster(resolve=True)]
-type ResolvedSource = Annotated[
-    Path, PathCaster(must_exists=True, resolve=True)
-]
-type ParentEnsuredPath = Annotated[Path, PathCaster(ensure_parent=True)]
+ArgCast.register(Path, PathCaster())
+ArgCast.register(PathArg, PathCaster())

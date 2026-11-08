@@ -4,11 +4,8 @@ Adapt the SstCoreError to PortLink
 - This is intends as the one and only Raiser Implementation in the port
 - Still experimental, like the setups outside the port
 
-                                                 DependencyLevel[3]
+                                  DependencyLevel.sstcore.port[0.4]
 """
-
-
-# IDEA: move to port.structures, merge _raise/_error
 
 
 # TASK: 1 single port implementation of Raiser
@@ -17,20 +14,75 @@ Adapt the SstCoreError to PortLink
 # - maybe keep name: LinkRaiser
 
 __all__: list[str] = [
+    "LinkRaiser",
     "LinkRaiserCall",
+    #
+    "EnumError",
+    "FailedDispatchError",
+    "FailedHackError",
+    #
+    "PortLinkError",
     "PortErrorInput",
     "PortErrorSpec",
-    "LinkRaiser",
-    "PortLinkError",
 ]
 
 
 from dataclasses import dataclass
-from enum import auto
+from enum import Enum, auto
 from typing import Any, Protocol, Unpack
 
 from . import raising
-from .raising import Raiser
+from .raising import Raiser, SstCoreError
+from .solid import BaseEnum
+
+#  LINE: -- Error Collection -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  TODO: integrate into LinkRaiser / PortRaiser
+
+
+class EnumError(SstCoreError, TypeError):
+    """Temporary Resolve the SstEnumMeta blinding"""
+
+    def __init__(
+        self, member_or_cls: Enum | type[Enum], /, reason="", *args
+    ) -> None:
+        """Forward Args to Exception"""
+        reason: str = reason or "Failed"
+        match BaseEnum.membership(member_or_cls):
+            case ():
+                who = f"Unknown: {member_or_cls=}"
+            case (enum_cls,):
+                self.enum: type[BaseEnum] = enum_cls
+                who = f"BaseEnum: {enum_cls}"
+            case (enum_cls, member):
+                self.enum: type[BaseEnum] = enum_cls
+                self.member: BaseEnum = member
+                who = f"BaseEnum: {enum_cls=}, {member=}"
+        super().__init__(f"{who} | {reason=}", *args)
+
+
+class FailedDispatchError(SstCoreError, NotImplementedError):  # MOVE: ._error?
+    # TASK: sync with NotImplementedDispatchError
+    """Raise on missing TargetType for singledispatch(method)"""
+
+    def __init__(self, first: Any, *args: Any, **kwargs):
+        self.first = first
+        msg = f"Missing dispatch target for {type(first).__name__}"
+        super().__init__(msg, *(first, *args), **kwargs)
+
+
+class FailedHackError(SstCoreError):
+    """
+    It was a nice try, but...
+
+    (I hope I don't have to  explain that this is mostly for internal tests...)
+    """
+
+    def __init__(self, *args) -> None:
+        """Forward Args to Exception"""
+        super().__init__("...I told you it will fail!", *args)
+
+
+#  LINE: -- Link -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class PortLinkError(raising.SstCoreError):

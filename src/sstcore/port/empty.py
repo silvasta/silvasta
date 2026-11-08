@@ -17,7 +17,7 @@ Use the VOID Sentinel as Value and as Type!
   like after isinstance(number,int) == False
   -> number clearly identified as VOID
 
-                              DependencyLevel.sstcore.port.empty[0]
+                                  DependencyLevel.sstcore.port[0.0]
 """
 
 __all__: list[str] = [

@@ -25,8 +25,8 @@ import enum as _enum
 
 from ...port import represent as _represent
 from ...port import solid as _solid
-from ...port._error import EnumError as _EnumError
 from ...port.empty import ViewSentinel
+from ...port.raising import EnumError as _EnumError
 from . import _views
 
 

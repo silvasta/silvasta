@@ -5,7 +5,7 @@ Group TypeDefs as Classes and Merge them to Modules
 - belongs to their corresponding port module, import from there, not from here!
 
                                                  DependencyLevel[-]
-"""
+"""  # TODO:
 
 __all__: list[str] = [
     "RegistryTypes",
@@ -57,17 +57,17 @@ class _LockedClsMeta(type):
 
     _name: str = "Locked"
 
-    def _desc(cls, name: str = "") -> str:
+    def _show(cls, name: str = "") -> str:
         return f"{cls._name}[{cls.__name__}{f'.{name}' if name else ''}]"
 
     def __call__(cls, *_, **__) -> Never:
-        raise TypeError(f"{cls._desc()} is Not available as Instance!")
+        raise TypeError(f"{cls._show()} is Not available as Instance!")
 
     def __setattr__(cls, name: str, _value: Any) -> Never:
-        raise AttributeError(f"{cls._desc(name)} is read-only")
+        raise AttributeError(f"{cls._show(name)} is read-only")
 
     def __delattr__(cls, name: str) -> Never:
-        raise AttributeError(f"{cls._desc(name)} cannot be deleted")
+        raise AttributeError(f"{cls._show(name)} cannot be deleted")
 
 
 #  LINE: -- Collected Definitions of: type ... = ... -- -- - -- -- - -- -- - --

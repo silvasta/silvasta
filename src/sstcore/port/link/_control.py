@@ -12,7 +12,7 @@ __all__: list[str] = [
 
 import os
 import typing as _t
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from functools import wraps
 from typing import Any, Generic, Protocol, Self, Unpack
@@ -116,9 +116,9 @@ class LinkSpec:  # RENAME: spec is now something different
             kwargs["toggle"] = tuple(kwargs["toggle"])
         return replace(self, **kwargs)
 
-    def surface(self, protocol: type) -> list[str]:
+    def surface(self, protocol: type) -> Iterator[str]:
         """Generate target Protocol Attrs using '' for the Cls itself"""
-        return ["", *_t.get_protocol_members(protocol)]
+        yield from ("", *_t.get_protocol_members(protocol))
 
 
 class Tap:

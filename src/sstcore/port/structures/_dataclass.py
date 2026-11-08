@@ -4,7 +4,7 @@ Define the Behaviour of DataClasses
 - CachedDataclassMeta: Flyweight Cache
 - ParamSpec: Root for Input Parsing
 
-                                  DependencyLevel.sstcore.port[0.1]
+                     DependencyLevel.sstcore.port.structures[0.1.1]
 """
 
 # LATER: "ParamSpec",

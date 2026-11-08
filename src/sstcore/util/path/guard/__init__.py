@@ -13,6 +13,6 @@ __all__: list[str] = [
     "StubFileGuard",
 ]
 
-from ._arg import PathArg, PathSpec
 from ._assemble import PathGuard
+from ._input import PathArg, PathSpec
 from ._stub_guard import StubFileGuard

@@ -33,7 +33,7 @@ from .._presets import LinkPresets as _LPs
 from .._raise import LinkRaiser
 from ..empty import VOID, MayBe
 from ..raising import SstCoreError
-from ..structures import ParamSnap
+from ..structures import DunderSet, ParamSnap
 from . import _define as _def
 from ._define import Doc, Docs, PlugDocs, PortDoc, PortDocs
 
@@ -146,7 +146,7 @@ if TYPE_CHECKING:
 class EasyAccess(Reflector, id="get"):
     """Dot Access on all Dunders"""
 
-    Dunders: type[_def.DunderStore] = _def.DunderSet
+    Dunders: type[_def.DunderStore] = DunderSet
     _methods: _def.DunderStore
 
     def __init__(self, config: _def.LinkConfig, **kwargs: Any):
@@ -161,7 +161,7 @@ class EasyAccess(Reflector, id="get"):
         if name.startswith("_"):
             raise AttributeError(name)
         self.emit(f"[{self}].__getattr__: {name}")
-        if method := self._methods.get(name):
+        if method := self._methods(name):
             return partial(self.invoke, method=method)
         raise AttributeError(f"'{self}' object has no attribute '{name}'")
 

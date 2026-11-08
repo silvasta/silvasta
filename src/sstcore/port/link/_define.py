@@ -23,7 +23,6 @@ __all__: list[str] = [
     "Redacting",
     "DocMerging",
     "DunderStore",
-    "DunderSet",
     # config
     "LinkConfig",
     "RenderTheme",
@@ -57,8 +56,6 @@ from typing import Any, NamedTuple, Protocol, TypedDict
 from weakref import WeakKeyDictionary, WeakSet
 
 from .._raise import PortLinkError  # TODO: use Raiser?
-from .._types import _Stringable
-from ..structures import NormSet
 
 
 class PortLinker[C, P](Protocol):
@@ -111,16 +108,10 @@ class DocMerging(Protocol):
         """Format and Render Protocol and Implementation Docs"""
 
 
-class DunderStore(Protocol):  # MOVE: _define
+class DunderStore(Protocol):
     def __init__(self, dunders: Iterable[str] = ()): ...
-    def get(self, name: str, *args, **kwargs) -> str | None: ...
-
-
-class DunderSet(NormSet):
-    @classmethod
-    def normalize(cls, item: _Stringable, /) -> str:
-        """Ensure storage in FrozenSet with '__dunder__' formatting"""
-        return f"__{f'{item}'.strip('_')}__"
+    def __call__(self, name: str, *args, **kwargs) -> str | None:
+        """Provide the Dunder if Name matches the Condition"""
 
 
 #  LINE: -- Config -- -- - -- -- - -- -- - -- -- - -- -- - -- --

@@ -19,6 +19,7 @@ from ...port.empty import VOID
 from ...port.functorial import Catch, ErrorPolicy, SafeFunctorial
 from ...port.link import portlink
 from ._tor import BaseFunctor
+from ._zero import SafeFunctorInput, SafeFunctorSpec
 
 
 @portlink(SafeFunctorial)

@@ -10,8 +10,8 @@ __all__: list[str] = [
 from typing import Any, NamedTuple
 
 
-class ParamSnap(NamedTuple):
-    """Track the ongoing Actions"""
+class ParamSnap(NamedTuple):  # LATER:  HashedTuple / deeply frozen? as option?
+    """Track the ongoing Action"""  # TODO:
 
     args: tuple[Any, ...]
     kwargs: dict[str, Any]

@@ -1,17 +1,20 @@
 """
 Govern the Shape and Structure of the Strict and Reliable Container
 
-                                                 DependencyLevel[0]
+                     DependencyLevel.sstcore.port.structures[0.1.0]
 """
 
 __all__: list[str] = [
     "SstEnumMeta",
-    "EnumRelation",
+    # types and helper
     "EnumId",
+    "EnumRelation",
+    "WalkZero",
+    "from_zero",
     # view
     "EnumStr",
     "EnumRepr",
-    #
+    # more views
     "EnumStr1",
     "EnumStr2",
     "EnumRepr1",
@@ -23,7 +26,6 @@ from enum import Enum, EnumDict, EnumMeta
 from typing import Any, NamedTuple, Self
 
 type EnumId[EnumT: Enum] = EnumT | str | int
-
 
 type EnumRelation[T: Enum] = tuple[type[T], T] | tuple[type[T]] | tuple[()]
 
