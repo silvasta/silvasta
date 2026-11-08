@@ -60,9 +60,7 @@ def _sig_check_1(new_sig: Signature, base_sig: Signature) -> bool:
 
 def _sig_check_2(new_sig: Signature, base_sig: Signature) -> bool:
     """L2: Structural Check. Do the parameter names match in exact order?"""
-    return tuple(new_sig.parameters.keys()) == tuple(
-        base_sig.parameters.keys()
-    )
+    return tuple(new_sig.parameters.keys()) == tuple(base_sig.parameters.keys())
 
 
 def _sig_check_3(new_sig: Signature, base_sig: Signature) -> bool:

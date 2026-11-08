@@ -60,10 +60,10 @@ class SstRaiserCall(Protocol):
         """Annotate the Raiser Input and Output"""
 
 
-class SstErrorInput(ErrorInput, total=False): ...
+class SstErrorInput(ErrorInput, total=False): ...  # NEXT:
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True)  # NEXT:
 class SstErrorSpec(ErrorSpec): ...
 
 

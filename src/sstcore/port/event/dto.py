@@ -38,6 +38,7 @@ import dataclasses as _dc
 import typing as _typing
 from collections.abc import Callable as _Callable
 from collections.abc import Mapping as _Mapping
+from enum import auto
 from typing import Any as _Any
 from typing import Unpack as _Unpack
 
@@ -47,6 +48,7 @@ from .._types import _RichView
 from .._types import event_types as _et
 from ..color import Color as _Color
 from ..color import ColorArg as _ColorArg
+from ..solid import OptionRegister
 from . import _param as _p
 
 type DtoTable[T: BaseEventDTO] = _Mapping[str, type[T]]
@@ -54,6 +56,25 @@ type DtoRegistry[T: BaseEventDTO] = dict[str, type[T]]
 type DtoNames = _typing.Literal[
     "log", "cli", "panel", "markdown", "line", "table", "ctor"
 ]
+
+
+class _Boxes(OptionRegister):
+    # MOVE: temporary location here, maybe back to event.dto spec definitions
+    """
+    Select the Box around the Visualization
+
+    - configured in util.print._boxes
+    - exposed in util.print
+    """
+
+    CORNER = auto()
+    ROUND = auto()
+    UP = auto()
+    DOWN = auto()
+    MINI = auto()
+    MINI_UP = auto()
+    MINI_DOWN = auto()
+    OPEN = auto()
 
 
 @_typing.dataclass_transform(kw_only_default=True)
@@ -99,6 +120,21 @@ class EventDTO(BaseEventDTO, name="ctor"):
             fields={field.name for field in _dc.fields(class_or_instance=cls)},
             **kwargs,
         )
+
+
+class _HeaderSpec:
+    """
+    Explain:
+
+    X --- --- --- --- --- --- --- --- --- --- [ topic: FileScan ] --- X
+    | title: Frame with Title on top of the Content                   |
+    X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
+    | content: ...                 (maybe double line for transition) |
+    |          ...                                                    |
+
+    - No Header for title = None
+    - Mirror main frame topic for frame.topic = "", empty for None
+    """
 
 
 #  LINE: -- Log -- -- - -- -- - -- -- - -- -- - --

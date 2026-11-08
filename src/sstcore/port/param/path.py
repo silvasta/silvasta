@@ -1,14 +1,20 @@
+"""
+util.path.guard._input
+
+-
+"""
+
 from dataclasses import asdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Self, TypedDict, Unpack
 
-from ....brick.call import ArgCast
-from ....error import PathGuardError, PathGuardReason
-from ....port.casting import ArgCasting, ArgSpec, CastInput, MayBe
-from ....port.empty import VOID
-from ....port.files import SyncMode
-from ....port.iinput import BaseCaster
-from ....port.link import portlink
+from sstcore.brick.call import ArgCast
+from sstcore.error import PathGuardError, PathGuardReason
+from sstcore.port.empty import VOID
+from sstcore.port.files import SyncMode
+from sstcore.port.link import portlink
+from sstcore.port.param.caster import ArgSpec, BaseCaster
+from sstcore.port.param.casting import ArgCasting, CastInput, MayBe
 
 
 class PathInput(TypedDict, total=False):

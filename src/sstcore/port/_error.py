@@ -8,6 +8,9 @@ Specify SstCoreError before SstError is ready
 """
 
 
+# IDEA: move to port.structures, merge _raise/_error
+
+
 # IMPORTANT: Global strategy, sync with sstcore.error
 
 __all__: list[str] = [

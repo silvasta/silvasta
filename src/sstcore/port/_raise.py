@@ -7,6 +7,10 @@ Adapt the SstCoreError to PortLink
                                                  DependencyLevel[3]
 """
 
+
+# IDEA: move to port.structures, merge _raise/_error
+
+
 # TASK: 1 single port implementation of Raiser
 # - create more universal version
 # - improve internal data pipeline
