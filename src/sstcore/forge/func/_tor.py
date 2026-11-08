@@ -10,24 +10,14 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any, Self, TypedDict, Unpack
+from typing import Any, Self, Unpack
 
 from ...brick.field import MorphingField, StrategyField
 from ...brick.reflect import clsname, funcname
 from ...port import functorial
 from ...port.link import portlink
 from ..engine import FunctorMeta
-from ._zero import DataClassSpec, FunctorMetaInput, FunctorView
-
-
-class FunctorInput[**A, R](TypedDict, total=False):
-    call: Callable[A, R]
-    name: str
-
-
-class FunctorSpec[**A, R](DataClassSpec):
-    call: Callable[A, R] | None = None
-    name: str = ""
+from ._zero import FunctorMetaInput, FunctorView
 
 
 @portlink(functorial.Functorial)  # LATER: who is Functor?
@@ -85,3 +75,27 @@ class BaseFunctor[**Args, Result](
         logger.opt(exception=exception).log(
             level, *args, sender=str(self), **kwargs
         )
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class FunctorView:
+    # CHECK: _data: FunctorMetaData
+
+    def __str__(self) -> str:
+        return f"[({reflect.clsname(self)})][{reflect.name(self)}]"
+
+    def __repr__(self) -> str:
+        return f"{self}({norm.dict_to_str(vars(self))})"
+
+    #  LINE: -- Select, later on -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+    def __rich__(self) -> str:
+        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
+
+    def __rich1__(self) -> Richable:
+        return colors(reflect.clsname(self), self._data.color)
+
+    def __rich2__(self) -> Richable:
+        return colorize.modules(self)

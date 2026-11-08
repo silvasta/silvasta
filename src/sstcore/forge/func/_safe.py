@@ -18,20 +18,7 @@ from ...brick.field._strategy import StrategyField
 from ...port.empty import VOID
 from ...port.functorial import Catch, ErrorPolicy, SafeFunctorial
 from ...port.link import portlink
-from ._tor import BaseFunctor, FunctorInput
-from ._zero import DataClassSpec
-
-
-class SafeFunctorInput[**A, R](FunctorInput, total=False):
-    catch: Catch[A, R]
-    policy: ErrorPolicy
-    exit_code: int
-
-
-class SafeFunctorSpec[**A, R](DataClassSpec):
-    catch: Catch[A, R] | None = None
-    policy: ErrorPolicy | None = None
-    exit_code: int | None = None
+from ._tor import BaseFunctor
 
 
 @portlink(SafeFunctorial)
