@@ -6,7 +6,7 @@ util.path.guard._input
 
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Annotated, Self, TypedDict, Unpack
+from typing import Annotated, Self, TypedDict, TypeGuard, Unpack
 
 from ....brick.call import ArgCast, ArgCaster, ArgCasting, CastInput
 from ....error import PathGuardError, PathGuardReason
@@ -42,7 +42,7 @@ class PathSpec(ArgSpec[Path], frozen=True):
         if target is VOID:
             return cls(target=Path.cwd(), **kwargs)
         match target:
-            case cls():  # CHECK: proper?
+            case cls():
                 return target.evolve(**kwargs)
             case Path():
                 return cls(target=target, **kwargs)
@@ -53,7 +53,7 @@ class PathSpec(ArgSpec[Path], frozen=True):
     def validate(self) -> Path:
         path: Path = self.target
         if self.resolve:
-            path = path.resolve()
+            path: Path = path.resolve()
         if self.must_exists and not path.exists():
             raise PathGuardError(reason=PathGuardReason.MISSING, target=path)
         if self.ensure_parent:
@@ -72,15 +72,19 @@ type ParentEnsuredPath = Annotated[Path, PathCaster(ensure_parent=True)]
 
 PathArg = str | Path | PathSpec
 
-type SinglePath = Path
-# NEXT: improve and specify
-type MultiPath = Iterable[Path]
+type SinglePath = PathArg
+type MultiPath = Iterable[PathArg]
 type PathStrategy = Callable[..., Path]
+
+
+def is_single_path(target) -> TypeGuard[Path]:
+    """Runtime Check for PathArg and narrow static type to Path for @castarg"""
+    return isinstance(target, (str, Path, PathSpec))
 
 
 @portlink(ArgCasting)
 class PathCaster(ArgCaster[PathArg, Path]):
-    input_types = (str, Path, PathSpec)
+    _input_types = (str, Path, PathSpec)
 
     def __init__(self, **kwargs: Unpack[PathCastInput]) -> None:
         super().__init__(**kwargs)

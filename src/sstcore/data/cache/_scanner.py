@@ -158,7 +158,7 @@ class _Record(NamedTuple):
     def valid(self, local_root: Path, /) -> Self:
         """Check FileSystem existance and drop missing paths"""
         return self._replace(
-            paths=PathGuard.relative(  # NEXT: check if works
+            paths=PathGuard.relative(
                 self.paths,
                 root=local_root,
                 existing=True,

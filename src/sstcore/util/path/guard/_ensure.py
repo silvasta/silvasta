@@ -24,7 +24,7 @@ from pathlib import Path
 from ....brick.call import castarg
 from ....error import PathGuardError, PathGuardReason
 from . import _increment
-from ._input import PathArg, PathSpec, TargetPath
+from ._input import PathArg, TargetPath, is_single_path
 
 
 @castarg
@@ -39,11 +39,11 @@ def dir[**P](
 ) -> Callable[P, Path] | Path:
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
-    if isinstance(target, (Path, str, PathSpec)):
-        return _dir_logic(target)  # ty:ignore FIX:
+    if is_single_path(target):
+        return _dir_logic(target)
 
     if callable(target):
-        func: Callable[P, Path] = target
+        func: Callable[P, Path] = target  # ty:ignore
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
@@ -95,11 +95,11 @@ def file[**P](
 ):
     """Ensure path is file or write default content and | or Raise"""
 
-    if isinstance(target, (Path, str, PathSpec)):
-        return _file_logic(target, raise_error, default_content)  # ty:ignore FIX:
+    if is_single_path(target):
+        return _file_logic(target, raise_error, default_content)
 
     if callable(target):
-        func: Callable[P, Path] = target
+        func: Callable[P, Path] = target  # ty:ignore FIX:
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:
@@ -142,11 +142,11 @@ def unique[**P](
     - ensure_parent: create folder to ensure Path is writable
     """
 
-    if isinstance(target, (Path, str, PathSpec)):
-        return _increment.unique_candidate(target, ensure_parent)  # ty:ignore FIX:
+    if is_single_path(target):
+        return _increment.unique_candidate(target, ensure_parent)
 
     if callable(target):
-        func: Callable[P, Path] = target
+        func: Callable[P, Path] = target  # ty:ignore FIX:
 
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Path:

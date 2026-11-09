@@ -58,7 +58,7 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     Lock = _lock.Lock
 
     Dir = _field.DirField
-    Fil = _field.FileField
+    File = _field.FileField
     Unique = _field.UniqueField
     SpecField = _field.PathSpecField
 

@@ -179,26 +179,26 @@ class PathGuard:
     def rotate(
         source: PathArg,
         target: PathArg,
-        sync_mode: str | SyncMode = SyncMode.INCREMENT,
+        mode: str | SyncMode = SyncMode.INCREMENT,
         reset: bool = False,
     ) -> Path: ...
     @staticmethod
     def copy(
         source: PathArg,
         target: PathArg,
-        sync_mode: str | SyncMode = SyncMode.INCREMENT,
+        mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
     @staticmethod
     def hardlink(
         source: PathArg,
         target: PathArg,
-        sync_mode: str | SyncMode = SyncMode.OVERRIDE,
+        mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
     @staticmethod
     def symlink(
         source: PathArg,
         target: PathArg,
-        sync_mode: str | SyncMode = SyncMode.INCREMENT,
+        mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
 
     # -----------------------------------------------------------------------
@@ -212,6 +212,8 @@ class PathGuard:
         /,
         root: PathArg | None = None,
         strict: bool = True,
+        *,
+        existing: bool = False,
     ) -> Path: ...
     @overload
     @staticmethod
@@ -220,14 +222,9 @@ class PathGuard:
         /,
         root: PathArg | None = None,
         strict: bool = True,
+        *,
+        existing: bool = False,
     ) -> list[Path]: ...
-    @staticmethod
-    def relative(
-        target: PathArg | Iterable[PathArg],
-        # CHECK: /,
-        root: PathArg | None = None,
-        strict: bool = True,
-    ) -> Path | list[Path]: ...
     @overload
     @staticmethod
     def absolute(
@@ -250,28 +247,20 @@ class PathGuard:
         filter_exists: bool = False,
     ) -> list[Path]: ...
     @staticmethod
-    def absolute(
-        target: PathArg | Iterable[PathArg],
-        root: PathArg | None = None,
-        # CHECK: /,
-        *,
-        resolve: bool = True,
-        must_exists: bool = False,
-        filter_exists: bool = False,
-    ) -> Path | list[Path]: ...
-    @staticmethod
     def relative_duo(path1: PathArg, path2: PathArg) -> Path | None: ...
     @staticmethod
-    def relative_string(source: Path, target: Path) -> str: ...
+    def relative_string(source: PathArg, target: PathArg) -> str: ...
     @overload
     @staticmethod
     def split(
-        target: Path,
-        local_root: Path | None = None,
+        target: PathArg,
+        /,
+        local_root: PathArg | None = None,
     ) -> tuple[Path, Path]: ...
     @overload
     @staticmethod
     def split(
-        target: list[Path],
-        local_root: Path | None = None,
+        target: Iterable[PathArg],
+        /,
+        local_root: PathArg | None = None,
     ) -> list[tuple[Path, Path]]: ...

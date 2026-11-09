@@ -70,10 +70,10 @@ def _unique_pattern(stem: str, counter: int, suffixes: str) -> str:
     return f"{stem}_{counter}{suffixes}"
 
 
-def _document_unique_path(path: Path, ensure_parent: bool):
+def _document_unique_path(path: Path, ensure_parent: bool) -> None:
     if not path.parent.exists():
         if ensure_parent:
-            path.mkdir(parents=True, exist_ok=True)  # REMOVE:
+            path.parent.mkdir(parents=True, exist_ok=True)
             logger.debug("path already unique, parent ensured!")
         else:
             logger.info(f"Path unique but without directory! {path=}")

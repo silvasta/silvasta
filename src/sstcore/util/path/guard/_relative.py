@@ -23,6 +23,8 @@ from ._input import (
     PathSpec,
     ResolvedPath,
     SinglePath,
+    TargetPath,
+    is_single_path,
 )
 
 
@@ -40,20 +42,45 @@ def _relative_one(
 
     - If not strict: walking as well upwards
     """
-    root: Path = root or Path.cwd()
-
-    if must_exists:
-        _absolute_one(target, root, must_exists=True)
+    # LATER: remove when replaced by castarg handling
+    resolved_root: Path = root or Path.cwd().resolve()
+    resolved_target: Path = _absolute_one(
+        target, resolved_root, resolve=True, must_exists=must_exists
+    )
 
     if not strict:
-        return Path(os.path.relpath(target, root))
+        return Path(os.path.relpath(resolved_target, resolved_root))
     try:
-        return target.relative_to(root)
+        return resolved_target.relative_to(resolved_root)
     except ValueError as error:
-        # IDEA: move to relative_main?
         raise PathGuardError(
-            PathGuardReason.RELATIVE, target=target, root=root, caught=error
+            PathGuardReason.RELATIVE,
+            target=resolved_target,
+            root=resolved_root,
+            caught=error,
         ) from error
+
+
+@overload
+def relative_main(
+    target: SinglePath,
+    /,
+    root: PathArg | None = None,
+    strict: bool = True,
+    *,
+    existing: bool = False,
+) -> Path: ...
+
+
+@overload
+def relative_main(
+    target: MultiPath,
+    /,
+    root: PathArg | None = None,
+    strict: bool = True,
+    *,
+    existing: bool = False,
+) -> list[Path]: ...
 
 
 def relative_main(  # AI: this is mounted to PathGuard.relative
@@ -71,28 +98,34 @@ def relative_main(  # AI: this is mounted to PathGuard.relative
     - Iterable[PathArg] -> list[Path]
     - If not strict: walking upwards via '..' is permitted
     """
-    if isinstance(target, (Path, str, PathSpec)):
+    resolved_root: Path = (
+        PathSpec.ok(root, resolve=True)
+        if root is not None
+        else Path.cwd().resolve()
+    )
+
+    if is_single_path(target):
         return _relative_one(
-            target,  # ty:ignore FIX: castpath / Annotated
-            root,  # ty:ignore FIX: castpath / Annotated
+            target,
+            resolved_root,
             strict=strict,
             must_exists=existing,
         )
 
     if isinstance(target, Iterable):
-        resolved_root: Path = (  # REMOVE: resolve somehow better
-            PathSpec.ok(root, resolve=True) if root is not None else Path.cwd()
-        )
-        return [
-            _relative_one(item, resolved_root, strict=strict)
-            # AI: here the existing should somwhow avoid the error, and just add nothing
-            # - 2 potentially contradicting flags in relative_main(...) don't work well
-            # - using existing:
-            #   - for 1 input: -> result or error
-            #   - for muliple: -> pruned to [0,len(input)] paths
-            # - but how to handle this most elegant here?
-            for item in target
-        ]
+        results: list[Path] = []
+        for item in target:
+            path: Path = _absolute_one(
+                item,
+                resolved_root,
+                resolve=True,
+                must_exists=False,
+            )
+            if not existing or path.exists():
+                results.append(
+                    _relative_one(path, resolved_root, strict=strict)
+                )
+        return results
 
     raise NotImplementedDispatchError(target, root)
 
@@ -100,7 +133,6 @@ def relative_main(  # AI: this is mounted to PathGuard.relative
 #  LINE: -- Absolut -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# TODO: @castpath: PathArg -> Path, None? maybe just forward in castarg
 def _absolute_one(
     target: PathArg,
     root: Path | None = None,
@@ -123,8 +155,6 @@ def _absolute_one(
     return PathSpec.ok(raw_path, resolve=resolve, must_exists=must_exists)
 
 
-# REMOVE: when ensured in .pyi
-# CHECK: how it behaves in function below: split
 @overload
 def absolute_main(
     target: SinglePath,
@@ -134,8 +164,8 @@ def absolute_main(
     resolve: bool = True,
     must_exists: bool = False,
 ) -> Path: ...
-# REMOVE: when ensured in .pyi
-# CHECK: how it behaves in function below: split
+
+
 @overload
 def absolute_main(
     target: MultiPath,
@@ -150,6 +180,7 @@ def absolute_main(
 
 def absolute_main(  # AI: this is mounted to PathGuard.absolute
     target: SinglePath | MultiPath,
+    /,
     root: PathArg | None = None,
     *,
     resolve: bool = True,
@@ -168,7 +199,7 @@ def absolute_main(  # AI: this is mounted to PathGuard.absolute
         PathSpec.ok(root, resolve=True) if root is not None else None
     )
 
-    if isinstance(target, (Path, str, PathSpec)):
+    if is_single_path(target):
         return _absolute_one(
             target, resolved_root, resolve=resolve, must_exists=must_exists
         )
@@ -189,7 +220,8 @@ def absolute_main(  # AI: this is mounted to PathGuard.absolute
     raise NotImplementedDispatchError(target, root)
 
 
-def relative_string(source: Path, target: Path):
+@castarg
+def relative_string(source: TargetPath, target: TargetPath) -> str:
     """Search relative Path in both direction and provide any rendering"""
     relative: Path = relative_duo(source, target) or _relative_one(
         target, root=source, strict=False
@@ -197,45 +229,65 @@ def relative_string(source: Path, target: Path):
     return f"{source.name} -> {relative}"
 
 
-def relative_duo(path1: Path, path2: Path) -> Path | None:
+@castarg
+def relative_duo(path1: TargetPath, path2: TargetPath) -> Path | None:
     """Search relative paths in both directions and provide Result or None"""
 
     try:
         rel21: Path | None = _relative_one(path1, path2, strict=True)
     except PathGuardError:
-        rel21: Path | None = None
+        rel21 = None
 
     try:
         rel12: Path | None = _relative_one(path2, path1, strict=True)
     except PathGuardError:
-        rel12: Path | None = None
+        rel12 = None
 
     match (rel21, rel12):
         case (None, None):
             return None
         case (Path() as _p, None) | (None, Path() as _p):
             return _p
+        case (Path() as _p1, Path() as _p2) if _p1 == _p2:
+            return _p1
 
     logger.error(f"It happened! How is that possible??\n{rel21=}\n{rel12=}?")
     return None
 
 
+def _split_one(
+    target: PathArg, local_root: Path | None = None
+) -> tuple[Path, Path]:
+    root: Path = local_root or Path.cwd().resolve()
+    read_path: Path = _absolute_one(target, root, resolve=False)
+    print_path: Path = (
+        read_path
+        if local_root is None and read_path.is_absolute()
+        else _relative_one(read_path, root, strict=False)
+    )
+    return read_path, print_path
+
+
 @overload
-# REMOVE: when ensured in .pyi
 def split(
-    target: SinglePath, local_root: Path | None = None
+    target: SinglePath,
+    /,
+    local_root: PathArg | None = None,
 ) -> tuple[Path, Path]: ...
 
 
 @overload
-# REMOVE: when ensured in .pyi
 def split(
-    target: MultiPath, local_root: Path | None = None
+    target: MultiPath,
+    /,
+    local_root: PathArg | None = None,
 ) -> list[tuple[Path, Path]]: ...
 
 
 def split(
-    target: SinglePath | MultiPath, local_root: Path | None = None
+    target: SinglePath | MultiPath,
+    /,
+    local_root: PathArg | None = None,
 ) -> tuple[Path, Path] | list[tuple[Path, Path]]:
     """
     Apply local_root or CWD at Target and create Path Pairs:
@@ -243,16 +295,16 @@ def split(
     - 1 Absolute Path: computer readable safe for Operations
     - 1 Relative Path: human readable nice for Display
     """
-    if not isinstance(target, Path):
-        return [split(t, local_root) for t in target]
+    resolved_root: Path | None = (
+        PathSpec.ok(local_root, resolve=True)
+        if local_root is not None
+        else None
+    )
 
-    if isinstance(target, (Path, str, PathSpec)):
-        read_path = absolute_main(target, local_root, resolve=False)
-        print_path = (
-            read_path
-            if local_root is None and read_path.is_absolute()
-            else _relative_one(read_path, local_root)
-        )
-        return read_path, print_path
+    if is_single_path(target):
+        return _split_one(target, resolved_root)
+
+    if isinstance(target, Iterable):
+        return [_split_one(t, resolved_root) for t in target]
 
     raise NotImplementedDispatchError(target, local_root)

@@ -110,7 +110,7 @@ class CastInput[T](_t.TypedDict, total=False):
 class ArgCaster[ArgSpace, Target]:
     """Orchestrate ArgCasting implementations"""
 
-    input_types: _t.ClassVar[type | tuple[type, ...]] = object
+    _input_types: _t.ClassVar[type | tuple[type, ...]] = object
 
     def __init__(self, default: MayBe[Target] = VOID, **kwargs):
         self.default: MayBe[Target] = default
@@ -126,7 +126,7 @@ class ArgCaster[ArgSpace, Target]:
         """Select target from Incoming Value, Signature- or Caster Default"""
         if target is VOID:
             return self.default if default is VOID else default
-        if isinstance(target, self.input_types):
+        if isinstance(target, self._input_types):
             return target
         return VOID
 

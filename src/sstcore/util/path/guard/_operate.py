@@ -7,9 +7,8 @@ File System Operations
                  DependencyLevel.sstcore.util.path.guard[c.4.3.0.3]
 """
 
-# IMPORTANT: Ensure PathArg is annotated for any Path in .__init__.pyi
 
-# NEXT: create tests for this!
+# TODO: create tests for this!
 # - when everything works, run _atomic on them
 
 __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
@@ -46,7 +45,8 @@ def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
     """Provide SyncMode Path that is valid to write or Raise"""
 
     if not target.exists():
-        return _ensure._dir_logic(target.parent)
+        _ensure._dir_logic(target.parent)
+        return target
 
     match mode:
         case SyncMode.OVERRIDE:
