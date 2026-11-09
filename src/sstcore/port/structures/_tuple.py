@@ -17,8 +17,8 @@ from typing import Any, NamedTuple, TypeIs
 from ._map import frozendict
 
 
-class ParamSnap(NamedTuple):  # LATER:  HashedTuple / deeply frozen? as option?
-    """Track the ongoing Action"""  # TODO:
+class ParamSnap(NamedTuple):
+    """Capture and Visualize 1 Signature"""
 
     args: tuple[Any, ...]
     kwargs: dict[str, Any]

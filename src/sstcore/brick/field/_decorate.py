@@ -17,7 +17,7 @@ from typing import Any, Concatenate, Self
 from ...port import attach
 from ...port.link import portlink
 from .. import reflect
-from ._base import ReadField
+from ._base import DeleteField, ReadField
 from ._extend import ValidField
 
 
@@ -107,3 +107,40 @@ class DecoratedField[**In, Out](
         self.write(unit, bound_method)
 
         return bound_method
+
+
+@portlink(attach.DecoDescriptor)
+# IDEA: use this for _emit instead of StrategyField?
+class _CallableField[**In, Out](
+    ReadField[Callable[In, Out]], FieldDecorator[In, Out], DeleteField
+):
+    """
+    Mount default fallback method to overwrite by Callable or Emitter object
+
+    (LogEmitter, DbEmitter, CliEmitter) WITHOUT PROXY WRAPPING.
+    """
+
+    def __init__(
+        self,
+        func: Callable[..., Out] | None = None,
+        *args: Any,
+        bind_to_self: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        self.bind_to_self: bool = bind_to_self
+        super().__init__(func, *args, **kwargs)
+
+    def read(self, unit: object) -> Callable[In, Out]:
+        # 1. If an emitter or custom callable is wired, return it directly
+        if self._has_val(unit):
+            return self._get_val(unit)
+
+        # 2. Otherwise, fall back to the default method defined on the class
+        if self.target_func is None:
+            raise self.raiser.Function(
+                self, unit, "Missing target_func to bind."
+            )
+
+        if self.bind_to_self:
+            return MethodType(self.target_func, unit)
+        return self.target_func

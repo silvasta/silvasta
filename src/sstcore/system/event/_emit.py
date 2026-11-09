@@ -6,6 +6,8 @@ Provide ergonomic facade on top of the EventBus
                                                        DependencyLevel[X]
 """
 
+from copy import replace
+
 __all__: list[str] = [
     "Emitter",
     "LogEmitter",
@@ -45,6 +47,19 @@ class LogEmitter:
     event: EventName | None = None
     sender: str = ""
 
+    def bind(
+        self,
+        *,
+        event: EventName | None = None,
+        sender: str = "",
+    ) -> Self:
+        """Return a lightweight copy pre-bound to a specific functor/sender."""
+        return replace(
+            self,
+            event=event or self.event,
+            sender=sender or self.sender,
+        )
+
     def __call__(
         self,
         message: str,
@@ -56,8 +71,6 @@ class LogEmitter:
         metrics: dict[str, Any] | None = None,
         **extra,
     ) -> None:
-        event: EventName = event or self.event or LogEvent.NONE
-        sender: str = sender or self.sender or repr(self)
         resolved_event: EventName = event or self.event or LogEvent.NONE
         resolved_sender: str = sender or self.sender or repr(self)
         dto: LogDTO = self.producer(

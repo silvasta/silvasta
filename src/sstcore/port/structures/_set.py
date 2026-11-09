@@ -7,7 +7,6 @@ Create immutable, identifiably container
 __all__: list[str] = [
     "NormSet",
     "DunderSet",
-    "KeySet",  # REMOVE:
     "FieldSet",
 ]
 
@@ -74,23 +73,6 @@ class DunderSet(NormSet):
         return f"__{f'{item}'.strip('_')}__"
 
 
-class KeySet(NormSet):  # REMOVE: when FieldSet is fine
-    """Store Normalized Keys and match them against incoming Values"""
-
-    def __new__(cls, items: _Stringables = (), /, prefix: str = "") -> Self:
-        return super().__new__(cls, items, prefix=prefix)
-
-    def __contains__(self, target: Any):
-        if prefix := self._normstate.get("prefix"):
-            if not f"{target}".startswith(prefix):
-                return False
-        return super().__contains__(target)
-
-    @classmethod
-    def normalize(cls, item: _Stringable, *, prefix: str = "") -> str:
-        return f"{item}".removeprefix(prefix)
-
-
 class FieldSet(NormSet):
     """
     Store canonical field names to match and extract inputs.
@@ -105,7 +87,7 @@ class FieldSet(NormSet):
         return super().__new__(cls, items, prefix=prefix)
 
     def __contains__(self, target: Any) -> bool:
-        if (prefix := self.prefix) and not f"{target}".startswith(prefix):
+        if self.prefix and not f"{target}".startswith(self.prefix):
             return False
         return super().__contains__(target)
 

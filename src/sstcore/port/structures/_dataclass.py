@@ -119,7 +119,7 @@ def create_field_resolver(cls: DataClass, provided_args: set[str]):
 
 
 class SpecBase:
-    """Collect shared utils for DataClasses and Specs"""
+    """Collect Utils for DataClasses and Specs"""
 
     if TYPE_CHECKING:
         __dataclass_fields__: ClassVar[dict[str, _dc.Field[Any]]]

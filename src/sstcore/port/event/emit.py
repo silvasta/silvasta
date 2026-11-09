@@ -17,6 +17,7 @@ __all__: list[str] = [
 from typing import Any as _Any
 from typing import Protocol as _Protocol
 from typing import Self as _Self
+from typing import runtime_checkable
 
 from ._core import EventBus as _EventBus
 from .factory import EventDtoFactory as _EventDtoFactory
@@ -95,8 +96,14 @@ class BoundLog(_Protocol):
         """Pre-bound Log call to EventBus"""
 
 
+@runtime_checkable
 class LogEmit[Logging: Log | BoundLog](_Protocol):
     """Call to Bus with predefined log emits"""
+
+    # __dataclass_fields__: ClassVar[dict[str, _Any]]
+
+    @property
+    def sender(self) -> str: ...  # CHECK:
 
     @property
     def __call__(self) -> Logging: ...

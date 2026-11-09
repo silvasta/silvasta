@@ -21,6 +21,7 @@ from inspect import Parameter, Signature, _ParameterKind
 from typing import Any, Concatenate, Literal, Self, overload
 
 from ...port import attach
+from ...port.empty import VOID, MayBe
 from ...port.link import portlink
 from .. import reflect
 from ._base import DeleteField, ReadField
@@ -143,6 +144,11 @@ class BoundStrategy[**In, Out](FieldView):
             return self.func(self.unit, *args, **kwargs)
         return self.func(*args, **kwargs)
 
+    def __getattr__(self, name: str) -> Any:  # NEXT: decide on this
+        # WARN: newly opened __getattr__, check typing!
+        """Keep mounted callable objects (LogEmitter, …) intact."""
+        return getattr(self.func, name)
+
     def switch(self, new_func: Callable[In, Out]) -> Self:
         """Swap function while ensuring LSP-consistency"""
         self.engine.write(self.unit, new_func)
@@ -182,6 +188,16 @@ def _extract_signature(func: Callable, *, bind_to_self: bool) -> Signature:
     return sig
 
 
+def _is_open_signature(sig: Signature) -> bool:
+    """Placeholder (*args, **kwargs) is not a real contract."""
+    kinds: list[_ParameterKind] = [p.kind for p in sig.parameters.values()]
+    return kinds in (
+        [],
+        [Parameter.VAR_POSITIONAL],
+        [Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD],
+    )
+
+
 def _valid_sig(func: Callable, baseline: Signature) -> bool:
     try:
         new_sig: Signature = _inspect.signature(func)
@@ -192,11 +208,170 @@ def _valid_sig(func: Callable, baseline: Signature) -> bool:
     return len(new_sig.parameters) == len(baseline.parameters)
 
 
-def _is_open_signature(sig: Signature) -> bool:
-    """Placeholder (*args, **kwargs) is not a real contract."""
-    kinds: list[_ParameterKind] = [p.kind for p in sig.parameters.values()]
-    return kinds in (
-        [],
-        [Parameter.VAR_POSITIONAL],
-        [Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD],
+#  LINE: -- _valid_sig next -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _n_required(sig: Signature, /):
+    """How many Required Arguments?"""
+    return sum(
+        1
+        for param in sig.parameters.values()
+        if param.default is Parameter.empty and param.kind not in UNBOUND
     )
+
+
+UNBOUND: tuple[_ParameterKind, _ParameterKind] = (
+    Parameter.VAR_POSITIONAL,
+    Parameter.VAR_KEYWORD,
+)
+
+
+def _has_open_kwargs(sig: Signature, /) -> bool:
+    """Detect unbound amount of Kwargs"""
+    return any(
+        param.kind == Parameter.VAR_KEYWORD  #
+        for param in sig.parameters.values()
+    )
+
+
+def _safe_sig(func: Callable, /) -> MayBe[Signature]:
+    try:
+        new_sig: Signature = _inspect.signature(func)
+        return new_sig
+    except ValueError:
+        return VOID
+
+
+def _valid_sig_next(func: Callable, baseline: Signature) -> bool:
+    """
+    Perform staggered signature checks
+
+    - L1: inspect (and get) signature?
+    - L2: arg and kwarg unbound?
+    - L3: agree on same param length
+    LSP-compatible checks:
+    - L4: Can new work with maximum the same amount of required params?
+    - L5: Can new handle unbound kwargs if required by baseline?
+
+    """
+
+    if (new_sig := _safe_sig(func)) is VOID:  # 1
+        return False
+
+    if _is_open_signature(baseline) or _is_open_signature(new_sig):  # 2
+        return True
+
+    if len(new_sig.parameters) == len(baseline.parameters):  # 3
+        return True
+
+    if _n_required(new_sig) > _n_required(baseline):  # 4
+        return False
+
+    if _has_open_kwargs(baseline) and not _has_open_kwargs(new_sig):  # 5
+        return False
+
+    return True
+
+
+#  LINE: -- next validsig -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _valid_sig(func: Callable, baseline: Signature) -> bool:
+    # AI_QUESTION: is anything in this _valid_sig that is not covered by the above?
+    try:
+        new_sig: Signature = _inspect.signature(func)
+    except ValueError:
+        return False
+
+    if _is_open_signature(baseline) or _is_open_signature(new_sig):
+        return True
+
+    base_params = list(baseline.parameters.values())
+    new_params = list(new_sig.parameters.values())
+
+    # Count required positional parameters (no default value)
+    req_pos_kinds = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
+    base_req_pos = [
+        p
+        for p in base_params
+        if p.kind in req_pos_kinds and p.default is Parameter.empty
+    ]
+    new_req_pos = [
+        p
+        for p in new_params
+        if p.kind in req_pos_kinds and p.default is Parameter.empty
+    ]
+    new_all_pos = [p for p in new_params if p.kind in req_pos_kinds]
+    has_var_pos = any(p.kind == Parameter.VAR_POSITIONAL for p in new_params)
+
+    # New callable cannot require MORE positional args than baseline provides,
+    # and must accept at least as many positional args as baseline requires.
+    if len(new_req_pos) > len(base_req_pos):
+        return False
+    if not has_var_pos and len(new_all_pos) < len(base_req_pos):
+        return False
+
+    # Any required keyword-only parameter in new_sig must exist in baseline
+    base_kw_names = {
+        p.name for p in base_params if p.kind == Parameter.KEYWORD_ONLY
+    }
+    has_base_var_kw = any(p.kind == Parameter.VAR_KEYWORD for p in base_params)
+    for p in new_params:
+        if p.kind == Parameter.KEYWORD_ONLY and p.default is Parameter.empty:
+            if p.name not in base_kw_names and not has_base_var_kw:
+                return False
+
+    return True
+
+
+#  LINE: -- valid sig new approach -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _can_be_called_as(impl: Signature, baseline: Signature) -> bool:
+    # AI: what about this approach? looks like additional ideas plus some confirmation/validation with the final test
+    args: list[Any] = []
+    kwargs: dict[str, Any] = {}
+    for param in baseline.parameters.values():
+        if param.kind in (
+            Parameter.POSITIONAL_ONLY,
+            Parameter.POSITIONAL_OR_KEYWORD,
+        ):
+            args.append(VOID)
+        elif param.kind is Parameter.KEYWORD_ONLY:
+            kwargs[param.name] = VOID
+        elif param.kind is Parameter.VAR_KEYWORD:
+            kwargs["_strategy_extra_"] = VOID
+    try:
+        impl.bind(*args, **kwargs)
+    except TypeError:
+        return False
+    return True
+
+
+def _valid_sig(func: Callable, baseline: Signature) -> bool:
+    """True if `func` can be invoked with any call valid for `baseline`."""
+    try:
+        new_sig: Signature = _inspect.signature(func)
+    except ValueError, TypeError:
+        return False
+    if _is_open_signature(baseline) or _is_open_signature(new_sig):
+        return True
+    return _can_be_called_as(new_sig, baseline)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+# AI: this are like the 5 bins where any (kw)arg can be placed
+# - some initial creation, then like any check can be done easily
+# - maybe a NamedTuple with 5 named tuples?
+#   each slot prepared once, stored if needed, ready for the next check
+# - the (Norm)Set looks less promising, any reason to stack them?
+#   (maybe some set operations, if Parameter are hashable, then this could be powerful)
+# - frozendict migth be as well promising, 5 named slots
+#   the string access might be annoying...
+# - Enum? or some Flag? unsure...
+_ = Parameter.POSITIONAL_ONLY
+_ = Parameter.POSITIONAL_OR_KEYWORD
+_ = Parameter.VAR_POSITIONAL
+_ = Parameter.KEYWORD_ONLY
+_ = Parameter.VAR_KEYWORD
