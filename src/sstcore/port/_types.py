@@ -32,6 +32,9 @@ class _Stringable(Protocol):
     def __str__(self) -> str: ...
 
 
+type _Stringables = Iterable[_Stringable]
+
+
 @runtime_checkable
 class _LogStringable(Protocol):
     def __repr__(self) -> str:
@@ -71,6 +74,17 @@ class _LockedClsMeta(type):
 
 
 #  LINE: -- Collected Definitions of: type ... = ... -- -- - -- -- - -- -- - --
+
+
+class Types(metaclass=_LockedClsMeta):
+    """Collect Types.. for Types: Meta, Mixin, Composit Stuff"""
+
+    type Bases = tuple[type, ...]
+    type NameSpace = dict[str, Any]
+
+    type Proto = type
+    type Mixin = type
+    type Slot = tuple[Mixin, Proto] | Mixin | Proto  # CHECK: usage?
 
 
 class RegistryTypes(metaclass=_LockedClsMeta):
@@ -114,10 +128,6 @@ class RegistryTypes(metaclass=_LockedClsMeta):
     )
 
     #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-    type Proto = type
-    type Mixin = type
-    type Slot = tuple[Mixin, Proto] | Mixin | Proto
 
 
 class StackTypes(metaclass=_LockedClsMeta):

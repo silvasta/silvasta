@@ -4,25 +4,34 @@ Define the Behaviour of DataClasses
 - CachedDataclassMeta: Flyweight Cache
 - ParamSpec: Root for Input Parsing
 
-                     DependencyLevel.sstcore.port.structures[0.1.1]
+                     DependencyLevel.sstcore.port.structures[0.1.2]
 """
 
 # LATER: "ParamSpec",
 
 __all__: list[str] = [
+    "DataClass",
     "CachedDataclassMeta",
     "create_field_resolver",
+    "DataClassSpec",
+    "ParamSpec",
+    "ArgSpec",
 ]
 
 
+import dataclasses as _dc
 import inspect
+import typing as _t
+from collections.abc import MutableMapping
 from dataclasses import MISSING
-from typing import Any
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
-from ._frozen import HashedTuple
+from ..empty import VOID, MayBe
+from ._set import FieldSet
+from ._set import _DataClass as DataClass
+from ._tuple import HashedTuple
 
 type CacheKey = tuple[HashedTuple, ...]
-type DataClass[T: type] = T  # hint for reader
 
 
 class CachedDataclassMeta(type):
@@ -100,3 +109,86 @@ def create_field_resolver(cls: DataClass, provided_args: set[str]):
         return value
 
     return resolve
+
+
+#  LINE: -- Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class SpecBase:
+    """Collect shared utils for DataClasses and Specs"""
+
+    if TYPE_CHECKING:
+        __dataclass_fields__: ClassVar[dict[str, _dc.Field[Any]]]
+
+    def evolve(self, **changes: Any) -> Self:
+        """Provide new instance with updated fields"""
+        return _dc.replace(self, **changes)
+
+    @classmethod
+    def field_names(cls, prefix: str = "") -> FieldSet:
+        """Cached set of dataclass field names."""
+        return FieldSet.absorb(cls, prefix=prefix)
+
+    @classmethod
+    def absorb(
+        cls,
+        kwargs: MutableMapping[str, Any],
+        /,
+        *,
+        prefix: str = "",
+        destroy: bool = True,
+    ) -> Self:
+        """Extract matching fields from kwargs to create new instance"""
+        return cls(
+            **cls.field_names(prefix=prefix).pluck(kwargs, destroy=destroy)
+        )
+
+    @classmethod
+    def merge(cls, *specs: DataClass | None, **overrides: Any) -> Self:
+        """Merge multiple partial specs shallowly into a composite spec."""
+        return cls(**(cls.field_names().pull(*specs) | overrides))
+
+
+#  LINE: -- Spec Origin -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+@_t.dataclass_transform(kw_only_default=True)
+class DataClassSpec(SpecBase):
+    """Base for Input-Sanitizing dataclass Specs"""
+
+    def __init_subclass__(
+        cls,
+        *,
+        kw_only: bool = True,
+        frozen: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        super().__init_subclass__(**kwargs)
+        _dc.dataclass(kw_only=kw_only, frozen=frozen)(cls)
+
+
+#  LINE: -- Applied Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class ParamSpec(DataClassSpec, kw_only=False):
+    """Confirm Input and apply Defaults - Pair with TypedDict"""
+
+
+class ArgSpec[T](DataClassSpec, frozen=True):  # , slots=True):
+    """Single-Target Validation with ArgCast"""
+
+    target: T
+
+    @classmethod
+    def ok(cls, target: MayBe[_t.Any] = VOID, /, **kwargs) -> T:
+        """Execute all Steps and provide confirmed Target"""
+        return cls.normalize(target, **kwargs).validate()
+
+    @classmethod
+    def normalize(cls, target: MayBe[_t.Any] = VOID, /, **kwargs) -> _t.Self:
+        """Create ArgSpec with confirmed Input"""
+        raise NotImplementedError(target, kwargs)
+
+    def validate(self) -> T:
+        """Execute all Checks that the Target must fulfill"""
+        return self.target
