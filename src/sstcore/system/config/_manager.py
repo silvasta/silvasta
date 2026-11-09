@@ -13,9 +13,6 @@ Usage in Projects:
                                                        DependencyLevel[2]
 """
 
-from src.sstcore.system.config._defaults import SstDefaults
-from src.sstcore.system.config._names import SstNames
-
 __all__: list[str] = [
     "ConfigManager",
 ]
@@ -44,7 +41,9 @@ from ...port.link import portlink
 from ...port.system import ConfigInput, ConfigSpec
 from ...util.log import LogParam, setup_logging
 from ...util.path import ProjectInfo
+from ._defaults import SstDefaults
 from ._homes import SstHomes
+from ._names import SstNames
 from ._paths import SstPaths
 from ._settings import SstSettings
 

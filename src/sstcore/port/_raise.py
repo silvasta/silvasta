@@ -27,7 +27,6 @@ __all__: list[str] = [
 ]
 
 
-from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, Protocol, Unpack
 
@@ -111,7 +110,6 @@ class PortErrorInput(raising.ErrorInput, total=False):
     source: type
 
 
-@dataclass(frozen=True)
 class PortErrorSpec(raising.ErrorSpec):
     text: str = ""
     attr: str | None = None

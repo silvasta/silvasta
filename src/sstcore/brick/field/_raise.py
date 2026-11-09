@@ -23,7 +23,6 @@ __all__: list[str] = [
 ]
 
 
-from dataclasses import dataclass
 from enum import auto
 from typing import Any, Protocol, Unpack
 
@@ -59,7 +58,6 @@ class FieldErrorInput[UnitT: Any](raising.ErrorInput, total=False):
     value: UnitT | VOID
 
 
-@dataclass(frozen=True, kw_only=True)
 class FieldErrorSpec[UnitT](raising.ErrorSpec):
     """Define the Arg Space of the Internal Pipeline"""
 

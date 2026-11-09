@@ -78,8 +78,8 @@ class Paths(SstPaths):
 class Settings(SstSettings):
     """Assemble everything and provide the json"""
 
-    names: Names = Field(default_factory=Names)
-    defaults: Defaults = Field(default_factory=Defaults)
+    names: Names = Field(default_factory=Names)  # ty:ignore FIX:
+    defaults: Defaults = Field(default_factory=Defaults)  # ty:ignore FIX:
 
 
 type CustomConfig = ConfigManager[Defaults, Names, Paths, Settings]

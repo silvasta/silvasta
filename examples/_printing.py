@@ -114,7 +114,7 @@ def show_headers(text="Selected Models"):
 #         printer.white,
 #     ]
 #     for color_print in colors:
-#         printer(f"{color_print.__name__.capitalize():>7}", end=" ")  # ty:ignore
+#         printer(f"{color_print.__name__.capitalize():>7}", end=" ")
 #         color_print("This is so Colorful")
 
 

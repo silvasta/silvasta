@@ -8,7 +8,8 @@ Create loader for System and collect loader of all Components
                                                        DependencyLevel[3]
 """
 
-from examples._Explan_Config_System_Cli import Defaults
+from ..system.config._paths import SstPaths
+from ..system.config._settings import SstSettings
 
 __all__: list[str] = [
     "sst_config_loader",
@@ -21,7 +22,7 @@ __all__: list[str] = [
 from pathlib import Path
 from typing import Protocol, Unpack
 
-from ..port.config import Config, Names, Paths, Settings
+from ..port.config import Config, Defaults, Names, Paths, Settings
 from ..port.event import BusRegistration, EventBus
 from ..port.event.emit import Emit, Emitting, Log
 from ..port.event.name import EventName
@@ -46,21 +47,24 @@ type P[D: Defaults, N: Names] = type[Paths[D, N]]
 
 
 def sst_config_loader[D: Defaults, N: Names](
-    settings_cls: S[D, N],
-    paths_cls: P[D, N],
+    settings_cls: S[D, N] | None = None,
+    paths_cls: P[D, N] | None = None,
     project_name: str = "sstcore",
     project_root: Path | None = None,
     home_setup: HomeSetup = HomeSetup.PROJECT,
 ) -> ConfigLoader:
     """Prepare Loader function ready to setup ConfigManager"""
+    # FIX:
+    _settings_cls = settings_cls or SstSettings
+    _paths_cls = paths_cls or SstPaths
 
     def config_loader(  # CLI input
         **spec: Unpack[ConfigLateInput],
     ) -> Config:  # LATER: narrow by outer input...
         return ConfigManager.bootstrap(
             **ConfigInput[D, N](
-                settings_cls=settings_cls,
-                paths_cls=paths_cls,
+                settings_cls=_settings_cls,  # ty:ignore
+                paths_cls=_paths_cls,  # ty:ignore
                 project_name=project_name,
                 project_root=project_root,
                 home_setup=home_setup,
