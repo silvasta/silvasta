@@ -4,7 +4,8 @@ Group TypeDefs as Classes and Merge them to Modules
 - bundle loose type definitions for the different port modules
 - belongs to their corresponding port module, import from there, not from here!
 
-                                                 DependencyLevel[-]
+                                                 DependencyLevel[1]
+                                                                 +
 """  # TODO:
 
 __all__: list[str] = [
@@ -20,11 +21,12 @@ from collections.abc import (
     Iterable,
     Iterator,
     Mapping,
+    MutableMapping,
     Sequence,
 )
 from typing import Any, Literal, Never, Protocol, runtime_checkable
 
-#  LINE: -- Port internal views (exposed in port.represent) -- -- - -- -- - --
+from .empty import VOID, MayBe  # NEXT: bump DependencyLevel
 
 
 @runtime_checkable
@@ -127,8 +129,6 @@ class RegistryTypes(metaclass=_LockedClsMeta):
         | RegistryTypes.Dict[Any, T]
     )
 
-    #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
 
 class StackTypes(metaclass=_LockedClsMeta):
     """Types for Stacking Pipeline"""
@@ -154,3 +154,18 @@ class StubTypes(metaclass=_LockedClsMeta):
 class EventTypes(metaclass=_LockedClsMeta):
     type Map[Value] = Mapping[str, Value]
     type Tuple[T] = tuple[T, ...]
+
+
+@runtime_checkable
+class _ArgCasting[T = Any](Protocol):
+    """Cast, Coerce, Resolve and/or Validate Function Input"""
+
+    def __call__(self, target: Any, /, *, default: MayBe[T] = VOID) -> T:
+        """Validate Target in ArgCast-Pipeline"""
+
+
+class CallingTypes(metaclass=_LockedClsMeta):
+    type CastPlan = dict[str, _ArgCasting]
+    type CastRegistry = dict[Any, _ArgCasting]
+    type Castable = Callable[..., Any] | type[Any]
+    type Data = MutableMapping[str, Any]

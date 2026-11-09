@@ -30,6 +30,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
     exit_code: RequiredField[int] = RequiredField(types=int, default=1)
 
     def __init__(self, **kwargs: Unpack[SafeFunctorInput[Args, Result]]):
+        # AI_TASK: here it should work as before, send kwargs in absorb, work with generated spec, forward filtered kwargs
         _spec = SafeFunctorSpec.absorb(kwargs)
 
         if _spec.catch is not None:

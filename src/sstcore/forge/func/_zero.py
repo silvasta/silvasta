@@ -34,9 +34,7 @@ colors = Colors()
 FunctorMetaInput = FunctorMetaData(color=Color.GREEN)
 
 
-# CHECK:
-# NEXT:
-# NEXT:
+# AI: everything fine here with the implementations?
 
 
 class FunctorInput[**A, R](TypedDict, total=False):

@@ -8,11 +8,11 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated, Self, TypedDict, Unpack
 
-from ....brick.call import ArgCast, ArgCaster
+from ....brick.call import ArgCast, ArgCaster, ArgCasting, CastInput
 from ....error import PathGuardError, PathGuardReason
-from ....port.casting import ArgCasting, ArgSpec, CastInput, MayBe
-from ....port.empty import VOID
+from ....port.empty import VOID, MayBe
 from ....port.link import portlink
+from ....port.structures import ArgSpec
 
 
 class PathInput(TypedDict, total=False):
@@ -41,7 +41,7 @@ class PathSpec(ArgSpec[Path], frozen=True, slots=True):
     ) -> Self:
         if target is VOID:
             return cls(target=Path.cwd(), **kwargs)
-        # if TYPE_CHECKING:
+        # if TYPE_CHECKING: # debug toggle
         #     target: Any = target
         match target:
             case PathSpec():

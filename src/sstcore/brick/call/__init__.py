@@ -13,14 +13,17 @@ __all__: list[str] = [
     #
     "ArgCast",
     "ArgCaster",
+    "ArgCasting",
+    "CastInput",
     "castarg",
 ]
 
-from ._argcast import ArgCast, ArgCaster, castarg
+from ._argcast import ArgCast, ArgCaster, ArgCasting, CastInput, castarg
 from ._inspect import validate_signature
 from ._some import just_return
 
 
+# LATER:
 # IDEA: make each item a Rule:
 # - each Rule has a name, a field in Spec and Input and a resolver
 # - maybe even as some IntFlag that can be switched fast

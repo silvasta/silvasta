@@ -60,25 +60,6 @@ type DtoNames = _typing.Literal[
 ]
 
 
-class _Boxes(OptionRegister):
-    # MOVE: temporary location here, maybe back to event.dto spec definitions
-    """
-    Select the Box around the Visualization
-
-    - configured in util.print._boxes
-    - exposed in util.print
-    """
-
-    CORNER = auto()
-    ROUND = auto()
-    UP = auto()
-    DOWN = auto()
-    MINI = auto()
-    MINI_UP = auto()
-    MINI_DOWN = auto()
-    OPEN = auto()
-
-
 @_typing.dataclass_transform(kw_only_default=True)
 class BaseEventDTO:
     """Establish DTO Registry and auto-transform all Member to SpecClass"""
@@ -129,6 +110,8 @@ class EventDTO(BaseEventDTO, name="ctor"):
 def sanitize_specs(fields: frozenset[str], **kwargs: _Any) -> dict[str, _Any]:
     spec: dict[str, _Any] = dict(kwargs)
 
+    # AI_TASK: here it needs some update, an absorb_optional method is highly undesired!
+
     if "frame" in fields and "frame" not in spec:
         if frame := FrameSpec.absorb_optional(spec):  # FIX:
             spec["frame"] = frame
@@ -153,8 +136,24 @@ def sanitize_specs(fields: frozenset[str], **kwargs: _Any) -> dict[str, _Any]:
 
 #  LINE: -- Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 #  MOVE: somehow separated, DTO are the main thing here
-# NEXT:
-# NEXT:
+
+
+class _Boxes(OptionRegister):  # MOVE: but where?
+    """
+    Select the Box around the Visualization
+
+    - configured in util.print._boxes
+    - exposed in util.print
+    """
+
+    CORNER = auto()
+    ROUND = auto()
+    UP = auto()
+    DOWN = auto()
+    MINI = auto()
+    MINI_UP = auto()
+    MINI_DOWN = auto()
+    OPEN = auto()
 
 
 class FrameSpec(ParamSpec):

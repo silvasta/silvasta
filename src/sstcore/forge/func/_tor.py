@@ -27,6 +27,8 @@ class BaseFunctor[**Args, Result](
     """Ensure Requirements and close MRO forwarding"""
 
     def __init__(self, **kwargs: Unpack[FunctorInput[Args, Result]]):
+
+        # AI_TASK: here it should work as before, send kwargs in absorb, work with generated spec, forward filtered kwargs
         spec: FunctorSpec[Args, Result] = FunctorSpec.absorb(kwargs)
 
         name: str = self._format_name(spec.name)
