@@ -10,7 +10,7 @@ from typing import Annotated
 from typer import Context, Option
 
 from ...data.cache import DiskScanCache
-from ...port.config import Config, Paths
+from ...port.config import Config, HomeSetup, Paths
 from ...port.event.dto import LogDTO
 from ...port.filter import FilterArgs
 from ...system import System
@@ -29,8 +29,7 @@ from ._writer import stub_typer
 app = SafeTyper(
     name="tools",
     help="Basic Equipment for Development",
-    # NEXT: when .._engine finiished:
-    # home=HomeSetup.GLOBAL
+    default_home=HomeSetup.GLOBAL,
 )
 
 
@@ -124,6 +123,10 @@ def config_details_and_write(ctx: Context, write_config: args.Write = False):
     printer(config)
     printer(config.settings)
     printer(config.settings.file)
+    printer(f"str : {config.paths.homes}")
+    printer(f"repr: {config.paths.homes=}")
+    printer(config.paths.homes)
+    printer(config.paths.homes.__rich__())
 
     if write_config:
         config.save_settings()

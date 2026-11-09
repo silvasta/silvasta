@@ -1,7 +1,7 @@
 """
 Sequential Registry - Tuple, List, ...
 
-                                                       DependencyLevel[0]
+                         DependencyLevel.sstcore.brick.vault[1.2.3]
 """
 
 __all__: list[str] = [

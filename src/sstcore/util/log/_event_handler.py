@@ -20,9 +20,8 @@ from ...port.represent import LogSerializable
 _ = portlink
 
 
-# IDEA: @portlink(EventHandler)
-# TASK: portlink.func? - this but for methods instead of classes!
-def handle_log_event(event: Event) -> None:  # TODO: this directly with Functor
+# IDEA: @portlink(EventHandler) to check functions
+def handle_log_event(event: Event) -> None:
     """Process payload['log'] only; no-op for every other event."""
 
     log_payload: Any | None = event.payload.get("log")

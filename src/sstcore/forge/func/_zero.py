@@ -34,11 +34,13 @@ FunctorMetaInput = FunctorMetaData(color=Color.GREEN)
 
 class FunctorInput[**A, R](TypedDict, total=False):
     call: Callable[A, R]
+    emit: Callable[..., None]  # NEXT: check emitter inject
     name: str
 
 
 class FunctorSpec[**A, R](ParamSpec):
     call: Callable[A, R] | None = None
+    emit: Callable[..., None] | None = None
     name: str = ""
 
 

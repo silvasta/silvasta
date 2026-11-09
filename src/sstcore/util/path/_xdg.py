@@ -16,6 +16,8 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Self
 
+from ...forge.view import Cli, Log, Str, view
+from ...forge.view.catalog import Rich
 from ...port.config import Homes
 from ...port.link import portlink
 from ._search import get_project_root
@@ -68,6 +70,7 @@ class XdgHomes(StrEnum):
 
 
 @portlink(Homes)
+@view(Cli.PATHSTAT, Str.MODULE, Log.DATA, Rich.MODULE)
 @dataclass
 class HomeDirs:
     root: Path

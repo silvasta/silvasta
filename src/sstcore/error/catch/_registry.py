@@ -13,7 +13,7 @@ from collections.abc import Callable
 from typing import Any
 
 from ...brick.reflect import objname
-from ...brick.vault import DictVault
+from ...brick.vault import DictVault, FuncVault
 from ...port.link import portlink
 from ...port.register import DictRegister, FuncRegister
 from ._handler import DEFAULT_ERROR_HANDLER, ErrorHandler
@@ -24,7 +24,9 @@ type HandlerDecorator = Callable[[HandlerFunc], HandlerFunc]
 
 @portlink(FuncRegister)
 @portlink(DictRegister)
-class ErrorRegistry(DictVault[ErrorHandler, type[BaseException]]):
+class ErrorRegistry(
+    DictVault[ErrorHandler, type[BaseException]], FuncVault[ErrorHandler]
+):
     """
     Collect and Provide the ErrorHandler
 
@@ -42,10 +44,10 @@ class ErrorRegistry(DictVault[ErrorHandler, type[BaseException]]):
         """Ensure incoming items are valid ErrorHandler instances"""
 
         if isinstance(value, ErrorHandler):
-            return value
+            return self._bind_emit(value)
 
         if callable(value) and not isinstance(value, type):
-            return ErrorHandler.from_func(value)
+            return self._bind_emit(ErrorHandler.from_func(value))
 
         raise TypeError(
             f"Expected ErrorHandler or function, got {objname(value)}"

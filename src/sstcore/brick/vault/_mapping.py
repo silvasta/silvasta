@@ -4,7 +4,7 @@ Mapping Registry - Dict, Map, ...
 - Ideas:
   - Adapt the edit/frozen pattern from PortLinks/PortLinkData
 
-                                                       DependencyLevel[0]
+                         DependencyLevel.sstcore.brick.vault[1.2.3]
 """
 
 __all__: list[str] = [

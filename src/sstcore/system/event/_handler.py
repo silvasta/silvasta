@@ -65,8 +65,21 @@ class EventHandler(SafeFunctor[[Event], None]):
         if self.policy == ErrorPolicy.RE_RAISE:
             raise RuntimeError(f"Critical Fail: {self}") from error
 
-        logger.error(f"{self} failed for '{event.name}': {error}")
-        logger.debug(f"Traceback for {self}:", exc_info=True)
+        if self._in_catch:
+            logger.opt(exception=error).error(
+                f"{self} Recursive Fail! {event.name}: {error}"
+            )
+            return
+
+        self._in_catch = True
+        try:
+            self._emit(
+                f"Failed for '{event.name}': {error}",
+                level="ERROR",
+                exception=error,
+            )
+        finally:
+            self._in_catch = False
 
 
 def handle_cli_event(event: Event) -> None:  # TODO: printer from..??

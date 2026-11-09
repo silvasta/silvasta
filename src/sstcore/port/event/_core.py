@@ -11,6 +11,7 @@ __all__: list[str] = [
     "BusRegistration",
 ]
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol, Self
 
@@ -40,6 +41,9 @@ class EventBus(Protocol):
     """Enable decoupled state propagation for synchronous Events"""
 
     def emit(self, event: EventName, /, *, sender: str, **payload: Any) -> None:
+        """Fire an Event to all global and event-specific subscribers"""
+
+    def wire(self, emit: Callable) -> None:  # NEXT: improve  emit
         """Fire an Event to all global and event-specific subscribers"""
 
     def subscribe(self, handler: EventHandling, pattern: EventPattern) -> None:

@@ -49,3 +49,4 @@ class CoreEvent(EventName):
     BUS_READY = "core.bus.ready"
     BUS_DIAG = "core.bus.warn"
     LIFECYCLE = "core.system.lifecycle"
+    FUNCTOR = "core.functor.default"

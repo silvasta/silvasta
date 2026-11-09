@@ -12,9 +12,12 @@ __all__: list[str] = [
 from collections.abc import Callable
 from typing import Any, Self, Unpack
 
-from ...brick.field import MorphingField, StrategyField
+from loguru import logger
+
+from ...brick.field import StrategyField
 from ...brick.reflect import clsname, funcname
 from ...port import functorial
+from ...port.event.name import CoreEvent
 from ...port.link import portlink
 from ..engine import FunctorMeta
 from ._zero import FunctorInput, FunctorMetaInput, FunctorSpec, FunctorView
@@ -23,20 +26,21 @@ from ._zero import FunctorInput, FunctorMetaInput, FunctorSpec, FunctorView
 @portlink(functorial.Functorial)  # LATER: who is Functor?
 class BaseFunctor[**Args, Result](
     FunctorView, metaclass=FunctorMeta, data=FunctorMetaInput
-):  # LATER: __init_subclass__ with registry from here?
+):
     """Ensure Requirements and close MRO forwarding"""
 
     def __init__(self, **kwargs: Unpack[FunctorInput[Args, Result]]):
 
-        # AI_TASK: here it should work as before, send kwargs in absorb, work with generated spec, forward filtered kwargs
-        spec: FunctorSpec[Args, Result] = FunctorSpec.absorb(kwargs)
+        _spec = FunctorSpec.absorb(kwargs)
 
-        name: str = self._format_name(spec.name)
+        name: str = self._format_name(_spec.name)
         self.__name__: str = name
         self.__qualname__: str = name
 
-        if spec.call is not None:
-            self._call: Callable[Args, Result] = spec.call
+        if _spec.call is not None:
+            self._call: Callable[Args, Result] = _spec.call
+        if _spec.emit is not None:
+            self._emit: Callable = _spec.emit  # LATER: emitter?
 
         if kwargs:
             self._emit(f"Undestroyed kwargs: {kwargs!r}")
@@ -58,22 +62,8 @@ class BaseFunctor[**Args, Result](
     def _call(self, *args: Args.args, **kwargs: Args.kwargs):
         raise AttributeError(f"{self} has no _call!", self, args, kwargs)
 
-    @MorphingField(bind_to_self=True)  # MOVE: to meta defaults when improved
-    def _emit(
-        self,
-        *args,
-        level: str = "DEBUG",
-        exception: BaseException | None = None,
-        **kwargs,
-    ) -> None:
-        if getattr(self, "debug", False):
-            from rich import print
-
-            print(*args, **kwargs)
-            return
-
-        from loguru import logger
-
-        logger.opt(exception=exception).log(
-            level, *args, sender=str(self), **kwargs
-        )
+    @StrategyField(bind_to_self=True)
+    def _emit(self, message: str, /, *, level: str = "ERROR", **extra) -> None:
+        logger.bind(
+            event_name=CoreEvent.FUNCTOR, sender=f"{self}", **extra
+        ).log(level.upper(), message)

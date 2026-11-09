@@ -27,8 +27,7 @@ class SstPaths:
         defaults: Defaults | None = None,
         names: Names | None = None,
         homes: Homes | None = None,
-    ):
-        # LATER: Fields!!
+    ):  # LATER: Fields!!
         self._defaults: Defaults = defaults or SstDefaults()
         self._names: Names = names or SstNames()
         self.homes: Homes = homes or SstHomes.from_setup(HomeSetup.GLOBAL)

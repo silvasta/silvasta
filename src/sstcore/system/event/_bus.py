@@ -10,6 +10,7 @@ __all__: list[str] = [
     "Bus",
 ]
 
+from collections.abc import Callable
 from typing import Self, Unpack
 
 from ...brick.reflect import clsname
@@ -35,6 +36,10 @@ class Bus:
 
         for handler in self.registry.find(core_event):
             handler(core_event)
+
+    def wire(self, emit: Callable) -> None:
+        """Wire _emit strategy to all registered and future EventHandlers"""
+        self.registry.wire(emit)
 
     def subscribe(
         self, handler: EventHandling, pattern: EventPattern | None = None

@@ -22,13 +22,16 @@ they don't need to look like the initial plan but like registries,
 solid built thanks to the plan.
 
 
-                                                 DependencyLevel[1]
+                                 DependencyLevel.sstcore.brick[1.2]
 """
 
 __all__: list[str] = [
+    # specifications
     "ListVault",
     "TupleVault",
     "DictVault",
+    # extras
+    "FuncVault",
     # bases
     "BaseVault",
     "Mapped",
@@ -44,5 +47,6 @@ __all__: list[str] = [
 from ._access import VaultAccess, VaultReader, VaultWriter
 from ._base import BaseVault
 from ._contract import VaultContract
+from ._func import FuncVault
 from ._mapping import DictVault, Mapped
 from ._sequence import ListVault, Sequential, TupleVault

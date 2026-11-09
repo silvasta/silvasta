@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import Any
 
 from ...brick.reflect import objname
-from ...brick.vault import ListVault
+from ...brick.vault import FuncVault, ListVault
 from ...port.event import Event
 from ...port.event.name import EventPattern
 from ...port.link import portlink
@@ -25,7 +25,7 @@ type EventDecorator = Callable[[EventFunc], EventFunc]
 
 @portlink(FuncRegister)
 @portlink(ListRegister)
-class BusRegistry(ListVault[EventHandler, str]):
+class BusRegistry(ListVault[EventHandler, str], FuncVault[EventHandler]):
     """
     Collect and Provide EventHandlers for the EventBus
 
@@ -38,9 +38,9 @@ class BusRegistry(ListVault[EventHandler, str]):
     def _normalize(self, value: Any) -> EventHandler:
         """Ensure incoming items are valid EventHandler instances."""
         if isinstance(value, EventHandler):
-            return value
+            return self._bind_emit(value)
         if callable(value) and not isinstance(value, type):
-            return EventHandler(call=value)
+            return self._bind_emit(EventHandler(call=value))
         raise TypeError(
             f"Expected EventHandler or handler function, got {objname(value)}"
         )

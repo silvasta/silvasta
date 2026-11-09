@@ -2,8 +2,7 @@
 Class attribute Fields
 
 - Attach with Descriptor
-                                                 DependencyLevel[1]
-                                                           labor(0)
+                                   DependencyLevel.sstcore.brick[1]
 """
 
 __all__: list[str] = [

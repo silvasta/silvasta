@@ -1,7 +1,7 @@
 """
 The Operators to Set and Get items from the Vault
 
--
+                         DependencyLevel.sstcore.brick.vault[1.2.1]
 """
 
 __all__: list[str] = [

@@ -1,7 +1,7 @@
 """
 BaseVault - Final assembled brick ready to be built
 
--
+                         DependencyLevel.sstcore.brick.vault[1.2.2]
 """
 
 __all__: list[str] = [

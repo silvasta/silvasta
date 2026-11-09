@@ -56,9 +56,7 @@ class Functorial[**ArgSpace, SubSetResult](_t.Protocol):
     # def _call(self) -> _Callable[ArgSpace, SubSetResult]:
     #     """Provide the underlying strategy callable (read-only in Protocol)"""
 
-    @property
-    def _emit(self) -> _FuncEmit:
-        """Provide default message sending"""
+    _emit: _FuncEmit  # mount mutable
 
     def __call__(
         self, *args: ArgSpace.args, **kwargs: ArgSpace.kwargs

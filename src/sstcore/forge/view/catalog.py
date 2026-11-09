@@ -36,6 +36,7 @@ class Cli(_solid.MixinCatalog):
     TABLE = _enum.auto()
     HEADER = _enum.auto()
     PATHS = _enum.auto()
+    PATHSTAT = _enum.auto()
     DEBUG = _enum.auto()
     MARKDOWN = _enum.auto()
     OFF = _enum.auto()
@@ -57,6 +58,9 @@ class Cli(_solid.MixinCatalog):
 
             case self.PATHS:
                 return _views.cli.PathPanelMixin
+
+            case self.PATHSTAT:
+                return _views.cli.PathTabelMixin
 
             case self.DEBUG:
                 return _views.cli.FullPanelMixin

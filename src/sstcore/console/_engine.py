@@ -72,7 +72,6 @@ class SafeTyper(typer.Typer):
         ):
             """Route and provide CLI args for Main app"""
             if ctx.parent is None:
-                # NEXT: here build spec!!
                 self._run_main_callback(
                     ctx,
                     verbose=verbose,
@@ -86,7 +85,7 @@ class SafeTyper(typer.Typer):
     def _run_main_callback(
         self,
         ctx: typer.Context,
-        **cli_args: Unpack[CliSystemInput],  # NEXT: use Spec here!!
+        **cli_args: Unpack[CliSystemInput],
     ):
         """Setup Config and Logging and show Status"""
 
@@ -94,9 +93,10 @@ class SafeTyper(typer.Typer):
         self.system: CliSystem = loader(**cli_args)
         self._update_system_context(ctx)
 
-        if self.system.config.defaults.shield_typer:
+        if self.system.config.defaults.shield_typer:  # PARAM:
             self.errors.use_default_shield()
 
+        self.errors.wire(emit=self.system.emitter.make())
         # LATER: split quiet: scroll prints, subapps, general, ...
         # if not quiet:
         #     scroll.safe_typer.intro(ctx.info_name)
@@ -133,7 +133,7 @@ class SafeTyper(typer.Typer):
             if error in self.errors:
                 handler: ErrorHandler = self.errors[error]
                 handler(error)
-                sys.exit(4)  # SafeFunctor handled it, still -> exit
+                sys.exit(handler.exit_code)
 
             logger.exception("CLI Execution: Critical Failure...")
             sys.exit(1)

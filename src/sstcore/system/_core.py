@@ -12,7 +12,7 @@ __all__: list = [
     "System",
 ]
 
-from typing import Any, Self, Unpack
+from typing import Self, Unpack
 
 from ..port.config import Config
 from ..port.event import EventBus
@@ -44,8 +44,9 @@ class System:
         self.config: Config = config
         self.printer: Print = printer
         self.emitter: Emit = Emitter.boot(self.bus)
+        bus.wire(emit=self.emitter.make())
 
-    def emit(self, event: EventName, sender: str, **payload: Any) -> None:
+    def emit(self, event: EventName, sender: str, **payload) -> None:
         """Provide direct bus access"""
         self.bus.emit(event, sender=sender, **payload)
 
