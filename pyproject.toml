@@ -75,6 +75,7 @@ exclude = [
   "**/___*",
   # Explicit paths (temporary)
   "src/sstcore/util/write",
+  "examples/_linking.py",   # shows the portlink hits and detected fails
   # "src/sstcore/util/print",
   "src/sstcore/util/print/_old_layout_todos.py",
 ]

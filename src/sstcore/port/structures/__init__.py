@@ -16,6 +16,7 @@ __all__: list[str] = [
     "DataClass",
     "CachedDataclassMeta",
     "create_field_resolver",
+    "SpecBase",
     "DataClassSpec",
     "ParamSpec",
     "ArgSpec",
@@ -40,6 +41,7 @@ from ._dataclass import (
     DataClass,
     DataClassSpec,
     ParamSpec,
+    SpecBase,
     create_field_resolver,
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta

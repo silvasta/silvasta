@@ -14,6 +14,15 @@ X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
 """
 
 __all__: list[str] = [
+    "FrameSpec",
+    "HeaderSpec",
+    "sanitize_kwargs",
+    # base inputs
+    "FrameTopicInput",
+    "FrameInput",
+    "HeaderBaseInput",
+    "HeaderFrameInput",
+    "HeaderInput",
     "LogInput",
     "CliInfoInput",
     "CliInput",
@@ -32,16 +41,13 @@ __all__: list[str] = [
 ]
 
 
-# TODO: external imports _privat
 import dataclasses as _dc
-import typing as _typing
-from collections.abc import Callable as _Callable
+import typing as _t
+from collections.abc import Callable, Mapping, MutableMapping
 from enum import auto
-from typing import TypedDict
 
 from .._types import EventTypes as _ET  # noqa: N814
 from ..color import Color, ColorArg
-from ..color import ColorArg as _ColorArg
 from ..solid import OptionRegister
 from ..structures import FieldSet, ParamSpec
 
@@ -72,13 +78,7 @@ class FrameSpec(ParamSpec):
 
 class HeaderSpec(ParamSpec):
     """
-    Explain:
-
-    X --- --- --- --- --- --- --- --- --- --- [ topic: FileScan ] --- X
-    | title: Frame with Title on top of the Content                   |
-    X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
-    | content: ...                 (maybe double line for transition) |
-    |          ...                                                    |
+    Configure Header above Main Content
 
     - No Header for title = None
     - Mirror main frame topic for frame.topic = "", empty for None
@@ -87,34 +87,62 @@ class HeaderSpec(ParamSpec):
     title: str | None = None
     frame: FrameSpec = _dc.field(default_factory=FrameSpec)
 
+    @classmethod
+    def absorb(
+        cls,
+        kwargs: Mapping[str, _t.Any],
+        /,
+        *,
+        prefix: str = "",
+        destroy: bool = True,
+        **defaults: _t.Any,
+    ) -> _t.Self:
+        """Absorb Header fields and nested `header_*` FrameSpec fields."""
+        if "frame" not in defaults:
+            main_frame = kwargs.get("frame")
+            default_box: _Boxes = (
+                main_frame.box
+                if isinstance(main_frame, FrameSpec)
+                else _Boxes.CORNER
+            )
+            box_key = f"{prefix}header_box"
+            if box_key in kwargs and kwargs[box_key] is None:
+                if destroy and isinstance(kwargs, MutableMapping):
+                    kwargs.pop(box_key)
+                else:
+                    kwargs: _ET.StrDict = {
+                        k: v for k, v in kwargs.items() if k != box_key
+                    }
+
+            defaults["frame"] = FrameSpec.absorb(
+                kwargs,
+                prefix=f"{prefix}header_",
+                destroy=destroy,
+                box=default_box,
+            )
+        return super().absorb(
+            kwargs, prefix=prefix, destroy=destroy, **defaults
+        )
+
+
+_SPEC_FIELDS: Mapping[str, type[ParamSpec]] = {
+    "frame": FrameSpec,
+    "header": HeaderSpec,
+}
+
 
 def sanitize_kwargs(fields: FieldSet, **kwargs) -> _ET.StrDict:
-    _kwargs: _ET.StrDict = dict(kwargs)
-
-    if "frame" in fields and "frame" not in _kwargs:
-        _kwargs["frame"] = FrameSpec.absorb(_kwargs)
-
-    if "header" in fields and "header" not in _kwargs:
-        # AI_TASK:  something went wrong with the ParamSpec.absorb
-        # - find a solution that fixes the sanitation
-
-        default_box: _Boxes = (
-            _kwargs["frame"].box if "frame" in _kwargs else _Boxes.CORNER
-        )
-        # FIX:
-        header_frame: FrameSpec = FrameSpec.absorb(
-            _kwargs, prefix="header_", box=default_box
-        )
-        # FIX:
-        _kwargs["header"] = HeaderSpec.absorb(_kwargs, frame=header_frame)
-
-    return _kwargs
+    """Pack flat kwargs into nested ParamSpec expected by target DTO"""
+    for name, spec_cls in _SPEC_FIELDS.items():
+        if name in fields and name not in kwargs:
+            kwargs[name] = spec_cls.absorb(kwargs)
+    return kwargs
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class FrameTopicInput(TypedDict, total=False):
+class FrameTopicInput(_t.TypedDict, total=False):
     topic: str
     topic_color: ColorArg
 
@@ -125,25 +153,25 @@ class FrameInput(FrameTopicInput, total=False):
     box: _Boxes
 
 
-class LogInput(_typing.TypedDict, total=False):
+class LogInput(_t.TypedDict, total=False):
     level: str
     metrics: _ET.Map
     extra: _ET.Map
 
 
-class CliInfoInput(_typing.TypedDict, total=False):
+class CliInfoInput(_t.TypedDict, total=False):
     infos: _ET.Map
 
 
 class CliInput(CliInfoInput, total=False):
-    color: _ColorArg
+    color: ColorArg
 
 
-class HeaderBaseInput(TypedDict, total=False):
+class HeaderBaseInput(_t.TypedDict, total=False):
     title: str
 
 
-class HeaderFrameInput(TypedDict, total=False):
+class HeaderFrameInput(_t.TypedDict, total=False):
     header_topic: str
     header_topic_color: ColorArg
     header_box: _Boxes | None  # None = Same as Main Content
@@ -178,7 +206,7 @@ class LinePresetInput(CliInput, HeaderFrameInput, total=False):
 
 
 class LineInput(CliInput, HeaderInput, total=False):
-    stat: _Callable[[_ET.Vec], str]
+    stat: Callable[[_ET.Vec], str]
 
 
 class TablePresetInput(CliInput, HeaderInput, FrameInput, total=False):

@@ -5,9 +5,9 @@ uv run ~/sstcore/examples/launch_stack.py
 
 """
 
-from sstcore.brick.call.stack import (  # ty:ignore
-    ANSI_STACK,
-    STRING_STACK,
+from sstcore.brick.call.stack import (
+    ANSI_STACK,  # ty:ignore
+    STRING_STACK,  # ty:ignore
     StackCore,
 )
 from sstcore.brick.call.stack import DTO_STACK as dto1  # noqa:N811#ty:ignore

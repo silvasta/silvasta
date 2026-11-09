@@ -29,7 +29,7 @@ from loguru import logger as _logger
 
 from .._types import EventTypes as _ET  # noqa: N814
 from ..color import Color as _Color
-from ..structures import FieldSet as _FieldSet
+from ..structures import SpecBase as _SpecBase
 from . import _param as _p
 
 type DtoTable[DTO = BaseEventDTO] = Mapping[DtoNames, type[DTO]]
@@ -41,7 +41,7 @@ type DtoNames = _typing.Literal[
 
 
 @_typing.dataclass_transform(kw_only_default=True)
-class BaseEventDTO:
+class BaseEventDTO(_SpecBase):
     """Establish DTO Registry and auto-transform all Member to SpecClass"""
 
     @property
@@ -77,12 +77,12 @@ class EventDTO(BaseEventDTO, name="ctor"):
         sanitized: _ET.StrDict = target_cls._sanitize_kwargs(**kwargs)
         return target_cls(*args, **sanitized)
 
-    @classmethod  # LATER: where to apply @castarg?
+    @classmethod
     def _sanitize_kwargs(
         cls, **kwargs: _Unpack[_p.MergedDtoInputs]
     ) -> _ET.StrDict:
         """Pack nested ParamSpec and resolve Annotated types"""
-        return _p.sanitize_kwargs(fields=_FieldSet.absorb(cls), **kwargs)
+        return _p.sanitize_kwargs(fields=cls.field_names(), **kwargs)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --

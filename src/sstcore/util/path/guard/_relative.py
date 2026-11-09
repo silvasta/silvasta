@@ -18,11 +18,11 @@ from ....error import (
     PathGuardReason,
 )
 from ._input import (
-    MultiPath,  # CHECK: how to resolve to Path
+    MultiPath,
     PathArg,
     PathSpec,
     ResolvedPath,
-    SinglePath,  # CHECK: how to resolve to Path
+    SinglePath,
 )
 
 

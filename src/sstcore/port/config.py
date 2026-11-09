@@ -7,6 +7,7 @@ Define the Shape of the Config Pipeline and Management
 __all__: list[str] = [
     "Config",
     "LogData",
+    "HomeSetup",
     #
     "Settings",
     "Paths",
@@ -124,7 +125,10 @@ class Names(_typing.Protocol):
         """Define the Name for the Local Scanner Cache File"""
 
 
-class Paths[D: Defaults, N: Names](_typing.Protocol):
+class Paths[
+    D: Defaults = Defaults,
+    N: Names = Names,
+](_typing.Protocol):
     """Generate Paths with Defaults, Names and Homes - Ensure with _PathGuard"""
 
     def __init__(self, defaults: D, names: N, homes: Homes) -> None:
@@ -167,7 +171,10 @@ class Paths[D: Defaults, N: Names](_typing.Protocol):
         """Provide Scanner Cache Location"""
 
 
-class Settings[D: Defaults, N: Names](_typing.Protocol):
+class Settings[
+    D: Defaults = Defaults,
+    N: Names = Names,
+](_typing.Protocol):
     """Collect Components and Serialize to Setting File"""
 
     @property
@@ -195,7 +202,12 @@ class Settings[D: Defaults, N: Names](_typing.Protocol):
         """Touch and save current status to json"""
 
 
-class Config[D: Defaults, N: Names, P: Paths, S: Settings](_typing.Protocol):
+class Config[
+    D: Defaults = Defaults,
+    N: Names = Names,
+    P: Paths = Paths,
+    S: Settings = Settings,
+](_typing.Protocol):
     """Bundle Container and Factories and provide access as Singleton"""
 
     @classmethod
@@ -232,5 +244,5 @@ class Config[D: Defaults, N: Names, P: Paths, S: Settings](_typing.Protocol):
     def log_result(self) -> LogData:
         """Collect applied Param and Result of Log(uru) Setup"""
 
-    def from_env(self, key: str) -> str:
+    def from_env(self, key: str, default: str | None = None) -> str:
         """Ensure .env is loaded and find EnvVar, default or raise Error"""

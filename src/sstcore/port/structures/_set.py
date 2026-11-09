@@ -158,11 +158,12 @@ class FieldSet(NormSet):
             if (valid_key := _gate(raw_key))
         }
 
-    def pull(self, *specs: _DataClass) -> dict[str, Any]:
+    def pull(self, *specs: MayNot[_DataClass]) -> dict[str, Any]:
         """Shallow Collect matching field values from partial DataClass specs"""
         return {
             name: getattr(spec, name)
             for spec in specs
+            if spec is not None
             for name in (self & self.absorb(spec))
         }
 

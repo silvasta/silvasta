@@ -13,6 +13,9 @@ Usage in Projects:
                                                        DependencyLevel[2]
 """
 
+from src.sstcore.system.config._defaults import SstDefaults
+from src.sstcore.system.config._names import SstNames
+
 __all__: list[str] = [
     "ConfigManager",
 ]
@@ -47,7 +50,12 @@ from ._settings import SstSettings
 
 
 @portlink(Config)
-class ConfigManager[D: Defaults, N: Names, P: Paths, S: Settings]:
+class ConfigManager[
+    D: Defaults = SstDefaults,
+    N: Names = SstNames,
+    P: Paths = SstPaths,
+    S: Settings = SstSettings,
+]:
     def __init__(self, settings: S, paths: P, info: ProjectInfo):
         self._starttime: datetime = datetime.now(UTC)
 

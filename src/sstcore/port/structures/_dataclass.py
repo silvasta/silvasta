@@ -13,6 +13,7 @@ __all__: list[str] = [
     "DataClass",
     "CachedDataclassMeta",
     "create_field_resolver",
+    "SpecBase",
     "DataClassSpec",
     "ParamSpec",
     "ArgSpec",
@@ -49,6 +50,9 @@ class CachedDataclassMeta(type):
         all subsequent retrievals.
 
     """
+
+    if TYPE_CHECKING:
+        __dataclass_fields__: ClassVar[dict[str, _dc.Field[Any]]]
 
     def __init__(cls, name: str, bases: tuple, namespace: dict[str, Any]):
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
@@ -124,6 +128,10 @@ class SpecBase:
         """Provide new instance with updated fields"""
         return _dc.replace(self, **changes)
 
+    def to_dict(self) -> dict[str, Any]:
+        """Extract all fields into dict without deepcopy"""
+        return self.field_names().pull(self)
+
     @classmethod
     def field_names(cls, prefix: str = "") -> FieldSet:
         """Cached set of dataclass field names."""
@@ -137,22 +145,25 @@ class SpecBase:
         *,
         prefix: str = "",
         destroy: bool = True,
+        **defaults: Any,
     ) -> Self:
         """Extract matching fields from kwargs to create new instance"""
-        return cls(
-            **cls.field_names(prefix=prefix).pluck(kwargs, destroy=destroy)
-        )
+        _plucked = cls.field_names(prefix=prefix).pluck(kwargs, destroy=destroy)
+        return cls(**(defaults | _plucked))
 
     @classmethod
     def merge(cls, *specs: DataClass, **overrides: Any) -> Self:
         """Merge multiple partial specs shallowly into a composite spec."""
         return cls(**(cls.field_names().pull(*specs) | overrides))
 
+    def extract[S: SpecBase](self, target_cls: type[S], **overrides) -> S:
+        """Project matching fields from self into a target Spec class."""
+        return target_cls.merge(self, **overrides)
+
 
 #  LINE: -- Spec Origin -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-# AI: this temporary resolves the issue for derived frozen ParamSpec, is it stable?
 @_t.dataclass_transform(kw_only_default=True, frozen_default=True)
 class DataClassSpec(SpecBase):
     """Base for Input-Sanitizing dataclass Specs"""
@@ -161,13 +172,23 @@ class DataClassSpec(SpecBase):
         cls,
         *,
         kw_only: bool = True,
-        frozen: bool = False,
+        frozen: bool | None = None,
         abstract: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
-        if not abstract:  # AI: is this somehow useful?
+        if not abstract:
+            if frozen is None:
+                frozen: bool = _has_frozen_base(cls)
             _dc.dataclass(kw_only=kw_only, frozen=frozen)(cls)
+
+
+def _has_frozen_base(cls) -> bool:
+    return any(
+        getattr(base, "__dataclass_params__", None) is not None
+        and base.__dataclass_params__.frozen
+        for base in cls.__mro__[1:]
+    )
 
 
 #  LINE: -- Applied Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --

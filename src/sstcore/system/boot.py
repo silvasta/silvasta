@@ -19,11 +19,12 @@ __all__: list[str] = [
 from pathlib import Path
 from typing import Any, Protocol, Unpack
 
-from ..port.config import Config
+from ..port.config import Config, Paths, Settings
 from ..port.event import BusRegistration, EventBus
 from ..port.event.dto import CliDTO
-from ..port.event.emit import Emit, Emitting, LogEmit
+from ..port.event.emit import Emit, Emitting, Log
 from ..port.event.name import EventName
+from ..port.link import portlink
 from ..port.printer import Print, PrintInput
 from ..port.system import (
     BusInput,
@@ -35,13 +36,16 @@ from ..port.system import (
     SystemLoader,
 )
 from ._core import System
-from .config import ConfigManager, HomeSetup, SstPaths, SstSettings
+from .config import ConfigManager, HomeSetup
 from .event import Bus
 
 
 def sst_config_loader(
-    settings_cls=SstSettings,
-    paths_cls=SstPaths,
+    # settings_cls=SstSettings,
+    # settings_cls: Settings = SstSettings,
+    settings_cls: Settings,
+    # paths_cls: Paths = SstPaths,
+    paths_cls: Paths,
     project_name: str = "sstcore",
     project_root: Path | None = None,
     home_setup: HomeSetup = HomeSetup.PROJECT,
@@ -53,6 +57,7 @@ def sst_config_loader(
         # setting_file: Path | None = None,
         # home_setup: HomeSetup = home_setup,
     ) -> Config:  # LATER: narrow by outer input...
+        # x = settings_cls
         return ConfigManager.bootstrap(
             **ConfigInput(
                 settings_cls=settings_cls,
@@ -104,16 +109,23 @@ class _SystemMixing(Protocol):
     @property
     def emit(self) -> Emitting: ...
     @property
-    def log(self) -> LogEmit: ...
+    def log(self) -> Log: ...
     @property
     def print(self) -> Print: ...
 
 
-# TODO: @portlink(SystemMixing)
+# AI_TASK: this below is an idea that came up when again and again the same helper properties on system containing classes were created
+# - discuss the approach and how easily this can be used to support developement or cause troubles
+# - come up with a final version 1 that is ready to use
+
+# NEXT: so far no good inputs, next try it maybe with Field?
+
+
+@portlink(_SystemMixing)
 class SystemMixin[C: Config = Config, E: Emit = Emit]:
     """Exfiltrate and Provide the Core Tools of the System"""
 
-    def __init__(self, system: CliSystem) -> None:
+    def __init__(self, system: CliSystem[C, E]) -> None:
         self.system: CliSystem[C, E] = system
 
     @property
@@ -133,10 +145,11 @@ class SystemMixin[C: Config = Config, E: Emit = Emit]:
 
     def log(
         self,
+        message: str,
+        /,
+        *,
         event: EventName,
         sender: str,
-        message: str,
-        *,
         level: str = "INFO",
         **extra,
     ) -> None:  # TODO: fix order, message??
