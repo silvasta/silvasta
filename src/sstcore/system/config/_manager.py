@@ -67,7 +67,7 @@ class ConfigManager[
 
     @classmethod
     def bootstrap(cls, **data: Unpack[ConfigInput]) -> Self:
-        spec: ConfigSpec = ConfigSpec(**data)
+        spec: ConfigSpec[D, N] = ConfigSpec(**data)
 
         info: ProjectInformation = ProjectInfo.collect(spec.project_name)
         homes: Homes = SstHomes.from_setup(
@@ -75,7 +75,7 @@ class ConfigManager[
         )
 
         config_file: Path = spec.setting_file or homes.config / "settings.json"
-        settings_cls: type[S] = spec.settings(default=SstSettings)
+        settings_cls: type[S] = spec.settings(default=SstSettings)  # ty:ignore FIX:
 
         if config_file.exists():
             settings: S = settings_cls.load(file=config_file)
@@ -84,7 +84,7 @@ class ConfigManager[
                 file=config_file,
                 log=LogParam(log_dir=homes.log, log_file_stem=info.name),
             )
-        paths_cls: type[P] = spec.paths(default=SstPaths)
+        paths_cls: type[P] = spec.paths(default=SstPaths)  # ty:ignore FIX:
         paths: P = paths_cls(settings.defaults, settings.names, homes)
 
         return cls(settings, paths, info)

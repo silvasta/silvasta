@@ -108,6 +108,10 @@ class Defaults(_typing.Protocol):
     def timestamp_format(self) -> str:
         """Provide format rule for timestamps"""
 
+    @property
+    def shield_typer(self) -> bool:
+        """Enable default error shielding in SafeTyper"""
+
 
 class Names(_typing.Protocol):
     """Static and Dynamic Names together with Parsing Tools"""
@@ -125,10 +129,7 @@ class Names(_typing.Protocol):
         """Define the Name for the Local Scanner Cache File"""
 
 
-class Paths[
-    D: Defaults = Defaults,
-    N: Names = Names,
-](_typing.Protocol):
+class Paths[D: Defaults, N: Names](_typing.Protocol):
     """Generate Paths with Defaults, Names and Homes - Ensure with _PathGuard"""
 
     def __init__(self, defaults: D, names: N, homes: Homes) -> None:
@@ -171,10 +172,7 @@ class Paths[
         """Provide Scanner Cache Location"""
 
 
-class Settings[
-    D: Defaults = Defaults,
-    N: Names = Names,
-](_typing.Protocol):
+class Settings[D: Defaults, N: Names](_typing.Protocol):
     """Collect Components and Serialize to Setting File"""
 
     @property
@@ -203,10 +201,10 @@ class Settings[
 
 
 class Config[
-    D: Defaults = Defaults,
-    N: Names = Names,
-    P: Paths = Paths,
-    S: Settings = Settings,
+    D: Defaults,
+    N: Names,
+    P: Paths[Defaults, Names],
+    S: Settings[Defaults, Names],
 ](_typing.Protocol):
     """Bundle Container and Factories and provide access as Singleton"""
 

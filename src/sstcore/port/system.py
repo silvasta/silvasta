@@ -58,7 +58,7 @@ class SstSystem(Protocol):
         """- Boot without Input"""
 
 
-class CliSystem[C = Config, E = Emit](SstSystem, Protocol):
+class CliSystem[C: Config, E: Emit](SstSystem, Protocol):
     """The SstSystem provides ..."""
 
     @property
@@ -76,16 +76,12 @@ class CliSystem[C = Config, E = Emit](SstSystem, Protocol):
 #  LINE: -- Loader -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class SystemLoader[
-    SysT: SstSystem = SstSystem,
-](Protocol):
+class SystemLoader[SysT: SstSystem](Protocol):
     def __call__(self, **param: Unpack[CliSystemInput]) -> SysT:
         """Boot the System with or without provided args"""
 
 
-class SystemLoading[
-    SysT: CliSystem = CliSystem,
-](Protocol):
+class SystemLoading[SysT: CliSystem](Protocol):
     """Bind the tools to the system and make it ready to boot"""
 
     def __call__(
@@ -93,29 +89,18 @@ class SystemLoading[
     ) -> SystemLoader[SysT]: ...
 
 
-class ConfigLoader[
-    D: Defaults = Defaults,
-    N: Names = Names,
-    P: Paths = Paths,
-    S: Settings = Settings,
-](Protocol):
-    def __call__(
-        self, **options: Unpack[ConfigInput[P, S]]
-    ) -> Config[D, N, P, S]:
+class ConfigLoader[C: Config](Protocol):
+    def __call__(self, **options: Unpack[ConfigInput]) -> C:
         """Prepare the Configmanager bootstrap with all 4 components"""
 
 
-class ConfigLoading[
-    D: Defaults = Defaults,
-    N: Names = Names,
-    P: Paths = Paths,
-    S: Settings = Settings,
-](Protocol):
+class ConfigLoading[D: Defaults, N: Names, P: Paths, S: Settings](Protocol):
     """Bind static project config setup and return a CLI-ready ConfigLoader."""
 
     def __call__(
-        self, **setup: Unpack[ConfigSetupInput[P, S]]
-    ) -> ConfigLoader[D, N, P, S]: ...
+        self,
+        **setup: Unpack[ConfigSetupInput[D, N]],
+    ) -> ConfigLoader[Config[D, N, P, S]]: ...
 
 
 class BusLoader(Protocol):
@@ -145,16 +130,23 @@ class SystemBootParam(SystemLoaderInput, CliSystemInput):
     """Define Input with both layers of System Input"""
 
 
-class ConfigSetupInput[P: Paths, S: Settings](TypedDict, total=False):
+class ConfigSetupInput[D: Defaults, N: Names](TypedDict, total=False):
     """Static App-level Config declarations."""
 
-    settings_cls: type[S]
-    paths_cls: type[P]
+    settings_cls: type[Settings[D, N]]
+    paths_cls: type[Paths[D, N]]
     project_name: str | None
     project_root: Path | None
 
 
-class ConfigInput[P: Paths, S: Settings](ConfigSetupInput[P, S], total=False):
+class ConfigLateInput(TypedDict, total=False):
+    setting_file: Path | None
+    home_setup: HomeSetup
+
+
+class ConfigInput[D: Defaults, N: Names](
+    ConfigLateInput, ConfigSetupInput[D, N], total=False
+):
     setting_file: Path | None
     home_setup: HomeSetup
 
@@ -213,18 +205,18 @@ class SystemBootSpec(CliSystemSpec, CliSystemTools, kw_only=False):
         return self.extract(CliSystemTools)
 
 
-class ConfigSpec[P: Paths, S: Settings](ParamSpec, kw_only=False):
-    settings_cls: type[S] | None = None
-    paths_cls: type[P] | None = None
+class ConfigSpec[D: Defaults, N: Names](ParamSpec, kw_only=False):
+    settings_cls: type[Settings[D, N]] | None = None
+    paths_cls: type[Paths[D, N]] | None = None
     setting_file: Path | None = None
     project_name: str | None = None
     project_root: Path | None = None
     home_setup: HomeSetup = HomeSetup.GLOBAL
 
-    def paths(self, default: type[P]) -> type[P]:
+    def paths(self, default: type[Paths[D, N]]) -> type[Paths[D, N]]:
         return default if self.paths_cls is None else self.paths_cls
 
-    def settings(self, default: type[S]) -> type[S]:
+    def settings(self, default: type[Settings[D, N]]) -> type[Settings[D, N]]:
         return default if self.settings_cls is None else self.settings_cls
 
 

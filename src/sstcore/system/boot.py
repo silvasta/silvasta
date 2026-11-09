@@ -8,6 +8,8 @@ Create loader for System and collect loader of all Components
                                                        DependencyLevel[3]
 """
 
+from examples._Explan_Config_System_Cli import Defaults
+
 __all__: list[str] = [
     "sst_config_loader",
     "sst_bus_loader",
@@ -17,21 +19,21 @@ __all__: list[str] = [
 
 
 from pathlib import Path
-from typing import Any, Protocol, Unpack
+from typing import Protocol, Unpack
 
-from ..port.config import Config, Paths, Settings
+from ..port.config import Config, Names, Paths, Settings
 from ..port.event import BusRegistration, EventBus
-from ..port.event.dto import CliDTO
 from ..port.event.emit import Emit, Emitting, Log
 from ..port.event.name import EventName
 from ..port.link import portlink
-from ..port.printer import Print, PrintInput
+from ..port.printer import Print
 from ..port.system import (
     BusInput,
     BusLoader,
     CliSystem,
     CliSystemInput,
     ConfigInput,
+    ConfigLateInput,
     ConfigLoader,
     SystemLoader,
 )
@@ -39,13 +41,13 @@ from ._core import System
 from .config import ConfigManager, HomeSetup
 from .event import Bus
 
+type S[D: Defaults, N: Names] = type[Settings[D, N]]
+type P[D: Defaults, N: Names] = type[Paths[D, N]]
 
-def sst_config_loader(
-    # settings_cls=SstSettings,
-    # settings_cls: Settings = SstSettings,
-    settings_cls: Settings,
-    # paths_cls: Paths = SstPaths,
-    paths_cls: Paths,
+
+def sst_config_loader[D: Defaults, N: Names](
+    settings_cls: S[D, N],
+    paths_cls: P[D, N],
     project_name: str = "sstcore",
     project_root: Path | None = None,
     home_setup: HomeSetup = HomeSetup.PROJECT,
@@ -53,19 +55,16 @@ def sst_config_loader(
     """Prepare Loader function ready to setup ConfigManager"""
 
     def config_loader(  # CLI input
-        **spec: Unpack[ConfigInput],
-        # setting_file: Path | None = None,
-        # home_setup: HomeSetup = home_setup,
+        **spec: Unpack[ConfigLateInput],
     ) -> Config:  # LATER: narrow by outer input...
-        # x = settings_cls
         return ConfigManager.bootstrap(
-            **ConfigInput(
+            **ConfigInput[D, N](
                 settings_cls=settings_cls,
                 paths_cls=paths_cls,
                 project_name=project_name,
                 project_root=project_root,
                 home_setup=home_setup,
-                **spec,  # setting_file from CLI overrides!
+                **spec,
             )
         )
 
@@ -105,20 +104,11 @@ class _SystemMixing(Protocol):
     @property
     def emitter(self) -> Emit: ...
     @property
-    def printer(self) -> Print: ...
+    def print(self) -> Print: ...
     @property
     def emit(self) -> Emitting: ...
     @property
     def log(self) -> Log: ...
-    @property
-    def print(self) -> Print: ...
-
-
-# AI_TASK: this below is an idea that came up when again and again the same helper properties on system containing classes were created
-# - discuss the approach and how easily this can be used to support developement or cause troubles
-# - come up with a final version 1 that is ready to use
-
-# NEXT: so far no good inputs, next try it maybe with Field?
 
 
 @portlink(_SystemMixing)
@@ -137,7 +127,7 @@ class SystemMixin[C: Config = Config, E: Emit = Emit]:
         return self.system.emitter
 
     @property
-    def printer(self) -> Print:
+    def print(self) -> Print:
         return self.system.printer
 
     def emit(self, event: EventName, sender: str, **payload) -> None:
@@ -154,8 +144,3 @@ class SystemMixin[C: Config = Config, E: Emit = Emit]:
         **extra,
     ) -> None:  # TODO: fix order, message??
         return self.emitter.log(event, sender, message, level=level, **extra)
-
-    def print(
-        self, target: Any, /, *more: Any, **spec: Unpack[PrintInput]
-    ) -> CliDTO:
-        return self.printer(target, *more, **spec)
