@@ -21,7 +21,7 @@ from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.files import SyncMode
 from ....port.link import tap
 from . import _ensure, _field, _increment, _lock, _operate, _relative
-from ._arg import PathArg, PathSpec
+from ._input import PathArg, PathSpec
 
 colors = Colors()
 

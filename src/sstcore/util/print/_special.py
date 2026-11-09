@@ -12,7 +12,8 @@ from rich.table import Table
 from rich.tree import Tree
 
 from ...brick.color import colorize
-from ...port.event.dto import PanelDTO, PanelInput, TableInput
+from ...port.event._param import PanelInput, TableInput
+from ...port.event.dto import PanelDTO
 from ...port.tree import SimpleTree
 from ..tree import SimpleTreeNode
 

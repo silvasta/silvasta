@@ -15,7 +15,7 @@ __all__: list[str] = [
     # definitions
     "LayerMode",
     "StackApplicator",
-    "stacking_types",
+    "StackTypes",
 ]
 
 
@@ -24,9 +24,9 @@ from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 from enum import Enum, auto
 from typing import Any, Protocol, Self, runtime_checkable
 
-from ._types import stacking_types
+from ._types import StackTypes
 
-_st = stacking_types
+_ST = StackTypes
 
 
 class LayerMode(Enum):
@@ -41,7 +41,7 @@ class LayerMode(Enum):
 class StackApplicator[**In, ValueT, Out](Protocol):
     def __call__(
         self,
-        state: _st.Accumulated[ValueT],
+        state: _ST.Accumulated[ValueT],
         *args: In.args,
         **kwargs: In.kwargs,
     ) -> Out:
@@ -69,21 +69,21 @@ class StackingCore[**In, ValueT, Out](StackingLayer[ValueT], Protocol):
     """The Executing Core - Connect Layers and Runtime State"""
 
     @property
-    def layers(self) -> _st.Map[StackingLayer[ValueT]]:  # LATER: field
+    def layers(self) -> _ST.Map[StackingLayer[ValueT]]:  # LATER: field
         """Store Mapping with Source Layer"""
 
     def schema(self) -> dict[str, list[str]]:
         """Generate Layer Mapping as SSoT for Stub typing"""
 
     @property
-    def source_map(self) -> _st.Map[str]:  # LATER: field
+    def source_map(self) -> _ST.Map[str]:  # LATER: field
         """Store Mapping linking Attributes back to Source Layer"""
 
     @property
     def call(self) -> StackApplicator[In, ValueT, Out]:  # LATER: field
         """Collect and Provide Application Function"""
 
-    def merge_layer(self) -> _st.LayerData[ValueT]:
+    def merge_layer(self) -> _ST.LayerData[ValueT]:
         """Combine multiple StackLayer to Mapping for StackCore"""
 
     def __getattr__(self, name: str) -> RunningStack:

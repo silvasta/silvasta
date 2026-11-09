@@ -7,6 +7,7 @@ Draw the Shape of the Core Data Structures
 __all__: list[str] = [
     "NormSet",
     "KeySet",
+    "FieldSet",
     "DunderSet",
     "frozendict",
     "HashedTuple",
@@ -43,7 +44,7 @@ from ._dataclass import (
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
 from ._map import frozendict
-from ._set import DunderSet, KeySet, NormSet
+from ._set import DunderSet, FieldSet, KeySet, NormSet
 from ._tuple import HashedTuple, ParamSnap
 
 

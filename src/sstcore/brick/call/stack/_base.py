@@ -18,7 +18,7 @@ from loguru import logger
 from ....port import stacking
 from ....port.link import portlink
 from ....port.stacking import LayerMode, StackingLayer
-from ....port.stacking import stacking_types as _st
+from ....port.stacking import StackTypes as _ST  # noqa: N814
 
 
 class StackBase[ValueT](Mapping):
@@ -27,11 +27,11 @@ class StackBase[ValueT](Mapping):
 
     def __init__(
         self,
-        data: _st.LayerData[ValueT],
+        data: _ST.LayerData[ValueT],
         name: str,
     ):
         self.name: str = name
-        self._data: _st.LayerData[ValueT] = data
+        self._data: _ST.LayerData[ValueT] = data
 
     def __getitem__(self, key: str) -> Any:
         return self._data[key]
@@ -56,7 +56,7 @@ class StackBase[ValueT](Mapping):
 class StackLayer[ValueT](StackBase[ValueT]):
     def __init__(
         self,
-        data: _st.LayerData[ValueT],
+        data: _ST.LayerData[ValueT],
         name: str,
         mode: LayerMode = LayerMode.SINGLE,
     ):

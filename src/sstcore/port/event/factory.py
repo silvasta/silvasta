@@ -18,10 +18,13 @@ __all__: list[str] = [
 
 # TODO: external imports _privat
 from collections.abc import Mapping, Sequence
-from typing import Any, Protocol, Unpack
+from typing import Any, Protocol
+from typing import Unpack as _U  # noqa: N814
 
+from .._types import EventTypes as _ET  # noqa: N814
 from .._types import _Stringable
-from . import dto
+from . import _param as _p
+from .dto import CliDTO, LineDTO, LogDTO, MarkdownDTO, PanelDTO, TableDTO
 
 
 class EventDtoFactory(Protocol):
@@ -43,52 +46,52 @@ class EventDtoFactory(Protocol):
 
 class LogDelivering(Protocol):
     def __call__(
-        self, message: str, /, **kwargs: Unpack[dto.LogInput]
-    ) -> dto.LogDTO: ...
+        self, message: str, /, **kwargs: _U[_p.LogInput]
+    ) -> LogDTO: ...
 
 
 class CliDelivering(Protocol):
     def __call__(
-        self, content: dto._Content, /, **kwargs: Unpack[dto.CliInput]
-    ) -> dto.CliDTO: ...
+        self, content: _ET.Content, /, **kwargs: _U[_p.CliInput]
+    ) -> CliDTO: ...
 
 
 class PanelDelivering(Protocol):
     def __call__(
-        self, *content: dto.CliSpec, **kwargs: Unpack[dto.PanelInput]
-    ) -> dto.PanelDTO: ...
+        self, *content: _ET.CliSpec, **kwargs: _U[_p.PanelInput]
+    ) -> PanelDTO: ...
 
 
 class MarkdownDelivering(Protocol):
     def __call__(
-        self, content: _Stringable, /, **kwargs: Unpack[dto.MarkdownInput]
-    ) -> dto.MarkdownDTO: ...
+        self, content: _Stringable, /, **kwargs: _U[_p.MarkdownInput]
+    ) -> MarkdownDTO: ...
 
 
 class LineDelivering(Protocol):
     def __call__(
-        self, *content: dto.CliSpec, **kwargs: Unpack[dto.LineInput]
-    ) -> dto.LineDTO: ...
+        self, *content: _ET.CliSpec, **kwargs: _U[_p.LineInput]
+    ) -> LineDTO: ...
 
 
 class TableDelivering(Protocol):
     def __call__(
-        self, content: dto._Grid, /, **kwargs: Unpack[dto.TableInput]
-    ) -> dto.TableDTO: ...
+        self, content: _ET.Grid, /, **kwargs: _U[_p.TableInput]
+    ) -> TableDTO: ...
 
     def matrix(
         self,
-        matrix: Sequence[Sequence[dto.CliSpec]],
+        matrix: Sequence[Sequence[_ET.CliSpec]],
         /,
-        **kwargs: Unpack[dto.TablePresetInput],
-    ) -> dto.TableDTO: ...
+        **kwargs: _U[_p.TablePresetInput],
+    ) -> TableDTO: ...
 
     def rows(
         self,
-        rows: Mapping[str, dto.CliSpec | Sequence[dto.CliSpec]],
+        rows: Mapping[str, _ET.CliSpec | Sequence[_ET.CliSpec]],
         /,
-        **kwargs: Unpack[dto.TablePresetInput],
-    ) -> dto.TableDTO: ...
+        **kwargs: _U[_p.TablePresetInput],
+    ) -> TableDTO: ...
 
     def cols(
         self,
@@ -96,8 +99,8 @@ class TableDelivering(Protocol):
         /,
         *,
         corner: str = "",
-        **kwargs: Unpack[dto.TablePresetInput],
-    ) -> dto.TableDTO: ...
+        **kwargs: _U[_p.TablePresetInput],
+    ) -> TableDTO: ...
 
     def records(
         self,
@@ -105,8 +108,8 @@ class TableDelivering(Protocol):
         /,
         *,
         headers: Sequence[str] | None = None,
-        **kwargs: Unpack[dto.TablePresetInput],
-    ) -> dto.TableDTO: ...
+        **kwargs: _U[_p.TablePresetInput],
+    ) -> TableDTO: ...
 
     def kv(
         self,
@@ -115,5 +118,5 @@ class TableDelivering(Protocol):
         *,
         key_col: str = "Key",
         val_col: str = "Value",
-        **kwargs: Unpack[dto.TablePresetInput],
-    ) -> dto.TableDTO: ...
+        **kwargs: _U[_p.TablePresetInput],
+    ) -> TableDTO: ...

@@ -18,9 +18,12 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Self, Unpack
+from typing import Any, Self
+from typing import Unpack as _U  # noqa:N814
 
 from ....port import functorial
+from ....port._types import EventTypes as _ET  # noqa:N814
+from ....port.event import _param as _p
 from ....port.event import dto
 from ....port.link import portlink
 from ....port.represent import Stringable
@@ -54,7 +57,7 @@ class LogDtoProducer(DtoProducer[dto.LogDTO]):
     dto_name: dto.DtoNames = "log"
 
     def __call__(
-        self, message: str, /, **kwargs: Unpack[dto.LogInput]
+        self, message: str, /, **kwargs: _U[_p.LogInput]
     ) -> dto.LogDTO:
         # LATER: prepare more stuff here instead of e.g. LogEmitter
         return self.dto_cls.create(message=message, **kwargs)
@@ -64,7 +67,7 @@ class CliDtoProducer(DtoProducer[dto.CliDTO]):
     dto_name: dto.DtoNames = "cli"
 
     def __call__(
-        self, content: Sequence[dto.CliSpec], /, **kwargs: Unpack[dto.CliInput]
+        self, content: Sequence[_ET.CliSpec], /, **kwargs: _U[_p.CliInput]
     ) -> dto.CliDTO:
         return self.dto_cls.create(tuple(content), **kwargs)
 
@@ -76,7 +79,7 @@ class PanelDtoProducer(DtoProducer[dto.PanelDTO]):
     dto_name: dto.DtoNames = "panel"
 
     def __call__(
-        self, *content: dto.CliSpec, **kwargs: Unpack[dto.PanelInput]
+        self, *content: _ET.CliSpec, **kwargs: _U[_p.PanelInput]
     ) -> dto.PanelDTO:
         return self.dto_cls.create(*content, **kwargs)
 
@@ -85,7 +88,7 @@ class MarkdownDtoProducer(DtoProducer[dto.MarkdownDTO]):
     dto_name: dto.DtoNames = "markdown"
 
     def __call__(
-        self, content: Stringable, /, **kwargs: Unpack[dto.MarkdownInput]
+        self, content: Stringable, /, **kwargs: _U[_p.MarkdownInput]
     ) -> dto.MarkdownDTO:
         return self.dto_cls.create(content, **kwargs)
 
@@ -94,7 +97,7 @@ class LineDtoProducer(DtoProducer[dto.LineDTO]):
     dto_name: dto.DtoNames = "line"
 
     def __call__(
-        self, *content: dto.CliSpec, **kwargs: Unpack[dto.LineInput]
+        self, *content: _ET.CliSpec, **kwargs: _U[_p.LineInput]
     ) -> dto.LineDTO:
         return self.dto_cls.create(content, **kwargs)
 
@@ -103,26 +106,23 @@ class TableDtoProducer(DtoProducer[TableViewDTO]):
     dto_name: dto.DtoNames = "table"
 
     def __call__(
-        self,
-        content: dto._Grid,
-        /,
-        **kwargs: Unpack[dto.TableInput],
+        self, content: _ET.Grid, /, **kwargs: _U[_p.TableInput]
     ) -> TableViewDTO:
         return self.dto_cls.create(content, **kwargs)
 
     def matrix(
         self,
-        matrix: Sequence[Sequence[dto.CliSpec]],
+        matrix: Sequence[Sequence[_ET.CliSpec]],
         /,
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.dto_cls.from_matrix(matrix, **kw)
 
     def rows(
         self,
-        rows: Mapping[str, dto.CliSpec | Sequence[dto.CliSpec]],
+        rows: Mapping[str, _ET.CliSpec | Sequence[_ET.CliSpec]],
         /,
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.dto_cls.from_rows(rows, **kw)
 
@@ -132,7 +132,7 @@ class TableDtoProducer(DtoProducer[TableViewDTO]):
         /,
         *,
         corner: str = "",
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.dto_cls.from_cols(cols, corner=corner, **kw)
 
@@ -142,7 +142,7 @@ class TableDtoProducer(DtoProducer[TableViewDTO]):
         /,
         *,
         headers: Sequence[str] | None = None,
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.dto_cls.from_records(records, headers=headers, **kw)
 
@@ -153,7 +153,7 @@ class TableDtoProducer(DtoProducer[TableViewDTO]):
         *,
         key_col: str = "Key",
         val_col: str = "Value",
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.dto_cls.from_kv(
             mapping, key_col=key_col, val_col=val_col, **kw

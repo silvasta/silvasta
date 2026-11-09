@@ -12,10 +12,10 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from dataclasses import fields
 from functools import cache
-from typing import Any, ClassVar, Protocol, Self
+from typing import Any, ClassVar, Protocol, Self, TypeGuard
 
 from .._types import _Stringable, _Stringables
 from ..empty import MayNot
@@ -142,7 +142,7 @@ class FieldSet(NormSet):
 
     def pluck(
         self,
-        data: MutableMapping[str, Any],
+        data: Mapping[str, Any],
         /,
         *,
         prefix: str = "",
@@ -150,7 +150,7 @@ class FieldSet(NormSet):
     ) -> dict[str, Any]:
         """Shallow Extract (and destroy) matching keys from mapping"""
         _gate = self.with_prefix(prefix) if prefix else self
-        _extract = data.pop if destroy else data.__getitem__
+        _extract = data.pop if destroy and _mutable(data) else data.__getitem__
         _keys = tuple(data) if destroy else data
         return {
             valid_key: _extract(raw_key)
@@ -158,15 +158,14 @@ class FieldSet(NormSet):
             if (valid_key := _gate(raw_key))
         }
 
-    def pull(
-        self,
-        *specs: _DataClass
-        | None,  # AI_QUESTION: in which situation ever does None here make sense?
-    ) -> dict[str, Any]:
+    def pull(self, *specs: _DataClass) -> dict[str, Any]:
         """Shallow Collect matching field values from partial DataClass specs"""
         return {
             name: getattr(spec, name)
             for spec in specs
-            if spec is not None  # REMOVE:?
             for name in (self & self.absorb(spec))
         }
+
+
+def _mutable(data: Mapping, /) -> TypeGuard[MutableMapping]:
+    return isinstance(data, MutableMapping)

@@ -12,7 +12,7 @@ __all__: list[str] = [
 from ....port import stacking
 from ....port.link import portlink
 from ....port.stacking import LayerMode, StackingLayer
-from ....port.stacking import stacking_types as _st
+from ....port.stacking import StackTypes as _ST  # noqa: N814
 from ... import reflect
 from ._base import StackLayer
 from ._run import StackRunner, StackState
@@ -27,17 +27,17 @@ class StackCore[**In, ValueT, Out](StackLayer[ValueT]):
         call: stacking.StackApplicator[In, ValueT, Out],
     ):
         name: str = name or str(self)
-        self.layers: _st.Map[StackingLayer[ValueT]] = {
+        self.layers: _ST.Map[StackingLayer[ValueT]] = {
             layer.name: layer for layer in layers
         }
-        combined_data: _st.LayerData[ValueT] = self.merge_layer()
+        combined_data: _ST.LayerData[ValueT] = self.merge_layer()
         super().__init__(combined_data, name, LayerMode.COMBO)
         self.call: stacking.StackApplicator[In, ValueT, Out] = call
 
-    def merge_layer(self) -> _st.LayerData[ValueT]:
+    def merge_layer(self) -> _ST.LayerData[ValueT]:
 
-        combined_data: _st.LayerData[ValueT] = {}
-        self.source_map: _st.Map[str] = {}
+        combined_data: _ST.LayerData[ValueT] = {}
+        self.source_map: _ST.Map[str] = {}
 
         for layer in self.layers.values():
             for key, value in layer.items():

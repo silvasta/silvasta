@@ -63,7 +63,6 @@ class SummaryFile:
         """Extract target file type from output file"""
         return SummaryFileMachine.from_path(self.output_file)
 
-    @property
     @PathGuard.unique
     def unique_output_file(self) -> Path:
         """Increment output_file if needed and provide unique Path"""

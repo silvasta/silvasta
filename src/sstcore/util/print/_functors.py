@@ -14,19 +14,26 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Literal, Self, Unpack
+from typing import Any, Literal, Self
+from typing import Unpack as _U  # noqa:N814
 
 from ...forge.func import SafeFunctor
 from ...forge.view.factory._table import TableViewDTO
 from ...port import functorial
+from ...port._types import EventTypes as _ET  # noqa: N814
 from ...port.color import Color, ColorArg
-from ...port.event import dto
+from ...port.event import _param as _p
+from ...port.event.dto import (
+    EventDTO,
+    LineDTO,
+    PanelDTO,
+)
 from ...port.link import portlink
 from ._boxes import Boxes
 
 
 @portlink(functorial.MountableFunctor)
-class PrintFunctor[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
+class PrintFunctor[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
     """Base Functor bound to the Printer instance."""
 
     def __init__(self, host: Any, **kwargs: Any) -> None:
@@ -39,7 +46,7 @@ class PrintFunctor[DTO: dto.EventDTO = dto.EventDTO](SafeFunctor[..., DTO]):
 
 
 @portlink(functorial.MountableFunctor)
-class LinePrintFunctor(PrintFunctor[dto.LineDTO]):
+class LinePrintFunctor(PrintFunctor[LineDTO]):
     """
     Handle single separator lines, sequential lines, and counted line blocks.
 
@@ -50,24 +57,24 @@ class LinePrintFunctor(PrintFunctor[dto.LineDTO]):
     """
 
     def __call__(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.LineInput]
-    ) -> dto.LineDTO:
-        return self.host(self.host.dto.line(*content, **kw))
+        self, *content: _ET.CliSpec, **kw: _U[_p.LineInput]
+    ) -> LineDTO:
+        return self.host(self.host._p.line(*content, **kw))
 
     def len(
         self,
         name: str,
-        *content: dto.CliSpec | Sequence[dto.CliSpec],
-        **kw: Unpack[dto.LinePresetInput],
-    ) -> dto.LineDTO:
+        *content: _ET.CliSpec | Sequence[_ET.CliSpec],
+        **kw: _U[_p.LinePresetInput],
+    ) -> LineDTO:
         if (
             len(content) == 1
             and isinstance(content[0], Sequence)
             and not isinstance(content[0], (str, bytes))
         ):
-            items: tuple[dto.CliSpec, ...] = tuple(content[0])
+            items: tuple[_ET.CliSpec, ...] = tuple(content[0])
         else:
-            items: tuple[dto.CliSpec, ...] = tuple(
+            items: tuple[_ET.CliSpec, ...] = tuple(
                 c
                 for c in content
                 if not isinstance(c, Sequence) or isinstance(c, str)
@@ -85,48 +92,38 @@ class LinePrintFunctor(PrintFunctor[dto.LineDTO]):
 
 
 @portlink(functorial.MountableFunctor)
-class BoxPrintFunctor(PrintFunctor[dto.PanelDTO]):
+class BoxPrintFunctor(PrintFunctor[PanelDTO]):
     """Mid-level structural functor for Box variations."""
 
     def __call__(
         self,
-        *content: dto.CliSpec,
+        *content: _ET.CliSpec,
         box: Boxes = Boxes.OPEN,
-        **kw: Unpack[dto.BoxInput],
-    ) -> dto.PanelDTO:
+        **kw: _U[_p.BoxInput],
+    ) -> PanelDTO:
         return self.host.panel(*content, box=box, **kw)
 
-    def open(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+    def open(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.OPEN, **kw)
 
-    def round(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+    def round(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.ROUND, **kw)
 
-    def corner(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+    def corner(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.CORNER, **kw)
 
-    def up(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+    def up(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.UP, **kw)
 
-    def down(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+    def down(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.DOWN, **kw)
 
     def mini(
         self,
-        *content: dto.CliSpec,
+        *content: _ET.CliSpec,
         mode: Literal["up", "down", "both"] = "both",
-        **kw: Unpack[dto.BoxInput],
-    ) -> dto.PanelDTO:
+        **kw: _U[_p.BoxInput],
+    ) -> PanelDTO:
         box_map: dict[str, Boxes] = {
             "up": Boxes.MINI_UP,
             "down": Boxes.MINI_DOWN,
@@ -134,14 +131,12 @@ class BoxPrintFunctor(PrintFunctor[dto.PanelDTO]):
         }
         return self(*content, box=box_map[mode], **kw)
 
-    def mini_up(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+    def mini_up(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.MINI_UP, **kw)
 
     def mini_down(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
-    ) -> dto.PanelDTO:
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
+    ) -> PanelDTO:
         return self(*content, box=Boxes.MINI_DOWN, **kw)
 
 
@@ -150,25 +145,25 @@ class TablePrintFunctor(PrintFunctor[TableViewDTO]):
     """Exposes all TableDtoProducer builders directly on `printer.table.*`."""
 
     def __call__(
-        self, content: dto._Grid, /, **kw: Unpack[dto.TableInput]
+        self, content: _ET.Grid, /, **kw: _U[_p.TableInput]
     ) -> TableViewDTO:
-        return self.host(self.host.dto.table(content, **kw))
+        return self.host(self.host._p.table(content, **kw))
 
     def matrix(
         self,
-        matrix: Sequence[Sequence[dto.CliSpec]],
+        matrix: Sequence[Sequence[_ET.CliSpec]],
         /,
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
-        return self.host(self.host.dto.table.matrix(matrix, **kw))
+        return self.host(self.host._p.table.matrix(matrix, **kw))
 
     def rows(
         self,
-        rows: Mapping[str, dto.CliSpec | Sequence[dto.CliSpec]],
+        rows: Mapping[str, _ET.CliSpec | Sequence[_ET.CliSpec]],
         /,
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
-        return self.host(self.host.dto.table.rows(rows, **kw))
+        return self.host(self.host._p.table.rows(rows, **kw))
 
     def cols(
         self,
@@ -176,9 +171,9 @@ class TablePrintFunctor(PrintFunctor[TableViewDTO]):
         /,
         *,
         corner: str = "",
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
-        return self.host(self.host.dto.table.cols(cols, corner=corner, **kw))
+        return self.host(self.host._p.table.cols(cols, corner=corner, **kw))
 
     def records(
         self,
@@ -186,10 +181,10 @@ class TablePrintFunctor(PrintFunctor[TableViewDTO]):
         /,
         *,
         headers: Sequence[str] | None = None,
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.host(
-            self.host.dto.table.records(records, headers=headers, **kw)
+            self.host._p.table.records(records, headers=headers, **kw)
         )
 
     def kv(
@@ -199,23 +194,23 @@ class TablePrintFunctor(PrintFunctor[TableViewDTO]):
         *,
         key_col: str = "Key",
         val_col: str = "Value",
-        **kw: Unpack[dto.TablePresetInput],
+        **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.host(
-            self.host.dto.table.kv(
+            self.host._p.table.kv(
                 mapping, key_col=key_col, val_col=val_col, **kw
             )
         )
 
 
 @portlink(functorial.MountableFunctor)
-class HeaderPrintFunctor(PrintFunctor[dto.PanelDTO]):
+class HeaderPrintFunctor(PrintFunctor[PanelDTO]):
     def __call__(
         self,
         title: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.HeaderPresetInput],
-    ) -> dto.PanelDTO:
+        *content: _ET.CliSpec,
+        **kw: _U[_p.HeaderPresetInput],
+    ) -> PanelDTO:
         if not content:
             styled_title = self.host.colors(title, Color.WHITE)
             return self.host.panel(styled_title, **kw)
@@ -223,15 +218,15 @@ class HeaderPrintFunctor(PrintFunctor[dto.PanelDTO]):
 
 
 @portlink(functorial.MountableFunctor)
-class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
+class DipPrintFunctor(PrintFunctor[PanelDTO]):
     def __call__(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
+        *content: _ET.CliSpec,
         color: ColorArg = Color.AZURE,
-        **kw: Unpack[dto.StatusInput],
-    ) -> dto.PanelDTO:
+        **kw: _U[_p.StatusInput],
+    ) -> PanelDTO:
         colored_head = self.host.colors(head, color)
         white_text = self.host.colors(text, Color.WHITE)
         banner = f"{colored_head} {white_text}"
@@ -243,43 +238,43 @@ class DipPrintFunctor(PrintFunctor[dto.PanelDTO]):
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
-    ) -> dto.PanelDTO:
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
+    ) -> PanelDTO:
         return self(head, text, *content, color=Color.AZURE, **kw)
 
     def green(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
-    ) -> dto.PanelDTO:
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
+    ) -> PanelDTO:
         return self(head, text, *content, color=Color.GREEN, **kw)
 
     def yellow(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
-    ) -> dto.PanelDTO:
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
+    ) -> PanelDTO:
         return self(head, text, *content, color=Color.YELLOW, **kw)
 
     def red(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
-    ) -> dto.PanelDTO:
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
+    ) -> PanelDTO:
         return self(head, text, *content, color=Color.RED, **kw)
 
     def purple(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
-    ) -> dto.PanelDTO:
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
+    ) -> PanelDTO:
         return self(head, text, *content, color=Color.PURPLE, **kw)

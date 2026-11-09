@@ -7,7 +7,6 @@ from rich.style import Style
 
 from sstcore import printer
 from sstcore.brick.color.box import Colors
-from sstcore.util.tree import example_trees
 
 c: Colors = Colors()
 
@@ -22,9 +21,9 @@ def main():  # LATER: use fire.Fire for cli? Or selector?
     # select.extend([-1])  # INFO: toggle by comment # (delete and see the issue)
 
     functions: list[Callable] = [
-        show_tree_graph,
+        # show_tree_graph,
         show_headers,
-        show_colors,
+        # show_colors,
         experiment_t_string,
         show_all_rich_colors,  # INFO: good one
         show_rich_style_attributes,
@@ -66,7 +65,7 @@ def rich_by_number():
 def show_rich_style_attributes():
     printer(rich_styles_raw)
     printer.panel("test")
-    printer.dict_table(rich_styles_raw)
+    printer.table.cols(rich_styles_raw)
     rich_styles: list[str] = list(set(rich_styles_raw.values()))
     for style in rich_styles:
         example: str = f"This is how '{style}' Text looks"
@@ -83,10 +82,13 @@ def show_all_rich_colors():
         printer.panel(target, frame=color)
 
 
-def show_tree_graph():
-    printer.title("Print the SimpleTree", title="SimpleTree")
-    printer.tree_graph(example_trees)
-    printer.tree_graph(example_trees.big_tree())
+# def show_tree_graph():
+# NEXT:yy
+# NEXT:yy
+# NEXT:yy
+#     printer.title("Print the SimpleTree", title="SimpleTree")
+#     printer.tree_graph(example_trees)
+#     printer.tree_graph(example_trees.big_tree())
 
 
 def show_headers(text="Selected Models"):
@@ -100,20 +102,20 @@ def show_headers(text="Selected Models"):
     printer.warn(text)
 
 
-def show_colors():
-    colors: list[Callable[[Any], None]] = [
-        printer.blue,
-        printer.red,
-        printer.green,
-        printer.cyan,
-        printer.magenta,
-        printer.yellow,
-        printer.black,
-        printer.white,
-    ]
-    for color_print in colors:
-        printer(f"{color_print.__name__.capitalize():>7}", end=" ")  # ty:ignore
-        color_print("This is so Colorful")
+# def show_colors():
+#     colors: list[Callable[[Any], None]] = [
+#         printer.blue,
+#         printer.red,
+#         printer.green,
+#         printer.cyan,
+#         printer.magenta,
+#         printer.yellow,
+#         printer.black,
+#         printer.white,
+#     ]
+#     for color_print in colors:
+#         printer(f"{color_print.__name__.capitalize():>7}", end=" ")  # ty:ignore
+#         color_print("This is so Colorful")
 
 
 def experiment_t_string():

@@ -16,7 +16,7 @@ from typing import Any
 
 from ...port.link import portlink
 from ...port.register import ListRegister, TupleRegister
-from ...port.register import registry_types as _reg
+from ...port.register import RegistryTypes as _RT  # noqa:N814
 from ._base import BaseVault
 
 
@@ -97,7 +97,7 @@ class Sequential[Item, V: Sequence, K: Hashable](BaseVault[Item, V, K]):
         items[s] = list(self._as_vault(value))
         self.vault: V = self._ctor(items)
 
-    def _where(self, fn: _reg.Predicate[Item]) -> V:
+    def _where(self, fn: _RT.Predicate[Item]) -> V:
         return self._ctor(x for x in self._iter_items() if fn(x))
 
 
@@ -108,8 +108,6 @@ class ListVault[Item, K: Hashable = Any](Sequential[Item, list[Item], K]):
 
 
 @portlink(TupleRegister)
-class TupleVault[Item, K: Hashable = Any](
-    Sequential[Item, _reg.Tuple[Item], K]
-):
-    def _ctor(self, items: Iterable[Item]) -> _reg.Tuple[Item]:
+class TupleVault[Item, K: Hashable = Any](Sequential[Item, _RT.Tuple[Item], K]):
+    def _ctor(self, items: Iterable[Item]) -> _RT.Tuple[Item]:
         return tuple(items)

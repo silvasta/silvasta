@@ -37,8 +37,6 @@ from ._types import _RichView as RichView
 from ._types import _Stringable as Stringable
 from .event.dto import CliDTO as _CliDTO
 from .event.dto import LogDTO as _LogDTO
-from .event.dto import _CliSerializable as CliSerializable
-from .event.dto import _LogSerializable as LogSerializable
 from .link import portlink as _portlink
 
 
@@ -61,48 +59,20 @@ class SstFullView(_typing.Protocol):
         """Provide a Colorized Name"""
 
 
-class _SstTestView(_typing.Protocol):
-    """Show all essential Views of the Library"""
-
-    def __sstcli__(self) -> _CliDTO:
-        """Snapshot Target for Visualization"""
-
-    def __sstlog__(self) -> _LogDTO:
-        """Structure Object Information as DTO"""
-
-    def __repr__(self) -> str:
-        """Concatenate Object Information to String"""
-
-    def __str__(self) -> str:
-        """Provide a representing Name"""
-
-    def __rich__(self) -> Richable:
-        """Provide a Colorized Name"""
+@_typing.runtime_checkable
+class LogSerializable[LogDTO_covariant: _LogDTO = _LogDTO](_typing.Protocol):
+    def __log__(self) -> LogDTO_covariant:
+        """Message the Event for Traceability"""
 
 
-# IMPORTANT: before publish, think about __
-
-
-class _SstTestView(_typing.Protocol):
-    """Show all essential Views of the Library"""
-
-    def __sst_cli__(self) -> _CliDTO:
-        """Snapshot Target for Visualization"""
-
-    def __sst_log__(self) -> _LogDTO:
-        """Structure Object Information as DTO"""
-
-    def __repr__(self) -> str:
-        """Concatenate Object Information to String"""
-
-    def __str__(self) -> str:
-        """Provide a representing Name"""
-
-    def __rich__(self) -> Richable:
-        """Provide a Colorized Name"""
+@_typing.runtime_checkable
+class CliSerializable[CliDTO_covariant: _CliDTO = _CliDTO](_typing.Protocol):
+    def __cli__(self) -> CliDTO_covariant:
+        """Snapshot the Target for Visualization"""
 
 
 type SstView = CliSerializable | LogSerializable  # LATER: TuiSerializable
+
 type CliRenderable = CliSerializable | Richable  # LATER: Serializable?
 type Richable = RichView | RichConsolable | str
 

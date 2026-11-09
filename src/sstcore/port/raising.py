@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from typing import Any, Never, Self, TypedDict, Unpack
 
 from .solid import BaseEnum
+from .structures import ParamSpec
 
 type Errors = tuple[type[Exception]] | tuple[type[Exception], type[Exception]]
 
@@ -61,7 +62,7 @@ class ErrorDTO:
     args: tuple[Any, ...] = ()
 
     def __call__(self, *args) -> SstCoreError:
-        # IMPORTANT: wire pipeline Raiser->DTO->Error proper!
+        # CHECK: wired pipeline Raiser->DTO->Error proper!?
         return self.error(self.message, *self.args, *args)
 
     def fire(self, *args) -> Never:
@@ -81,12 +82,7 @@ class ErrorInput(TypedDict, total=False):
     received: Mapping
 
 
-# AI_FOCUS: the ErrorSpec could probably benefit from ParamSpec or DataClassSpec+some mixin
-# - figure out what could be served better from a base class and what should stay here
-
-
-@dataclass(frozen=True)  # CHECK: dataclass from __subclass_int__?
-class ErrorSpec:
+class ErrorSpec(ParamSpec, frozen=True):
     """Define the Arg Space of the Internal Pipeline"""
 
     reason: Raiser
@@ -101,36 +97,20 @@ class ErrorSpec:
     def __str__(self):
         return f"{type(self).__name__}[{self.reason}]"
 
-    def __repr__(self):  # REMOVE: no longer needed for DataClass?
-        log: str = "-|-".join(f"{k}:={v}" for k, v in vars(self).items())
-        return f"{self}({log})"
-
     @classmethod
-    def absorb(
+    def capture(
         cls, reason: Raiser, /, *args, **kwargs: Unpack[ErrorInput]
     ) -> Self:
         """Extract the ErrorInput kwargs to form the ErrorSpec"""
 
-        items: dict[str, Any] = {}
-        extra: dict[str, Any] = {}
+        _items = dict(zip(cls.__pos_fields__, args, strict=False))
+        _items.update(cls.field_names().pluck(kwargs, destroy=True))
+        _extra = dict(kwargs)
 
-        pos_names: tuple[str, ...] = cls.__pos_fields__
+        if len(args) > (n_positionals := len(cls.__pos_fields__)):
+            _extra["args"] = args[n_positionals:]
 
-        for name, val in zip(pos_names, args, strict=False):
-            items[name] = val
-
-        if len(args) > len(pos_names):
-            extra["args"] = args[len(pos_names) :]
-
-        _valid_fields = cls.__dataclass_fields__.keys()
-
-        for key, value in kwargs.items():
-            if key in _valid_fields:
-                items[key] = value
-            else:
-                extra[key] = value
-
-        return cls(reason=reason, extra=extra or None, **items)
+        return cls(reason=reason, extra=_extra or None, **_items)
 
 
 #  LINE: -- Raise -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -151,7 +131,7 @@ class Raiser(BaseEnum, zero=True, walk=True):
 
     def dto(self, *args: Any, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
         """Sanitize the Input, compose Error and Message and create the DTO"""
-        data: ErrorSpec = self.spec.absorb(self, *args, **kwargs)
+        data: ErrorSpec = self.spec.capture(self, *args, **kwargs)
         error: type[SstCoreError] = self.compose()
         message: str = f"{self.message(data)} {data.text}".strip()
         return ErrorDTO(error, message=message, args=args)

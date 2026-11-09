@@ -19,10 +19,11 @@ from pathlib import Path
 
 from loguru import logger
 
-from ._arg import TargetPath, castpath
+from ....brick.call import castarg
+from ._input import TargetPath
 
 
-@castpath.uno_plus
+@castarg
 def unique_candidate(path: TargetPath, ensure_parent: bool) -> Path:
     """PathGuard.unique implementation logic: Increment until Path is unique"""
 
@@ -78,7 +79,7 @@ def _document_unique_path(path: Path, ensure_parent: bool):
             logger.info(f"Path unique but without directory! {path=}")
 
 
-@castpath
+@castarg
 def find_sequence(base: TargetPath) -> list[Path]:
     """
     Find all Paths of a Sequence (base name + auto-incremented versions)

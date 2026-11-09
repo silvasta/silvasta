@@ -12,10 +12,10 @@ __all__: list[str] = [
 from collections.abc import Hashable, Iterator
 from typing import Any
 
-from ...port.register import registry_types as _r
+from ...port.register import RegistryTypes as _RT  # noqa:N814
 
 
-class VaultContract[Item, V: _r.Vault, K: Hashable]:
+class VaultContract[Item, V: _RT.Vault, K: Hashable]:
     """
     Set the direction and prepare the main processes (no abc here!)
 
@@ -23,7 +23,7 @@ class VaultContract[Item, V: _r.Vault, K: Hashable]:
     """
 
     vault: V
-    ident: _r.Ident[Item]
+    ident: _RT.Ident[Item]
 
     def _empty(self) -> V:
         """Create an empty backing container"""
@@ -81,11 +81,11 @@ class VaultContract[Item, V: _r.Vault, K: Hashable]:
         """Assign values across the range defined by a slice"""
         raise NotImplementedError(s, value)
 
-    def _where(self, fn: _r.Predicate[Item]) -> V:
+    def _where(self, fn: _RT.Predicate[Item]) -> V:
         """Filter items satisfying a predicate into a new vault"""
         raise NotImplementedError(fn)
 
-    def _replace_where(self, fn: _r.Predicate[Item], item: Item) -> None:
+    def _replace_where(self, fn: _RT.Predicate[Item], item: Item) -> None:
         """Replace all items matching a predicate with a replacement item"""
         raise NotImplementedError(fn, item)
 

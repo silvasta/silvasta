@@ -15,13 +15,13 @@ from typing import Any
 from ...brick.field import StrategyField
 from ...port.link import portlink
 from ...port.register import Register, VaultPolicy
-from ...port.register import registry_types as _reg
+from ...port.register import RegistryTypes as _RT  # noqa:N814
 from ..field import PolicyField
 from ._access import VaultAccess
 
 
 @portlink(Register)
-class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
+class BaseVault[Item, V: _RT.Vault, K: Hashable](VaultAccess[Item, V, K]):
     """Establish the port definition for further specification"""
 
     policy: PolicyField[VaultPolicy] = PolicyField(VaultPolicy)
@@ -32,11 +32,11 @@ class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
         initial: V | Iterable | Mapping | None = None,
         /,
         *,
-        ident: _reg.Ident[Item] | None = None,
+        ident: _RT.Ident[Item] | None = None,
         policy: VaultPolicy | None = None,
     ) -> None:
         if ident is not None:
-            self.ident: _reg.Ident[Item] = ident
+            self.ident: _RT.Ident[Item] = ident
         if policy is not None:
             self.policy: VaultPolicy = policy
         self.vault: V = self._as_vault(initial)
@@ -64,7 +64,7 @@ class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
             case _:
                 raise TypeError(f"Unsupported policy: {self.policy!r}")
 
-    def clear(self, query: _reg.Selector[Item] | None = None) -> V:
+    def clear(self, query: _RT.Selector[Item] | None = None) -> V:
         if query is None:
             displaced, self.vault = self.vault, self._empty()
             return displaced
@@ -72,7 +72,7 @@ class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
         self.vault, _ = self._subtract(self.vault, displaced)
         return displaced
 
-    def find(self, query: _reg.Selector[Item]) -> V:
+    def find(self, query: _RT.Selector[Item]) -> V:
         q: Any = query
         match q:
             case int() as idx if not isinstance(idx, bool):
@@ -86,7 +86,7 @@ class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
             case _:
                 raise TypeError(f"Unsupported: {type(query).__name__}")
 
-    def count(self, query: _reg.Selector[Item]) -> int:
+    def count(self, query: _RT.Selector[Item]) -> int:
         return len(self.find(query))
 
     def __len__(self) -> int:
@@ -111,7 +111,7 @@ class BaseVault[Item, V: _reg.Vault, K: Hashable](VaultAccess[Item, V, K]):
 
     #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    def _replace_where(self, fn: _reg.Predicate[Item], item: Item) -> None:
+    def _replace_where(self, fn: _RT.Predicate[Item], item: Item) -> None:
         hits: list[int] = [i for i, current in enumerate(self) if fn(current)]
         for i in hits:
             self._index_put(i, item)

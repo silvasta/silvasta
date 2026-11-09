@@ -22,7 +22,7 @@ __all__: list[str] = [
 import dataclasses as _dc
 import inspect
 import typing as _t
-from collections.abc import MutableMapping
+from collections.abc import Mapping
 from dataclasses import MISSING
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
@@ -132,7 +132,7 @@ class SpecBase:
     @classmethod
     def absorb(
         cls,
-        kwargs: MutableMapping[str, Any],
+        kwargs: Mapping[str, Any],
         /,
         *,
         prefix: str = "",
@@ -144,7 +144,7 @@ class SpecBase:
         )
 
     @classmethod
-    def merge(cls, *specs: DataClass | None, **overrides: Any) -> Self:
+    def merge(cls, *specs: DataClass, **overrides: Any) -> Self:
         """Merge multiple partial specs shallowly into a composite spec."""
         return cls(**(cls.field_names().pull(*specs) | overrides))
 
@@ -152,7 +152,8 @@ class SpecBase:
 #  LINE: -- Spec Origin -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@_t.dataclass_transform(kw_only_default=True)
+# AI: this temporary resolves the issue for derived frozen ParamSpec, is it stable?
+@_t.dataclass_transform(kw_only_default=True, frozen_default=True)
 class DataClassSpec(SpecBase):
     """Base for Input-Sanitizing dataclass Specs"""
 
@@ -161,16 +162,18 @@ class DataClassSpec(SpecBase):
         *,
         kw_only: bool = True,
         frozen: bool = False,
+        abstract: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
-        _dc.dataclass(kw_only=kw_only, frozen=frozen)(cls)
+        if not abstract:  # AI: is this somehow useful?
+            _dc.dataclass(kw_only=kw_only, frozen=frozen)(cls)
 
 
 #  LINE: -- Applied Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class ParamSpec(DataClassSpec, kw_only=False):
+class ParamSpec(DataClassSpec, abstract=True):
     """Confirm Input and apply Defaults - Pair with TypedDict"""
 
 

@@ -13,23 +13,23 @@ __all__: list[str] = [
 from collections.abc import Hashable
 from typing import Any, overload
 
-from ...port.register import registry_types as _r
+from ...port.register import RegistryTypes as _RT  # noqa:N814
 from ._contract import VaultContract
 
 
-class VaultReader[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
+class VaultReader[Item, V: _RT.Vault, K: Hashable](VaultContract[Item, V, K]):
     """Pick the Items from the Vault"""
 
     @overload
     def __getitem__(self, query: int) -> Item: ...
     @overload
     def __getitem__(
-        self, query: slice | _r.Predicate | tuple[Any, ...]
+        self, query: slice | _RT.Predicate | tuple[Any, ...]
     ) -> V: ...
     @overload
     def __getitem__(self, query: str | Hashable) -> Item: ...
 
-    def __getitem__(self, query: _r.Selector[Item]) -> Item | V:
+    def __getitem__(self, query: _RT.Selector[Item]) -> Item | V:
         return self._dispatch_get(query)
 
     def _dispatch_get(self, query: Any) -> Item | V:
@@ -59,10 +59,10 @@ class VaultReader[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
         return result
 
 
-class VaultWriter[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
+class VaultWriter[Item, V: _RT.Vault, K: Hashable](VaultContract[Item, V, K]):
     """Place the Items in the Vault"""
 
-    def __setitem__(self, query: _r.Selector[Item], value: Any) -> None:
+    def __setitem__(self, query: _RT.Selector[Item], value: Any) -> None:
         self._dispatch_set(query, value)
 
     def _dispatch_set(self, query: Any, value: Any) -> None:
@@ -95,7 +95,7 @@ class VaultWriter[Item, V: _r.Vault, K: Hashable](VaultContract[Item, V, K]):
             self[key] = item
 
 
-class VaultAccess[Item, V: _r.Vault, K: Hashable](
+class VaultAccess[Item, V: _RT.Vault, K: Hashable](
     VaultWriter[Item, V, K], VaultReader[Item, V, K]
 ):
     def __str__(self):

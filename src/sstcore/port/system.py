@@ -42,6 +42,7 @@ from .config import Config, HomeSetup, Paths, Settings
 from .event import BusRegistration, EventBus
 from .event.emit import Emit
 from .printer import Print
+from .structures import ParamSpec
 
 
 class SstSystem(Protocol):
@@ -248,10 +249,8 @@ if __name__ == "__main__":
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-from .iinput import DataClassSpec  # noqa: E402
 
-
-class CliSystemSpec(DataClassSpec, kw_only=False):
+class CliSystemSpec(ParamSpec, kw_only=False):
     """Transfer validated System Input including Defaults."""
 
     verbose: bool = False
@@ -267,7 +266,7 @@ class CliSystemSpec(DataClassSpec, kw_only=False):
         }
 
 
-class CliSystemTools(DataClassSpec, kw_only=False):
+class CliSystemTools(ParamSpec, kw_only=False):
     config_loader: ConfigLoader | None = None
     bus_loader: BusLoader | None = None
     printer: Print | None = None

@@ -20,14 +20,14 @@ __all__: list[str] = [
 import functools
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+from ....brick.call import castarg
 from ....error import PathGuardError, PathGuardReason
 from . import _increment
-from ._arg import PathArg, PathSpec, TargetPath, castpath
+from ._input import PathArg, PathSpec, TargetPath
 
 
-@castpath.uno
+@castarg
 def _dir_logic(path: TargetPath, /) -> Path:
     """Ensure Directory is Writable"""
     path.mkdir(parents=True, exist_ok=True)
@@ -40,7 +40,7 @@ def dir[**P](
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
     if isinstance(target, (Path, str, PathSpec)):
-        return _dir_logic(target)
+        return _dir_logic(target)  # ty:ignore FIX:
 
     if callable(target):
         func: Callable[P, Path] = target
@@ -55,7 +55,7 @@ def dir[**P](
     raise PathGuardError(PathGuardReason.DECORATOR, target=target)
 
 
-@castpath.uno_plus
+@castarg
 def _file_logic(
     path: TargetPath, /, raise_error: bool, default_content: str | None
 ) -> Path:
@@ -80,11 +80,6 @@ def _file_logic(
     raise PathGuardError(PathGuardReason.MISSING, target=path, info=info)
 
 
-if TYPE_CHECKING:
-    _file_logic("path", raise_error=False)  # ty:ignore FIX:
-    _file_logic("path", raise_error=False, default_content="")
-
-
 def file[**P](
     target: Callable[P, Path] | PathArg | None = None,
     *,
@@ -101,7 +96,7 @@ def file[**P](
     """Ensure path is file or write default content and | or Raise"""
 
     if isinstance(target, (Path, str, PathSpec)):
-        return _file_logic(target, raise_error, default_content)
+        return _file_logic(target, raise_error, default_content)  # ty:ignore FIX:
 
     if callable(target):
         func: Callable[P, Path] = target
@@ -148,7 +143,7 @@ def unique[**P](
     """
 
     if isinstance(target, (Path, str, PathSpec)):
-        return _increment.unique_candidate(target, ensure_parent)
+        return _increment.unique_candidate(target, ensure_parent)  # ty:ignore FIX:
 
     if callable(target):
         func: Callable[P, Path] = target

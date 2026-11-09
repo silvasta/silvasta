@@ -9,13 +9,16 @@ __all__: list[str] = [
 ]
 
 
-from typing import Any, Unpack
+from typing import Any
+from typing import Unpack as _U  # noqa:N814
 
 from ...brick.field import FunctorField
 from ...forge.view.factory import DtoFactory, dto_factory
 from ...forge.view.render import DtoRenderHub
+from ...port._types import EventTypes as _ET  # noqa: N814
 from ...port._types import _Stringable
 from ...port.color import Color
+from ...port.event import _param as _p
 from ...port.event import dto
 from ...port.link import portlink
 from ...port.printer import PrintLayouts
@@ -46,12 +49,12 @@ class PrinterLayouts(PrinterBase):
         self.render = DtoRenderHub(colors=self.colors)
 
     def panel(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.PanelInput]
     ) -> dto.PanelDTO:
         return self(self.dto.panel(*content, **kw))
 
     def md(
-        self, content: _Stringable, /, **kw: Unpack[dto.MarkdownInput]
+        self, content: _Stringable, /, **kw: _U[_p.MarkdownInput]
     ) -> dto.MarkdownDTO:
         return self(self.dto.md(content, **kw))
 
@@ -61,8 +64,8 @@ class PrinterLayouts(PrinterBase):
         self,
         title: str,
         /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.HeaderPresetInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.HeaderPresetInput],
     ) -> dto.PanelDTO:
         """Render Header Panel with `self.project_info` as default topic."""
         merged: dict[str, Any] = dict(kw)
@@ -73,37 +76,21 @@ class PrinterLayouts(PrinterBase):
         return self.header(title, *content, **merged)
 
     def success(
-        self,
-        title: str,
-        /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        self, title: str, /, *content: _ET.CliSpec, **kw: _U[_p.StatusInput]
     ) -> dto.PanelDTO:
         return self.header(title, *content, color=Color.GREEN, **kw)
 
     def warn(
-        self,
-        title: str,
-        /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        self, title: str, /, *content: _ET.CliSpec, **kw: _U[_p.StatusInput]
     ) -> dto.PanelDTO:
         return self.header(title, *content, color=Color.YELLOW, **kw)
 
     def danger(
-        self,
-        title: str,
-        /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        self, title: str, /, *content: _ET.CliSpec, **kw: _U[_p.StatusInput]
     ) -> dto.PanelDTO:
         return self.header(title, *content, color=Color.RED, **kw)
 
     def special(
-        self,
-        title: str,
-        /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        self, title: str, /, *content: _ET.CliSpec, **kw: _U[_p.StatusInput]
     ) -> dto.PanelDTO:
         return self.header(title, *content, color=Color.PURPLE, **kw)

@@ -151,9 +151,21 @@ class StubTypes(metaclass=_LockedClsMeta):
     type OverLoads = Sequence[Callable[..., Any]]
 
 
+class _CliSerial(Protocol):
+    def __cli__(self):
+        """Ignore the CliDTO_covariant return value"""
+
+
 class EventTypes(metaclass=_LockedClsMeta):
     type Map[Value] = Mapping[str, Value]
     type Tuple[T] = tuple[T, ...]
+    type StrDict[V = Any] = dict[str, V]
+
+    type CliSpec = _CliSerial | _RichView | str
+
+    type Content[Value: CliSpec | Tuple[CliSpec]] = EventTypes.Tuple[Value]
+    type Vec = Content[CliSpec]
+    type Grid = tuple[tuple[CliSpec, ...], ...]
 
 
 @runtime_checkable

@@ -16,7 +16,7 @@ from collections.abc import Hashable, Iterator, Mapping, Sequence
 from typing import Any
 
 from ...port.link import portlink
-from ...port.register import DictRegister, registry_types
+from ...port.register import DictRegister, RegistryTypes
 from ._base import BaseVault
 
 
@@ -92,7 +92,7 @@ class Mapped[Item, K: Hashable](BaseVault[Item, dict[K, Item], K]):
         pairs[s] = list(self._as_vault(value).items())
         self.vault: dict[K, Item] = dict(pairs)
 
-    def _where(self, fn: registry_types.Predicate[Item]) -> dict[K, Item]:
+    def _where(self, fn: RegistryTypes.Predicate[Item]) -> dict[K, Item]:
         return {k: v for k, v in self.vault.items() if fn(v)}
 
 

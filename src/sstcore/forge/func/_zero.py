@@ -6,24 +6,22 @@ View Assembly
 """
 
 __all__: list[str] = [
-    "FunctorMetaInput",
-    #
-    # NEXT:
-    # "BaseParamSpec",
-    # "DataClassSpec",
-    #
+    "FunctorInput",
+    "FunctorSpec",
+    "SafeFunctorInput",
+    "SafeFunctorSpec",
     "FunctorView",
+    "FunctorMetaInput",
 ]
 
 from collections.abc import Callable
 from typing import TypedDict
 
-from sstcore.port.color import Color
-
 from ...brick import reflect
 from ...brick.color import colorize
 from ...brick.color.box import Colors
 from ...brick.format import norm
+from ...port.color import Color
 from ...port.functorial import Catch, ErrorPolicy
 from ...port.represent import Richable
 from ...port.structures import ParamSpec
@@ -32,9 +30,6 @@ from ..engine import FunctorMetaData
 colors = Colors()
 
 FunctorMetaInput = FunctorMetaData(color=Color.GREEN)
-
-
-# AI: everything fine here with the implementations?
 
 
 class FunctorInput[**A, R](TypedDict, total=False):
@@ -47,7 +42,7 @@ class FunctorSpec[**A, R](ParamSpec):
     name: str = ""
 
 
-class SafeFunctorInput[**A, R](FunctorInput, total=False):
+class SafeFunctorInput[**A, R](FunctorInput[A, R], total=False):
     catch: Catch[A, R]
     policy: ErrorPolicy
     exit_code: int
@@ -57,9 +52,6 @@ class SafeFunctorSpec[**A, R](ParamSpec):
     catch: Catch[A, R] | None = None
     policy: ErrorPolicy | None = None
     exit_code: int | None = None
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class FunctorView:

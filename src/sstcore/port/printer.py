@@ -16,11 +16,14 @@ __all__: list[str] = [
 from collections.abc import Callable, Sequence
 from enum import auto
 from string.templatelib import Template
-from typing import Any, Literal, Protocol, TypedDict, Unpack
+from typing import Any, Literal, Protocol, TypedDict
+from typing import Unpack as _U  # noqa:N814
 
+from ._types import EventTypes as _ET  # noqa:N814
 from ._types import _Stringable
 from .color import ColorArg, ColorBox, ColorId
 from .config import ProjectInformation
+from .event import _param as _p
 from .event import dto
 from .event._param import _Boxes
 from .event.dto import CliDTO, EventDTO
@@ -65,51 +68,51 @@ class PrintBase(Protocol):
 
 class LinePrinting(Protocol):
     def __call__(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.LineInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.LineInput]
     ) -> dto.LineDTO: ...
 
     def len(
         self,
         name: str,
-        *content: dto.CliSpec | Sequence[dto.CliSpec],
-        **kw: Unpack[dto.LinePresetInput],
+        *content: _ET.CliSpec | Sequence[_ET.CliSpec],
+        **kw: _U[_p.LinePresetInput],
     ) -> dto.LineDTO: ...
 
 
 class BoxPrinting(Protocol):
     def __call__(
         self,
-        *content: dto.CliSpec,
+        *content: _ET.CliSpec,
         box: _Boxes = _Boxes.OPEN,
-        **kw: Unpack[dto.BoxInput],
+        **kw: _U[_p.BoxInput],
     ) -> dto.PanelDTO: ...
 
     def open(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def round(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def corner(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def up(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def down(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def mini(
         self,
-        *content: dto.CliSpec,
+        *content: _ET.CliSpec,
         mode: Literal["up", "down", "both"] = "both",
-        **kw: Unpack[dto.BoxInput],
+        **kw: _U[_p.BoxInput],
     ) -> dto.PanelDTO: ...
     def mini_up(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def mini_down(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.BoxInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
 
 
@@ -117,8 +120,8 @@ class HeaderPrinting(Protocol):
     def __call__(
         self,
         title: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.HeaderPresetInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.HeaderPresetInput],
     ) -> dto.PanelDTO: ...
 
 
@@ -127,45 +130,45 @@ class DipPrinting(Protocol):
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
+        *content: _ET.CliSpec,
         color: ColorArg = ...,
-        **kw: Unpack[dto.StatusInput],
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def azure(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def green(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def yellow(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def red(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def purple(
         self,
         head: str,
         text: str,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
 
@@ -182,12 +185,12 @@ class PrintLayouts(Protocol):
     def dip(self) -> DipPrinting: ...
 
     def panel(
-        self, *content: dto.CliSpec, **kw: Unpack[dto.PanelInput]
+        self, *content: _ET.CliSpec, **kw: _U[_p.PanelInput]
     ) -> dto.PanelDTO:
         """Render Panel with full configuration."""
 
     def md(
-        self, content: _Stringable, /, **kw: Unpack[dto.MarkdownInput]
+        self, content: _Stringable, /, **kw: _U[_p.MarkdownInput]
     ) -> dto.MarkdownDTO:
         """Render Markdown."""
 
@@ -195,8 +198,8 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.HeaderPresetInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.HeaderPresetInput],
     ) -> dto.PanelDTO:
         """Single Slim Panel with Semantic Coloring"""
 
@@ -204,32 +207,32 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def warn(
         self,
         title: str,
         /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def danger(
         self,
         title: str,
         /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
     def special(
         self,
         title: str,
         /,
-        *content: dto.CliSpec,
-        **kw: Unpack[dto.StatusInput],
+        *content: _ET.CliSpec,
+        **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
 
@@ -254,7 +257,7 @@ class Printing(Protocol):
     """Define the Printers Print"""
 
     def __call__(  # LATER: work out, together with Inputs and Specs
-        self, target: Any, /, *more: Any, **spec: Unpack[PrintInput]
+        self, target: Any, /, *more: Any, **spec: _U[PrintInput]
     ) -> Any: ...
 
 

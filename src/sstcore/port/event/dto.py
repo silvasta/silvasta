@@ -10,51 +10,31 @@ __all__: list[str] = [
     "DtoNames",
     "DtoTable",
     "DtoRegistry",
-    # main dtos
+    # dtos
     "LogDTO",
-    "LogInput",
     "CliDTO",
-    "CliInfoInput",
-    "CliInput",
-    "CliSpec",
-    # cli extensions
     "PanelDTO",
-    "PanelInput",
-    "BoxInput",
-    "HeaderPresetInput",
-    "StatusInput",
     "MarkdownDTO",
-    "MarkdownInput",
     "LineDTO",
-    "LineInput",
-    "LinePresetInput",
     "TableDTO",
-    "TableInput",
-    "TablePresetInput",
-    "MergedDtoInputs",
 ]
 
 import dataclasses as _dc
 import typing as _typing
 from collections.abc import Callable as _Callable
-from collections.abc import Mapping as _Mapping
-from enum import auto
-from typing import Any as _Any
-from typing import TypedDict
+from collections.abc import Mapping, MutableMapping
 from typing import Unpack as _Unpack
 
 from loguru import logger as _logger
 
 from .._types import EventTypes as _ET  # noqa: N814
-from .._types import _RichView
-from ..color import Color, ColorArg
 from ..color import Color as _Color
-from ..color import ColorArg as _ColorArg
-from ..solid import OptionRegister
-from ..structures import ParamSpec
+from ..structures import FieldSet as _FieldSet
+from . import _param as _p
 
-type DtoTable[T: BaseEventDTO] = _Mapping[str, type[T]]
-type DtoRegistry[T: BaseEventDTO] = dict[str, type[T]]
+type DtoTable[DTO = BaseEventDTO] = Mapping[DtoNames, type[DTO]]
+type DtoRegistry = MutableMapping[DtoNames, type[BaseEventDTO]]
+
 type DtoNames = _typing.Literal[
     "log", "cli", "panel", "markdown", "line", "table", "ctor"
 ]
@@ -86,133 +66,26 @@ class BaseEventDTO:
         return f"{type(self).__name__}[{self.name}]"
 
 
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 class EventDTO(BaseEventDTO, name="ctor"):
     @classmethod
     def create(cls, *args, **kwargs) -> _typing.Self:
         """Resolve ParamSpec Structure and Produce latest registered DTO"""
-        target_cls: type[_typing.Self] = cls._registry.get(cls.name, cls)
-        # LATER: think about how to bring in here ArgCast (here=in derived cls)
-        sanitized: dict[str, _Any] = target_cls._sanitize_kwargs(**kwargs)
+        target_cls: type[_typing.Self] = cls._registry.get(cls.name, cls)  # ty:ignore
+        sanitized: _ET.StrDict = target_cls._sanitize_kwargs(**kwargs)
         return target_cls(*args, **sanitized)
 
     @classmethod  # LATER: where to apply @castarg?
     def _sanitize_kwargs(
-        cls, **kwargs: _Unpack[MergedDtoInputs]
-    ) -> dict[str, _Any]:
+        cls, **kwargs: _Unpack[_p.MergedDtoInputs]
+    ) -> _ET.StrDict:
         """Pack nested ParamSpec and resolve Annotated types"""
-        return sanitize_specs(
-            fields={field.name for field in _dc.fields(class_or_instance=cls)},
-            **kwargs,
-        )
-
-
-# NEXT: repair
-def sanitize_specs(fields: frozenset[str], **kwargs: _Any) -> dict[str, _Any]:
-    spec: dict[str, _Any] = dict(kwargs)
-
-    # AI_TASK: here it needs some update, an absorb_optional method is highly undesired!
-
-    if "frame" in fields and "frame" not in spec:
-        if frame := FrameSpec.absorb_optional(spec):  # FIX:
-            spec["frame"] = frame
-
-    if "header" in fields and "header" not in spec:
-        main_frame: FrameSpec | None = spec.get("frame")
-        default_box = main_frame.box if main_frame else _Boxes.CORNER
-
-        header_frame = FrameSpec.absorb_optional(  # FIX:
-            spec, prefix="header_", defaults={"box": default_box}
-        )
-        title: str | None = spec.pop("title", None)
-
-        if title is not None or header_frame is not None:
-            spec["header"] = HeaderSpec(
-                title=title,
-                frame=header_frame or FrameSpec(box=default_box),
-            )
-
-    return spec
-
-
-#  LINE: -- Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-#  MOVE: somehow separated, DTO are the main thing here
-
-
-class _Boxes(OptionRegister):  # MOVE: but where?
-    """
-    Select the Box around the Visualization
-
-    - configured in util.print._boxes
-    - exposed in util.print
-    """
-
-    CORNER = auto()
-    ROUND = auto()
-    UP = auto()
-    DOWN = auto()
-    MINI = auto()
-    MINI_UP = auto()
-    MINI_DOWN = auto()
-    OPEN = auto()
-
-
-class FrameSpec(ParamSpec):
-    topic: str | None = ""
-    topic_color: Color = Color.WHITE
-    box: _Boxes = _Boxes.CORNER
-
-
-class FrameTopicInput(TypedDict, total=False):
-    topic: str
-    topic_color: ColorArg
-
-
-class FrameInput(FrameTopicInput, total=False):
-    """Define the Border of one Header or Main Content"""
-
-    box: _Boxes
-
-
-class HeaderSpec(ParamSpec):
-    title: str | None = None
-    frame: FrameSpec = _dc.field(default_factory=FrameSpec)
-
-
-class HeaderBaseInput(TypedDict, total=False):
-    title: str
-
-
-class HeaderFrameInput(TypedDict, total=False):
-    header_topic: str
-    header_topic_color: ColorArg
-    header_box: _Boxes | None  # None = Same as Main Content
-
-
-class HeaderInput(HeaderBaseInput, HeaderFrameInput, total=False):
-    """Combine Header with Frame Args"""
+        return _p.sanitize_kwargs(fields=_FieldSet.absorb(cls), **kwargs)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class _HeaderSpec:  # MOVE: back to the final HeaderSpec
-    """
-    Explain:
-
-    X --- --- --- --- --- --- --- --- --- --- [ topic: FileScan ] --- X
-    | title: Frame with Title on top of the Content                   |
-    X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
-    | content: ...                 (maybe double line for transition) |
-    |          ...                                                    |
-
-    - No Header for title = None
-    - Mirror main frame topic for frame.topic = "", empty for None
-    """
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-#  LINE: -- Log -- -- - -- -- - -- -- - -- -- - --
 
 
 class LogDTO(EventDTO, name="log", kw_only=False):
@@ -223,20 +96,11 @@ class LogDTO(EventDTO, name="log", kw_only=False):
     metrics: _ET.Map = _dc.field(default_factory=dict)
     extra: _ET.Map = _dc.field(default_factory=dict)
 
-    def metainfo(self) -> dict[str, _Any]:  # LATER: here or in derived?
+    def metainfo(self) -> _ET.StrDict:  # LATER: here or in derived?
         return {**self.extra, **self.metrics}
 
 
-class LogInput(_typing.TypedDict, total=False):
-    level: str
-    metrics: _ET.Map
-    extra: _ET.Map
-
-
-#  LINE: -- Cli -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class CliDTO[Content = _Content](EventDTO, name="cli", kw_only=False):
+class CliDTO[Content = _ET.Content](EventDTO, name="cli", kw_only=False):
     """Root of the Cli Pipeline"""
 
     content: Content
@@ -244,99 +108,31 @@ class CliDTO[Content = _Content](EventDTO, name="cli", kw_only=False):
     infos: _ET.Map = _dc.field(default_factory=dict)
 
 
-class CliInfoInput(_typing.TypedDict, total=False):
-    infos: _ET.Map
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class CliInput(CliInfoInput, total=False):
-    color: _ColorArg
-
-
-#  LINE: -- Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@_typing.runtime_checkable
-class _LogSerializable[LogDTO_covariant: LogDTO = LogDTO](_typing.Protocol):
-    def __log__(self) -> LogDTO_covariant:
-        """Message the Event for Traceability"""
-
-
-@_typing.runtime_checkable
-class _CliSerializable[CliDTO_covariant: CliDTO = CliDTO](_typing.Protocol):
-    def __cli__(self) -> CliDTO_covariant:
-        """Snapshot the Target for Visualization"""
-
-
-type CliSpec = _CliSerializable | _RichView | str
-
-type _Content[Value: CliSpec | _ET.Tuple[CliSpec]] = _ET.Tuple[Value]
-type _Vec = _Content[CliSpec]
-type _Grid = tuple[tuple[CliSpec, ...], ...]
-
-#  LINE: -- Panel -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class PanelDTO(CliDTO[_Vec], name="panel"):
+class PanelDTO(CliDTO[_ET.Vec], name="panel"):
     """Store Spec to Render in Box"""
 
-    header: HeaderSpec = _dc.field(default_factory=HeaderSpec)
-    frame: FrameSpec = _dc.field(default_factory=FrameSpec)
+    header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
+    frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
 
 
-class PanelInput(CliInput, HeaderInput, FrameInput, total=False):
-    """Full manual Panel configuration"""
-
-
-class BoxInput(CliInput, HeaderInput, FrameTopicInput, total=False):
-    """Panel configuration when `box` style is fixed by a Box preset."""
-
-
-class HeaderPresetInput(CliInput, HeaderFrameInput, FrameInput, total=False):
-    """Panel configuration when `title` is passed positionally."""
-
-
-class StatusInput(CliInfoInput, HeaderFrameInput, FrameInput, total=False):
-    """Panel configuration when `title` and `color` are fixed by preset."""
-
-
-#  LINE: -- Markdown --- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class MarkdownDTO(CliDTO[CliSpec], name="markdown"):
+class MarkdownDTO(CliDTO[_ET.CliSpec], name="markdown"):
     """Store one Formatted Markdown SpecPoint"""
 
-    frame: FrameSpec = _dc.field(default_factory=FrameSpec)
+    frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)
     maxlen: int = 400
 
 
-class MarkdownInput(CliInput, FrameInput, total=False):
-    """Markdown"""
-
-    maxlen: int
-
-
-#  LINE: -- Line --- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class LineDTO(CliDTO[_Vec], name="line"):
+class LineDTO(CliDTO[_ET.Vec], name="line"):
     """Store Lines for Sequential unboxed Rendering."""
 
-    header: HeaderSpec = _dc.field(default_factory=HeaderSpec)
-    stat: _Callable[[_Vec], str] | None = None
+    header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
+    stat: _Callable[[_ET.Vec], str] | None = None
 
 
-class LinePresetInput(CliInput, HeaderFrameInput, total=False):
-    """Line options when `title`/`stat` are computed by a preset."""
-
-
-class LineInput(CliInput, HeaderInput, total=False):
-    stat: _Callable[[_Vec], str]
-
-
-#  LINE: -- Table --- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class TableDTO(CliDTO[_Grid], name="table"):  # TODO: Input
+class TableDTO(CliDTO[_ET.Grid], name="table"):  # TODO: Input
     """
     Store Table Spec in Grid of Rows and Columns
 
@@ -351,27 +147,9 @@ class TableDTO(CliDTO[_Grid], name="table"):  # TODO: Input
     row_name | content  | content  | content  |
     """
 
-    col_names: _Content[str] = _dc.field(default_factory=tuple)
-    row_names: _Content[str] = _dc.field(default_factory=tuple)
+    col_names: _ET.Content[str] = _dc.field(default_factory=tuple)
+    row_names: _ET.Content[str] = _dc.field(default_factory=tuple)
     corner: str = ""
 
-    header: HeaderSpec = _dc.field(default_factory=HeaderSpec)
-    frame: FrameSpec = _dc.field(default_factory=FrameSpec)
-
-
-class TablePresetInput(CliInput, HeaderInput, FrameInput, total=False):
-    """Table styling options when grid/headers are built by a factory method."""
-
-
-class TableInput(TablePresetInput, total=False):
-    """Full manual Table configuration."""
-
-    col_names: _Content[str]
-    row_names: _Content[str]
-    corner: str
-
-
-class MergedDtoInputs(
-    TableInput, MarkdownInput, LineInput, LogInput, total=False
-):
-    """Combined spec space so @castarg discovers all Annotated casters once."""
+    header: _p.HeaderSpec = _dc.field(default_factory=_p.HeaderSpec)
+    frame: _p.FrameSpec = _dc.field(default_factory=_p.FrameSpec)

@@ -13,9 +13,9 @@ __all__: list[str] = [
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from ...port.empty import VOID, MayBeNo
+from ...port.empty import VOID, MayBeNot
 from ...port.represent import PydanticModel, is_basemodel
-from ._check import AttrFilter
+from ._filter import AttrFilter
 
 _IGNORE = (classmethod, staticmethod, property)
 
@@ -23,7 +23,7 @@ _IGNORE = (classmethod, staticmethod, property)
 def data(
     target: Any,
     /,
-    filter: MayBeNo[AttrFilter] = VOID,
+    filter: MayBeNot[AttrFilter] = VOID,
     *,
     exclude: Iterable[str] = (),
 ) -> dict[str, Any]:
@@ -43,7 +43,7 @@ def data(
 def pydantic(
     target: PydanticModel,
     /,
-    filter: MayBeNo[AttrFilter] = VOID,
+    filter: MayBeNot[AttrFilter] = VOID,
     *,
     exclude: Iterable[str] = (),
 ) -> dict[str, Any]:

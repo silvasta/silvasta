@@ -11,15 +11,15 @@ __all__: list[str] = [
 from collections.abc import Mapping, Sequence
 from typing import Any, Self, Unpack
 
-from ....port.event.dto import CliSpec, TableDTO, TablePresetInput
+from ....port.event.dto import _ET, TableDTO, _p
 
 
 class TableViewDTO(TableDTO, name="table"):
     @classmethod
     def from_matrix(
         cls,
-        matrix: Sequence[Sequence[CliSpec]],
-        **kwargs: Unpack[TablePresetInput],
+        matrix: Sequence[Sequence[_ET.CliSpec]],
+        **kwargs: Unpack[_p.TablePresetInput],
     ) -> Self:
         return cls.create(
             content=tuple(tuple(row) for row in matrix),
@@ -29,8 +29,8 @@ class TableViewDTO(TableDTO, name="table"):
     @classmethod
     def from_rows(
         cls,
-        rows: Mapping[str, CliSpec | Sequence[CliSpec]],
-        **kwargs: Unpack[TablePresetInput],
+        rows: Mapping[str, _ET.CliSpec | Sequence[_ET.CliSpec]],
+        **kwargs: Unpack[_p.TablePresetInput],
     ) -> Self:
         return cls.create(
             content=tuple(
@@ -49,7 +49,7 @@ class TableViewDTO(TableDTO, name="table"):
         cols: Mapping[str, Sequence[Any]],
         *,
         corner: str = "",
-        **kwargs: Unpack[TablePresetInput],
+        **kwargs: Unpack[_p.TablePresetInput],
     ) -> Self:
         """Transform mapping of {col_name: column_values} into a transposed table."""
         return cls.create(
@@ -67,7 +67,7 @@ class TableViewDTO(TableDTO, name="table"):
         cls,
         records: Sequence[Mapping[str, Any]],
         headers: Sequence[str] | None = None,
-        **kwargs: Unpack[TablePresetInput],
+        **kwargs: Unpack[_p.TablePresetInput],
     ) -> Self:
         """Transform sequence of row dicts [{'ColA': 1, 'ColB': 2}] into a table."""
         if not records:
@@ -94,7 +94,7 @@ class TableViewDTO(TableDTO, name="table"):
         *,
         key_col: str = "Key",
         val_col: str = "Value",
-        **kwargs: Unpack[TablePresetInput],
+        **kwargs: Unpack[_p.TablePresetInput],
     ) -> Self:
         """Create a 2-column inspection table from any key-value mapping."""
         return cls.create(

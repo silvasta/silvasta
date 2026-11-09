@@ -24,6 +24,7 @@ __all__: list[str] = [
 
 from ....brick.field import FunctorField as _FunctorField
 from ....port.event import dto as _dto
+from ....port.event.dto import EventDTO as _EventDTO
 from ....port.event.factory import EventDtoFactory as _EventDtoFactory
 from ....port.link import portlink as _portlink
 from ._produce import (
@@ -48,9 +49,9 @@ class DtoFactory:
     line = _FunctorField(LineDtoProducer)
     table = _FunctorField(TableDtoProducer)
 
-    def __init__(self, registry: _dto.DtoTable[_dto.EventDTO]) -> None:
+    def __init__(self, registry: _dto.DtoTable) -> None:
         """Reference to the BaseEventDTO subclass registry"""
-        self._registry: _dto.DtoTable[_dto.EventDTO] = registry
+        self._registry: _dto.DtoTable = registry
 
 
-dto_factory = DtoFactory(_dto.EventDTO._registry)  # LATER: wire into System
+dto_factory = DtoFactory(_EventDTO._registry)  # LATER: wire into System

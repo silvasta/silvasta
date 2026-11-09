@@ -4,7 +4,7 @@ util.path.guard._input
 -
 """
 
-from dataclasses import asdict
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Annotated, Self, TypedDict, Unpack
 
@@ -25,7 +25,7 @@ class PathCastInput(PathInput, CastInput[Path], total=False):
     """Extend Path with Default Casting Input"""
 
 
-class PathSpec(ArgSpec[Path], frozen=True, slots=True):
+class PathSpec(ArgSpec[Path], frozen=True):
     """Normalize and Validate input for PathGuard and Paths."""
 
     resolve: bool = False
@@ -41,11 +41,9 @@ class PathSpec(ArgSpec[Path], frozen=True, slots=True):
     ) -> Self:
         if target is VOID:
             return cls(target=Path.cwd(), **kwargs)
-        # if TYPE_CHECKING: # debug toggle
-        #     target: Any = target
         match target:
-            case PathSpec():
-                return cls(**{**asdict(target), **kwargs})
+            case cls():  # CHECK: proper?
+                return target.evolve(**kwargs)
             case Path():
                 return cls(target=target, **kwargs)
             case str():
@@ -74,6 +72,11 @@ type ParentEnsuredPath = Annotated[Path, PathCaster(ensure_parent=True)]
 
 PathArg = str | Path | PathSpec
 
+type SinglePath = Path
+# NEXT: improve and specify
+type MultiPath = Iterable[Path]
+type PathStrategy = Callable[..., Path]
+
 
 @portlink(ArgCasting)
 class PathCaster(ArgCaster[PathArg, Path]):
@@ -82,7 +85,7 @@ class PathCaster(ArgCaster[PathArg, Path]):
     def __init__(self, **kwargs: Unpack[PathCastInput]) -> None:
         super().__init__(**kwargs)
 
-    def cast_target(self, target: MayBe[PathArg], /) -> Path:
+    def cast(self, target: MayBe[PathArg], /) -> Path:
         return PathSpec.ok(target, **self.kwargs)
 
 

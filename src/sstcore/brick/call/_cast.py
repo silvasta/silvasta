@@ -27,26 +27,30 @@ from ...port._types import _ArgCasting
 
 
 def iter_type_hints(target: _CT.Castable, /) -> Iterator[tuple[str, Any]]:
-    """Yield (Name,Annotation) and unpack TypedDicts recursively"""
+    """
+    Yield (Name,Annotation) and TypedDicts recursively
+
+    - provide full unpacked TypedDict plus iterate its over parts
+    """
 
     for name, hint in unwrap_type_hints(target):
-        if name == "return":
-            continue
-
         if _t.get_origin(hint) is Unpack:
-            _unpacked = _t.get_args(hint)[0]
-            # 1. Yield TypedDict itself (in case it has a whole-dict caster)
-            yield name, _unpacked
-            # 2. Yield flattened fields inside the TypedDict
-            yield from iter_type_hints(_unpacked)
+            _unpacked_typed_dict = _t.get_args(hint)[0]
+            yield name, _unpacked_typed_dict
+            yield from iter_type_hints(_unpacked_typed_dict)
         else:
             yield name, hint
 
 
 def unwrap_type_hints(target: _CT.Castable, /) -> Iterator[tuple[str, Any]]:
-    """Unwrap Generic Aliases (FunctorInput[Args, Result] -> FunctorInput)"""
+    """Unwrap (Generic-) Aliases, like: Input[Args, Result] -> Input"""
     _origin = _t.get_origin(target) or target
-    yield from _t.get_type_hints(_origin, include_extras=True).items()
+    for name, hint in _t.get_type_hints(_origin, include_extras=True).items():
+        if name == "return":
+            continue
+        while isinstance(hint, _t.TypeAliasType):
+            hint: Any = hint.__value__
+        yield name, hint
 
 
 #  LINE: -- casting functions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -71,6 +75,14 @@ def resolve_caster(
     3. Base type T of Annotated[T, ...] if T is in registry
     4. Direct annotation T if T is in registry
     """
+    if annotation in registry:
+        return registry[annotation]
+
+    while isinstance(annotation, _t.TypeAliasType):
+        annotation = annotation.__value__
+        if annotation in registry:
+            return registry[annotation]
+
     if _t.get_origin(annotation) in (Required, NotRequired):
         annotation = _t.get_args(annotation)[0]
 

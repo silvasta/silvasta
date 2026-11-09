@@ -22,7 +22,6 @@ __all__: list[str] = [
     "is_private",
     "is_dunder",
     "is_protocol",
-    "is_private_not_calling",
     "is_typing_generic",
     # attr
     "attr",
@@ -49,15 +48,14 @@ from . import _invoke as invoke
 from . import _scan as scan
 from ._attr import doc, module, name, text
 from ._check import (
-    AttrFilter,
     Visibility,
     is_dunder,
     is_private,
-    is_private_not_calling,
     is_protocol,
     is_typing_generic,
 )
 from ._core import clsname, funcname, objname
+from ._filter import AttrFilter
 from ._invoke import cli, log, rich
 from ._scan import data, pydantic
 

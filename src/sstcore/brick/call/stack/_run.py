@@ -16,7 +16,7 @@ from typing import Any, Self
 from ....port import stacking
 from ....port.link import portlink
 from ....port.stacking import LayerMode, RunningStack, StackingLayer
-from ....port.stacking import stacking_types as _st
+from ....port.stacking import StackTypes as _ST  # noqa: N814
 
 
 @portlink(RunningStack)
@@ -56,14 +56,14 @@ class StackRunner[**In, ValueT, Out]:
 @portlink(stacking.StackingState)
 @dataclass(frozen=True)
 class StackState[T]:
-    selected: _st.Accumulated[T] = field(
+    selected: _ST.Accumulated[T] = field(
         default_factory=lambda: defaultdict(list)
     )
     locked_layers: frozenset[str] = frozenset()
     used_value_ids: frozenset[int] = frozenset()
 
     def evolve(self, layer: str, value: Any, mode: LayerMode) -> Self:
-        new_selected: _st.Accumulated[T] = self.selected.copy()
+        new_selected: _ST.Accumulated[T] = self.selected.copy()
         new_selected[layer] = new_selected.get(layer, []) + [value]
 
         new_locked: set[str] = set(self.locked_layers)

@@ -19,7 +19,7 @@ from sstcore.port.event.name import EventName
 from sstcore.system import System
 from sstcore.system.config import ConfigManager
 from sstcore.system.event import Bus
-from sstcore.util.print import Printer
+from sstcore.util.print import Print
 
 
 def main():
@@ -35,7 +35,7 @@ class SystemExamples:
         return self._system.config  # ty:ignore FIX:
 
     @property
-    def _printer(self) -> Printer:
+    def _printer(self) -> Print:
         return self._system.printer
 
     @property

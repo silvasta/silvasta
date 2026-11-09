@@ -11,6 +11,7 @@ from typing import overload
 
 from loguru import logger
 
+from ....brick.call._argcast import castarg
 from ....error import (
     NotImplementedDispatchError,
     PathGuardError,
@@ -22,11 +23,10 @@ from ._input import (
     PathSpec,
     ResolvedPath,
     SinglePath,  # CHECK: how to resolve to Path
-    castpath,
 )
 
 
-@castpath
+@castarg
 def _relative_one(
     target: ResolvedPath,
     /,
@@ -84,7 +84,7 @@ def relative_main(  # AI: this is mounted to PathGuard.relative
             PathSpec.ok(root, resolve=True) if root is not None else Path.cwd()
         )
         return [
-            _relative_one(item, resolved_root, strict=strict)  # ty:ignore FIX:
+            _relative_one(item, resolved_root, strict=strict)
             # AI: here the existing should somwhow avoid the error, and just add nothing
             # - 2 potentially contradicting flags in relative_main(...) don't work well
             # - using existing:
@@ -243,6 +243,9 @@ def split(
     - 1 Absolute Path: computer readable safe for Operations
     - 1 Relative Path: human readable nice for Display
     """
+    if not isinstance(target, Path):
+        return [split(t, local_root) for t in target]
+
     if isinstance(target, (Path, str, PathSpec)):
         read_path = absolute_main(target, local_root, resolve=False)
         print_path = (
@@ -251,8 +254,5 @@ def split(
             else _relative_one(read_path, local_root)
         )
         return read_path, print_path
-
-    if isinstance(target, Iterable):
-        return [split(item, local_root) for item in target]
 
     raise NotImplementedDispatchError(target, local_root)

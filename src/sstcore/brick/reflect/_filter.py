@@ -21,9 +21,9 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Self
 
-from ...port._data import CachedDataclassMeta
-from ...port.annotate import anno_presets as _anno
-from ...port.empty import VOID, MayBe, MayBeNo
+from ...port.annotate import AnnotationPresets as _AP  # noqa:N814
+from ...port.empty import VOID, MayBe, MayBeNot
+from ...port.structures import CachedDataclassMeta
 from ._check import Visibility
 
 
@@ -186,7 +186,7 @@ class AttrFilter(metaclass=CachedDataclassMeta):
             private=False,
             dunder=False,
             include=frozenset(
-                _anno.DUNDERS if include_dunders is VOID else include_dunders
+                _AP.DUNDERS if include_dunders is VOID else include_dunders
             ),
             exclude=frozenset(exclude),
         )
@@ -195,7 +195,7 @@ class AttrFilter(metaclass=CachedDataclassMeta):
     def forge(cls, *, exclude: Iterable[str] = ()) -> Self:
         """Public attributes + standard calling/context/iterator dunders"""
         return cls(
-            include=frozenset(_anno.CALLING),
+            include=frozenset(_AP.CALLING),
             exclude=frozenset(exclude),
         )
 
@@ -210,12 +210,12 @@ class AttrFilter(metaclass=CachedDataclassMeta):
     @classmethod
     def resolve(
         cls,
-        filter: MayBeNo[Self] = VOID,
+        filter: MayBeNot[Self] = VOID,
         /,
         *,
         exclude: Iterable[str] = (),
     ) -> Self:
-        """Resolve a MayBeNo[AttrFilter] parameter into an active AttrFilter.
+        """Resolve a MayBeNot[AttrFilter] parameter into an active AttrFilter.
 
         - VOID       -> cls.default(exclude=exclude)
         - None       -> cls.empty(exclude=exclude)

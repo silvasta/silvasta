@@ -22,7 +22,7 @@ __all__: list[str] = [
     "InsertPolicy",
     "BisectDTO",
     #
-    "registry_types",
+    "RegistryTypes",
 ]
 
 import typing as _t
@@ -30,43 +30,44 @@ from collections.abc import Callable, Iterator
 from enum import auto
 from typing import Any, Protocol, overload
 
-from ._types import registry_types
+from ._types import RegistryTypes
+from ._types import Types as _T  # noqa:N814
 from .solid import PolicyEnum  # 1
 
-_reg = registry_types
+_RT = RegistryTypes
 
 
-class Register[Item, Vault: _reg.Vault](Protocol):
+class Register[Item, Vault: _RT.Vault](Protocol):
     """Define the Shape of the General Register"""
 
     vault: Vault
     policy: VaultPolicy
-    ident: _reg.Ident[Item]
+    ident: _RT.Ident[Item]
 
     def add(self, data: Item | Vault) -> Vault:
         """Extend vault by Items, get removed files back"""
 
-    def clear(self, query: _reg.Selector[Item] | None = None) -> Vault:
+    def clear(self, query: _RT.Selector[Item] | None = None) -> Vault:
         """Remove all Items or remove filtered  by identifier"""
 
-    def find(self, query: _reg.Selector[Item]) -> Vault:
+    def find(self, query: _RT.Selector[Item]) -> Vault:
         """Provide 0..N items that match the item identifier"""
 
-    def count(self, query: _reg.Selector[Item]) -> int:
+    def count(self, query: _RT.Selector[Item]) -> int:
         """How many items match the item identifier?"""
 
     @overload
     def __getitem__(self, query: int) -> Item: ...
     @overload
     def __getitem__(
-        self, query: slice | _reg.Predicate | tuple[_t.Any, ...]
+        self, query: slice | _RT.Predicate | tuple[_t.Any, ...]
     ) -> Vault: ...
     @overload
     def __getitem__(self, query: str) -> Item: ...
-    def __getitem__(self, query: _reg.Selector[Item]) -> Item | Vault:
+    def __getitem__(self, query: _RT.Selector[Item]) -> Item | Vault:
         """Insert Selector and Extract Values from Vault"""
 
-    def __setitem__(self, query: _reg.Selector[Item], value: Any):
+    def __setitem__(self, query: _RT.Selector[Item], value: Any):
         """Insert Selector and Value to Update the Vault"""
 
     def __len__(self) -> int:
@@ -92,15 +93,15 @@ class VaultPolicy(PolicyEnum):
 ### -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- -- - -- -- --
 
 
-class ListRegister[Item](Register[Item, _reg.List[Item]], Protocol):
+class ListRegister[Item](Register[Item, _RT.List[Item]], Protocol):
     """Establish the Register with a List of Items"""
 
 
-class TupleRegister[Item](Register[Item, _reg.Tuple[Item]], Protocol):
+class TupleRegister[Item](Register[Item, _RT.Tuple[Item]], Protocol):
     """Establish the Register with Tuples"""
 
 
-class DictRegister[Item, K](Register[Item, _reg.Dict[K, Item]], Protocol):
+class DictRegister[Item, K](Register[Item, _RT.Dict[K, Item]], Protocol):
     """Establish the Register with a Dict of Items"""
 
 
@@ -116,7 +117,7 @@ class FuncRegister[Item: Callable](Protocol):
         """Register new member by Decorator"""
 
 
-class MixinRegister[S: _reg.Slot](TupleRegister[_reg.Mixin], Protocol):
+class MixinRegister[S: _T.Slot](TupleRegister[_T.Mixin], Protocol):
     """Provide a stable Container for Compositiions"""
 
     # TODO: check forge.compose.SLOT
@@ -129,7 +130,7 @@ class MixinRegister[S: _reg.Slot](TupleRegister[_reg.Mixin], Protocol):
 
 
 class BisectRegister[Item, DTO: BisectDTO](
-    Register[Item, _reg.List[Item]], Protocol
+    Register[Item, _RT.List[Item]], Protocol
 ):
     """Define the Register with sort-and-read bisect access"""
 
@@ -178,7 +179,7 @@ class BoundaryPolicy(BisectPolicyBase):
     """
     Dictate mathematical boundaries during lookup
 
-    - INCLUSIVE (>=) bisect_regight: Evaluate to its own tier for exact match
+    - INCLUSIVE (>=) bisect_RTight: Evaluate to its own tier for exact match
     - EXCLUSIVE (>) bisect_left: Fall back to the previous tier for exact match
     """
 

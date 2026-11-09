@@ -17,8 +17,8 @@ from typing import Any, NoReturn, overload
 from ....error import PathGuardReason
 from ....port.event.dto import LogDTO, PanelDTO
 from ....port.files import SyncMode
-from ._arg import PathArg, PathSpec
 from ._field import DirField, FileField, UniqueField
+from ._input import PathArg, PathSpec
 
 # ---------------------------------------------------------------------------
 # Input layer (public)

@@ -31,6 +31,7 @@ from pathlib import Path
 
 from loguru import logger
 
+from ....brick.call import castarg
 from ....brick.field import StrategyField
 from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
@@ -38,7 +39,7 @@ from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
 from . import _ensure, _increment
-from ._arg import PathArg, ResolvedSource, SourcePath, TargetPath, castpath
+from ._input import PathArg, ResolvedSource, SourcePath, TargetPath
 
 
 def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
@@ -130,13 +131,14 @@ def _handle_hardlink(error: Exception, source: Path, target: Path):
 #  INFO: -- delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-def _remove(path: Path) -> None:
+def _remove(path: Path):
     if path.is_dir():
         import shutil  # LATER: upgrade with pathlib?
 
         shutil.rmtree(path)
     else:
         path.unlink()
+    return True
 
 
 def _trash(path: Path):
@@ -191,12 +193,12 @@ Trash = DeleteStrategy(
 
 #  LINE: -- Assemble -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-# TASK: collapse this even more, castpath on functor, functor on PahtGuard
+# TASK: collapse this even more, castarg on functor, functor on PahtGuard
 
 #  INFO: -- transfer -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@castpath
+@castarg
 def rotate(
     source: SourcePath,
     target: TargetPath,
@@ -216,7 +218,7 @@ def rotate(
     return transferred
 
 
-@castpath
+@castarg
 def copy(
     source: SourcePath,
     target: TargetPath,
@@ -225,7 +227,7 @@ def copy(
     return Copy.synced(source, target, mode=mode)
 
 
-@castpath
+@castarg
 def symlink(
     source: ResolvedSource,
     target: TargetPath,
@@ -234,7 +236,7 @@ def symlink(
     return Symlink.synced(source, target, mode=mode)
 
 
-@castpath
+@castarg
 def hardlink(
     source: SourcePath,
     target: TargetPath,
@@ -246,19 +248,19 @@ def hardlink(
 #  INFO: -- delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@castpath
+@castarg
 def remove(target: TargetPath) -> bool:
     """Remove file or folder at target location"""
     return Remove(target)
 
 
-@castpath
+@castarg
 def trash(target: TargetPath) -> bool:
     """Move file or folder at target location to system trash"""
     return Trash(target)
 
 
-@castpath
+@castarg
 def prune(
     base_target: TargetPath, remaining: int = 5, *, use_trash: bool = False
 ) -> list[Path]:

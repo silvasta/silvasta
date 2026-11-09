@@ -13,8 +13,8 @@ __all__: list[str] = [
     "StackAnnotator",
     "ProtoTyper",
     #
-    "stub_types",
-    "anno_presets",
+    "StubTypes",
+    "AnnotationPresets",
 ]
 
 
@@ -23,13 +23,13 @@ from dataclasses import dataclass, field
 from typing import Any
 from typing import Protocol as _Protocol
 
-from ._presets import anno_presets
-from ._types import stub_types
+from ._presets import AnnotationPresets
+from ._types import StubTypes
 from .shape import Typer  # 0
 from .solid import EnumMode  # 1
 
-_stub = stub_types
-_anno = anno_presets
+_ST = StubTypes
+_AP = AnnotationPresets
 
 
 class MetaAnnotator(Typer, _Protocol):
@@ -117,7 +117,7 @@ class StubJob3:
     public: str  # DTO_STACK
     class_name: str  # GreeterEmpty
     package: str  # sstcore.brick.stack
-    stub_file: str  # _stubs/_greeter.pyi
+    stub_file: str  # _STs/_greeter.pyi
     payload: Mapping[str, Any]  # INFO: bus
     overlay: bool = True
 
@@ -134,4 +134,4 @@ class StubJobDTO4:  # INFO: write.engine2
     source_target: Any  # Runtime object or Core supplying schema
     target_module: str  # Dotted target e.g., 'sstcore.brick.stack'
     renderer: Callable[[Any, str], str]  # (source, class_name) -> stub_str
-    sub_dir: str = "_stubs"
+    sub_dir: str = "_STs"
