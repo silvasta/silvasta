@@ -357,21 +357,3 @@ def _valid_sig(func: Callable, baseline: Signature) -> bool:
     if _is_open_signature(baseline) or _is_open_signature(new_sig):
         return True
     return _can_be_called_as(new_sig, baseline)
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-# AI: this are like the 5 bins where any (kw)arg can be placed
-# - some initial creation, then like any check can be done easily
-# - maybe a NamedTuple with 5 named tuples?
-#   each slot prepared once, stored if needed, ready for the next check
-# - the (Norm)Set looks less promising, any reason to stack them?
-#   (maybe some set operations, if Parameter are hashable, then this could be powerful)
-# - frozendict migth be as well promising, 5 named slots
-#   the string access might be annoying...
-# - Enum? or some Flag? unsure...
-_ = Parameter.POSITIONAL_ONLY
-_ = Parameter.POSITIONAL_OR_KEYWORD
-_ = Parameter.VAR_POSITIONAL
-_ = Parameter.KEYWORD_ONLY
-_ = Parameter.VAR_KEYWORD

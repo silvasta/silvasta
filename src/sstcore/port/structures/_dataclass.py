@@ -7,8 +7,6 @@ Define the Behaviour of DataClasses
                      DependencyLevel.sstcore.port.structures[0.1.2]
 """
 
-# LATER: "ParamSpec",
-
 __all__: list[str] = [
     "DataClass",
     "CachedDataclassMeta",
@@ -198,7 +196,7 @@ class ParamSpec(DataClassSpec, abstract=True):
     """Confirm Input and apply Defaults - Pair with TypedDict"""
 
 
-class ArgSpec[T](DataClassSpec, frozen=True):  # , slots=True):
+class ArgSpec[T](DataClassSpec, frozen=True):
     """Single-Target Validation with ArgCast"""
 
     target: T

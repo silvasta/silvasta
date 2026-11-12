@@ -29,6 +29,10 @@ class _DataClass(Protocol):
 type DataClassOrType = _DataClass | type[_DataClass]
 
 
+def _mutable(data: Mapping, /) -> TypeGuard[MutableMapping]:
+    return isinstance(data, MutableMapping)
+
+
 class NormSet(frozenset[str]):
     """
     Normalize Inputs on FrozenSet creation and lookups
@@ -75,7 +79,7 @@ class DunderSet(NormSet):
 
 class FieldSet(NormSet):
     """
-    Store canonical field names to match and extract inputs.
+    Store canonical field names to match and extract inputs
 
     - Cache field sets per DataClass type
     - Support dynamic prefix matching without mutating canonical names
@@ -90,37 +94,6 @@ class FieldSet(NormSet):
         if self.prefix and not f"{target}".startswith(self.prefix):
             return False
         return super().__contains__(target)
-
-    @classmethod
-    def normalize(cls, item: _Stringable, *, prefix: str = "") -> str:
-        return f"{item}".removeprefix(prefix)
-
-    @classmethod
-    @cache
-    def _absorb(cls, target: DataClassOrType) -> Self:
-        """Cache canonical field names once per DataClass"""
-        return cls(field.name for field in fields(target))
-
-    @classmethod
-    def absorb(cls, target: DataClassOrType, /, *, prefix: str = "") -> Self:
-        """Retrieve cached FieldSet for a DataClass class or instance."""
-        return cls._absorb(
-            target if isinstance(target, type) else type(target)
-        ).with_prefix(prefix)
-
-    @property
-    def prefix(self) -> str:
-        return self._normstate.get("prefix", "")
-
-    def with_prefix(self, prefix: str = "") -> Self:
-        """FieldSet with new lookup prefix without re-stripping stored keys"""
-        if prefix == self.prefix:
-            return self
-        unit: Self = frozenset.__new__(type(self), self)
-        unit._normstate = {**self._normstate, "prefix": prefix}
-        return unit
-
-    #  LINE: -- Gate Keeper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def pluck(
         self,
@@ -149,6 +122,31 @@ class FieldSet(NormSet):
             for name in (self & self.absorb(spec))
         }
 
+    @classmethod
+    def absorb(cls, target: DataClassOrType, /, *, prefix: str = "") -> Self:
+        """Retrieve cached FieldSet for a DataClass class or instance."""
+        return cls._absorb(
+            target if isinstance(target, type) else type(target)
+        ).with_prefix(prefix)
 
-def _mutable(data: Mapping, /) -> TypeGuard[MutableMapping]:
-    return isinstance(data, MutableMapping)
+    @classmethod
+    @cache
+    def _absorb(cls, target: DataClassOrType) -> Self:
+        """Cache canonical field names once per DataClass"""
+        return cls(field.name for field in fields(target))
+
+    @classmethod
+    def normalize(cls, item: _Stringable, *, prefix: str = "") -> str:
+        return f"{item}".removeprefix(prefix)
+
+    @property
+    def prefix(self) -> str:
+        return self._normstate.get("prefix", "")
+
+    def with_prefix(self, prefix: str = "") -> Self:
+        """FieldSet with new lookup prefix without re-stripping stored keys"""
+        if prefix == self.prefix:
+            return self
+        unit: Self = frozenset.__new__(type(self), self)
+        unit._normstate = {**self._normstate, "prefix": prefix}
+        return unit

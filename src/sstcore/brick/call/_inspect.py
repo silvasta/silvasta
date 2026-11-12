@@ -8,7 +8,6 @@ __all__: list[str] = [
     "validate_signature",
 ]
 
-# IDEA: move to brick.call??
 
 from collections.abc import Callable
 from inspect import Parameter, Signature, signature
