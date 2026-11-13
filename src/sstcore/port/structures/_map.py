@@ -10,6 +10,7 @@ __all__: list[str] = [
 
 # NEXT: LinkRegistry, EditRegistry (better name, switch for (im-)mutable)
 
+
 import sys
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, Self, overload

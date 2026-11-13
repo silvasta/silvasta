@@ -88,6 +88,10 @@ class CachedDataclassMeta(type):
             for name, value in bound.arguments.items()
         )
 
+        # AI: here the pattern, if not in cache -> load to cache, then __getitem__ access
+        # - somehow to beautiful and stable to replace by a 1-liner of a custom cache map
+        # - still there might be an improvement for generalizing/centralizing this
+        # - how to build the custom CacheMap or similar that handles this? while still showing the: not in,load,__getitem__ pattern?
         if cache_key not in cls._cache:
             cls._cache[cache_key] = super().__call__(*args, **kwargs)
 

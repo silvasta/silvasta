@@ -33,24 +33,7 @@ type EnumRelation[T: Enum] = tuple[type[T], T] | tuple[type[T]] | tuple[()]
 
 
 class SstEnumMeta(EnumMeta):
-    """
-    Tune Enum Meta with some Features
-
-    MEMBER = auto()
-
-    - Self.name = MEMBER
-    - Self.value = auto() = 0,..,N
-        - len(Self) = N
-
-    Ideas:
-    - __bool__: for Options
-        EASY: (but how?)
-        - index: -> int
-        - key: -> str, similar to name
-    - short: for LOG_AND_CONTINUE  -> "log", maybe as key?
-    - Important: Fallback strategy for Member != auto()!!!
-
-    """
+    """Tune Enum Meta with some Features"""
 
     _walk_for_zero: bool = False
     _zero_indexed: bool = False
@@ -77,7 +60,7 @@ class SstEnumMeta(EnumMeta):
 
     def __new__(
         metacls,
-        # metacls: type[_typeshed.Self],
+        # CHECK: metacls: type[_typeshed.Self],
         cls: str,
         bases: tuple[type, ...],
         classdict: EnumDict,
@@ -93,12 +76,13 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls = super().__new__(metacls, cls, bases, classdict, **kwds)
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
+
+        # AI: maybe even _enum_fields_ as cache / registry map?
         new_enum_cls._enum_fields_ = iter_enum_fields(new_enum_cls)  # ty:ignore
         # WARNING:
         # ├╴  Argument to function `iter_enum_fields` is incorrect: Expected `type[Enum]`, found `Self@__new__` ty (invalid-argument-type) [96, 55]
         # AI: is this fine to just ignore? usually what super() or __new__ produces is not properly typed
-
-        if new_enum_cls._enum_fields_:
+        if new_enum_cls._enum_fields_ and len(new_enum_cls) > 0:
             metacls._registered_enums_.append(new_enum_cls)
 
         return new_enum_cls
@@ -151,13 +135,24 @@ class SstEnumMeta(EnumMeta):
             enum_cls.validate_fields()
 
 
-def from_zero(name, start, count, last_values):
-    """Start from Index Zero"""
-    _, _, _ = name, start, last_values
-    return count
+def iter_enum_fields(enum_cls: type[Enum]) -> dict[str, BoundEnumField]:
+    """Collect all bound EnumFields across EnumCls and its MRO"""
+    return {
+        name: getattr(enum_cls, name)
+        for base in reversed(enum_cls.__mro__)
+        for name, attr in vars(base).items()
+        if isinstance(attr, EnumField)
+    }
+
+
+def validate_enum_fields(enum_cls: type[Enum]) -> None:
+    """Validate all EnumFields on any Enum or IntFlag class"""
+    for field in iter_enum_fields(enum_cls).values():
+        field.validate()
 
 
 class WalkZero(NamedTuple):
+    # AI_IGNORE: this works very well, tough confusing, the setup is stable, just leave that as it is
     walk: bool
     zero: bool
 
@@ -176,20 +171,10 @@ class WalkZero(NamedTuple):
         return cls(walked_walk, zero_or_walked_zero)
 
 
-def iter_enum_fields(enum_cls: type[Enum]) -> dict[str, BoundEnumField]:
-    """Collect all bound EnumFields across enum_cls and its MRO."""
-    fields: dict[str, BoundEnumField] = {}
-    for base in reversed(enum_cls.__mro__):
-        for name, attr in vars(base).items():
-            if isinstance(attr, EnumField):
-                fields[name] = getattr(enum_cls, name)
-    return fields
-
-
-def validate_enum_fields(enum_cls: type[Enum]) -> None:
-    """Validate all EnumFields on any Enum or IntFlag class."""
-    for field in iter_enum_fields(enum_cls).values():
-        field.validate()
+def from_zero(name, start, count, last_values):
+    """Start from Index Zero"""
+    _, _, _ = name, start, last_values
+    return count
 
 
 #  LINE: -- views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -241,6 +226,7 @@ if __name__ == "__main__":
         config: ClassVar[object]  # Generic or broad baseline
 
         def __init_subclass__(cls, config: object, **kwargs):
+            # AI_QUESTION: is this a completely different as the Fields or like the same topic but a different approach?
             super().__init_subclass__(**kwargs)
             cls.config = config
 

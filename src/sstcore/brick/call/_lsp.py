@@ -4,6 +4,8 @@ Define the Rules and Classification of LSP Violations
 -
 """
 
+from sstcore.port.structures._enumfield import BoundEnumField
+
 __all__: list[str] = [
     "LspViolation",
     "LspViolationDetails",
@@ -11,7 +13,7 @@ __all__: list[str] = [
 
 
 from enum import IntFlag, auto
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Self
 
 from ...port._types import _Stringable
 from ..format.name import ColoredName
@@ -213,18 +215,15 @@ class LspViolation(IntFlag):
                 )
 
             case _:
-                return self._merge(*(member.explain for member in self))
+                return LspViolationDetails.combine(  # NEXT:: self.explain as Field!!
+                    member=self, field=self.explain
+                )
 
     def _rule_ctor(self, title: str, detail: str, /) -> LspViolationDetails:
         return LspViolationDetails(self, title, detail)
 
-    def _merge(self, *rules: LspViolationDetails) -> LspViolationDetails:
-        return self._rule_ctor(
-            "\n".join(f"[{r.origin.value}] {r.title}" for r in rules),
-            "\n".join(f"[{r.origin.value}] {r.detail}" for r in rules),
-        )
-
     def __format__(self, format_spec: str) -> str:
+        # CHECK: what can be removed??
         match format_spec:
             case "" | "s":
                 return str(self)
@@ -262,7 +261,7 @@ def _get_pattern() -> str:
 _COLORED_LSP_NAME = ColoredName(_get_pattern())
 
 
-class LspViolationDetails(NamedTuple):
+class ExplainDetails(NamedTuple):
     origin: Any  # CHECK: Any
     title: str
     detail: str = ""
@@ -290,8 +289,24 @@ class LspViolationDetails(NamedTuple):
         from rich.console import Group
         from rich.panel import Panel
 
-        # LATER: add __rich__ to LspViolation?
         return Group(Panel(self.origin), Panel(repr(self)))
+
+
+class LspViolationDetails(ExplainDetails["LspViolation"]):
+    """LSP-specific explanation supporting composite IntFlag synthesis."""
+
+    @classmethod
+    def combine(
+        cls,
+        member: LspViolation,
+        field: BoundEnumField[LspViolation, Self],
+    ) -> Self:
+        parts: list[Self] = [field.get(flag) for flag in member]
+        return cls(
+            origin=member,
+            title="\n".join(f"[{r.origin.value}] {r.title}" for r in parts),
+            detail="\n".join(f"[{r.origin.value}] {r.detail}" for r in parts),
+        )
 
 
 if __name__ == "__main__":

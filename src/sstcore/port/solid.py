@@ -120,8 +120,7 @@ class PrintOption(EnumZero, walk=True):
     """(Randomly) toggle views until it looks nice"""
 
 
-class OptionRegister(EnumZero, walk=True):
-    # AI: this is target to replace by the new EnumField
+class OptionRegister(EnumZero, walk=True):  # REMOVE: when Fields settled
     """Provide Container to register Options for each Member"""
 
     _registry: dict[int, _t.Any]
