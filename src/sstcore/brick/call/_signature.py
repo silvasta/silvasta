@@ -5,17 +5,17 @@ Analyze the Signature of Callables
 """
 
 __all__: list[str] = [
-    "Param",
-    "ArgTuple",
-    "ArgKind",
+    "SigPart",
+    "SigArg",
     "SigParam",
+    "SigArg",
 ]
 
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import auto
 from inspect import Parameter, Signature, _empty, _ParameterKind
-from typing import Any, NamedTuple, Self, overload, reveal_type
+from typing import Any, NamedTuple, Self, overload
 
 from ...port.solid import EnumZero
 
@@ -24,10 +24,8 @@ EMPTY: type[_empty] = _empty
 s = Signature()
 p = Parameter("name", _ParameterKind.KEYWORD_ONLY)
 
-reveal_type(p.annotation)
 
-
-class Param(EnumZero):  # IDEA: SigParam, Sig, SigPart, SigKind
+class SigPart(EnumZero):
     """
     Govern the 5 Parameter Kinds - f(a, /, b, b=B, *c, d=D, **e)
 
@@ -44,7 +42,7 @@ class Param(EnumZero):  # IDEA: SigParam, Sig, SigPart, SigKind
     ARGS = auto()
     KEYARG = auto()
     KWARGS = auto()
-    # IDEA: RETURN
+    # IDEA: RETURN?
 
     def to_inspect(self) -> _ParameterKind:
         """Provide corresponding inspect._ParameterKind"""
@@ -52,29 +50,30 @@ class Param(EnumZero):  # IDEA: SigParam, Sig, SigPart, SigKind
 
     @overload
     @classmethod
-    def map(cls, target: Param, /) -> _ParameterKind: ...
+    def map(cls, target: SigPart, /) -> _ParameterKind: ...
     @overload
     @classmethod
-    def map(cls, target: _ParameterKind, /) -> Param: ...
+    def map(cls, target: _ParameterKind, /) -> SigPart: ...
     @classmethod
-    def map(cls, target: Param | _ParameterKind, /) -> _ParameterKind | Param:
+    def map(
+        cls, target: SigPart | _ParameterKind, /
+    ) -> _ParameterKind | SigPart:
         """Swap sstcore.Param or inspect._ParameterKind to counterpart"""
         match target:
-            # CHECK: RETURN, no counterpart
-            case Param():
+            case SigPart():
                 return _ParameterKind(target.value)
             case _ParameterKind():
-                return Param(target.value)
+                return SigPart(target.value)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class ArgTuple(NamedTuple):
+class SigArg(NamedTuple):
     """Define the Spec of 1 Signature Parameter"""
 
     name: str
-    kind: Param
+    kind: SigPart
     default: Any = Any
     annotation: Any = Any
 
@@ -88,28 +87,17 @@ class ArgTuple(NamedTuple):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class ArgKind[Kind: Param]:
+class SigParam:
     """Define the Rules for 1 Signature Parameter Kind"""
 
     __slots__ = ("_data",)
 
-    def __init__(self, *args: ArgTuple):
-        self._data: dict[ArgTuple, None] = {arg: None for arg in args}
+    def __init__(self, *args: SigArg):
+        self._data: dict[SigArg, None] = {arg: None for arg in args}
 
     @property
     def names(self) -> list[str]:
         return [arg.name for arg in self._data]
-
-    @property
-    def kinds(self) -> list[Kind]:  # TODO: just return 1 enum value
-        # AI: how to make a proper test?
-        kinds: list[Kind] = []
-        for arg in self._data:
-            if not isinstance(arg.kind, Kind):
-                raise
-            else:
-                kinds.append(arg.kind)
-        return kinds
 
     def __str__(self) -> str:
         return f"{type(self).__name__}[{','.join(self.names)}]"
@@ -120,13 +108,13 @@ class ArgKind[Kind: Param]:
     def __len__(self) -> int:
         return len(self._data)
 
-    def __iter__(self) -> Iterator[ArgTuple]:
+    def __iter__(self) -> Iterator[SigArg]:
         return iter(self._data)
 
     def __contains__(self, item: object) -> bool:
         # TODO:
         # - check by name
-        # - check by ArgTuple
+        # - check by SigArg
         # - what else?
         # return item in self._data
         raise NotImplementedError(item)
@@ -140,18 +128,17 @@ class ArgKind[Kind: Param]:
     # TODO: ??
     # def __setitem__(self, key: str) -> Any:
 
-    def __sub__(self, other: Self) -> Self:
-        # CHECK:
+    def __sub__(self, other: Self) -> Self:  # CHECK:
         if not isinstance(other, type(self)):
             return NotImplemented
-        _new_args = (arg for arg in self._data if arg not in other._data)
-        return type(self)(*_new_args)
+        return type(self)(
+            *(arg for arg in self._data if arg not in other._data)
+        )
 
-    def __and__(self, other: Self) -> Self:
+    def __and__(self, other: Self) -> Self:  # CHECK:
         if not isinstance(other, type(self)):
             return NotImplemented
-        _new_args = (arg for arg in self._data if arg in other._data)
-        return type(self)(*_new_args)
+        return type(self)(*(arg for arg in self._data if arg in other._data))
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -163,19 +150,19 @@ class ArgKind[Kind: Param]:
 # - use mixins if it reduces combinatorial issues
 
 
-class PosArgs(ArgKind): ...
+class PosArgs(SigParam): ...
 
 
-class AnyArgs(ArgKind): ...
+class AnyArgs(SigParam): ...
 
 
-class Args(ArgKind): ...
+class Args(SigParam): ...
 
 
-class KeyArgs(ArgKind): ...
+class KeyArgs(SigParam): ...
 
 
-class Kwargs(ArgKind): ...
+class Kwargs(SigParam): ...
 
 
 #  LINE: -- Return -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -197,8 +184,8 @@ def get_return(target: type):
 #  LINE: -- Signature -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@dataclass(frozen=True)
-class SigParam:
+@dataclass(frozen=True, slots=True)
+class SigSpec:
     pos: PosArgs
     both: AnyArgs
     args: Args
@@ -232,19 +219,19 @@ if __name__ == "__main__":
     from rich import print
 
     for member in _ParameterKind:
-        print(f"{member.name:<21} -> {Param.map(member)=}")
+        print(f"{member.name:<21} -> {SigPart.map(member)=}")
 
-    for member in Param:
-        print(f"{member.name:<9} -> {Param.map(member)=}")
+    for member in SigPart:
+        print(f"{member.name:<9} -> {SigPart.map(member)=}")
 
     inspect_kwarg: _ParameterKind = Parameter.VAR_POSITIONAL
-    sigcast_kwarg: Param = Param.KWARGS
+    sigcast_kwarg: SigPart = SigPart.KWARGS
 
-    x: Param = Param.map(inspect_kwarg)
-    y: _ParameterKind = Param.map(sigcast_kwarg)
+    x: SigPart = SigPart.map(inspect_kwarg)
+    y: _ParameterKind = SigPart.map(sigcast_kwarg)
 
-    arg1 = ArgTuple("test", Param.ANYARG)
-    arg2 = ArgTuple("other", Param.KWARGS)
+    arg1 = SigArg("test", SigPart.ANYARG)
+    arg2 = SigArg("other", SigPart.KWARGS)
 
     print(arg1)
     print(arg2)
@@ -254,8 +241,8 @@ if __name__ == "__main__":
     print(f"{"fail" in arg1=}")
     print(f"{Any in arg1=}")
 
-    mapping1 = ArgKind()
-    mapping2 = ArgKind(arg1, arg2)
+    mapping1 = SigParam()
+    mapping2 = SigParam(arg1, arg2)
 
     print(mapping1)
     print(mapping2)

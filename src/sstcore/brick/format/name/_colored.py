@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from rich.control import strip_control_codes
+from rich.text import Text
 
 from ._parse import NameParser
 
@@ -22,26 +22,20 @@ __all__: list[str] = [
 class ColoredName(NameParser):
     """Provide a Colored and a Regular Name with the same Pattern"""
 
-    def __init__(self, pattern: str, **kwargs: Any) -> None:
-        self.color_pattern = pattern
-        raw_pattern = strip_control_codes(pattern)
-        super().__init__(pattern=raw_pattern, **kwargs)
-
     def update_pattern(self, pattern: str) -> None:
-        """Intercept rich pattern, compile both versions."""
+        """Intercept rich pattern, compile both versions"""
         self.color_pattern = pattern
-        raw_pattern = strip_control_codes(pattern)
-        # We still want regex on the raw pattern for extract()
+        raw_pattern = Text.from_markup(pattern).plain
         super().update_pattern(raw_pattern)
 
-    def rich(self, target: dict | list | tuple) -> str:
+    def rich(self, target: dict | list | tuple, /) -> str:
         """Colored output using the original rich markup pattern."""
         keywords: dict[str, Any] = self.normalize_keys(target)
         if missing := set(self.keys) - set(keywords.keys()):
             raise ValueError(f"{self} missing keys for rich render: {missing}")
         return self.color_pattern.format(**keywords)
 
-    def raw(self, target: dict | list | tuple) -> str:
+    def raw(self, target: dict | list | tuple, /) -> str:
         """Explicit raw alias (same as default __call__)."""
         return self.format(target)
 

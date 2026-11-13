@@ -150,20 +150,20 @@ class BidirectionalName(_Normalized):
     """Route the Calls trough the right channel"""
 
     @overload
-    def safe(self, target: Path | str) -> dict[str, str] | None: ...
+    def safe(self, target: Path | str, /) -> dict[str, str] | None: ...
     @overload
-    def safe(self, target: dict | list | tuple) -> str | None: ...
-    def safe(self, target: Any) -> dict[str, str] | str | None:
+    def safe(self, target: dict | list | tuple, /) -> str | None: ...
+    def safe(self, target: Any, /) -> dict[str, str] | str | None:
         try:
             return self(target)
         except ValueError, FailedDispatchError:
             return None
 
     @overload
-    def __call__(self, target: Path | str) -> dict[str, str]: ...
+    def __call__(self, target: Path | str, /) -> dict[str, str]: ...
     @overload
-    def __call__(self, target: dict | list | tuple) -> str: ...
-    def __call__(self, target: Any):
+    def __call__(self, target: dict | list | tuple, /) -> str: ...
+    def __call__(self, target: Any, /):
         match target:
             case Path() | str():
                 return self.extract(target)
