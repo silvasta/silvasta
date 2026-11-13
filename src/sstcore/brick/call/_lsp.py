@@ -290,7 +290,7 @@ class LspViolationDetails(NamedTuple):
         from rich.console import Group
         from rich.panel import Panel
 
-        # LATER: add __rich__ to LspViolation
+        # LATER: add __rich__ to LspViolation?
         return Group(Panel(self.origin), Panel(repr(self)))
 
 

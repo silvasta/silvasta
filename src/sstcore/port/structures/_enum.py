@@ -25,6 +25,8 @@ __all__: list[str] = [
 from enum import Enum, EnumDict, EnumMeta
 from typing import Any, NamedTuple, Self
 
+from ._enumfield import BoundEnumField, EnumField
+
 type EnumId[EnumT: Enum] = EnumT | str | int
 
 type EnumRelation[T: Enum] = tuple[type[T], T] | tuple[type[T]] | tuple[()]
@@ -52,6 +54,8 @@ class SstEnumMeta(EnumMeta):
 
     _walk_for_zero: bool = False
     _zero_indexed: bool = False
+    _enum_fields_: dict[str, BoundEnumField[Any, Any]]
+    _registered_enums_: list[SstEnumMeta] = []
 
     @classmethod
     def __prepare__(
@@ -89,11 +93,17 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls = super().__new__(metacls, cls, bases, classdict, **kwds)
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
+        new_enum_cls._enum_fields_ = iter_enum_fields(new_enum_cls)  # ty:ignore
+        # WARNING:
+        # ├╴  Argument to function `iter_enum_fields` is incorrect: Expected `type[Enum]`, found `Self@__new__` ty (invalid-argument-type) [96, 55]
+        # AI: is this fine to just ignore? usually what super() or __new__ produces is not properly typed
+
+        if new_enum_cls._enum_fields_:
+            metacls._registered_enums_.append(new_enum_cls)
 
         return new_enum_cls
 
     def membership(cls, target, /) -> EnumRelation:
-        """Check if target is Enum class or instance"""
 
         if isinstance(target, cls):
             return (type(target), target)
@@ -104,7 +114,6 @@ class SstEnumMeta(EnumMeta):
         return ()
 
     def resolve(cls, identifier: EnumId, /, default=None):
-        """Map [int|str|EnumT] to BaseEnum derivative, default or Raise"""
         try:
             match identifier:
                 case cls():
@@ -126,9 +135,24 @@ class SstEnumMeta(EnumMeta):
                 raise type(error)(f"Resolving {cls} failed") from error
         return default
 
+    def validate_fields(cls) -> None:
+        """Validate all EnumField descriptors attached to this Enum."""
+        for field in cls._enum_fields_.values():
+            field.validate()
+
+    def fields_ready(cls) -> bool:
+        """Check whether all attached EnumFields have been hydrated."""
+        return all(field.is_loaded for field in cls._enum_fields_.values())
+
+    @classmethod
+    def validate_all_registered(metacls) -> None:  # noqa:N804
+        """Single test-suite hook to hydrate & validate every EnumField in sstcore."""
+        for enum_cls in metacls._registered_enums_:
+            enum_cls.validate_fields()
+
 
 def from_zero(name, start, count, last_values):
-    """Set Count to Zero"""
+    """Start from Index Zero"""
     _, _, _ = name, start, last_values
     return count
 
@@ -141,15 +165,31 @@ class WalkZero(NamedTuple):
     def resolve(cls, walk: bool, zero: bool, bases: tuple[type, ...]) -> Self:
         """Resolve inherited walk and zero flags from kwargs and bases"""
 
-        _walked_walk: bool = walk or any(
+        walked_walk: bool = walk or any(
             getattr(base, "_walk_for_zero", False) for base in bases
         )
 
-        _zero_or_walked_zero: bool = zero or (
+        zero_or_walked_zero: bool = zero or (
             walk
             and any(getattr(base, "_zero_indexed", False) for base in bases)
         )
-        return cls(_walked_walk, _zero_or_walked_zero)
+        return cls(walked_walk, zero_or_walked_zero)
+
+
+def iter_enum_fields(enum_cls: type[Enum]) -> dict[str, BoundEnumField]:
+    """Collect all bound EnumFields across enum_cls and its MRO."""
+    fields: dict[str, BoundEnumField] = {}
+    for base in reversed(enum_cls.__mro__):
+        for name, attr in vars(base).items():
+            if isinstance(attr, EnumField):
+                fields[name] = getattr(enum_cls, name)
+    return fields
+
+
+def validate_enum_fields(enum_cls: type[Enum]) -> None:
+    """Validate all EnumFields on any Enum or IntFlag class."""
+    for field in iter_enum_fields(enum_cls).values():
+        field.validate()
 
 
 #  LINE: -- views -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -183,8 +223,6 @@ EnumRepr = EnumRepr1
 
 
 if __name__ == "__main__":
-    #  LINE: -- TESTS -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
     from dataclasses import dataclass
     from enum import Enum
     from typing import ClassVar, Protocol

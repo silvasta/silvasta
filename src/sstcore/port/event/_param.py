@@ -13,6 +13,10 @@ X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
                               DependencyLevel.sstcore.port.event[2]
 """
 
+from typing import Any
+
+from src.sstcore.port.structures._enumfield import EnumField
+
 __all__: list[str] = [
     "FrameSpec",
     "HeaderSpec",
@@ -52,7 +56,14 @@ from ..solid import OptionRegister
 from ..structures import FieldSet, ParamSpec
 
 
-class _Boxes(OptionRegister):  # MOVE: but where?
+def _load_boxes() -> Mapping[_Boxes, Any]:
+    # REMOVE:
+    from ...util.print._boxes import BOX_MAP
+
+    return BOX_MAP
+
+
+class _Boxes(OptionRegister):
     """
     Select the Box around the Visualization
 
@@ -68,6 +79,8 @@ class _Boxes(OptionRegister):  # MOVE: but where?
     MINI_UP = auto()
     MINI_DOWN = auto()
     OPEN = auto()
+
+    box = EnumField(loader=_load_boxes)
 
 
 class FrameSpec(ParamSpec):

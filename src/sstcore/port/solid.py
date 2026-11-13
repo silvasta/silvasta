@@ -7,24 +7,29 @@ Define the Shape and Behaviour of the Solid Objects
 """
 
 __all__: list[str] = [
+    "SstEnumBlueprint",
+    "SstEnumMeta",
+    "is_sstenum",
+    "BaseEnum",
+    "is_baseenum",
     # common
+    "EnumZero",
     "PolicyEnum",
     "EnumMachine",
+    "EnumOption",
+    "OptionRegister",  # CHECK:
     "MixinCatalog",
-    # base
-    "EnumId",
-    "EnumRelation",
-    "BaseEnum",
-    #
+    # views
     "EnumView",
     "EnumRepr",
     "EnumStr",
+    # types
+    "EnumId",
+    "EnumRelation",
 ]
 
 
-from typing import Any as _Any
-from typing import Protocol as _Protocol
-from typing import Self as _Self
+import typing as _t
 
 from .empty import VOID as _VOID
 from .empty import MayBe as _MayBe
@@ -37,8 +42,8 @@ from .structures._enum import (
 )
 
 
-class EnumMeta(_Protocol):
-    """Rough sketch of the Meta (misuse protocol...)"""
+class SstEnumBlueprint(_t.Protocol):
+    """Rough sketch of the SstEnumMeta..."""
 
     _walk_for_zero: bool = False
     _zero_indexed: bool = False
@@ -55,11 +60,22 @@ class EnumMeta(_Protocol):
         """Check if Target is Enum Member, the Class itself or unrelated"""
 
     def resolve(cls, identifier: EnumId, /, default=None) -> EnumRelation:  # noqa:N805
-        """Check if Target is Enum Member, the Class itself or unrelated"""
+        """Map [int|str|EnumT] to BaseEnum derivative, default or Raise"""
 
 
-def _test(enum_type: SstEnumMeta) -> EnumMeta:  # TODO: find like a proper test
-    return enum_type  # NOTE: at least it shows some divergence/convergence...
+def _test(enum_type: SstEnumMeta) -> SstEnumBlueprint:
+    """Show basic divergence/convergence..."""
+    return enum_type  # TODO: find like a proper test
+
+
+def is_sstenum(target: _t.Any, /) -> _t.TypeGuard[SstEnumBlueprint]:
+    """Is the Target an EnumCls using SstEnumMeta?"""
+    return isinstance(target, SstEnumMeta)
+
+
+def is_baseenum(target: _t.Any, /) -> _t.TypeGuard[BaseEnum]:
+    """Is the Target a Member of some BaseEnum?"""
+    return isinstance(target, BaseEnum)
 
 
 class EnumView(EnumStr, EnumRepr):
@@ -71,7 +87,7 @@ class BaseEnum(EnumView, metaclass=SstEnumMeta):
 
 
 class EnumZero(BaseEnum, zero=True):
-    """Index based Enum - activate (permanently) with walk=True"""
+    """Index based Enum - propagate permanently to SubClasses with walk=True"""
 
 
 #  LINE: -- frequently used -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -105,22 +121,23 @@ class PrintOption(EnumZero, walk=True):
 
 
 class OptionRegister(EnumZero, walk=True):
+    # AI: this is target to replace by the new EnumField
     """Provide Container to register Options for each Member"""
 
-    _registry: dict[int, _Any]
+    _registry: dict[int, _t.Any]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls._registry: dict[int, _Any] = {}
+        cls._registry: dict[int, _t.Any] = {}
 
     @classmethod
-    def register(cls, mapping: dict[_Self, _Any]) -> None:
+    def register(cls, mapping: dict[_t.Self, _t.Any]) -> None:
         """Update the internal storage with Options for Member"""
         cls._registry.update(
             {enum.value: option for enum, option in mapping.items()}
         )
 
-    def get(self, fallback: _MayBe[_Any] = _VOID):
+    def get(self, fallback: _MayBe[_t.Any] = _VOID):
         """Get Option that is registered for current Member"""
         try:
             return self._registry[self.value]
