@@ -152,11 +152,14 @@ class BoundStrategy[**In, Out](FieldView):
     def switch(self, new_func: Callable[In, Out]) -> Self:
         """Swap function while ensuring LSP-consistency"""
         self.engine.write(self.unit, new_func)
-        self.func: Callable[In, Out] = new_func
+        # CHECK: self.func: Callable[In, Out] = new_func
+        self.func = new_func
         self.bind = False
         return self
 
     def morph[**Bound, Opened](self, new_func: Callable[Bound, Opened]) -> Self:
+        # TASK: reassgin signature?
+        # - at least track level of LSP-violatons
         """Swap function while ignoring LSP-violatons"""
         if not isinstance(self.engine, MorphingField):  # CHECK: needed?
             raise self.engine.raiser.Function(
@@ -165,13 +168,13 @@ class BoundStrategy[**In, Out](FieldView):
                 message="Morphing forbidden on StrategyField!",  # CHECK:
                 value=new_func,
             )
-        self.engine.write(self.unit, new_func)  # ty:ignore
-        self.func: Callable[Bound, Opened] = new_func
+        self.engine.write(self.unit, new_func)
+        self.func = new_func
+        # CHECK: self.func: Callable[Bound, Opened] = new_func
         self.bind = False
         return self
 
 
-#  MOVE: -- probably to brick.call._inspect
 #  LINE: -- Signature Checks -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 

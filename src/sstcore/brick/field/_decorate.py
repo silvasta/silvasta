@@ -12,7 +12,7 @@ __all__: list[str] = [
 from collections.abc import Callable
 from inspect import Signature, signature
 from types import MethodType
-from typing import Any, Concatenate, Self
+from typing import Any, Concatenate, Literal, Protocol, Self, overload
 
 from ...port import attach
 from ...port.link import portlink
@@ -46,9 +46,11 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
         if func is not None:
             self.bind(func)
 
-    def __call__[**NewIn, NewOut](
-        self, func: Callable[Concatenate[Any, NewIn], NewOut]
-    ) -> Self:
+    def __call__(self, func: Callable[Concatenate[Any, In], Out]) -> Self:
+        # CHECK: why way NewIn,NewOut used?
+        # def __call__[**NewIn, NewOut](
+        #     self, func: Callable[Concatenate[Any, NewIn], NewOut]
+        # ) -> Self:
         """Invoke only when used as hybrid decorator with args:= @Field(args)"""
         self.bind(func)
         return self
@@ -62,7 +64,7 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
             raise TypeError(f"Target must be callable, got {type(func)}")
 
         self.target_func: Callable[In, Out] = func
-        self.signature: Signature = signature(func)
+        self.signature: Signature = signature(func)  # NEXT: SigSpec
 
         default_doc = f"Bound Function by {self}"
         self.__doc__: str = reflect.doc(func, default=default_doc)
@@ -109,6 +111,9 @@ class DecoratedField[**In, Out](
         return bound_method
 
 
+#  LINE: -- Ideas -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
 @portlink(attach.DecoDescriptor)
 # IDEA: use this for _emit instead of StrategyField?
 class _CallableField[**In, Out](
@@ -144,3 +149,66 @@ class _CallableField[**In, Out](
         if self.bind_to_self:
             return MethodType(self.target_func, unit)
         return self.target_func
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+# AI: a disjointed factory function is undesired, more prefered:
+# - @overload on __new__ if that works somehow well
+# - using __call__ not only for the hybrid but oterwise like @Field() with empty brackets
+# - using a classmethod for the case of empty brackets like @Field.mount with internal __init__ and then execute by __call__
+
+
+# Overloads on a lowercase factory function (or __new__!) solve the TypeVar binding:
+
+
+# REMOVE: Silence ruff temporary for commit
+In = Any
+Out = Any
+
+
+@overload
+def callable_field[**In, Out](
+    func: Callable[Concatenate[Any, In], Out],
+    *,
+    bind_to_self: Literal[True] = True,
+) -> _CallableField[In, Out]: ...
+
+
+@overload
+def callable_field[**In, Out](
+    func: Callable[In, Out],
+    *,
+    bind_to_self: Literal[False],
+) -> _CallableField[In, Out]: ...
+
+
+@overload
+def callable_field(
+    func: None = None,
+    *,
+    bind_to_self: Literal[True] = True,
+) -> Callable[
+    [Callable[Concatenate[Any, In], Out]], _CallableField[In, Out]
+]: ...
+
+
+def callable_field(*args, **kwaargs):
+    """Silence type checker until real implementation"""
+    raise NotImplementedError
+
+
+# Note: in Python 3.12+ syntax, put [**In, Out] on the inner wrapper or a helper Protocol:
+
+
+class _Binder[FieldT](Protocol):
+    # AI: this looks like it can reduce the parametrization complexity
+    # - it could as well be used for TypeGuard if that is needed
+    def __call__[**In, Out](
+        self, func: Callable[Concatenate[Any, In], Out]
+    ): ...
+
+
+class _BoundFactory[FieldT]:
+    # Each subclass only needs 3 lines if it wants @SubClass(...) to infer types!
+    ...

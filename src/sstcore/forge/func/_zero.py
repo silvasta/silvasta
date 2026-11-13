@@ -22,6 +22,7 @@ from ...brick.color import colorize
 from ...brick.color.box import Colors
 from ...brick.format import norm
 from ...port.color import Color
+from ...port.event.emit import BoundLog
 from ...port.functorial import Catch, ErrorPolicy
 from ...port.represent import Richable
 from ...port.structures import ParamSpec
@@ -34,13 +35,13 @@ FunctorMetaInput = FunctorMetaData(color=Color.GREEN)
 
 class FunctorInput[**A, R](TypedDict, total=False):
     call: Callable[A, R]
-    emit: Callable[..., None]  # NEXT: check emitter inject
+    emit: BoundLog  # NEXT: check emitter inject
     name: str
 
 
 class FunctorSpec[**A, R](ParamSpec):
     call: Callable[A, R] | None = None
-    emit: Callable[..., None] | None = None
+    emit: BoundLog | None = None
     name: str = ""
 
 
