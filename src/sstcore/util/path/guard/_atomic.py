@@ -50,8 +50,8 @@ from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
+from .._pathcast import PathArg, ResolvedSource, SourcePath, TargetPath
 from . import _ensure, _increment, _lock
-from ._input import PathArg, ResolvedSource, SourcePath, TargetPath
 
 
 def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:

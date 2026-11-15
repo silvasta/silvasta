@@ -11,8 +11,6 @@ File System Operations
 # TODO: create tests for this!
 # - when everything works, run _atomic on them
 
-from src.sstcore.port.structures._module import DotPath
-
 __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
     "TransferStrategy",
     "check_sync_mode",
@@ -39,6 +37,7 @@ from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
+from ....port.structures._module import DotPath
 from .._pathcast import PathArg, ResolvedSource, SourcePath, TargetPath
 from . import _ensure, _increment
 

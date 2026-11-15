@@ -17,14 +17,14 @@ from ....error import (
     PathGuardError,
     PathGuardReason,
 )
-from ._input import (
+from .._pathcast import (
     MultiPath,
     PathArg,
     PathSpec,
     ResolvedPath,
     SinglePath,
     TargetPath,
-    is_single_path,
+    is_singlepath,
 )
 
 
@@ -104,7 +104,7 @@ def relative_main(  # AI: this is mounted to PathGuard.relative
         else Path.cwd().resolve()
     )
 
-    if is_single_path(target):
+    if is_singlepath(target):
         return _relative_one(
             target,
             resolved_root,
@@ -199,7 +199,7 @@ def absolute_main(  # AI: this is mounted to PathGuard.absolute
         PathSpec.ok(root, resolve=True) if root is not None else None
     )
 
-    if is_single_path(target):
+    if is_singlepath(target):
         return _absolute_one(
             target, resolved_root, resolve=resolve, must_exists=must_exists
         )
@@ -301,7 +301,7 @@ def split(
         else None
     )
 
-    if is_single_path(target):
+    if is_singlepath(target):
         return _split_one(target, resolved_root)
 
     if isinstance(target, Iterable):

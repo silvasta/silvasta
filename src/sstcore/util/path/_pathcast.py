@@ -58,20 +58,29 @@ class PathSpec(ArgSpec[Path], frozen=True):
     must_exists: bool = False
     ensure_parent: bool = False
 
-    @classmethod  # IMPORTANT:: use DataClassSpec.absorb??
+    @classmethod
     def normalize(
         cls, target: MayBe[PathArg] = VOID, /, **tkw: _U[PathInput]
     ) -> Self:
         if target is VOID:
-            return cls(target=Path.cwd(), **tkw)
-        match target:
-            case cls():
-                return target.evolve(**tkw)
-            case Path():
-                return cls(target=target, **tkw)
-            case str():
-                return cls(target=Path(target), **tkw)
-        raise PathGuardError(PathGuardReason.INPUT, target, **tkw)
+            path: Path = Path.cwd()
+        else:
+            match target:
+                case cls():
+                    spec: Self = target.evolve(**tkw)
+                    path: Path = spec.target
+                    tkw: PathInput = spec.to_dict()
+                case Path():
+                    path: Path = target
+                case str():
+                    path = Path(target)
+                case _:
+                    raise PathGuardError(PathGuardReason.INPUT, target, **tkw)
+
+        if tkw.get("resolve", False):
+            path: Path = path.resolve()
+
+        return cls(target=path, **tkw)
 
     def validate(self) -> Path:
         path: Path = self.target

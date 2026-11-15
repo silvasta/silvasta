@@ -6,74 +6,22 @@ Unite all Path Tools under  PathGuard 
 
 __all__: list[str] = [
     "PathGuard",
-    "StubFileGuard",
 ]
 
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from types import ModuleType
-from typing import Any, NoReturn, overload
+from typing import Any, overload
 
 from ....error import PathGuardReason
-from ....port.event.dto import LogDTO, PanelDTO
 from ....port.files import SyncMode
+from .._pathcast import PathArg, PathSpec
 from ._field import DirField, FileField, UniqueField
-from ._input import PathArg, PathSpec
-
-# ---------------------------------------------------------------------------
-# Mini
-# ---------------------------------------------------------------------------
-
-# NEXT: Move to own file??
-
-class StubFileGuard:
-    @staticmethod
-    def module_name(obj: Any) -> str: ...
-    @staticmethod
-    def public_package(module_name: str) -> str: ...
-    @staticmethod
-    def package_dir(dot_path: str) -> Path: ...
-    @staticmethod
-    def stub_root(obj: Any, package: str | None = None) -> Path: ...
-    @staticmethod
-    def get_stub_dir(
-        target: str | ModuleType | Path, subdir: str = "_stubs"
-    ) -> Path: ...
-    @staticmethod
-    def stub_file_init(
-        obj: Any, *, package: str | None = None, backup: bool = True
-    ) -> Path: ...
-    @staticmethod
-    def single_stub_file(
-        obj: Any,
-        *,
-        prefix: str,
-        package: str | None = None,
-        backup: bool = True,
-    ) -> Path: ...
-
-# ---------------------------------------------------------------------------
-# Facade
-# ---------------------------------------------------------------------------
 
 class PathGuard:
     Spec: type[PathSpec]
     SyncMode: type[SyncMode]
     Reason: type[PathGuardReason]
 
-    # EXTRACT: define at StaticMeta and mix it here?
-
-    def __init__(self) -> NoReturn: ...
-    @classmethod
-    def __str__(cls) -> str: ...
-    @classmethod
-    def __repr__(cls) -> str: ...
-    @classmethod
-    def __rich__(cls) -> str: ...
-    @classmethod
-    def __cli__(cls) -> PanelDTO: ...
-    @classmethod
-    def __log__(cls) -> LogDTO: ...
     @classmethod
     def toolkit(cls, sort: bool = True) -> list[str]: ...
 
@@ -83,7 +31,7 @@ class PathGuard:
 
     @overload
     @staticmethod
-    def dir(target: PathArg) -> Path: ...
+    def dir(target: PathArg, /) -> Path: ...
     @overload
     @staticmethod
     def dir[**P](target: Callable[P, Path]) -> Callable[P, Path]: ...

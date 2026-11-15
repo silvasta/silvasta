@@ -21,8 +21,9 @@ from typing import Unpack as _U  # noqa:N814
 
 from typing_extensions import TypedDict
 
-from ...brick.call import ArgCast, ArgCaster, CastInput
+from ...brick.call import ArgCast, ArgCaster, ArgCasting, CastInput
 from ...port.empty import VOID, MayBe
+from ...port.link import portlink
 from ...port.structures import ArgSpec
 from ...port.structures._module import ModulePath
 
@@ -145,10 +146,11 @@ class ModulFullInput(_ModuleDir, _ModuleBackup, _ModulePackage, closed=True):
     """Single Stub file optional with subdir and prefix"""
 
 
+@portlink(ArgCasting)
 class ModuleCaster(ArgCaster[ModuleArg, ModulePath]):
     _input_types = (ModuleSpec, ModulePath, str)
 
-    def __init__(self, **tkw: _U[ModuleInput]) -> None:
+    def __init__(self, **tkw: _U[ModuleCastInput]):
         super().__init__(**tkw)
 
     def cast[T](self, target: MayBe[ModuleArg | T], /) -> ModulePath:

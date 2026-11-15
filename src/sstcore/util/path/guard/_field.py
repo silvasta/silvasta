@@ -19,15 +19,18 @@ __all__: list[str] = [
     "PathSpecField",
 ]
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Unpack
+from typing import Any, Self, Unpack, overload
 
+from ....brick import reflect
 from ....brick.field import DeleteField, FieldDecorator, ReadField, ValidField
 from ....port import attach
 from ....port.attach import FieldLoader
 from ....port.link import portlink
+from ....util.path._modulecast import ModuleArg, ModuleSpec
+from .._pathcast import PathArg, PathInput, PathSpec, PathStrategy
 from . import _ensure, _increment
-from ._input import PathArg, PathInput, PathSpec, PathStrategy
 
 
 @portlink(attach.ReadDescriptor)
@@ -178,3 +181,30 @@ class PathSpecField(ReadField[Path], ValidField[PathArg]):
             self._set_val(unit, validated)
             return validated
         return super().read(unit)
+
+
+class LazyModuleField[T]:  # CHECK: how well does this work?
+    """Resolve and Cache 'pkg.mod:Attr' ModulePath on first access"""
+
+    def __init__(
+        self,
+        fget: Callable[[Any], ModuleArg],
+        *,
+        call_if_callable: bool = False,
+    ) -> None:
+        self.fget: Callable[[Any], ModuleArg] = fget
+        self.call_if_callable: bool = call_if_callable
+        self.attr_name: str = reflect.funcname(fget)
+
+    @overload
+    def __get__(self, unit: None, owner: type | None) -> Self: ...
+    @overload
+    def __get__(self, unit: object, owner: type | None) -> T: ...
+    def __get__(self, unit: Any, owner: type | None = None) -> T | Self:
+        _ = owner
+        if unit is None:
+            return self
+        _mp = ModuleSpec.ok(self.fget(unit), resolve=True, must_exists=True)
+        val: T = _mp.lazy_loader(call_if_callable=self.call_if_callable)()
+        setattr(unit, self.attr_name, val)  # Cache on instance dict
+        return val

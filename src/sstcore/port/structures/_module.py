@@ -19,12 +19,19 @@ import sys
 from collections.abc import Callable, Iterable, Iterator
 from importlib import import_module
 from keyword import iskeyword
-from types import ModuleType
+from types import FrameType, ModuleType
 from typing import Any, NamedTuple, NotRequired, Self
 from typing import Unpack as _U  # noqa:N814
 
 from typing_extensions import TypedDict
 
+_INTERNAL_MODULES: frozenset[str] = frozenset(  # MOVE: .._presets
+    {
+        __name__,
+        "sstcore.util.path._module",
+        "sstcore.util.path._modulecast",
+    }
+)
 type DotStr = DotPath | str
 
 
@@ -345,18 +352,18 @@ class ModulePath(_ModulePathBase):
         return extracted
 
 
-def _caller_package(depth: int = 2) -> str:
-    """Inspect stack frame to determine caller's package or module name."""
-    try:
-        _frameget = sys._getframe(depth).f_globals.get
-        package: Any | None = _frameget("__package__") or _frameget("__name__")
-        if isinstance(package, str) and package and package != "__main__":
-            return package
-        if spec := _frameget("__spec__"):
-            if spec.parent:
+def _caller_package(depth: int = 1) -> str:
+    """Walk stack frames past internal path modules to find caller's package"""
+    frame: FrameType = sys._getframe(depth)
+    while frame is not None:
+        module: str | None = frame.f_globals.get("__name__", "")
+        if isinstance(module, str) and module not in _INTERNAL_MODULES:
+            pkg: str | None = frame.f_globals.get("__package__") or module
+            if isinstance(pkg, str) and pkg and pkg != "__main__":
+                return pkg
+            if (spec := frame.f_globals.get("__spec__")) and spec.parent:
                 return spec.parent
-    except ValueError:
-        pass
+        frame: FrameType | None = frame.f_back
     return (__package__ or __name__).partition(".")[0]
 
 

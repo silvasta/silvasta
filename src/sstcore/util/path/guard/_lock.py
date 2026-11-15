@@ -16,7 +16,7 @@ from ....brick.color import colorize
 from ....brick.color.box import Colors
 from ....error import PathGuardError, PathGuardReason
 from ....port.link import PortEmit, tap
-from ._input import PathArg, PathSpec
+from .._pathcast import PathArg, PathSpec
 
 c = Colors()
 

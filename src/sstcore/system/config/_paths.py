@@ -27,6 +27,8 @@ from ._defaults import SstDefaults
 from ._homes import HomeSetup, SstHomes
 from ._names import SstNames
 
+ModuleGuard.Path.parse("my.path:Attr")
+
 
 @portlink(Paths)
 class SstPaths:
@@ -85,21 +87,25 @@ class SstPaths:
         return dir / f"{self._names.scanner_cache_file}{suffix}"
 
     def stub_dir(self, target: Any, /, **tkw: _U[ModulDirInput]) -> Path:
-        """Prepare the _stubs directory for a package, module, or Path"""
+        """
+        Prepare the _stubs directory for a package, module, or Path
 
-        match target:  # AI_TASK: check if this block can be moved to module_root or some other ModuleGuard function
-            case Path():
-                root: Path = target if target.is_dir() else target.parent
-            case _:
-                root: Path = ModuleGuard.root(target, tkw.get("package"))
+        Ignore additional kwargs and set defaults:
 
-        # LATER: add default sub stub dir to self._names
+        - package: None
+        - subfolder: _stub
+        """  # MOVE: header on port.config.Config protocol
+        root: Path = ModuleGuard.root(target, tkw.get("package"))
         return PathGuard.dir(root / tkw.get("subfolder", "_stub"))
 
     def stub_file(
         self, target: Any, /, prefix: str, **tkw: _U[ModulFullInput]
     ) -> Path:
-        """Create Single StubFile Path and ensure Backup and Writable"""
+        """
+        Create Single StubFile Path and ensure Backup and Writable
+
+        Forward kwargs and set default for backup: None == False
+        """  # MOVE: header on port.config.Config protocol
 
         stub_dir: Path = self.stub_dir(target, **tkw)
         stub_name = f"_{prefix.lower()}.pyi"  # CHECK: something after prefix?
@@ -109,7 +115,11 @@ class SstPaths:
         return PathGuard.backup(stub_file) if tkw.get("backup") else stub_file
 
     def init_stub_file(self, target: Any, /, **tkw: _U[ModulInitInput]) -> Path:
-        """Create __init__ Stub File Path and ensure Backup and Writable"""
+        """
+        Create __init__ Stub File Path and ensure Backup and Writable
+
+        Forward kwargs and set default for backup: None == False
+        """  # MOVE: header on port.config.Config protocol
 
         stub_dir: Path = self.stub_dir(target, subfolder="", **tkw)
         stub_file: Path = stub_dir / "__init__.pyi"

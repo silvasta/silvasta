@@ -130,7 +130,7 @@ class SpecBase:
         """Provide new instance with updated fields"""
         return _dc.replace(self, **changes)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self):
         """Extract all fields into dict without deepcopy"""
         return self.field_names().pull(self)
 
@@ -211,12 +211,7 @@ class ArgSpec[T](DataClassSpec, frozen=True):
         return cls.normalize(target, **kwargs).validate()
 
     @classmethod
-    def normalize(
-        cls,
-        target: MayBe[_t.Any] = VOID,
-        # **kwargs,#CHECK:
-        /,
-    ) -> _t.Self:
+    def normalize(cls, target: MayBe[_t.Any] = VOID, /) -> _t.Self:
         """Create ArgSpec with confirmed Input"""
         raise NotImplementedError(target)
 
