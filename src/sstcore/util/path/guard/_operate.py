@@ -11,6 +11,8 @@ File System Operations
 # TODO: create tests for this!
 # - when everything works, run _atomic on them
 
+from typing import Never
+
 __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
     "TransferStrategy",
     "check_sync_mode",
@@ -117,7 +119,7 @@ def _hardlink(source: Path, target: Path) -> Path:
     return target
 
 
-def _handle_hardlink(error: Exception, source: Path, target: Path):
+def _handle_hardlink(error: Exception, source: Path, target: Path) -> Never:
     if isinstance(error, OSError):
         raise PathGuardError(
             PathGuardReason.HARDLINK,

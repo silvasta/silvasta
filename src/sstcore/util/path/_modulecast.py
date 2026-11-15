@@ -36,13 +36,13 @@ class _ModuleInput(TypedDict, total=False):
     must_exists: bool
 
 
-class ModuleInput(_ModuleInput, total=False, closed=True): ...
-
-
 class ModuleCastInput(
     _ModuleInput, CastInput[ModulePath], total=False, closed=True
 ):
     """Extend ModuleInput with Default Casting Input."""
+
+
+class ModuleInput(_ModuleInput, total=False, closed=True): ...
 
 
 class ModuleSpec(ArgSpec[ModulePath], frozen=True):

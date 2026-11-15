@@ -109,13 +109,15 @@ class DotPath(str):
         """Split to [module:qualname] or [module:""] or for invalid: ["":""]"""
         _mod, _sep, _qual = target.strip().partition(":")
 
-        def _valid(qualname, /) -> bool:
-            return bool(_sep) and cls.accepts(qualname, allow_relative=False)
-
         if not cls.accepts(_mod, **tk):
             return cls.empty(), cls.empty()
 
-        return cls(_mod, **tk), cls.abs(_qual) if _valid(_qual) else cls.empty()
+        if _sep:
+            if not cls.accepts(_qual, allow_relative=False):
+                return cls.empty(), cls.empty()
+            return cls(_mod, **tk), cls.abs(_qual)
+
+        return cls(_mod, **tk), cls.empty()
 
 
 type _Double[T] = tuple[T, T]
@@ -384,10 +386,13 @@ def _modulename(target: Any, /, default="builtins") -> str:
     return default
 
 
-def _qualname(target: Any, /, default="") -> str:
+def _qualname(target: Any, /, default: str = "") -> str:
     for attr in ("__qualname__", "__name__"):
         if isinstance(val := getattr(target, attr, None), str) and val:
-            return val
+            if "<locals>." in val:
+                val = val.rpartition("<locals>.")[2]
+            if DotPath.accepts(val, allow_relative=False):
+                return val
     return default
 
 

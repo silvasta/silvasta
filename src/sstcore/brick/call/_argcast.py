@@ -26,6 +26,7 @@ from inspect import BoundArguments, Signature
 from typing import Any
 
 from loguru import logger
+from typing_extensions import TypedDict as _TypedDict
 
 from ...port._types import CallingTypes as _CT  # noqa: N814
 from ...port._types import _ArgCasting as ArgCasting
@@ -100,7 +101,7 @@ class ArgCast:
 castarg = ArgCast()  # TARGET: Main Result
 
 
-class CastInput[T](_t.TypedDict, total=False):
+class CastInput[T](_TypedDict, total=False):
     """Base Input for TypedKwarg Pipeline"""
 
     default: MayBe[T]

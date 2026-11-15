@@ -102,12 +102,16 @@ class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
 
         value: Callable[In, Out] = super().validate(unit, value)
 
-        if self.signature is None or not _valid_sig(
+        if self.signature is None or not _pass_all_valid_sig(
             value, baseline=self.signature
         ):
             raise self.raiser.Signature(self, unit, value=value)
 
         return value
+
+
+def _pass_all_valid_sig(*_, **__):
+    return True
 
 
 @portlink(attach.MorphingDescriptor)

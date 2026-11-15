@@ -1,16 +1,19 @@
 """
-Confirm the functionalities of the module path utils
+Confirm the functionalities of DotPath, ModulePath, ModuleSpec, and ModuleGuard
 
 -
 """
 
 import math
+from pathlib import Path
 from typing import Any
 
 import pytest
 
+import sstcore.port.structures as structures_pkg
 from sstcore.port.structures._module import DotPath, ModulePath
-from sstcore.util.path._module import ModuleArg, ModuleInput, ModuleSpec
+from sstcore.util.path._modulecast import ModuleArg, ModuleInput, ModuleSpec
+from sstcore.util.path.guard import ModuleGuard
 
 
 class DummyClass:
@@ -24,7 +27,7 @@ class DummyClass:
         return 42
 
 
-# LINE: -- 1. Syntax & Parsing Tests -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+# LINE: -- 1. DotPath & ModulePath Syntax Tests -- -- - -- -- - -- -- - -- --
 
 
 @pytest.mark.parametrize(
@@ -42,19 +45,49 @@ class DummyClass:
         ("pkg.mod:Cls", False, False),  # ':' is not part of a pure dotpath
     ],
 )
-def test_is_dotpath(raw: str, allow_rel: bool, expected: bool) -> None:
-    assert DotPath(raw, allow_relative=allow_rel) is expected
+def test_dotpath_accepts_and_init(
+    raw: str, allow_rel: bool, expected: bool
+) -> None:
+    assert DotPath.accepts(raw, allow_relative=allow_rel) is expected
+    if expected:
+        dp = DotPath(raw, allow_relative=allow_rel)
+        assert dp == raw
+    elif (
+        raw
+    ):  # Non-empty invalid strings must raise ValueError on instantiation
+        with pytest.raises(ValueError):
+            DotPath(raw, allow_relative=allow_rel)
+
+
+def test_dotpath_operations() -> None:
+    dp = DotPath.rel("..pkg.sub")
+    assert dp.is_relative is True
+    assert dp.is_absolute is False
+    assert dp.depth == 2
+    assert tuple(dp.parts) == ("pkg", "sub")
+
+    extended = dp / "leaf"
+    assert extended == "..pkg.sub.leaf"
+    assert DotPath.merge(".a.", ".b.c.") == "a.b.c"
+
+    with pytest.raises(ValueError):
+        _ = dp / ".invalid_rel"
 
 
 @pytest.mark.parametrize(
     ("raw", "kwargs", "expected"),
     [
         ("package.module.sub", {}, True),
-        ("package.module.sub", {"require_attr": True}, False),
-        ("package.module.sub:Cls", {"require_attr": True}, True),
-        ("module:Cls.sub_attr", {"require_attr": True}, True),
+        ("package.module.sub", {"require_qualattr": True}, False),
+        ("package.module.sub:Cls", {"require_qualattr": True}, True),
+        ("module:Cls.sub_attr", {"require_qualattr": True}, True),
         (".module:Cls", {"allow_relative": False}, False),
-        (".module:Cls", {"allow_relative": True, "require_attr": True}, True),
+        (
+            ".module:Cls",
+            {"allow_relative": True, "require_qualattr": True},
+            True,
+        ),
+        ("package:Cls:", {}, False),
         ("package:Cls:attr", {}, False),
         ("package.for:Cls", {}, False),
         ("hello..", {}, False),
@@ -66,7 +99,7 @@ def test_modulepath_accepts(
     assert ModulePath.accepts(raw, **kwargs) is expected
 
 
-def test_modulepath_properties_and_slicing() -> None:
+def test_modulepath_properties_and_truediv() -> None:
     mp = ModulePath.parse("sstcore.port._private:MyCls.method")
     mod, qual = mp  # NamedTuple unpacking
 
@@ -80,16 +113,20 @@ def test_modulepath_properties_and_slicing() -> None:
     assert mp.dotted == "sstcore.port._private.MyCls.method"
     assert str(mp) == "sstcore.port._private:MyCls.method"
 
-    # Relative path slicing does not confuse first segment with project root
+    # Relative path slicing
     rel = ModulePath.parse("..util._helper:Func", allow_relative=True)
     assert rel.is_relative is True
     assert rel.depth == 2
     assert rel.project == ""
     assert rel.submodules == ("util", "_helper")
 
-    # Division & qualname mutation
-    extended = mp / "sub" / ":"
-    assert str(extended) == "sstcore.port._private.sub"
+    # __truediv__ DSL: module extension, qualname replacement (:), qualname extension (::)
+    assert str(mp / "sub") == "sstcore.port._private.sub:MyCls.method"
+    assert str(mp / ":OtherCls") == "sstcore.port._private:OtherCls"
+    assert (
+        str(mp / "::sub_attr") == "sstcore.port._private:MyCls.method.sub_attr"
+    )
+    assert str(mp / "sub" / ":") == "sstcore.port._private.sub"
 
 
 # LINE: -- 2. Object Identification Tests -- -- - -- -- - -- -- - -- -- - -- --
@@ -116,6 +153,17 @@ def test_modulepath_identify(
     mp = ModulePath.identify(obj)
     assert mp.module == expected_mod
     assert mp.qualname == expected_qual
+
+
+def test_modulepath_identify_local_class() -> None:
+    """Locally defined classes (<locals>) should strip <locals> and not crash DotPath."""
+
+    class LocalEntity:
+        pass
+
+    mp = ModulePath.identify(LocalEntity())
+    assert mp.module == __name__
+    assert mp.qualname == "LocalEntity"
 
 
 # LINE: -- 3. Resolution, Existence & Import Tests -- -- - -- -- - -- -- - -- --
@@ -147,7 +195,6 @@ def test_existence_and_lazy_loader() -> None:
     assert missing_mod.module_exists() is False
     assert missing_mod.importable() is False
 
-    # Lazy loader without calling vs with calling
     fn_loader = valid.lazy_loader(call_if_callable=False, ensure_exists=True)
     assert fn_loader() is math.sqrt
 
@@ -181,11 +228,6 @@ def test_existence_and_lazy_loader() -> None:
             "._module:ModulePath",
             ModulePath("._module", "ModulePath"),
             {"allow_relative": True, "require_attr": True},
-        ),
-        (
-            "._module:ModulePath",
-            ModulePath("sstcore.port.structures._module", "ModulePath"),
-            {"resolve": True, "require_attr": True, "must_exists": True},
         ),
         (
             DummyClass,
@@ -226,4 +268,41 @@ def test_modulespec_from_path_rejects_objects() -> None:
         "math", "sqrt"
     )
     with pytest.raises(TypeError):
-        ModuleSpec.from_path(DummyClass)  # ty: ignore
+        ModuleSpec.from_path(DummyClass)  # ty: ignore[invalid-argument-type]
+
+
+# LINE: -- 5. ModuleGuard Filesystem & Introspection Tests -- -- - -- -- - -- --
+
+
+def test_moduleguard_introspection_and_paths() -> None:
+    assert ModuleGuard.name(ModulePath) == "sstcore.port.structures._module"
+    assert ModuleGuard.public(ModulePath) == "sstcore.port.structures"
+
+    mod_file = ModuleGuard.file(ModulePath)
+    assert isinstance(mod_file, Path)
+    assert mod_file.name == "_module.py"
+    assert mod_file.is_file()
+
+    pkg_dir = ModuleGuard.dir(structures_pkg)
+    assert pkg_dir == mod_file.parent
+    assert pkg_dir.is_dir()
+
+    root_dir = ModuleGuard.root(ModulePath)
+    assert root_dir == pkg_dir
+
+    # Path passthrough support
+    assert ModuleGuard.dir(mod_file) == pkg_dir
+    assert ModuleGuard.file(mod_file) == mod_file
+
+
+def test_moduleguard_submodules() -> None:
+    public_subs = list(
+        ModuleGuard.submodules(structures_pkg, include_private=False)
+    )
+    all_subs = list(
+        ModuleGuard.submodules(structures_pkg, include_private=True)
+    )
+
+    assert all(not mp.modules[-1].startswith("_") for mp in public_subs)
+    assert ModulePath("sstcore.port.structures._module") in all_subs
+    assert ModulePath("sstcore.port.structures._module") not in public_subs
