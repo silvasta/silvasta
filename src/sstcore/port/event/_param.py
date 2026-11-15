@@ -13,10 +13,6 @@ X --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- X
                               DependencyLevel.sstcore.port.event[2]
 """
 
-from typing import Any
-
-from src.sstcore.port.structures._enumfield import EnumField
-
 __all__: list[str] = [
     "FrameSpec",
     "HeaderSpec",
@@ -49,6 +45,7 @@ import dataclasses as _dc
 import typing as _t
 from collections.abc import Callable, Mapping, MutableMapping
 from enum import auto
+from typing import Any
 
 from .._types import EventTypes as _ET  # noqa: N814
 from ..color import Color, ColorArg
@@ -80,7 +77,8 @@ class _Boxes(OptionRegister):
     MINI_DOWN = auto()
     OPEN = auto()
 
-    box = EnumField(loader=_load_boxes)
+    # NEXT:
+    # box = EnumField(loader=_load_boxes)
 
 
 class FrameSpec(ParamSpec):

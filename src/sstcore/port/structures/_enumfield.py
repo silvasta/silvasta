@@ -13,11 +13,10 @@ __all__: list[str] = [
 
 from collections.abc import Callable, Mapping
 from enum import Enum
-from importlib import import_module
-from types import ModuleType
 from typing import Any, Protocol, Self, overload, runtime_checkable
 
 from ..empty import VOID, MayBe, MayNot
+from ._module import ModulePath
 
 
 @runtime_checkable
@@ -39,27 +38,10 @@ class EnumField[ValueT]:
         self._fallback: MayNot[Callable[[Any], ValueT]] = fallback
         self._loader: MayNot[EnumFieldLoader[Any, ValueT]] = None
         self._name: str = ""
-        # AI: here another definition of the Cache Pattern
-        # - the name _slots is way more confusing than helpful
-        # - 1 custom Mapping that absorbs this and _slot_for?
-        # - a simple helper class that governs this logic and works reliable
         self._slots: dict[type[Any], BoundEnumField[Any, ValueT]] = {}
 
-    def _slot_for[E: Enum](self, owner: type[E]) -> BoundEnumField[E, ValueT]:
-        """Provide per owner cached Field and load if needed"""
-        if owner not in self._slots:
-            self._slots[owner] = BoundEnumField(
-                owner=owner,
-                name=self._name,
-                loader=self._loader,
-                default=self._default,
-                fallback=self._fallback,
-            )
-        return self._slots[owner]
-
-    def __set_name__(self, owner: type[Any], name: str) -> None:
+    def __set_name__(self, owner: type, name: str) -> None:
         self._name: str = name
-        self._slot_for(owner)  # REMOVE: ??
 
     @overload
     def __get__[E: Enum](
@@ -75,6 +57,22 @@ class EnumField[ValueT]:
         return slot if member is None else slot.get(member)
 
     @classmethod
+    def imported(
+        cls,
+        path: ModulePath,
+        *,
+        call_it: bool = False,
+        default: MayBe[ValueT] = VOID,
+        fallback: MayNot[Callable[[Any], ValueT]] = None,
+    ) -> Self:
+        """Create Lazy Field by 'module.path:Attr' evaluation"""
+        return cls.lazy(
+            loader=path.lazy_loader(call_if_callable=call_it),
+            default=default,
+            fallback=fallback,
+        )
+
+    @classmethod
     def lazy(
         cls,
         loader: EnumFieldLoader[Any, ValueT],
@@ -87,27 +85,17 @@ class EnumField[ValueT]:
         field._loader = loader
         return field
 
-    @classmethod
-    def from_module(  # RENAME: 1 word: module, extracting, loading, importing, ...
-        cls,
-        target: str,
-        *,
-        default: MayBe[ValueT] = VOID,
-        fallback: MayNot[Callable[[Any], ValueT]] = None,
-    ) -> Self:
-        """Create Lazy Field by 'module.path:ATTR' evaluation"""
-        _module_path, _sep, _attr_name = target.partition(":")
-        if not _sep or not _module_path or not _attr_name:
-            raise ValueError(
-                f"Expected 'module.path:ATTR' target, got {target!r}"
+    def _slot_for[E: Enum](self, owner: type[E]) -> BoundEnumField[E, ValueT]:
+        """Provide per owner cached Field and load if needed"""
+        if owner not in self._slots:
+            self._slots[owner] = BoundEnumField(
+                owner=owner,
+                name=self._name,
+                loader=self._loader,
+                default=self._default,
+                fallback=self._fallback,
             )
-
-        def _import_loader() -> Mapping[Any, ValueT]:
-            mod: ModuleType = import_module(_module_path)
-            obj: Any = getattr(mod, _attr_name)
-            return obj() if callable(obj) else obj
-
-        return cls.lazy(_import_loader, default=default, fallback=fallback)
+        return self._slots[owner]
 
 
 class BoundEnumField[EnumT: Enum, ValueT]:

@@ -31,6 +31,8 @@ type EnumId[EnumT: Enum] = EnumT | str | int
 
 type EnumRelation[T: Enum] = tuple[type[T], T] | tuple[type[T]] | tuple[()]
 
+type EnumType = type[Enum] | SstEnumMeta
+
 
 class SstEnumMeta(EnumMeta):
     """Tune Enum Meta with some Features"""
@@ -60,7 +62,6 @@ class SstEnumMeta(EnumMeta):
 
     def __new__(
         metacls,
-        # CHECK: metacls: type[_typeshed.Self],
         cls: str,
         bases: tuple[type, ...],
         classdict: EnumDict,
@@ -68,7 +69,7 @@ class SstEnumMeta(EnumMeta):
         zero=False,
         walk=False,
         **kwds: Any,
-    ):  # CHECK: ) -> _typeshed.Self:, with: import _typeshed
+    ):
         """Destroy all custom kwargs and attach Zero"""
 
         resolved: WalkZero = WalkZero.resolve(walk, zero, bases)
@@ -77,11 +78,8 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
 
-        # AI: maybe even _enum_fields_ as cache / registry map?
-        new_enum_cls._enum_fields_ = iter_enum_fields(new_enum_cls)  # ty:ignore
-        # WARNING:
-        # ├╴  Argument to function `iter_enum_fields` is incorrect: Expected `type[Enum]`, found `Self@__new__` ty (invalid-argument-type) [96, 55]
-        # AI: is this fine to just ignore? usually what super() or __new__ produces is not properly typed
+        new_enum_cls._enum_fields_ = iter_enum_fields(new_enum_cls)
+
         if new_enum_cls._enum_fields_ and len(new_enum_cls) > 0:
             metacls._registered_enums_.append(new_enum_cls)
 
@@ -135,24 +133,23 @@ class SstEnumMeta(EnumMeta):
             enum_cls.validate_fields()
 
 
-def iter_enum_fields(enum_cls: type[Enum]) -> dict[str, BoundEnumField]:
+def iter_enum_fields(cls: EnumType) -> dict[str, BoundEnumField]:
     """Collect all bound EnumFields across EnumCls and its MRO"""
     return {
-        name: getattr(enum_cls, name)
-        for base in reversed(enum_cls.__mro__)
+        name: getattr(cls, name)
+        for base in reversed(cls.__mro__)
         for name, attr in vars(base).items()
         if isinstance(attr, EnumField)
     }
 
 
-def validate_enum_fields(enum_cls: type[Enum]) -> None:
+def validate_enum_fields(enum_cls: EnumType) -> None:
     """Validate all EnumFields on any Enum or IntFlag class"""
     for field in iter_enum_fields(enum_cls).values():
         field.validate()
 
 
 class WalkZero(NamedTuple):
-    # AI_IGNORE: this works very well, tough confusing, the setup is stable, just leave that as it is
     walk: bool
     zero: bool
 
