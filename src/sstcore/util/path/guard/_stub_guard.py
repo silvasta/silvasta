@@ -44,7 +44,7 @@ def stub_file_init(
 
 
 def _ensure_backup(target: Path) -> Path:
-    # EXTRACT:: adapt this concept!
+    # EXTRACT:: adapt this concept for original PathGuard!
     """NEW: Backup Function for PathGuard"""
     if target.exists():
         _operate.copy(

@@ -1,8 +1,29 @@
 """
-util.path.guard._input
+Define the Input Space including Widening, Normalization and Validation
 
 -
 """
+
+# MOVE: to util.path?? beside ModuleSpec??
+
+__all__: list[str] = [
+    "PathSpec",
+    "PathCaster",
+    "PathArg",
+    "PathInput",
+    "PathCastInput",
+    #
+    "TargetPath",
+    "SourcePath",
+    "ResolvedPath",
+    "ResolvedSource",
+    "ParentEnsuredPath",
+    "SinglePath",
+    "MultiPath",
+    "PathStrategy",
+    "is_single_path",
+]
+
 
 from collections.abc import Callable, Iterable
 from pathlib import Path
@@ -37,7 +58,10 @@ class PathSpec(ArgSpec[Path], frozen=True):
         cls,
         target: MayBe[PathArg] = VOID,
         /,
-        **kwargs: Unpack[PathInput],
+        **kwargs: Unpack[
+            # WARN: where is this used, why not absorbed?
+            PathInput
+        ],
     ) -> Self:
         if target is VOID:
             return cls(target=Path.cwd(), **kwargs)
@@ -52,26 +76,48 @@ class PathSpec(ArgSpec[Path], frozen=True):
 
     def validate(self) -> Path:
         path: Path = self.target
-        if self.resolve:
+        if self.resolve:  # NEXT: move somehow into normalize? diverges...
             path: Path = path.resolve()
         if self.must_exists and not path.exists():
             raise PathGuardError(reason=PathGuardReason.MISSING, target=path)
         if self.ensure_parent:
             path.parent.mkdir(parents=True, exist_ok=True)
-        return path
+        return path  # WARN: what about self.target?
 
 
-type TargetPath = Annotated[Path, PathCaster()]
-type SourcePath = Annotated[Path, PathCaster(must_exists=True)]
-type ResolvedPath = Annotated[Path, PathCaster(resolve=True)]
-type ResolvedSource = Annotated[
-    Path, PathCaster(must_exists=True, resolve=True)
+type TargetPath = Annotated[
+    Path,
+    PathCaster(),
 ]
-type ParentEnsuredPath = Annotated[Path, PathCaster(ensure_parent=True)]
-
+type SourcePath = Annotated[
+    Path,
+    PathCaster(
+        must_exists=True,
+    ),
+]
+type ResolvedPath = Annotated[
+    Path,
+    PathCaster(
+        resolve=True,
+    ),
+]
+type ResolvedSource = Annotated[
+    Path,
+    PathCaster(
+        must_exists=True,
+        resolve=True,
+    ),
+]
+type ParentEnsuredPath = Annotated[
+    Path,
+    PathCaster(
+        ensure_parent=True,
+    ),
+]
 
 PathArg = str | Path | PathSpec
 
+# TODO: resolve this somehow, how to do it with keeping the Annotated?
 type SinglePath = PathArg
 type MultiPath = Iterable[PathArg]
 type PathStrategy = Callable[..., Path]
@@ -84,7 +130,11 @@ def is_single_path(target) -> TypeGuard[Path]:
 
 @portlink(ArgCasting)
 class PathCaster(ArgCaster[PathArg, Path]):
-    _input_types = (str, Path, PathSpec)
+    _input_types = (
+        str,  # WARN: what about other str unrelated to paths???
+        Path,  # WARN: applied to any Path? somewhen undesired??
+        PathSpec,
+    )
 
     def __init__(self, **kwargs: Unpack[PathCastInput]) -> None:
         super().__init__(**kwargs)

@@ -10,9 +10,7 @@ Functions:
 Ideas:
     Exceptions, Enums, maybe dataclass, like any special built-in type
     -> from raw to amazing to watch, track and debug in CLI
-"""
-
-# TODO: DependencyLevel
+"""  # TODO: DependencyLevel
 
 __all__: list[str] = [
     "modules",
@@ -26,11 +24,12 @@ from pathlib import Path
 from typing import Any
 
 from ...port.color import ColorArg
+from ...port.structures import ModulePath
 from .. import reflect
 from ..call import castarg
 from .box import Colors
 
-colors = Colors()  # CHECK: how to handle?
+colors = Colors()  # CHECK: how to handle/inject?
 
 
 @castarg
@@ -39,6 +38,7 @@ def modules(
     /,
     project_color: ColorArg = "azure",
     module_color: ColorArg = "green",
+    # LATER: qual_color, [0]-->target[-1]
     target_color: ColorArg = "purple",
 ) -> str:
     """
@@ -46,17 +46,16 @@ def modules(
 
     - Process class <- map instances, handle as well functions!
     """
-
-    module: str = reflect.attr.module(target, default="builtins")
-    _raw_project, *_raw_modules = module.split(".")
-
-    project: str = colors(_raw_project, project_color)
-    modules: list[str] = [
-        colors(module, module_color) for module in _raw_modules
-    ]
-    cls_or_instance = f"{colors(reflect.objname(target), target_color)}"
-
-    return ".".join((project, *modules, cls_or_instance))
+    _mp = ModulePath.identify(target)
+    return ".".join(
+        (
+            *(colors(_mp.project, project_color) if _mp.project else []),
+            *(colors(module, module_color) for module in _mp.submodules),
+            colors(reflect.objname(target), target_color),
+            "-TEST-",
+            *(colors(qual, target_color) for qual in _mp.quals),
+        )
+    )
 
 
 def path(target: Path, /) -> str:

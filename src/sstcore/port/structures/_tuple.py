@@ -50,7 +50,7 @@ class HashedTuple(_HashedTupleBase):
         return tuple.__new__(cls, (name, cls.hash(value, strict=strict)))
 
     @staticmethod
-    def accepts(target) -> bool:
+    def accepts(target, /) -> bool:
         """Ultimate check if Hash can be generated"""
         try:
             hash(target)
