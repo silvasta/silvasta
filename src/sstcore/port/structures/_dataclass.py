@@ -88,7 +88,7 @@ class CachedDataclassMeta(type):
             for name, value in bound.arguments.items()
         )
 
-        # AI: here the pattern, if not in cache -> load to cache, then __getitem__ access
+        # NEXT: here the pattern, if not in cache -> load to cache, then __getitem__ access
         # - somehow to beautiful and stable to replace by a 1-liner of a custom cache map
         # - still there might be an improvement for generalizing/centralizing this
         # - how to build the custom CacheMap or similar that handles this? while still showing the: not in,load,__getitem__ pattern?
@@ -211,9 +211,14 @@ class ArgSpec[T](DataClassSpec, frozen=True):
         return cls.normalize(target, **kwargs).validate()
 
     @classmethod
-    def normalize(cls, target: MayBe[_t.Any] = VOID, /, **kwargs) -> _t.Self:
+    def normalize(
+        cls,
+        target: MayBe[_t.Any] = VOID,
+        # **kwargs,#CHECK:
+        /,
+    ) -> _t.Self:
         """Create ArgSpec with confirmed Input"""
-        raise NotImplementedError(target, kwargs)
+        raise NotImplementedError(target)
 
     def validate(self) -> T:
         """Execute all Checks that the Target must fulfill"""

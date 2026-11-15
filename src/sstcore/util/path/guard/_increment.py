@@ -20,7 +20,7 @@ from pathlib import Path
 from loguru import logger
 
 from ....brick.call import castarg
-from ._input import TargetPath
+from .._pathcast import TargetPath
 
 
 @castarg

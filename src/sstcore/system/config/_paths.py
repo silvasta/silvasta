@@ -6,15 +6,23 @@ Compose and Ensure Paths independent of system or location
                                                        DependencyLevel[1]
 """
 
+from typing import Any
+
 __all__: list[str] = [
     "SstPaths",
 ]
 
 from pathlib import Path
+from typing import Unpack as _U  # noqa:N814
 
 from ...port.config import Defaults, Homes, Names, Paths
 from ...port.link import portlink
-from ...util.path.guard import PathGuard
+from ...util.path._modulecast import (
+    ModulDirInput,
+    ModulFullInput,
+    ModulInitInput,
+)
+from ...util.path.guard import ModuleGuard, PathGuard
 from ._defaults import SstDefaults
 from ._homes import HomeSetup, SstHomes
 from ._names import SstNames
@@ -75,3 +83,35 @@ class SstPaths:
         """Work around DiskCache Folder requirement..."""
         dir: Path = root or self.state_dir
         return dir / f"{self._names.scanner_cache_file}{suffix}"
+
+    def stub_dir(self, target: Any, /, **tkw: _U[ModulDirInput]) -> Path:
+        """Prepare the _stubs directory for a package, module, or Path"""
+
+        match target:  # AI_TASK: check if this block can be moved to module_root or some other ModuleGuard function
+            case Path():
+                root: Path = target if target.is_dir() else target.parent
+            case _:
+                root: Path = ModuleGuard.root(target, tkw.get("package"))
+
+        # LATER: add default sub stub dir to self._names
+        return PathGuard.dir(root / tkw.get("subfolder", "_stub"))
+
+    def stub_file(
+        self, target: Any, /, prefix: str, **tkw: _U[ModulFullInput]
+    ) -> Path:
+        """Create Single StubFile Path and ensure Backup and Writable"""
+
+        stub_dir: Path = self.stub_dir(target, **tkw)
+        stub_name = f"_{prefix.lower()}.pyi"  # CHECK: something after prefix?
+        # LATER: add stub_name to self._names
+        stub_file: Path = stub_dir / stub_name
+
+        return PathGuard.backup(stub_file) if tkw.get("backup") else stub_file
+
+    def init_stub_file(self, target: Any, /, **tkw: _U[ModulInitInput]) -> Path:
+        """Create __init__ Stub File Path and ensure Backup and Writable"""
+
+        stub_dir: Path = self.stub_dir(target, subfolder="", **tkw)
+        stub_file: Path = stub_dir / "__init__.pyi"
+
+        return PathGuard.backup(stub_file) if tkw.get("backup") else stub_file

@@ -4,7 +4,7 @@ Find project root with pyproject.toml and extract data
 - Transform to SimpleNamespace with dot access
 - Jump to any section or value but try to avoid AttributeErrors
 
-                              DependencyLevel.sstcore.util.write[1]
+                           DependencyLevel.sstcore.util.path[4.X.1]
 """
 
 __all__: list[str] = [

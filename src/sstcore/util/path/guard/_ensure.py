@@ -23,8 +23,8 @@ from pathlib import Path
 
 from ....brick.call import castarg
 from ....error import PathGuardError, PathGuardReason
+from .._pathcast import PathArg, TargetPath, is_singlepath
 from . import _increment
-from ._input import PathArg, TargetPath, is_single_path
 
 
 @castarg
@@ -39,7 +39,7 @@ def dir[**P](
 ) -> Callable[P, Path] | Path:
     """Hybrid: Ensure path is directory and exists, create if missing"""
 
-    if is_single_path(target):
+    if is_singlepath(target):
         return _dir_logic(target)
 
     if callable(target):
@@ -95,7 +95,7 @@ def file[**P](
 ):
     """Ensure path is file or write default content and | or Raise"""
 
-    if is_single_path(target):
+    if is_singlepath(target):
         return _file_logic(target, raise_error, default_content)
 
     if callable(target):
@@ -142,7 +142,7 @@ def unique[**P](
     - ensure_parent: create folder to ensure Path is writable
     """
 
-    if is_single_path(target):
+    if is_singlepath(target):
         return _increment.unique_candidate(target, ensure_parent)
 
     if callable(target):

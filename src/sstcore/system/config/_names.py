@@ -32,7 +32,7 @@ class SstNames(BaseSettings):
     plot_dir: str = "plots"
 
     # Files
-    scanner_cache_file: str = "._sst_scanner_cache"
+    scanner_cache_file: str = "._sst_scan_cache"
 
     @cached_property
     def _summary_file(self) -> NameParser:
@@ -40,5 +40,5 @@ class SstNames(BaseSettings):
 
     def summary_file(self, day: Stringable = "", suffix: str = "md") -> str:
         return self._summary_file(
-            target={"day": day or day_count(), "suffix": suffix.lstrip(".")}
+            {"day": day or day_count(), "suffix": suffix.lstrip(".")}
         )

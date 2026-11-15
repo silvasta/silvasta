@@ -200,6 +200,8 @@ class PathGuard:
         target: PathArg,
         mode: str | SyncMode = SyncMode.INCREMENT,
     ) -> Path: ...
+    @staticmethod  # CHECK:
+    def backup(target: Path, /, suffix: str = ".bak") -> Path: ...
 
     # -----------------------------------------------------------------------
     # Category 3: relative helpers

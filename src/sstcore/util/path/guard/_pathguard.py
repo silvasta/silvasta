@@ -4,15 +4,12 @@ Assemble all Tools to PathGuard
                          DependencyLevel.sstcore.util.path.guard[4]
 """
 
-from pathlib import Path
-
 __all__: list[str] = [
     "PathGuard",
-    "PathSpec",
-    "PathArg",
 ]
 
 from collections.abc import Callable
+from pathlib import Path
 
 from ....brick.color.box import Colors
 from ....brick.reflect import clsname
@@ -20,8 +17,8 @@ from ....error import PathGuardError, PathGuardReason
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
 from ....port.files import SyncMode
 from ....port.link import tap
+from .._pathcast import PathSpec
 from . import _ensure, _field, _increment, _lock, _operate, _relative
-from ._input import PathArg, PathSpec
 
 colors = Colors()
 
@@ -38,8 +35,6 @@ _example = PathGuardError(PathGuardReason.NO_INIT)
 
 class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     """Safety and Comfort for Path access and File System operations"""
-
-    # NEXT: add PathCast
 
     Spec: type[PathSpec] = PathSpec
     SyncMode: type[SyncMode] = SyncMode
@@ -69,6 +64,8 @@ class PathGuard(metaclass=StaticFuncMeta, data=PathGuardMetaInput):
     copy: Callable = _operate.copy
     hardlink: Callable = _operate.hardlink
     symlink: Callable = _operate.symlink
+
+    backup: Callable = _operate.backup  # TODO: more operations?
 
     TODO_DELETE_STRATEGY: _operate.DeleteStrategy = _operate.Trash
     remove: Callable = _operate.remove

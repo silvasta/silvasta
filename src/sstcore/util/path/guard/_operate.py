@@ -11,6 +11,8 @@ File System Operations
 # TODO: create tests for this!
 # - when everything works, run _atomic on them
 
+from src.sstcore.port.structures._module import DotPath
+
 __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
     "TransferStrategy",
     "check_sync_mode",
@@ -37,8 +39,8 @@ from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
+from .._pathcast import PathArg, ResolvedSource, SourcePath, TargetPath
 from . import _ensure, _increment
-from ._input import PathArg, ResolvedSource, SourcePath, TargetPath
 
 
 def check_sync_mode(target: TargetPath, mode: SyncMode) -> Path:
@@ -225,6 +227,19 @@ def copy(
     mode: SyncMode = SyncMode.INCREMENT,
 ) -> Path:
     return Copy.synced(source, target, mode=mode)
+
+
+def backup(target: Path, /, suffix: str = ".bak") -> Path:
+    # CHECK: new function, add to stub
+    if not target.exists():  # CHECK: how does it behave without?
+        return target
+
+    suffix: DotPath | str = DotPath.merge(*target.suffixes, suffix)
+    return copy(
+        source=target,
+        target=target.with_suffix(suffix),  # CHECK: covers multi suffixes?
+        mode=SyncMode.INCREMENT,
+    )
 
 
 @castarg

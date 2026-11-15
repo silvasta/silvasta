@@ -19,6 +19,9 @@ __all__: list[str] = [
     "DataClassSpec",
     "ParamSpec",
     "ArgSpec",
+    # module
+    "DotPath",
+    "ModulePath",
     # enum
     "SstEnumMeta",
     "EnumId",
@@ -45,11 +48,12 @@ from ._dataclass import (
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
 from ._map import frozendict
+from ._module import DotPath, ModulePath
 from ._set import DunderSet, FieldSet, NormSet
 from ._tuple import HashedTuple, ParamSnap
 
 
-class PresetMeta(LockedClsMeta):
+class PresetMeta(LockedClsMeta):  # waiting for own module?
     def __new__(mcls, name: str, bases: _T.Bases, namespace: _T.NameSpace):
         """
         Convert Mutable Structures and lock everything possible

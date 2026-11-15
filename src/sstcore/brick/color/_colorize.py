@@ -25,7 +25,6 @@ from typing import Any
 
 from ...port.color import ColorArg
 from ...port.structures import ModulePath
-from .. import reflect
 from ..call import castarg
 from .box import Colors
 
@@ -46,13 +45,17 @@ def modules(
 
     - Process class <- map instances, handle as well functions!
     """
-    _mp = ModulePath.identify(target)
+    _mp = (
+        target
+        if isinstance(target, ModulePath)
+        else ModulePath.identify(target)
+    )
     return ".".join(
         (
-            *(colors(_mp.project, project_color) if _mp.project else []),
+            *([colors(_mp.project, project_color)] if _mp.project else []),
             *(colors(module, module_color) for module in _mp.submodules),
-            colors(reflect.objname(target), target_color),
-            "-TEST-",
+            # CHECK:colors(reflect.objname(target), target_color),
+            # "-TEST-",
             *(colors(qual, target_color) for qual in _mp.quals),
         )
     )

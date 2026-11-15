@@ -163,7 +163,7 @@ class BidirectionalName(_Normalized):
     def __call__(self, target: Path | str, /) -> dict[str, str]: ...
     @overload
     def __call__(self, target: dict | list | tuple, /) -> str: ...
-    def __call__(self, target: Any, /):
+    def __call__(self, target: Any, /) -> dict[str, str] | str:
         match target:
             case Path() | str():
                 return self.extract(target)

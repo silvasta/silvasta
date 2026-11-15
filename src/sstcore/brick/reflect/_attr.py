@@ -21,7 +21,7 @@ from typing import Any
 def __core__(target: Any, attrs: Sequence[str], default=None, /) -> Any:  # noqa:N807
     # LATER: use __core__ for sstcore.forge.blueprint|func
     # - bind heavy static func meta with nested calls
-    for attr in attrs:
+    for attr in attrs:  # WARN: VOID?? what if attr is None? might be valid
         if (detected := getattr(target, attr, None)) is not None:
             return detected
     else:

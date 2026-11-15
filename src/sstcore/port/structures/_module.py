@@ -2,12 +2,15 @@
 Support Handling of Python package.module:Object Paths
 
 -
+
 """
 
 __all__: list[str] = [
+    "DotStr",
     "DotPath",
     "ModulePath",
 ]
+
 
 import importlib.util
 import inspect
@@ -17,8 +20,12 @@ from collections.abc import Callable, Iterable, Iterator
 from importlib import import_module
 from keyword import iskeyword
 from types import ModuleType
-from typing import Any, NamedTuple, NotRequired, Self, TypedDict
+from typing import Any, NamedTuple, NotRequired, Self
 from typing import Unpack as _U  # noqa:N814
+
+from typing_extensions import TypedDict
+
+type DotStr = DotPath | str
 
 
 class DotPath(str):
@@ -26,26 +33,30 @@ class DotPath(str):
 
     __slots__ = ()
 
-    def __new__(cls, target, /, *, allow_relative: bool = False) -> Self:
+    def __new__(cls, target: str, /, **tk: _U[_Rel]) -> Self:
         """Confirm input and create ...valid.dot.path (leading dots on flag)"""
-        if target and not cls.accepts(target, allow_relative=allow_relative):
-            raise ValueError(f"Invalid dotted Python path: {target!r}")
+        if target and not cls.accepts(target, **tk):
+            raise ValueError(f"Invalid dotted Python path: {target}")
         return super().__new__(cls, target)
 
     def __truediv__(self, sub: str) -> Self:
         """Concat [DotPath("my.path") / "extra.path"] -> [my.path.extra.path]"""
         if not self.accepts(sub, allow_relative=False):
+            # LATER: raise more precise!!
             raise ValueError(f"Invalid dotted segment: {sub!r}")
         return type(self)(f"{self}.{sub}" if self else sub)
 
-    @property
-    def is_relative(self) -> bool:
-        return self.startswith(".")
+    @staticmethod
+    def accepts(target: str, /, *, allow_relative=False) -> bool:
+        """Is target a legal dotted Python identifier path?"""
 
-    @property
-    def depth(self) -> int:
-        """Relative Degree: Number of leading dots (0 for absolute paths)"""
-        return len(self) - len(self.lstrip("."))
+        if core := target.lstrip(".") if allow_relative else target:
+            # LATER: collect all fails for raise!
+            return all(
+                part.isidentifier() and not iskeyword(part)
+                for part in core.split(".")
+            )
+        return False
 
     @property
     def parts(self) -> Iterator[str]:
@@ -53,48 +64,61 @@ class DotPath(str):
         if core := self.lstrip("."):
             yield from core.split(".")
 
+    @property
+    def depth(self) -> int:
+        """Relative Degree: Number of leading dots (0 for absolute paths)"""
+        return len(self) - len(self.lstrip("."))
+
+    @property
+    def is_relative(self) -> bool:
+        return self.startswith(".")
+
+    @property
+    def is_absolute(self) -> bool:
+        return not self.startswith(".")
+
+    @classmethod
+    def rel(cls, target, /) -> Self:
+        """Create DotPath with relative Path allowed"""
+        return cls(target, allow_relative=True)
+
+    @classmethod
+    def abs(cls, target, /) -> Self:
+        """Create DotPath with absolute Path enforced"""
+        return cls(target, allow_relative=False)
+
+    @classmethod
+    def merge(cls, *dotparts: str) -> Self:
+        """Create DotPath from dot stripped segments (e.g. suffixes)"""
+        return cls(".".join(s.strip(".") for s in dotparts))
+
+    @classmethod
+    def empty(cls) -> Self:
+        """Create DotPath without any segment"""
+        return cls("")
+
     @classmethod
     def double_dot(cls, target: str, /, **tk: _U[_Rel]) -> _Double[Self]:
         """Split to [module:qualname] or [module:""] or for invalid: ["":""]"""
-        print(f"double_dot::{tk=}")
         _mod, _sep, _qual = target.strip().partition(":")
-        if cls.accepts(_mod, **tk):
-            if not _sep:
-                return cls(_mod), cls("")
-            if cls.accepts(_qual, allow_relative=False):
-                return cls(_mod), cls(_qual)
-        return cls(""), cls("")
 
-    @staticmethod
-    def accepts(target: str, /, **tk: _U[_Rel]) -> bool:
-        """Is target a legal dotted Python identifier path?"""
+        def _valid(qualname, /) -> bool:
+            return bool(_sep) and cls.accepts(qualname, allow_relative=False)
 
-        _allow_relative = tk.get("allow_relative", True)
+        if not cls.accepts(_mod, **tk):
+            return cls.empty(), cls.empty()
 
-        if core := target.lstrip(".") if _allow_relative else target:
-            return all(
-                part.isidentifier() and not iskeyword(part)
-                for part in core.split(".")
-            )
-        return False
+        return cls(_mod, **tk), cls.abs(_qual) if _valid(_qual) else cls.empty()
 
 
 type _Double[T] = tuple[T, T]
-type DotStr = DotPath | str
 
 
-class _Rel(TypedDict):
+class _Rel(TypedDict, closed=True):
     allow_relative: NotRequired[bool]
 
 
-class _QA(TypedDict):
-    require_qualattr: NotRequired[bool]
-
-
-class _RelQA(_Rel, _QA): ...
-
-
-class _ModQual(TypedDict, total=False):
+class _ModQual(TypedDict, total=False, closed=True):
     module: DotStr
     qualname: DotStr
 
@@ -109,13 +133,13 @@ class _ModulePathBase(NamedTuple):
 class ModulePath(_ModulePathBase):
     """Represent package.module:qualname including Path Utils"""
 
-    def __new__(cls, module: DotStr, qualname: DotStr | str = "", /):
+    def __new__(cls, module: DotStr, qualname: DotStr = "", /):
         """Make values DotPath before instantiation"""
-        if not cls.accepts(cls.concat(module, ":", qualname)):
-            raise ValueError(f"Invalid for ModulePath: {module=}, {qualname=}")
-        return tuple.__new__(
-            cls, (DotPath(module), DotPath(qualname, allow_relative=False))
-        )
+        if cls.accepts(cls.concat(module, ":", qualname), allow_relative=True):
+            return tuple.__new__(
+                cls, (DotPath.rel(module), DotPath.abs(qualname))
+            )
+        raise ValueError(f"Invalid for ModulePath: {module=}, {qualname=}")
 
     def __truediv__(self, extension: str) -> Self:
         """
@@ -140,15 +164,19 @@ class ModulePath(_ModulePathBase):
         return self.concat(self.module, ":", self.qualname)
 
     @staticmethod
-    def accepts(target: str, /, **tk: _U[_RelQA]) -> bool:
+    def accepts(
+        target: str, /, require_qualattr: bool = False, **tk: _U[_Rel]
+    ) -> bool:
         """Is the Syntax valid for ModulePaths?"""
-        _need_qualattr = tk.pop("require_qualattr", False)
         _mod, _qual = DotPath.double_dot(target, **tk)
-        return bool(_mod) and (not _need_qualattr or bool(_qual))
+        return bool(_mod) and (not require_qualattr or bool(_qual))
 
     @staticmethod
     def concat(module: str, sep: str, qualname: str, /) -> str:
         return f"{module}{f'{sep}{qualname}' if qualname else ''}"
+
+    def concating(self, sep: str, /) -> str:
+        return self.concat(self.module, sep, self.qualname)
 
     @property
     def dotted(self) -> str:
@@ -195,6 +223,8 @@ class ModulePath(_ModulePathBase):
         """Provide root package name, first part in absolute module path"""
         return "" if self.is_relative else self.modules[0]
 
+    # LATER: counterpart to project for qual, the final object
+
     def detect_project(self, *, raise_error=False) -> str:
         """Inspect root package name and compare with absolute module path"""
         detected: str = _caller_package(depth=2).partition(".")[0]
@@ -238,7 +268,7 @@ class ModulePath(_ModulePathBase):
         return self.evolve(
             module=_resolve_relative(
                 self.module,
-                *(self.norm(anchors) or [_caller_package(depth=2)]),
+                *([*self.norm(anchors)] or [_caller_package(depth=2)]),
                 check_exists=check_exists,
             )
         )
@@ -354,14 +384,6 @@ def _qualname(target: Any, /, default="") -> str:
     return default
 
 
-# REMOVE: when filter in class body established
-def _anchor_strings(*anchors: str | ModulePath) -> tuple[str, ...]:
-    return tuple(
-        anchor.module if isinstance(anchor, ModulePath) else anchor
-        for anchor in anchors
-    )
-
-
 def _module_exists(module: str, /, package: str | None = None) -> bool:
     """Return ModuleSpec if module exists without executing leaf module, else None."""
     try:
@@ -401,10 +423,15 @@ def _resolve_relative(
 
 if __name__ == "__main__":
     _module, _attr = DotPath.double_dot(
-        "my.path:Cls.attr", allow_reltive=False, test=3
+        "my.path:Cls.attr",
+        allow_reltive=False,  # ty: ignore[unknown-argument]
+        test=3,  # ty: ignore[unknown-argument]
     )
     print(f"{_module=}, {_attr=}")
     DotPath.double_dot("t")
-    DotPath.double_dot("t", allow_relativ=False)  # AI: this is dangerous...
+    DotPath.double_dot("t", allow_relativ=False)  # ty: ignore[unknown-argument]
 
-    ModulePath("mod").evolve(bad="test")  # AI: no warnings...
+    DotPath.double_dot("my.path", more="must fail")  # ty: ignore[unknown-argument]
+    ModulePath("mod").evolve(bad="test")  # ty: ignore[unknown-argument]
+
+    ModulePath.accepts("..rel", allow_relative=True)

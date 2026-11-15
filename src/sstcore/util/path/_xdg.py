@@ -1,7 +1,7 @@
 """
 Provide defaults and basic access for XDG Homes in system environment
 
-                               DependencyLevel.sstcore.util.path[0]
+                           DependencyLevel.sstcore.util.path[4.X.1]
 """
 
 __all__: list[str] = [

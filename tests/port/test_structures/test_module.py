@@ -9,13 +9,8 @@ from typing import Any
 
 import pytest
 
-from sstcore.port.structures._module import (
-    ModuleArg,
-    ModuleInput,
-    ModulePath,
-    ModuleSpec,
-    is_dotpath,
-)
+from sstcore.port.structures._module import DotPath, ModulePath
+from sstcore.util.path._module import ModuleArg, ModuleInput, ModuleSpec
 
 
 class DummyClass:
@@ -48,7 +43,7 @@ class DummyClass:
     ],
 )
 def test_is_dotpath(raw: str, allow_rel: bool, expected: bool) -> None:
-    assert is_dotpath(raw, allow_relative=allow_rel) is expected
+    assert DotPath(raw, allow_relative=allow_rel) is expected
 
 
 @pytest.mark.parametrize(
@@ -80,8 +75,8 @@ def test_modulepath_properties_and_slicing() -> None:
     assert mp.project == "sstcore"
     assert mp.modules == ("sstcore", "port", "_private")
     assert mp.submodules == ("port", "_private")
-    assert mp.public_package == "sstcore.port"
-    assert mp.attr_parts == ("MyCls", "method")
+    assert mp.public == "sstcore.port"
+    assert mp.quals == ("MyCls", "method")
     assert mp.dotted == "sstcore.port._private.MyCls.method"
     assert str(mp) == "sstcore.port._private:MyCls.method"
 
@@ -93,7 +88,7 @@ def test_modulepath_properties_and_slicing() -> None:
     assert rel.submodules == ("util", "_helper")
 
     # Division & qualname mutation
-    extended = mp.with_qualname("") / "sub"
+    extended = mp / "sub" / ":"
     assert str(extended) == "sstcore.port._private.sub"
 
 
