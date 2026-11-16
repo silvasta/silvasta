@@ -189,7 +189,10 @@ def callable_field(
     *,
     bind_to_self: Literal[True] = True,
 ) -> Callable[
-    [Callable[Concatenate[Any, In], Out]], _CallableField[In, Out]
+    # NEXT:
+    # NEXT:
+    # NEXT:
+    [Callable[Concatenate[Any, In], Out]], _CallableField[In, Out]  # ty:ignore
 ]: ...
 
 

@@ -172,8 +172,13 @@ class BoundStrategy[**In, Out](FieldView):
                 message="Morphing forbidden on StrategyField!",  # CHECK:
                 value=new_func,
             )
-        self.engine.write(self.unit, new_func)
-        self.func = new_func
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # self.engine.write(self.unit, new_func)
+        # self.func = new_func
         # CHECK: self.func: Callable[Bound, Opened] = new_func
         self.bind = False
         return self

@@ -172,7 +172,7 @@ class CustomErrorDescriptor[**P, E: Exception]:
 
     def __init__(self, func: Callable[P, E]) -> None:
         self.func = func
-        self.name = func.__name__
+        self.name: str = getattr(func, "__name__", "CannotIdendifyFunc")
 
     def __set_name__(self, owner: type, name: str) -> None:
         self.name = name

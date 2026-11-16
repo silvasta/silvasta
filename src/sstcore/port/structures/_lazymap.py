@@ -10,7 +10,7 @@ Mappings
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Protocol, reveal_type
+from typing import Any, Protocol
 
 from rich import print
 from rich.panel import Panel
@@ -41,7 +41,7 @@ for task in (
 ):
     try:
         print(Panel(f"{task}"))
-        reveal_type(task)
+        # reveal_type(task)
         print(task)
         if callable(task):
             task = task()
