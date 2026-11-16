@@ -1,5 +1,5 @@
 """
-Adapt the SstCoreError to PortLink
+Adapt the SstError to PortLink
 
 - This is intends as the one and only Raiser Implementation in the port
 - Still experimental, like the setups outside the port
@@ -12,14 +12,13 @@ Adapt the SstCoreError to PortLink
 # - create more universal version
 # - improve internal data pipeline
 # - maybe keep name: LinkRaiser
+# NEXT: check the RaiserMeta for probably better setup
 
 __all__: list[str] = [
     "LinkRaiser",
     "LinkRaiserCall",
     #
     "EnumError",
-    "FailedDispatchError",
-    "FailedHackError",
     #
     "PortLinkError",
     "PortErrorInput",
@@ -31,14 +30,11 @@ from enum import Enum, auto
 from typing import Any, Protocol, Unpack
 
 from . import raising
-from .raising import Raiser, SstCoreError
+from .raising import Raiser, SstError  # NEXT: SstPortError
 from .solid import BaseEnum
 
-#  LINE: -- Error Collection -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-#  TODO: integrate into LinkRaiser / PortRaiser
 
-
-class EnumError(SstCoreError, TypeError):
+class EnumError(SstError, TypeError):  # MOVE: solid? structures._enum?
     """Temporary Resolve the SstEnumMeta blinding"""
 
     def __init__(
@@ -59,32 +55,10 @@ class EnumError(SstCoreError, TypeError):
         super().__init__(f"{who} | {reason=}", *args)
 
 
-class FailedDispatchError(SstCoreError, NotImplementedError):  # MOVE: ._error?
-    # TASK: sync with NotImplementedDispatchError
-    """Raise on missing TargetType for singledispatch(method)"""
-
-    def __init__(self, first: Any, *args: Any, **kwargs):
-        self.first = first
-        msg = f"Missing dispatch target for {type(first).__name__}"
-        super().__init__(msg, *(first, *args), **kwargs)
-
-
-class FailedHackError(SstCoreError):
-    """
-    It was a nice try, but...
-
-    (I hope I don't have to  explain that this is mostly for internal tests...)
-    """
-
-    def __init__(self, *args) -> None:
-        """Forward Args to Exception"""
-        super().__init__("...I told you it will fail!", *args)
-
-
 #  LINE: -- Link -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class PortLinkError(raising.SstCoreError):
+class PortLinkError(raising.SstError):
     def __init__(
         self,
         message: str,
@@ -119,7 +93,7 @@ class PortErrorSpec(raising.ErrorSpec):
 class LinkRaiserCall(Protocol):
     def __call__(
         self, *args, **kwargs: Unpack[PortErrorInput]
-    ) -> raising.SstCoreError: ...
+    ) -> raising.SstError: ...
 
 
 class LinkRaiser(Raiser):

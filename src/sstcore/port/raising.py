@@ -1,5 +1,5 @@
 """
-Specify SstCoreError before SstCoreError is ready
+Specify SstError before SstError is ready
 
 - sstcore.error[L2] Available for most of the Library
 - sstcore.brick[L1] Build essential parts of the Errors
@@ -10,10 +10,8 @@ Specify SstCoreError before SstCoreError is ready
 
 """
 
-# IDEA: absorb . _raise? at least the Errors, definitely not Link(/Port)Raiser
-
 __all__: list[str] = [
-    "SstCoreError",
+    "SstError",
     #
     "ErrorDTO",
     "ErrorInput",
@@ -25,64 +23,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Never, Self, TypedDict, Unpack
 
+from ._error import SstError
 from .solid import BaseEnum
 from .structures import ParamSpec
-from .structures._error import SstBaseError
 
+# CHECK: why 1? make structure of it! the single resolvs to Exception, the mix is removes it!
 type Errors = tuple[type[Exception]] | tuple[type[Exception], type[Exception]]
-
-x: SstBaseError  # CHECK:
-
-
-class SstCoreError(Exception):
-    """Match and Catch all Errors below Global DependencyLevel[2]"""
-
-    def __init__(self, *args) -> None:  # CHECK: accepting kwargs now?
-        """Forward Args to Exception"""
-        super().__init__(*args)
-
-    @property  # REMOVE: when SstBaseError established
-    def name(self) -> str:
-        return type(self).__name__
-
-    def __repr__(self) -> str:  # REMOVE: when SstBaseError established
-        _vars = [f"{k}={v!r}" for k, v in vars(self).items()]
-        return f"{self.name}[{', '.join(_vars)}]"
-
-    @classmethod  # STRATEGY: do this latest in sstcore.error.SstCoreError!
-    def panic(cls, reason: Raiser): ...
 
 
 #  LINE: -- DTO, Input and Spec -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@dataclass(frozen=True)
-class ErrorDTO:
-    """Define the Boundary of the Outgoing Message"""
-
-    error: type[SstCoreError]
-    message: str = ""
-    args: tuple[Any, ...] = ()
-
-    def __call__(self, *args) -> SstCoreError:
-        # CHECK: wired pipeline Raiser->DTO->Error proper!?
-        return self.error(self.message, *self.args, *args)
-
-    def fire(self, *args) -> Never:
-        raise self(*args)
-
-
-class ErrorInput(TypedDict, total=False):
-    # LATER: create better pairs, improve:
-    # - expected={"policy": PolicyEnum},
-    # - received={"policy": policy},
-    #   -> only 1 key for 2 values needed, avoid duplication and mismatches!
-    # - Build some kind of ErrorComparisonRegistry that accepts[ManyInput]
-    """Define the Kwarg Space of the Error Pipeline"""
-
-    text: str
-    expected: Mapping
-    received: Mapping
 
 
 class ErrorSpec(ParamSpec, frozen=True):
@@ -116,15 +65,42 @@ class ErrorSpec(ParamSpec, frozen=True):
         return cls(reason=reason, extra=_extra or None, **_items)
 
 
-#  LINE: -- Raise -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+@dataclass(frozen=True)
+class ErrorDTO:
+    """Define the Boundary of the Outgoing Message"""
+
+    error: type[SstError]
+    message: str = ""
+    args: tuple[Any, ...] = ()
+
+    def __call__(self, *args) -> SstError:
+        # CHECK: wired pipeline Raiser->DTO->Error proper!?
+        return self.error(self.message, *self.args, *args)
+
+    def fire(self, *args) -> Never:
+        raise self(*args)
+
+
+class ErrorInput(TypedDict, total=False):
+    # LATER: create better pairs, improve:
+    # - expected={"policy": PolicyEnum},
+    # - received={"policy": policy},
+    #   -> only 1 key for 2 values needed, avoid duplication and mismatches!
+    # - Build some kind of ErrorComparisonRegistry that accepts[ManyInput]
+    """Define the Kwarg Space of the Error Pipeline"""
+
+    text: str
+    expected: Mapping
+    received: Mapping
+
+
+#  LINE: -- raise(r) -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class Raiser(BaseEnum, zero=True, walk=True):
     """Assemble all data and throw it with panic"""
 
-    def __call__(
-        self, *args: Any, **kwargs: Unpack[ErrorInput]
-    ) -> SstCoreError:
+    def __call__(self, *args: Any, **kwargs: Unpack[ErrorInput]) -> SstError:
         """Generate the DTO and instantiate the Exception"""
         return self.dto(*args, **kwargs)()
 
@@ -135,7 +111,7 @@ class Raiser(BaseEnum, zero=True, walk=True):
     def dto(self, *args: Any, **kwargs: Unpack[ErrorInput]) -> ErrorDTO:
         """Sanitize the Input, compose Error and Message and create the DTO"""
         data: ErrorSpec = self.spec.capture(self, *args, **kwargs)
-        error: type[SstCoreError] = self.compose()
+        error: type[SstError] = self.compose()
         message: str = f"{self.message(data)} {data.text}".strip()
         return ErrorDTO(error, message=message, args=args)
 
@@ -145,9 +121,9 @@ class Raiser(BaseEnum, zero=True, walk=True):
         return ErrorSpec
 
     @property
-    def custom(self) -> type[SstCoreError]:
+    def custom(self) -> type[SstError]:
         """Provide the custom Error defined for Topic and Raiser"""
-        return SstCoreError
+        return SstError
 
     @property
     def builtin(self) -> type[Exception] | None:
@@ -170,12 +146,12 @@ class Raiser(BaseEnum, zero=True, walk=True):
 
     @property
     def bases(self) -> Errors:
-        """Distribute the registered Errors [1 SstCoreError, 0|1 Exception]"""
-        sst_error: type[SstCoreError] = self.custom
+        """Distribute the registered Errors [1 SstError, 0|1 Exception]"""
+        sst_error: type[SstError] = self.custom
         exception: type[Exception] | None = self.builtin
         return (sst_error,) if exception is None else (sst_error, exception)
 
-    def compose(self) -> type[SstCoreError]:
+    def compose(self) -> type[SstError]:
         """Mix custom Error (MRO-left) to Builtin Exception"""
         bases: Errors = self.bases
         name: str = self.error_name

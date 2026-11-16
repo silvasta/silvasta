@@ -16,14 +16,20 @@ from ..brick.color.box import Colors
 from ..port.color import Color
 from ..port.event._param import FrameSpec
 from ..port.event.dto import _ET, LogDTO, PanelDTO
-from ..port.raising import SstCoreError
+from ..port.raising import Raiser, SstError
 
 c = Colors()
 
-# TASK: unify pipeline with port.raising.SstCoreError
+
+# REMOVE: copy for remembering
+class _SstError(Exception):
+    """Match and Catch all Errors below Global DependencyLevel[2]"""
+
+    @classmethod  # STRATEGY: do this latest in sstcore.error.SstError!
+    def panic(cls, reason: Raiser): ...  # TASK: figure out how to apply Raiser
 
 
-class SstCoreError(SstCoreError):
+class SstCoreError(SstError):
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

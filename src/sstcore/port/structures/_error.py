@@ -4,37 +4,21 @@ Define the lowest level of custom Errors
 -
 """
 
-from functools import partial
-
 __all__: list[str] = [
-    "SstBaseError",
+    "ErrorClsField",
 ]
 
 import sys
 from collections.abc import Callable, Iterator
+from functools import partial
 from types import FrameType
 from typing import Any, NamedTuple, Self
 
 from rich import print
 from rich.panel import Panel
 
+from .._error import SstError
 from .._types import _LockedClsMeta
-
-
-class SstBaseError(Exception):
-    """Match and Catch all Errors in the lowest Port Layers"""
-
-    def __init__(self, *args) -> None:
-        """Forward Args to Exception"""
-        super().__init__(*args)
-
-    @property
-    def name(self) -> str:
-        return type(self).__name__
-
-    def __repr__(self) -> str:
-        _vars = (f"{k}={v!r}" for k, v in vars(self).items())
-        return f"{self.name}[{', '.join(_vars)}]"
 
 
 class Attr(NamedTuple):  # TODO: formatting!
@@ -82,22 +66,22 @@ class GateRaiserMeta(_LockedClsMeta, type):
                 yield Attr.get(cls, name)
 
 
-type Errors = tuple[type[SstBaseError], type[Exception]]
+type Errors = tuple[type[SstError], type[Exception]]
 
 
-def _weave_sst_error[E: Exception](error: type[E]) -> type[E & SstBaseError]:  # ty:ignore
-    """Mix SstBaseError with BuiltIn Exception"""
+def _weave_sst_error[E: Exception](error: type[E]) -> type[E & SstError]:  # ty:ignore
+    """Mix SstError with BuiltIn Exception"""
 
-    if issubclass(error, SstBaseError):
+    if issubclass(error, SstError):
         return error
 
-    bases: Errors = (SstBaseError, error)
+    bases: Errors = (SstError, error)
     name = f"{bases[0].__name__[0:-5]}{bases[-1].__name__}"
 
     return type(name, bases, {})  # ty:ignore
 
 
-class ErrorField[**P]:
+class ErrorClsField[**P]:
     """Wire error name, owner class, and provide message template"""
 
     def __new__[E: Exception](
@@ -108,7 +92,7 @@ class ErrorField[**P]:
         *,
         preprocess: Callable[..., tuple[tuple[Any, ...], dict[str, Any]]]
         | None = None,
-    ) -> Callable[P, E & SstBaseError]:  # ty:ignore
+    ) -> Callable[P, E & SstError]:  # ty:ignore
         # NEXT: wire this proper, or does it already work? at least not-used args should be silenced
         return super().__new__(cls)
 
@@ -159,7 +143,7 @@ class ErrorField[**P]:
 
         return self.error_type(message.strip())
 
-    def __get__(self, _unit: Any, owner: type) -> Callable[P, SstBaseError]:
+    def __get__(self, _unit: Any, owner: type) -> Callable[P, SstError]:
         # CHECK:
         # target_cls: type = instance if isinstance(instance, type) else owner
         return partial(self._build, owner)
@@ -168,7 +152,7 @@ class ErrorField[**P]:
 class CustomErrorDescriptor[**P, E: Exception]:
     """Wraps a custom method so it gets the same caller/owner prefixing as ErrorPresetField."""
 
-    # AI: unsure about this, maybe just use ErrorField.__call__ and set ErrorField.preprocess=func
+    # AI: unsure about this, maybe just use ErrorClsField.__call__ and set ErrorClsField.preprocess=func
 
     def __init__(self, func: Callable[P, E]) -> None:
         self.func = func
@@ -193,16 +177,16 @@ class CustomErrorDescriptor[**P, E: Exception]:
 class GateRaiser(metaclass=GateRaiserMeta):
     """Explain Failures Meaningful"""
 
-    cache1 = ErrorField[[str]](
+    cache1 = ErrorClsField[[str]](
         KeyError,
         "Cache miss for lookup key {0!r}",
     )
 
-    out_of_range = ErrorField[[str, int]](
+    out_of_range = ErrorClsField[[str, int]](
         ValueError,
         "Field {0} exceeded max limit {1}",
     )
-    not_initialized = ErrorField[[]](
+    not_initialized = ErrorClsField[[]](
         RuntimeError,
         "System is not initialized",
     )
@@ -213,12 +197,12 @@ class GateRaiser(metaclass=GateRaiserMeta):
             f"Expected {expected.__name__}, got {actual!r} ({type(actual).__name__})"
         )
 
-    @ErrorField(TypeError, "Expected {0}, got {1} ({2}")
+    @ErrorClsField(TypeError, "Expected {0}, got {1} ({2}")
     def deco1(expected: type, actual: Any, /):  # noqa:N805
         # IDEA: 1 - as preprocess
         return expected.__name__, actual, type(actual).__name__
 
-    @ErrorField(TypeError, "")
+    @ErrorClsField(TypeError, "")
     def deco2(expected: type, actual: Any, /):  # noqa:N805
         # IDEA: 2 - as custom format
         return f"Expected {expected.__name__}, got {actual!r} ({type(actual).__name__})"
