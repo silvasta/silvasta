@@ -1,11 +1,11 @@
 """
-SstError - Root of all Errors with __cli__ and __log__ Defaults
+SstCoreError - Root of all Errors with __cli__ and __log__ Defaults
 
                                          DependencyLevel.sstcore[3]
 """
 
 __all__: list[str] = [
-    "SstError",
+    "SstCoreError",
     # data
     "RegistrySyncError",
     # general
@@ -18,7 +18,7 @@ __all__: list[str] = [
     "PathGuardReason",
 ]
 
-from ._base import SstError
+from ._base import SstCoreError
 from ._data import RegistrySyncError
 from ._general import (
     NotImplementedDispatchError,

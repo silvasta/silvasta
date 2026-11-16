@@ -15,12 +15,12 @@ from typing import Any
 
 from ..brick.color.box import Colors
 from ..port._types import EventTypes as _ET  #  noqa:N814
-from ._base import SstError
+from ._base import SstCoreError
 
 c = Colors()
 
 
-class TuiSelectorError(SstError):  # LATER: move to .ui|tui|interface?
+class TuiSelectorError(SstCoreError):  # LATER: move to .ui|tui|interface?
     """Raise when App cannot continue after Selection by User"""
 
     def __init__(self, message=None):
@@ -28,7 +28,7 @@ class TuiSelectorError(SstError):  # LATER: move to .ui|tui|interface?
         super().__init__(message or default)
 
 
-class PropertyNotInitializedError(SstError):
+class PropertyNotInitializedError(SstCoreError):
     # IDEA: FieldError? merge!
     """Raise when property is accessed before its attribute is initialized"""
 
@@ -51,7 +51,7 @@ class PropertyNotInitializedError(SstError):
         return lines
 
 
-class NotImplementedDispatchError(SstError, NotImplementedError):
+class NotImplementedDispatchError(SstCoreError, NotImplementedError):
     """Raise on missing TargetType for singledispatch(method)"""
 
     def __init__(self, first: Any, *args: Any, **kwargs):
@@ -72,7 +72,7 @@ class NotImplementedDispatchError(SstError, NotImplementedError):
         return lines
 
 
-class NotImplementedMixinError(SstError, NotImplementedError):
+class NotImplementedMixinError(SstCoreError, NotImplementedError):
     """Raise when Mixin queue somehow messed up"""
 
     def __init__(self, base, mixin, func):  # LATER: define more precise...

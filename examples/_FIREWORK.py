@@ -1,5 +1,5 @@
 """
-Show SstError and all Derivatives
+Show SstCoreError and all Derivatives
 
 - Explain Args and Kwargs
 - Catch with Handler
@@ -26,7 +26,7 @@ from sstcore.console.cli._exceptor import (
 from sstcore.error import (
     NotImplementedDispatchError,
     RegistrySyncError,
-    SstError,
+    SstCoreError,
     TuiSelectorError,
 )
 
@@ -115,7 +115,7 @@ handled_task = ExceptorTask(
 )
 
 internal: ErrorList = [
-    SstError,
+    SstCoreError,
     RegistrySyncError,
     ExceptorTask(
         error=NotImplementedDispatchError,
@@ -130,9 +130,9 @@ tasks: ErrorList = [
 ]
 
 exceptor_tasks: list[ExceptorTask] = [
-    ExceptorTask(error=SstError),
+    ExceptorTask(error=SstCoreError),
     ExceptorTask(
-        error=SstError,
+        error=SstCoreError,
         args=("hello", 11),
     ),
     ExceptorTask(

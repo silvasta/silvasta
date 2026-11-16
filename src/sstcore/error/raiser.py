@@ -9,8 +9,8 @@ Assemble Setup with all Sst(Core)Errors
 
 __all__: list[str] = [
     "SstRaiserCall",
-    "SstErrorInput",
-    "SstErrorSpec",
+    "SstCoreErrorInput",
+    "SstCoreErrorSpec",
     "SstRaiser",
 ]
 
@@ -25,7 +25,7 @@ from ..port.raising import (
     ErrorSpec,
     Raiser,
 )
-from ._base import SstError
+from ._base import SstCoreError
 from ._data import RegistrySyncError
 from ._general import (
     NotImplementedDispatchError,
@@ -37,8 +37,8 @@ from ._pathguard import PathGuardError
 # - build catalog plus handler here
 
 
-class _SstError(SstError):
-    """Finally Merge with SstError"""
+class _SstCoreError(SstCoreError):
+    """Finally Merge with SstCoreError"""
 
     def __init__(
         self,
@@ -56,15 +56,17 @@ class _SstError(SstError):
 
 
 class SstRaiserCall(Protocol):
-    def __call__(self, *args, **kwargs: Unpack[SstErrorInput]) -> SstError:
+    def __call__(
+        self, *args, **kwargs: Unpack[SstCoreErrorInput]
+    ) -> SstCoreError:
         """Annotate the Raiser Input and Output"""
 
 
-class SstErrorInput(ErrorInput, total=False): ...  # NEXT:
+class SstCoreErrorInput(ErrorInput, total=False): ...  # NEXT:
 
 
 @dataclass(frozen=True)  # NEXT:
-class SstErrorSpec(ErrorSpec): ...
+class SstCoreErrorSpec(ErrorSpec): ...
 
 
 class SstRaiser(Raiser):
@@ -78,19 +80,19 @@ class SstRaiser(Raiser):
     __call__: SstRaiserCall
 
     @property
-    def spec(self) -> type[SstErrorSpec]:
-        return SstErrorSpec
+    def spec(self) -> type[SstCoreErrorSpec]:
+        return SstCoreErrorSpec
 
     @property
-    def custom(self) -> type[SstError]:
-        return SstError
+    def custom(self) -> type[SstCoreError]:
+        return SstCoreError
 
     @property
     def builtin(self) -> type[Exception] | None:
         """Provide Builtin Exception if registered in Raiser"""
         match self:
             case SstRaiser.Zero:
-                return SstError
+                return SstCoreError
 
             case SstRaiser.Dispatch:
                 return NotImplementedDispatchError  # or logic error

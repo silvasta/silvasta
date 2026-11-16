@@ -1,12 +1,12 @@
 """
 Define the Shape of Exceptions
 
-- SstError: The Root
+- SstCoreError: The Root
                                                        DependencyLevel[0]
 """
 
 __all__: list[str] = [
-    "SstError",
+    "SstCoreError",
 ]
 
 from typing import Any
@@ -23,7 +23,7 @@ c = Colors()
 # TASK: unify pipeline with port.raising.SstCoreError
 
 
-class SstError(SstCoreError):
+class SstCoreError(SstCoreError):
     """Define the View and Behaviour of Custom Errors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

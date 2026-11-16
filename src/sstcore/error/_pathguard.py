@@ -21,12 +21,12 @@ from typing import Any
 
 from ..brick.color.box import Colors
 from ..port._types import EventTypes as _ET  # noqa:N814
-from ._base import SstError
+from ._base import SstCoreError
 
 c = Colors()
 
 
-class PathGuardError(SstError):
+class PathGuardError(SstCoreError):
     """
     Raise on invalid, existing, not existing and other bad File System States
 

@@ -1,5 +1,5 @@
 """
-Specify SstCoreError before SstError is ready
+Specify SstCoreError before SstCoreError is ready
 
 - sstcore.error[L2] Available for most of the Library
 - sstcore.brick[L1] Build essential parts of the Errors
@@ -49,7 +49,7 @@ class SstCoreError(Exception):
         _vars = [f"{k}={v!r}" for k, v in vars(self).items()]
         return f"{self.name}[{', '.join(_vars)}]"
 
-    @classmethod  # STRATEGY: do this latest in sstcore.error.SstError!
+    @classmethod  # STRATEGY: do this latest in sstcore.error.SstCoreError!
     def panic(cls, reason: Raiser): ...
 
 
