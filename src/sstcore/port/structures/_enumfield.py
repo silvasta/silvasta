@@ -57,7 +57,7 @@ class EnumField[ValueT]:
         return slot if member is None else slot.get(member)
 
     @classmethod
-    def imported(
+    def imports(
         cls,
         path: ModulePath,
         *,

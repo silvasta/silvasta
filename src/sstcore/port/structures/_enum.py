@@ -223,7 +223,6 @@ if __name__ == "__main__":
         config: ClassVar[object]  # Generic or broad baseline
 
         def __init_subclass__(cls, config: object, **kwargs):
-            # AI_QUESTION: is this a completely different as the Fields or like the same topic but a different approach?
             super().__init_subclass__(**kwargs)
             cls.config = config
 
