@@ -31,7 +31,7 @@ class StaticFuncMetaData(ClsViewData):  # IDEAS: - some toolkit config
 
 
 @portlink(Meta)
-class StaticFuncMeta(ClsViewBase):
+class StaticFuncMeta(ClsViewBase, type):
     """Create Blueprint for Static Functorials"""
 
     def __new__(
@@ -53,10 +53,10 @@ class StaticFuncMeta(ClsViewBase):
 
         return super().__new__(mcls, name, bases, namespace, data=data)
 
-    def __call__(cls, *_, **__) -> Any:  # noqa:N805
+    def __call__(cls, *_, **__) -> Any:
         raise TypeError(f"StaticFunc[{cls}] is Not available as Instance!")
 
-    def toolkit(cls, sort: bool = True) -> list[str]:  # ty:ignore # FIX: # noqa:N805
+    def toolkit(cls, sort: bool = True) -> list[str]:
         """Provide names of all public staticmethods"""
 
         names: list[str] = [

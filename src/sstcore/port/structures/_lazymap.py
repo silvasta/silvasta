@@ -10,9 +10,53 @@ Mappings
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, reveal_type
 
+from rich import print
+from rich.panel import Panel
+
+from .._types import _LockedClsMeta
 from ..empty import VOID, MayBe, MayNot
+
+
+class _GateRaiserMeta(_LockedClsMeta, type):
+    @property
+    def key1(cls) -> KeyError:
+        return KeyError("Missing...")
+
+    def key2(cls, key="") -> KeyError:
+        return KeyError(f"Missing...{key}")
+
+
+class GateRaiser(metaclass=_GateRaiserMeta):
+    """Explain Failures Meanigful"""
+
+
+print(GateRaiser._show())
+
+for task in (
+    GateRaiser.key1,
+    GateRaiser.key2,
+    GateRaiser.key2("hello"),
+):
+    try:
+        print(Panel(f"{task}"))
+        reveal_type(task)
+        print(task)
+        if callable(task):
+            task = task()
+            print(task)
+        if isinstance(task, BaseException):
+            raise task
+        else:
+            print(Panel(f"Nothing to raise: {task}", style="green"))
+    except Exception as error:
+        print(Panel(f"Error: {task}", style="red"))
+        print(f"{error}")
+        print(f"{error=}")
+        print(error)
+    finally:
+        print("--- " * 5)
 
 
 class Loader[**P, V](Protocol):
@@ -21,13 +65,13 @@ class Loader[**P, V](Protocol):
 
 class MapGate[K: Hashable, V]:
     def __init__(self, data: dict[K, V] | None = None):
-        self._data: dict[K, V] = data or {}  # LATER: accept remaining kwargs?
+        self._data: dict[K, V] = data or {}
 
     def __contains__(self, key: Any) -> bool:
         """Do not touch!"""
         with self.safe():
             if self.locksmith(key) in self._data:
-                return True
+                return True  # needed for type checker
         return False
 
     def __getitem__(self, key: Any) -> V:
@@ -35,7 +79,6 @@ class MapGate[K: Hashable, V]:
         lock: K = self.locksmith(key)
         if lock not in self:
             self._data[lock] = self.__missing__(lock)
-
         return self._data[lock]
 
     def __setitem__(self, key: Any, value: Any) -> None:
@@ -44,6 +87,7 @@ class MapGate[K: Hashable, V]:
         data: V = self.refine(value)
         if lock in self:
             if (_resolved := self.merge(lock, data)) is VOID:
+                # CHECK: merge should add or raise? or pass result?
                 return
         self._data[lock] = data
 
@@ -61,19 +105,19 @@ class MapGate[K: Hashable, V]:
 
     def __missing__(self, lock: K) -> V:
         """Subhook on Missing"""
-        raise NotImplementedError(lock)
+        raise KeyError
 
-    def merge(self, lock: K, data: V, /) -> MayBe[V]:
-        """Subhook on Duplicated"""
-        raise NotImplementedError(lock, data)
+    def merge(self, _lock: K, data: V, /) -> MayBe[V]:
+        """Subhook on Duplicated: default=overwrite"""
+        return data
 
     def locksmith(self, key: Any) -> K:
-        """Subhook on incoming Key"""
-        raise NotImplementedError(key)
+        """Subhook on incoming Key:"""
+        return key
 
     def refine(self, value: Any) -> V:
         """Subhook on incoming Value"""
-        raise NotImplementedError(value)
+        return value
 
     def __iter__(self) -> Iterator[K]:  # Any?
         return iter(self._data)

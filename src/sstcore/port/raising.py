@@ -10,7 +10,7 @@ Specify SstCoreError before SstError is ready
 
 """
 
-# IDEA: absorb _error and _raise
+# IDEA: absorb . _raise? at least the Errors, definitely not Link(/Port)Raiser
 
 __all__: list[str] = [
     "SstCoreError",
@@ -27,24 +27,27 @@ from typing import Any, Never, Self, TypedDict, Unpack
 
 from .solid import BaseEnum
 from .structures import ParamSpec
+from .structures._error import SstBaseError
 
 type Errors = tuple[type[Exception]] | tuple[type[Exception], type[Exception]]
 
+x: SstBaseError  # CHECK:
+
 
 class SstCoreError(Exception):
-    """Match and Catch all Errors on Global DependencyLevel[2]"""
+    """Match and Catch all Errors below Global DependencyLevel[2]"""
 
-    def __init__(self, *args) -> None:
+    def __init__(self, *args) -> None:  # CHECK: accepting kwargs now?
         """Forward Args to Exception"""
         super().__init__(*args)
 
-    @property
+    @property  # REMOVE: when SstBaseError established
     def name(self) -> str:
         return type(self).__name__
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # REMOVE: when SstBaseError established
         _vars = [f"{k}={v!r}" for k, v in vars(self).items()]
-        return f"{type(self).__name__}[{', '.join(_vars)}]"
+        return f"{self.name}[{', '.join(_vars)}]"
 
     @classmethod  # STRATEGY: do this latest in sstcore.error.SstError!
     def panic(cls, reason: Raiser): ...

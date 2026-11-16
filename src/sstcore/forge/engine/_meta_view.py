@@ -10,7 +10,6 @@ __all__: list[str] = [
     "ClsViewData",
 ]
 
-from collections.abc import Callable
 from typing import Any
 
 from ...brick.call import just_return
@@ -27,10 +26,9 @@ colors = Colors()
 
 
 @portlink(SstFullView)
-class ClsViewBase(SstMeta):
+class ClsViewBase(SstMeta, type):
     """Provide all Views for Classes"""
 
-    toolkit: Callable[[], list[str]]
     _data: ClsViewData  # ty:ignore # FIX: how to narrow? (without type mounting!!!)
 
     def __new__(
@@ -44,20 +42,23 @@ class ClsViewBase(SstMeta):
         cls._data = data
         return cls
 
-    def __cli__(cls) -> CliDTO:  # noqa:N805
+    def __cli__(cls) -> CliDTO:
         return cls._data.cli(cls)
 
-    def __str__(cls) -> str:  # noqa:N805
+    def __str__(cls) -> str:
         return cls._data.name(cls)
 
-    def __rich__(cls) -> str:  # noqa:N805
+    def __rich__(cls) -> str:
         return cls._data.rich(cls)
 
-    def __repr__(cls) -> str:  # noqa:N805
+    def __repr__(cls) -> str:
         # LATER: find solution for toolkit, maybe in static base? or from format
         return f"{clsname(cls)}[{', '.join(cls.toolkit()) or 'useless'}]"
 
-    def __log__(cls) -> LogDTO:  # noqa:N805
+    def toolkit(cls) -> list[str]:
+        return []
+
+    def __log__(cls) -> LogDTO:
         return LogDTO(
             message=str(cls),
             level="INFO",
