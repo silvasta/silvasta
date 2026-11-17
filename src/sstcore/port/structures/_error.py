@@ -12,27 +12,14 @@ import sys
 from collections.abc import Callable, Iterator
 from functools import partial
 from types import FrameType
-from typing import Any, NamedTuple, Self
+from typing import Any
 
 from rich import print
 from rich.panel import Panel
 
 from .._error import SstError
 from .._types import _LockedClsMeta
-
-
-class Attr(NamedTuple):  # TODO: formatting!
-    name: str
-    value: Any
-
-    @classmethod
-    def get(cls, target: type, name: str, /) -> Self:
-        return cls(name, getattr(target, name))
-
-    def __call__(self, *args, **kwargs):
-        if callable(self.value):
-            return self.value(*args, **kwargs)
-        return f"Not Callable: {type(self.value)}[{self.value}]"
+from ._primitives import Var
 
 
 def _caller_context(depth: int = 2) -> str:
@@ -60,16 +47,16 @@ class GateRaiserMeta(_LockedClsMeta, type):
     def _meta_and_cls_attrs(cls) -> dict[str, Any]:
         return {**type(cls).__dict__, **cls.__dict__}
 
-    def __iter__(cls) -> Iterator[Attr]:
+    def __iter__(cls) -> Iterator[Var]:
         for name in cls._meta_and_cls_attrs():
             if not name.startswith("_"):
-                yield Attr.get(cls, name)
+                yield Var.gettr(cls, name)
 
 
 type Errors = tuple[type[SstError], type[Exception]]
 
 
-def _weave_sst_error[E: Exception](error: type[E]) -> type[E & SstError]:  # ty:ignore
+def _weave_sst_error[E: Exception](error: type[E]) -> type[SstError]:  # ty:ignore
     """Mix SstError with BuiltIn Exception"""
 
     if issubclass(error, SstError):
@@ -78,10 +65,10 @@ def _weave_sst_error[E: Exception](error: type[E]) -> type[E & SstError]:  # ty:
     bases: Errors = (SstError, error)
     name = f"{bases[0].__name__[0:-5]}{bases[-1].__name__}"
 
-    return type(name, bases, {})  # ty:ignore
+    return type(name, bases, {})
 
 
-class ErrorClsField[**P]:
+class ErrorClsField[**P]:  # AI: does this work on not Cls as well?
     """Wire error name, owner class, and provide message template"""
 
     def __new__[E: Exception](
@@ -92,7 +79,7 @@ class ErrorClsField[**P]:
         *,
         preprocess: Callable[..., tuple[tuple[Any, ...], dict[str, Any]]]
         | None = None,
-    ) -> Callable[P, E & SstError]:  # ty:ignore
+    ) -> Callable[P, SstError]:
         # NEXT: wire this proper, or does it already work? at least not-used args should be silenced
         return super().__new__(cls)
 
@@ -213,7 +200,7 @@ if __name__ == "__main__":
     print(GateRaiser.out_of_range("hello", 1))
     print(GateRaiser.not_initialized())
 
-    print(GateRaiser.invalid_type_deco(Attr, "hello"))
+    print(GateRaiser.invalid_type_deco(Var, "hello"))
 
     def _panel(text, style="cyan", /):
         print(Panel(text, style=style))

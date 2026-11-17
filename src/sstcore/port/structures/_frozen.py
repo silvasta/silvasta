@@ -8,7 +8,7 @@ __all__: list[str] = [
     "frozendict",
 ]
 
-# NEXT: LinkRegistry, EditRegistry (better name, switch for (im-)mutable)
+# NEXT: LinkRegistry, MorphMap (better name, switch for (im-)mutable)
 
 
 import sys

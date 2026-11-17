@@ -19,7 +19,7 @@ from typing import Any, Self
 
 from ...port.empty import ViewSentinel
 from ...port.link import portlink
-from ...port.raising import SstCoreError
+from ...port.raising import SstError
 from ...port.shape import Builder, Injector
 from ...port.solid import MixinCatalog
 from ..compose import MixinBuilder, MixInjector
@@ -78,7 +78,7 @@ class ViewInjector[MixT: type](MixInjector, ViewBuilder):
             MixinCatalog.resolve(item)
             if item.category in selected_views:
                 # LATER: on fail? maybe skip, definitely other error!
-                raise SstCoreError(f"{item}: Duplicated! {selected_views=}")
+                raise SstError(f"{item}: Duplicated! {selected_views=}")
             selected_views[item.category] = item
 
         return self.evolve(**selected_views)

@@ -26,9 +26,9 @@ from dataclasses import MISSING
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from ..empty import VOID, MayBe
+from ._hashed import HashedTuple
 from ._set import FieldSet
 from ._set import _DataClass as DataClass
-from ._tuple import HashedTuple
 
 type CacheKey = tuple[HashedTuple, ...]
 

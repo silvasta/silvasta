@@ -6,7 +6,6 @@ Create immutable, identifiably container
 
 __all__: list[str] = [
     "HashedTuple",
-    "ParamSnap",
 ]
 
 
@@ -14,20 +13,12 @@ from collections.abc import Hashable, Mapping
 from functools import partial
 from typing import Any, NamedTuple, TypeIs
 
-from ._map import frozendict
+from ._frozen import frozendict
 
 
-class ParamSnap(NamedTuple):
-    """Capture and Visualize 1 Signature"""
-
-    args: tuple[Any, ...]
-    kwargs: dict[str, Any]
-
-    def __str__(self):
-        return f"args={self.args}, kwargs={self.kwargs}"
-
-    def __repr__(self):
-        return str(self)  # LATER: explain each (kw)arg
+def is_hashittr(target: Hashable, /) -> TypeIs[tuple | frozenset | frozendict]:
+    """Ensure and Annotate Target to be Hashable Iterable"""
+    return isinstance(target, (tuple, frozenset, frozendict))
 
 
 class _HashedTupleBase(NamedTuple):
@@ -35,11 +26,6 @@ class _HashedTupleBase(NamedTuple):
 
     name: str
     value: Hashable
-
-
-def is_hashittr(target: Hashable, /) -> TypeIs[tuple | frozenset | frozendict]:
-    """Ensure and Annotate Target to be Hashable Iterable"""
-    return isinstance(target, (tuple, frozenset, frozendict))
 
 
 class HashedTuple(_HashedTupleBase):

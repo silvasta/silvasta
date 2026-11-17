@@ -81,7 +81,8 @@ class _LockedClsMeta(type):
 class Types(metaclass=_LockedClsMeta):
     """Collect Types.. for Types: Meta, Mixin, Composit Stuff"""
 
-    type Bases = tuple[type, ...]
+    type Bases[Unit: Any] = tuple[type[Unit], ...]
+    type Errors[E: BaseException = Exception] = tuple[type[E], ...]
     type NameSpace = dict[str, Any]
 
     type Proto = type

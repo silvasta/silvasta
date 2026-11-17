@@ -10,7 +10,7 @@ __all__: list[str] = [
     "DunderSet",
     "frozendict",
     "HashedTuple",
-    "ParamSnap",
+    "Params",
     # dataclass
     "DataClass",
     "CachedDataclassMeta",
@@ -47,10 +47,11 @@ from ._dataclass import (
     create_field_resolver,
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
-from ._map import frozendict
+from ._frozen import frozendict
+from ._hashed import HashedTuple
 from ._module import DotPath, ModulePath
+from ._primitives import Params
 from ._set import DunderSet, FieldSet, NormSet
-from ._tuple import HashedTuple, ParamSnap
 
 
 class PresetMeta(LockedClsMeta):  # waiting for own module?
