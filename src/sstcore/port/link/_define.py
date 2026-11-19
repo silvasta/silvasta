@@ -55,7 +55,7 @@ from types import MappingProxyType as _FixMap
 from typing import Any, NamedTuple, Protocol, TypedDict
 from weakref import WeakKeyDictionary, WeakSet
 
-from .._raise import PortLinkError  # TODO: use Raiser?
+from ._raise import PortLinkError  # TODO: use Raiser?
 
 
 class PortLinker[C, P](Protocol):

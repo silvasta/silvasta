@@ -4,40 +4,30 @@ Most basic parts
 .
 """
 
-from itertools import combinations
-
 __all__: list[str] = [
     "Var",
     "Args",
     "Kwargs",
     "Params",
+    "BaseControl",
 ]
 
 from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
+from itertools import combinations
 from typing import Any, NamedTuple, Self
 
 from ._field import TupleField
 
 
 class BaseControl:
+    __iter__: Any
     # inner = TupleField[str]("=")
     # outer = TupleField[str](", ")
-    __iter__: Any
     outer: str
     inner: str
 
     def __str__(self):
         return f"{type(self).__name__}[{self.data()}]"
-
-    # def __tokens__(self) -> Iterator[Any]:
-    #     """
-    #     Yield items for view rendering.
-    #
-    #     Defaults to iterating over `self`, filtering out empty subsections.
-    #     """
-    #     for x in self:  # ty:ignore
-    #         if x is not None and x != () and x != {}:
-    #             yield x
 
     def data(self) -> str:
         # return self.outer.join(self.item(x) for x in self.__tokens__())
@@ -53,7 +43,7 @@ class BaseControl:
 
     @classmethod
     def mix[T](cls: type[Self], target: type[T]) -> type[T & Self]:  # ty:ignore
-        namespace = {
+        namespace = {  # IDEA: preset?
             "__qualname__": target.__qualname__,
             "__module__": target.__module__,
             "__doc__": target.__doc__,
@@ -73,11 +63,6 @@ class Var(NamedTuple):
     def gettr(cls, target: Any, name: str, /) -> Self:
         """Hit the Target with the Name to get the Attr"""
         return cls(name, value=getattr(target, name))
-
-    # def __tokens__(self) -> Iterator[tuple[str, Any]]:
-    #     # CHECK: what is the difference to (unchange) Self.__iter__??
-    #     """Yield a single (name, value) tuple for `base.item` to format."""
-    #     yield (self.name, self.value)
 
     def keys(self) -> KeysView[str]:
         return {self.name: None}.keys()

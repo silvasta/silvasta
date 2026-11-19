@@ -12,54 +12,12 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any, Protocol
 
-from rich import print
-from rich.panel import Panel
-
-from .._types import _LockedClsMeta
+from .._error import GateRaiserMeta, SstError, SstPortError, StaticErrorField
 from ..empty import VOID, MayBe, MayNot
 
 
-class _GateRaiserMeta(_LockedClsMeta, type):
-    @property
-    def key1(cls) -> KeyError:
-        return KeyError("Missing...")
-
-    def key2(cls, key="") -> KeyError:
-        return KeyError(f"Missing...{key}")
-
-
-class GateRaiser(metaclass=_GateRaiserMeta):
-    """Explain Failures Meanigful"""
-
-
-print(GateRaiser._show())
-
-for task in (
-    GateRaiser.key1,
-    GateRaiser.key2,
-    GateRaiser.key2("hello"),
-):
-    try:
-        print(Panel(f"{task}"))
-        # reveal_type(task)
-        print(task)
-        if callable(task):
-            task = task()
-            print(task)
-        if isinstance(task, BaseException):
-            raise task
-        else:
-            print(Panel(f"Nothing to raise: {task}", style="green"))
-    except Exception as error:
-        print(Panel(f"Error: {task}", style="red"))
-        print(f"{error}")
-        print(f"{error=}")
-        print(error)
-    finally:
-        print("--- " * 5)
-
-
-class Loader[**P, V](Protocol):
+class Loader[**P, V](Protocol):  # CHECK: Loader??
+    # MOVE: Types?
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> V: ...
 
 
@@ -139,7 +97,6 @@ class MapGate[K: Hashable, V]:
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class LazyMap[K: Hashable, V](MapGate[K, V]):
@@ -218,3 +175,67 @@ class EnumMemberMap[E: Enum, V](ActiveMap[E, V]):
             f"{self.label}: expected {self.owner.__name__} or name, "
             f"got {type(key).__name__}"
         )
+
+
+class GateRaiser(metaclass=GateRaiserMeta):
+    """Explain Failures Meaningful"""
+
+    _base_error: type[SstError] = SstPortError
+
+    cache1 = StaticErrorField[[str]](
+        KeyError,
+        "Cache miss for lookup key {0!r}",
+    )
+
+    out_of_range = StaticErrorField[[str, int]](
+        ValueError,
+        "Field {0} exceeded max limit {1}",
+    )
+    not_initialized = StaticErrorField[[]](
+        RuntimeError,
+        "System is not initialized",
+    )
+
+    # NEXT: figure out best method
+
+    @StaticErrorField(TypeError, "Expected {0}, got {1} ({2}")
+    def deco1(expected: type, actual: Any, /):  # noqa:N805
+        # IDEA: 1 - as preprocess
+        return expected.__name__, actual, type(actual).__name__
+
+    @StaticErrorField(TypeError, "")
+    def deco2(expected: type, actual: Any, /):  # noqa:N805
+        # IDEA: 2 - as custom format
+        return f"Expected {expected.__name__}, got {actual!r} ({type(actual).__name__})"
+
+
+if __name__ == "__main__":
+    from rich import print
+    from rich.panel import Panel
+
+    print(GateRaiser.cache1("works"))
+    print(GateRaiser.out_of_range("hello", 1))
+    print(GateRaiser.not_initialized())
+
+    def _panel(text, style="cyan", /):
+        print(Panel(text, style=style))
+
+    for attr in GateRaiser:
+        try:
+            _panel(f"{attr}")
+            print(task := attr("hello"))
+
+            if isinstance(task, BaseException):
+                _panel("RAISE", "bold white on purple3")
+                raise task
+            else:
+                _panel(f"Nothing to raise: {task}", "green")
+        except Exception as error:
+            _panel(f"Error: {task}", "red")
+            print(f"{error}")
+            print(f"{error=}")
+            print(error)
+        finally:
+            print("--- " * 5)
+
+    print(f"{GateRaiser.cache1("loader is missing")=}")

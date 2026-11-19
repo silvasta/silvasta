@@ -89,6 +89,12 @@ class Types(metaclass=_LockedClsMeta):
     type Mixin = type
     type Slot = tuple[Mixin, Proto] | Mixin | Proto  # CHECK: usage?
 
+    type Dict[K, V] = dict[K, V]
+    type Tuple[T] = tuple[T, ...]
+
+
+# NEXT: KeyView for (Mapping)[str,Any]??
+
 
 class RegistryTypes(metaclass=_LockedClsMeta):
     """
@@ -113,15 +119,15 @@ class RegistryTypes(metaclass=_LockedClsMeta):
 
     # INFO: used for parametrized class parametrization
 
-    type List[T] = list[T]
-    type Tuple[T] = tuple[T, ...]
-    type Seq[T] = Sequence[T]
+    type List[T] = list[T]  # REMOVE: why?
+    type Tuple[T] = tuple[T, ...]  # CHECK:
+    type Seq[T] = Sequence[T]  # CHECK: where used?
 
     type ItrB[T] = Iterable[T]
     type ItrO[T] = Iterator[T]
 
-    type Map[K, T] = Mapping[K, T]
-    type Dict[K, T] = dict[K, T]
+    type Map[K, T] = Mapping[K, T]  # CHECK: where used
+    type Dict[K, T] = dict[K, T]  # CHECK: defaults, overlap
 
     type Vault = Sequence | Mapping
     type TypedVault[T] = (
@@ -134,7 +140,7 @@ class RegistryTypes(metaclass=_LockedClsMeta):
 class StackTypes(metaclass=_LockedClsMeta):
     """Types for Stacking Pipeline"""
 
-    type Map[ValueT] = Mapping[str, ValueT]
+    type Map[ValueT] = Mapping[str, ValueT]  # CHECK: overlap
     type StackData[ValueT] = ValueT | Callable[..., ValueT]
     type LayerData[ValueT] = StackTypes.Map[StackTypes.StackData[ValueT]]
 
@@ -142,7 +148,7 @@ class StackTypes(metaclass=_LockedClsMeta):
 
 
 class StubTypes(metaclass=_LockedClsMeta):
-    type ProtoType = type
+    type ProtoType = type  # CHECK: overlap
     type AttrName = str
     type RawObject = object
     type PublicMember = tuple[AttrName, RawObject, AttrKind]

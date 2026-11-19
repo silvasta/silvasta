@@ -1,7 +1,7 @@
 """
 Reference the Implementations back to their Definitions in the port
 
-                                  DependencyLevel.sstcore.port[0.4]
+                                  DependencyLevel.sstcore.port[0:4]
 """
 
 __all__: list[str] = [

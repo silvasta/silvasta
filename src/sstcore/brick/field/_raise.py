@@ -33,7 +33,7 @@ from ...port.raising import Raiser
 from ..reflect import clsname
 
 
-class FieldError(raising.SstCoreError):
+class FieldError(raising.SstError):
     """Custom Exception for Field Operations"""
 
     def __init__(

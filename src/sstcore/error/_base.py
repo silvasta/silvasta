@@ -21,8 +21,7 @@ from ..port.raising import Raiser, SstError
 c = Colors()
 
 
-# REMOVE: copy for remembering
-class _SstError(Exception):
+class _SstError(Exception):  # REMOVE: copy to remember
     """Match and Catch all Errors below Global DependencyLevel[2]"""
 
     @classmethod  # STRATEGY: do this latest in sstcore.error.SstError!

@@ -21,7 +21,7 @@ from typing import Any
 from weakref import WeakSet
 
 from .._types import _RichView
-from ..structures import ParamSnap
+from ..primitives import Params
 from ._define import Doc, LinkRegistry, PortPrinter, SortedDocs
 
 
@@ -82,7 +82,7 @@ def _load_printer() -> PortPrinter:
             try:
                 self.console.print(*args, **kwargs)
             except NotRenderableError as error:
-                param = ParamSnap(args, kwargs)
+                param = Params(args, kwargs)
                 self.panel(f"{param}", title=f"{error}", color="red")
 
         def line(self, *target, color: str = "yellow"):

@@ -17,6 +17,7 @@ from ._frozen import frozendict
 
 
 def is_hashittr(target: Hashable, /) -> TypeIs[tuple | frozenset | frozendict]:
+    # CHECK: Is.hashiter?
     """Ensure and Annotate Target to be Hashable Iterable"""
     return isinstance(target, (tuple, frozenset, frozendict))
 

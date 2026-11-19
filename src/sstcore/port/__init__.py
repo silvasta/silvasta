@@ -7,8 +7,7 @@ Draw the Shape of the Core
                                          DependencyLevel.sstcore[0]
 """
 
-__all__: list[str] = [
-    # NEXT: activate, maybe __getattr__
+__all__: list[str] = [  # TODO: activate __getattr__ when StubWriter done
     # "SstSystem",
     # "CliSystem",
     "SstError",

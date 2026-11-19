@@ -7,53 +7,61 @@ Define Fields for Enums
 __all__: list[str] = [
     "EnumField",
     "BoundEnumField",
-    "EnumFieldLoader",
+    "Loader",
 ]
 
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from enum import Enum
 from typing import Any, Protocol, Self, overload, runtime_checkable
 
+from .._modulepath import ModulePath
 from ..empty import VOID, MayBe, MayNot
-from ._module import ModulePath
+from ..primitives._loader import Loader, Loading
 
 
 @runtime_checkable
-class EnumFieldLoader[E: Enum, Value: Any](Protocol):
+class EnumFieldLoadeer[E: Enum, Value: Any](Protocol):
     def __call__(self) -> Mapping[E, Value]:
         """Prepare Enum Data for Field"""
 
 
-class EnumField[ValueT]:
+class LoaderProto[T](Loading[[Enum], T], Protocol): ...
+
+
+class EnumField[T]:
     """Setup independent Descriptor per EnumCls with Lazy data binding"""
 
+    # TODO: overload, either loader or default/fallback
     def __init__(
         self,
         *,
-        default: MayBe[ValueT] = VOID,
-        fallback: MayNot[Callable[[Any], ValueT]] = None,
+        # WARN: dispatch of Load Full Table and Load Single Enum
+        loader: MayNot[Loader[[Enum], T]] = None,
+        default: MayBe[T] = VOID,
+        fallback: MayNot[Loader[[Enum], T]] = None,
     ) -> None:
-        self._default: MayBe[ValueT] = default
-        self._fallback: MayNot[Callable[[Any], ValueT]] = fallback
-        self._loader: MayNot[EnumFieldLoader[Any, ValueT]] = None
+        self._loader: Loader[[Enum], T] = (
+            Loader(fallback, default=default) if loader is None else loader
+        )
         self._name: str = ""
-        self._slots: dict[type[Any], BoundEnumField[Any, ValueT]] = {}
+        self._slots: dict[type[Any], BoundEnumField[Any, T]] = {}  # NEXT:
 
     def __set_name__(self, owner: type, name: str) -> None:
+        # LATER: owner?
         self._name: str = name
 
     @overload
     def __get__[E: Enum](
         self, member: None, owner: type[E]
-    ) -> BoundEnumField[E, ValueT]: ...
+    ) -> BoundEnumField[E, T]: ...
     @overload
-    def __get__(self, member: Enum, owner: type[Any]) -> ValueT: ...
+    def __get__(self, member: Enum, owner: type[Any]) -> T: ...
     def __get__[E: Enum](
         self, member: E | None, owner: type[E]
-    ) -> BoundEnumField[E, ValueT] | ValueT:
+    ) -> BoundEnumField[E, T] | T:
         """Provide BoundEnumField for EnumCls or extract Value for Member"""
-        slot: BoundEnumField[E, ValueT] = self._slot_for(owner)
+        slot: BoundEnumField[E, T] = self._slot_for(owner)
         return slot if member is None else slot.get(member)
 
     @classmethod
@@ -62,12 +70,13 @@ class EnumField[ValueT]:
         path: ModulePath,
         *,
         call_it: bool = False,
-        default: MayBe[ValueT] = VOID,
-        fallback: MayNot[Callable[[Any], ValueT]] = None,
+        # TODO: loader or default/fallback
+        default: MayBe[T] = VOID,
+        fallback: MayNot[Loader[[Enum], T]] = None,
     ) -> Self:
         """Create Lazy Field by 'module.path:Attr' evaluation"""
         return cls.lazy(
-            loader=path.lazy_loader(call_if_callable=call_it),
+            path.lazy_loader(call_if_callable=call_it),
             default=default,
             fallback=fallback,
         )
@@ -75,92 +84,66 @@ class EnumField[ValueT]:
     @classmethod
     def lazy(
         cls,
-        loader: EnumFieldLoader[Any, ValueT],
+        loader: Loader[[Enum], T],
         *,
-        default: MayBe[ValueT] = VOID,
-        fallback: MayNot[Callable[[Any], ValueT]] = None,
+        default: MayBe[T] = VOID,
+        fallback: MayNot[Loader[[Enum], T]] = None,  # REMOVE: ??
     ) -> Self:
         """Create Lazy Field with Zero-Arg Loader"""
-        field: Self = cls(default=default, fallback=fallback)
-        field._loader = loader
-        return field
+        return cls(loader=loader, default=default, fallback=fallback)
 
-    def _slot_for[E: Enum](self, owner: type[E]) -> BoundEnumField[E, ValueT]:
+    def _slot_for[E: Enum](self, owner: type[E]) -> BoundEnumField[E, T]:
         """Provide per owner cached Field and load if needed"""
         if owner not in self._slots:
             self._slots[owner] = BoundEnumField(
-                owner=owner,
-                name=self._name,
-                loader=self._loader,
-                default=self._default,
-                fallback=self._fallback,
+                owner, self._name, loader=self._loader.clone()
             )
         return self._slots[owner]
 
 
-class BoundEnumField[EnumT: Enum, ValueT]:
+class BoundEnumField[EnumT: Enum, T]:  # RENAME: this is acually not a Field...
     """Per-Enum-class storage, lazy loader, and validator for EnumField"""
 
     def __init__(
-        self,
-        owner: type[EnumT],
-        name: str,
-        loader: MayNot[EnumFieldLoader[EnumT, ValueT]] = None,
-        default: MayBe[ValueT] = VOID,
-        fallback: MayNot[Callable[[EnumT], ValueT]] = None,
+        self, owner: type[EnumT], name: str, loader: Loader[[EnumT], T]
     ) -> None:
         self.owner: type[EnumT] = owner
         self.name: str = name
-        self._loader: MayNot[EnumFieldLoader[EnumT, ValueT]] = loader
-        self._default: MayBe[ValueT] = default
-        self._fallback: MayNot[Callable[[EnumT], ValueT]] = fallback
-        self._data: dict[EnumT, ValueT] = {}
-        self._loader_ran: bool = loader is None  # CHECK: why?
-
-    @property
-    def is_loaded(self) -> bool:
-        return self._loader_ran and (  # CHECK: why not 'loader is None' here?
-            bool(self._data)
-            or self._default is not VOID
-            or self._fallback is not None
-        )
+        # WARN: dispatch of Load Full Table and Load Single Enum
+        self._loader: Loader[[EnumT], T] = loader
+        self._data: dict[EnumT, T] = {}  # NEXT: CacheMap
 
     def __str__(self):
         return f"{self.owner.__name__}.{self.name}"
 
     def __repr__(self):
-        return f"{self}[{self._loader=},{self._default=},{self._data=}]"
+        return f"{self}[{self._loader=},{self._data=}]"
 
-    def bind_loader(
-        self, loader: EnumFieldLoader[EnumT, ValueT]
-    ) -> EnumFieldLoader[EnumT, ValueT]:
+    @property
+    def is_loaded(self) -> bool:
+        # REMOVE: why on this here??
+        return self._loader.is_done and (bool(self._data))
+
+    def bind_loader(self, loader: Loader[[EnumT], T]) -> Loader[[EnumT], T]:
+        # REMOVE: why on this here??
         """Attach Lazy Loader externally (e.g. as decorator)"""
-        self._loader: EnumFieldLoader[EnumT, ValueT] = loader
-        self._loader_ran = False  # CHECK: is there no smart solution for this?
+        self._loader: Loader[[EnumT], T] = loader
         return loader
 
-    def get(self, member: EnumT) -> ValueT:
+    def get(self, member: EnumT) -> T:
         """Fetch Member Data or Fallback or use Default or Raise"""
-        self._ensure_loaded()
-        try:
-            return self._data[member]
-        except KeyError:
-            if self._fallback is not None:
-                return self._fallback(member)
-            if self._default is not VOID:
-                return self._default
-            raise RuntimeError(f"Missing Data for {member} on {self}") from None
+        if member not in self._data and not self._ensure_loaded(member):
+            raise RuntimeError(f"Missing Data for {member} on {self}")
+        return self._data[member]
 
     def register(
         self,
-        mapping: Mapping[EnumT, ValueT] | None = None,
+        mapping: Mapping[EnumT, T] | None = None,
         /,
-        **by_name: ValueT,
+        **by_name: T,
     ) -> None:
         """Update cached data by Enum member mapping or directly by  member name kwargs"""
-        # AI: this functionality could as well be absorbed by the CacheMap
-        # - define once how it works inside the centralized base
-        # - expose it here with 1 or a few lines
+        # NEXT: CacheMap
         if mapping:
             self._data.update(mapping)
         if by_name:
@@ -172,9 +155,9 @@ class BoundEnumField[EnumT: Enum, ValueT]:
                     raise KeyError(f"{self}: unknown member {key!r}") from None
                 self._data[member] = value
 
-    def validate(self) -> None:
+    def validate(self) -> None:  # IDEA: return bool?
         """Ensure 1-to-1 coverage between Enum members and registered values."""
-        self._ensure_loaded()
+        # CHECK:self._ensure_loaded()
         required: set[EnumT] = set(self.owner)
         allowed: set[EnumT] = set(self.owner._member_map_.values())  # ty:ignore - better than cast
         actual: set[EnumT] = set(self._data)
@@ -186,8 +169,9 @@ class BoundEnumField[EnumT: Enum, ValueT]:
         if extra := actual - allowed:
             raise ValueError(f"{self} Unknown Keys: {extra}")
 
-    def _ensure_loaded(self) -> None:
-        if self._loader_ran or (loader := self._loader) is None:
-            return
-        self._loader_ran = True  # AI: this hould be done somehow better...
-        self.register(loader())
+    def _ensure_loaded(self, member) -> bool:
+        # TODO: check with registry, add somehow there
+        if (resolved := self._loader.try_resolve(member)) is not VOID:
+            self._data[member] = resolved
+            return True
+        return False

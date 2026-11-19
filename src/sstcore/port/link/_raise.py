@@ -6,19 +6,11 @@ Adapt the SstError to PortLink
 
                                   DependencyLevel.sstcore.port[0.4]
 """
-
-
-# TASK: 1 single port implementation of Raiser
-# - create more universal version
-# - improve internal data pipeline
-# - maybe keep name: LinkRaiser
-# NEXT: check the RaiserMeta for probably better setup
+# NEXT: decide on setup on next update
 
 __all__: list[str] = [
     "LinkRaiser",
     "LinkRaiserCall",
-    #
-    "EnumError",
     #
     "PortLinkError",
     "PortErrorInput",
@@ -26,39 +18,14 @@ __all__: list[str] = [
 ]
 
 
-from enum import Enum, auto
+from enum import auto
 from typing import Any, Protocol, Unpack
 
-from . import raising
-from .raising import Raiser, SstError  # NEXT: SstPortError
-from .solid import BaseEnum
+from .. import raising
+from ..raising import Raiser, StaticErrorField, StaticRaiserMeta
 
 
-class EnumError(SstError, TypeError):  # MOVE: solid? structures._enum?
-    """Temporary Resolve the SstEnumMeta blinding"""
-
-    def __init__(
-        self, member_or_cls: Enum | type[Enum], /, reason="", *args
-    ) -> None:
-        """Forward Args to Exception"""
-        reason: str = reason or "Failed"
-        match BaseEnum.membership(member_or_cls):
-            case ():
-                who = f"Unknown: {member_or_cls=}"
-            case (enum_cls,):
-                self.enum: type[BaseEnum] = enum_cls
-                who = f"BaseEnum: {enum_cls}"
-            case (enum_cls, member):
-                self.enum: type[BaseEnum] = enum_cls
-                self.member: BaseEnum = member
-                who = f"BaseEnum: {enum_cls=}, {member=}"
-        super().__init__(f"{who} | {reason=}", *args)
-
-
-#  LINE: -- Link -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class PortLinkError(raising.SstError):
+class PortLinkError(raising.SstPortError):
     def __init__(
         self,
         message: str,
@@ -76,6 +43,33 @@ class PortLinkError(raising.SstError):
         self.kwargs: dict = kwargs
         self.panic: LinkRaiser = panic or LinkRaiser.Zero
         super().__init__(*args)
+
+
+#  LINE: -- Raiser with Immutable Cls -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+# NEXT: decide on setup on next update
+
+
+class PortLinkRaiser(metaclass=StaticRaiserMeta):
+    """Fast V2 Raiser for port.link operations."""
+
+    missing_plug = StaticErrorField[[type, str]](
+        AttributeError, "Not found: {0.__name__} for attr={1!r}"
+    )
+    pipeline = StaticErrorField[[type, str]](
+        RuntimeError, "Pipeline issue with {0.__name__} for attr={1!r}"
+    )
+    inject = StaticErrorField[[type, str, str]](
+        AttributeError, "Inject issue for {0.__name__}.{1}, __doc__={2!r}"
+    )
+    reflect = StaticErrorField[[type, str, str]](
+        AttributeError, "Reflect issue for {0.__name__}.{1}, __doc__={2!r}"
+    )
+
+
+#  LINE: -- Raiser with Enum Setup -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+# NEXT: decide on setup on next update
 
 
 class PortErrorInput(raising.ErrorInput, total=False):
@@ -96,6 +90,7 @@ class LinkRaiserCall(Protocol):
     ) -> raising.SstError: ...
 
 
+# NEXT: decide on setup on next update
 class LinkRaiser(Raiser):
     Zero = auto()
 
@@ -146,8 +141,6 @@ class LinkRaiser(Raiser):
         source_name: str = (
             data.source.__name__ if data.source else "Unknown Implementation"
         )
-
-        # TASK: improve!!
 
         match self:
             case LinkRaiser.Zero:

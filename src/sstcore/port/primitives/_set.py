@@ -20,16 +20,18 @@ from .._types import _Stringable, _Stringables
 from ..empty import MayNot
 
 
-class _DataClass(Protocol):
+class _DataClass(Protocol):  # RENAME: DataClassing??
+    # MOVE: types!
     """Define the minimal Shape for typing a DataClass"""
 
     __dataclass_fields__: ClassVar[dict[str, Any]]
 
 
-type DataClassOrType = _DataClass | type[_DataClass]
+type DataClassOrType = _DataClass | type[_DataClass]  # MOVE: types!
 
 
 def _mutable(data: Mapping, /) -> TypeGuard[MutableMapping]:
+    # CHECK: Is.mutable?
     return isinstance(data, MutableMapping)
 
 
@@ -131,6 +133,7 @@ class FieldSet(NormSet):
 
     @classmethod
     @cache
+    # CHECK: why is this separated? as subhook? because of the cache?
     def _absorb(cls, target: DataClassOrType) -> Self:
         """Cache canonical field names once per DataClass"""
         return cls(field.name for field in fields(target))
@@ -143,10 +146,15 @@ class FieldSet(NormSet):
     def prefix(self) -> str:
         return self._normstate.get("prefix", "")
 
-    def with_prefix(self, prefix: str = "") -> Self:
+    # TASK: figure our if the prefix is more like an edge case
+    # - handle it already here? or reduce importance?
+
+    def with_prefix(self, prefix: str = "") -> Self:  # RENAME:??
         """FieldSet with new lookup prefix without re-stripping stored keys"""
         if prefix == self.prefix:
             return self
         unit: Self = frozenset.__new__(type(self), self)
+
+        # WARN: how to mutate this on FrozenSet?
         unit._normstate = {**self._normstate, "prefix": prefix}
         return unit

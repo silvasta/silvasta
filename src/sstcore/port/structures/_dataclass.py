@@ -30,7 +30,7 @@ from ._hashed import HashedTuple
 from ._set import FieldSet
 from ._set import _DataClass as DataClass
 
-type CacheKey = tuple[HashedTuple, ...]
+type _CacheKey = tuple[HashedTuple, ...]
 
 
 class CachedDataclassMeta(type):
@@ -55,7 +55,7 @@ class CachedDataclassMeta(type):
     def __init__(cls, name: str, bases: tuple, namespace: dict[str, Any]):
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
         super().__init__(name, bases, namespace)
-        cls._cache: dict[CacheKey, DataClass] = {}
+        cls._cache: dict[_CacheKey, DataClass] = {}
         cls._sig: inspect.Signature | None = None
 
     @property
@@ -73,7 +73,7 @@ class CachedDataclassMeta(type):
         Bypass __init__ on cached hits and avoid dataclass FrozenInstanceError
 
         - Map Arg/Kwargs using the DataClass Signature
-        - Build Hashable CacheKey by normalizing unhashable list/set/maps
+        - Build Hashable _CacheKey by normalizing unhashable list/set/maps
         - Provide fetched unique Instance, create and cache if needed
 
         """
@@ -83,7 +83,7 @@ class CachedDataclassMeta(type):
 
         _resolve_field_value = create_field_resolver(cls, provided_args)
 
-        cache_key: CacheKey = tuple(
+        cache_key: _CacheKey = tuple(
             HashedTuple(name, _resolve_field_value(name, value))
             for name, value in bound.arguments.items()
         )
@@ -113,8 +113,6 @@ def create_field_resolver(cls: DataClass, provided_args: set[str]):
 
 
 #  LINE: -- Specs -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class SpecBase:

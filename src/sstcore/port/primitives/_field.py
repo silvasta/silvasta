@@ -35,6 +35,7 @@ class TupleField[Value]:  # RENAME: at second usage!
         """Define the Name, Assigner:{initial owner} and Hoster:{last owner}"""
         self._name: str = name
         self._host: type = host
+        # NEXT: find best naming
         self._caller: type = host
 
     def __call__[Fn: Callable](self, func: Fn) -> Fn:

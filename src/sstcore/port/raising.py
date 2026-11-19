@@ -12,6 +12,9 @@ Specify SstError before SstError is ready
 
 __all__: list[str] = [
     "SstError",
+    "StaticRaiserMeta",
+    "StaticErrorField",
+    "SstPortError",
     #
     "ErrorDTO",
     "ErrorInput",
@@ -23,13 +26,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Never, Self, TypedDict, Unpack
 
-from ._error import SstError
+from ._error import SstError, SstPortError, StaticErrorField, StaticRaiserMeta
+from ._types import Types as _T  # noqa:N814
 from .solid import BaseEnum
 from .structures import ParamSpec
-
-# CHECK: why 1? make structure of it! the single resolvs to Exception, the mix is removes it!
-type Errors = tuple[type[Exception]] | tuple[type[Exception], type[Exception]]
-
 
 #  LINE: -- DTO, Input and Spec -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
@@ -128,7 +128,6 @@ class Raiser(BaseEnum, zero=True, walk=True):
     @property
     def builtin(self) -> type[Exception] | None:
         """Provide the builtin Error related to active Raiser"""
-        return Exception
 
     @property
     def error_name(self) -> str:
@@ -145,7 +144,7 @@ class Raiser(BaseEnum, zero=True, walk=True):
         return repr(data)
 
     @property
-    def bases(self) -> Errors:
+    def bases(self) -> _T.Errors:
         """Distribute the registered Errors [1 SstError, 0|1 Exception]"""
         sst_error: type[SstError] = self.custom
         exception: type[Exception] | None = self.builtin
@@ -153,6 +152,6 @@ class Raiser(BaseEnum, zero=True, walk=True):
 
     def compose(self) -> type[SstError]:
         """Mix custom Error (MRO-left) to Builtin Exception"""
-        bases: Errors = self.bases
+        bases: _T.Errors = self.bases
         name: str = self.error_name
         return type(name, bases, {})

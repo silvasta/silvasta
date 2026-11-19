@@ -30,12 +30,12 @@ from inspect import cleandoc
 from typing import TYPE_CHECKING, Any, Literal, Self
 
 from .._presets import LinkPresets as _LPs
-from .._raise import LinkRaiser
 from ..empty import VOID, MayBe
-from ..raising import SstCoreError
-from ..structures import DunderSet, ParamSnap
+from ..raising import SstPortError
+from ..structures import DunderSet, Params
 from . import _define as _def
 from ._define import Doc, Docs, PlugDocs, PortDoc, PortDocs
+from ._raise import LinkRaiser
 
 
 class EasyNote:
@@ -62,10 +62,10 @@ class EasyCore[Core: Callable](EasyNote):
 class EasyCatch(EasyCore):
     """Execute in Context and Safe reflecting Operations"""
 
-    _last_call: MayBe[ParamSnap] = VOID
+    _last_call: MayBe[Params] = VOID
 
     def __call__(self, *args, **kwargs):
-        self._last_call = ParamSnap(args, kwargs)
+        self._last_call = Params(args, kwargs)
         with self:
             return super().__call__(*args, **kwargs)
 
@@ -85,7 +85,7 @@ class EasyCatch(EasyCore):
             self.emit(f"Call context: {self._last_call}")
             self._last_call: VOID = VOID
 
-        if isinstance(error, SstCoreError):  # TODO: LinkError
+        if isinstance(error, SstPortError):  # TODO: LinkError
             self.emit(f"Specific: {error=}")
             return False
 

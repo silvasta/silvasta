@@ -11,6 +11,8 @@ __all__: list[str] = [
     "ModulePath",
 ]
 
+# IMPORTANT: global exposing strategy
+
 
 import importlib.util
 import inspect
@@ -354,6 +356,8 @@ class ModulePath(_ModulePathBase):
         return extracted
 
 
+# NEXT: compare with other _caller_package in _error
+# NEXT: check gemini answer for more generic, safer than depth guessing
 def _caller_package(depth: int = 1) -> str:
     """Walk stack frames past internal path modules to find caller's package"""
     frame: FrameType = sys._getframe(depth)

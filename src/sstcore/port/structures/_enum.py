@@ -134,6 +134,7 @@ class SstEnumMeta(EnumMeta):
 
 
 def iter_enum_fields(cls: EnumType) -> dict[str, BoundEnumField]:
+    # IDEA: Iter.enum_fields?
     """Collect all bound EnumFields across EnumCls and its MRO"""
     return {
         name: getattr(cls, name)
@@ -146,7 +147,8 @@ def iter_enum_fields(cls: EnumType) -> dict[str, BoundEnumField]:
 def validate_enum_fields(enum_cls: EnumType) -> None:
     """Validate all EnumFields on any Enum or IntFlag class"""
     for field in iter_enum_fields(enum_cls).values():
-        field.validate()
+        field.validate()  # IDEA: count success/fail?
+        # IDEA: select if run all or until first error
 
 
 class WalkZero(NamedTuple):

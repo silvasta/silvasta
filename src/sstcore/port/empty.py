@@ -3,7 +3,11 @@ Nonething interesting to see here...
 
 - Ghost: type check dummy for temporary abc
 - ViewSentinel: enum dispatch dummy for views
-- Void: global sentinel created for public use
+
+- VOID: global sentinel created for public use
+  - MayBe: VOID as bool(VOID) == True
+  - MayNot: None as bool(None) == False
+  - May: short for May, VOID and None
 
 Sentinel:
 
@@ -17,26 +21,26 @@ Use the VOID Sentinel as Value and as Type!
   like after isinstance(number,int) == False
   -> number clearly identified as VOID
 
-                                  DependencyLevel.sstcore.port[0.0]
+                                  DependencyLevel.sstcore.port[0:-]
 """
 
 __all__: list[str] = [
-    "Ghost",
     "VOID",
+    "sentinel",
+    #
     "MayBe",
     "MayNot",
-    "MayBeNot",
-    "sentinel",
+    "May",
+    #
+    # TODO: MayT types??
+    #
     "ViewSentinel",
+    "Ghost",
 ]
 
 
 import sys
 from typing import TYPE_CHECKING as _TYPECHECKING
-
-# INFO: no internal imports here!
-# - VOID is exported to .solid
-
 
 if sys.version_info >= (3, 15):
     from builtins import sentinel
@@ -44,11 +48,20 @@ else:
     from typing_extensions import sentinel
 
 
-VOID = sentinel("VOID")
+_VOID = sentinel("VOID")
+
+VOID: _VOID = _VOID
 
 type MayBe[Some] = Some | VOID
 type MayNot[Some] = Some | None
-type MayBeNot[Some] = Some | VOID | None
+type May[Some] = Some | VOID | None
+
+# type MayBeType[Some] = type[Some] | VOID  # CHECK: is this proper?
+# type MayNotType[Some] = type[Some] | None  # CHECK: is this proper?
+# type MayType[Some] = type[Some] | VOID | None  # CHECK: is this proper?
+type MayBeT[Some] = type[Some] | VOID  # CHECK: is this proper?
+type MayNotT[Some] = type[Some] | None  # CHECK: is this proper?
+type MayT[Some] = type[Some] | VOID | None  # CHECK: is this proper?
 
 
 class _GhostBaseEradicator:
