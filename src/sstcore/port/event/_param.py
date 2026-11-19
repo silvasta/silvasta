@@ -49,8 +49,9 @@ from typing import Any
 
 from .._types import EventTypes as _ET  # noqa: N814
 from ..color import Color, ColorArg
+from ..primitives import FieldSet
 from ..solid import OptionRegister
-from ..structures import FieldSet, ParamSpec
+from ..structures import ParamSpec
 
 
 def _load_boxes() -> Mapping[_Boxes, Any]:

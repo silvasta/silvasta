@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any, Protocol
 
-from .._error import GateRaiserMeta, SstError, SstPortError, StaticErrorField
+from .._error import RaiserField, RaiserMeta, SstError, SstPortError
 from ..empty import VOID, MayBe, MayNot
 
 
@@ -177,33 +177,33 @@ class EnumMemberMap[E: Enum, V](ActiveMap[E, V]):
         )
 
 
-class GateRaiser(metaclass=GateRaiserMeta):
+class GateRaiser(metaclass=RaiserMeta):
     """Explain Failures Meaningful"""
 
     _base_error: type[SstError] = SstPortError
 
-    cache1 = StaticErrorField[[str]](
+    cache1 = RaiserField[[str]](
         KeyError,
         "Cache miss for lookup key {0!r}",
     )
 
-    out_of_range = StaticErrorField[[str, int]](
+    out_of_range = RaiserField[[str, int]](
         ValueError,
         "Field {0} exceeded max limit {1}",
     )
-    not_initialized = StaticErrorField[[]](
+    not_initialized = RaiserField[[]](
         RuntimeError,
         "System is not initialized",
     )
 
     # NEXT: figure out best method
 
-    @StaticErrorField(TypeError, "Expected {0}, got {1} ({2}")
+    @RaiserField(TypeError, "Expected {0}, got {1} ({2}")
     def deco1(expected: type, actual: Any, /):  # noqa:N805
         # IDEA: 1 - as preprocess
         return expected.__name__, actual, type(actual).__name__
 
-    @StaticErrorField(TypeError, "")
+    @RaiserField(TypeError, "")
     def deco2(expected: type, actual: Any, /):  # noqa:N805
         # IDEA: 2 - as custom format
         return f"Expected {expected.__name__}, got {actual!r} ({type(actual).__name__})"

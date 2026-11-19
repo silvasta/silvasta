@@ -11,15 +11,15 @@ __all__: list[str] = [
     "SstError",
     "mix_error",
     "rebuild",
-    "StaticRaiserMeta",
-    "StaticErrorField",
+    "RaiserMeta",
+    "RaiserField",
     "SstPortError",
     #
     "FailedDispatchError",
     "FailedHackError",
     "EnumError",
-    "StaticErrorField",
-    "StaticRaiserMeta",
+    "RaiserField",
+    "RaiserMeta",
 ]
 
 from collections.abc import Callable, Iterator
@@ -163,7 +163,7 @@ class EnumError(SstError, TypeError):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class StaticErrorField[**P]:
+class RaiserField[**P]:
     """Wire error name, owner class, and provide message template"""
 
     def __new__[E: Exception](cls, *_args, **_kwargs) -> Callable[P, SstError]:
@@ -217,7 +217,7 @@ class StaticErrorField[**P]:
         return self._build
 
 
-class StaticRaiserMeta(_LockedClsMeta, type):
+class RaiserMeta(_LockedClsMeta, type):
     """Equip Raiser classes with iteration and error formatting"""
 
     _name: str = "Error"

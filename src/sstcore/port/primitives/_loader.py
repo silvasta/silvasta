@@ -25,6 +25,26 @@ class Loader[**P, T]:
 
     __slots__ = ("_fn", "_default", "_prefer_default", "_ran")  # CHECK: useful?
 
+    # CHECK: what about value? maybe as property?
+
+    def __init__(
+        self,
+        func: MayNot[Loading[P, T]] = None,
+        /,
+        *,
+        default: MayBe[T] = VOID,
+        prefer_default: bool = False,  # CHECK: Literal["priority"]
+    ):
+        # NEXT: figure out T, ensure T matches,
+        # - what about default?
+        self._fn: MayNot[Loading[P, T]] = func
+        self._default: MayBe[T] = default
+        # execution mode
+        self._prefer_default: bool = prefer_default
+        # runtime state
+        # FIX: do this at 1 location, reset??
+        self._ran: bool = False  # TODO: counter?
+
     @classmethod
     def from_any(  # NEXT:
         cls,
@@ -40,21 +60,6 @@ class Loader[**P, T]:
             return source
         return cls(source, default=default, prefer_default=prefer_default)
 
-    def __init__(
-        self,
-        func: MayNot[Loading[P, T]] = None,
-        /,
-        *,
-        default: MayBe[T] = VOID,
-        prefer_default: bool = False,  # CHECK:
-    ) -> None:
-        self._fn: MayNot[Loading[P, T]] = func
-        self._default: MayBe[T] = default
-        # execution mode
-        self._prefer_default: bool = prefer_default
-        # runtime state
-        self._ran: bool = False  # TODO: counter?
-
     def __bool__(self) -> bool:
         """True if either a callable or a static default is configured."""
         return self._fn is not None or self._default is not VOID
@@ -67,7 +72,9 @@ class Loader[**P, T]:
     @property
     def is_pending(self) -> bool:
         """True if a callable is set and has not executed yet."""
-        return self._fn is not None and not self._ran
+        return (
+            self._fn is not None and not self._ran
+        )  # FIX: do this at 1 location, reset??
 
     def bind(self, fn: Callable[P, T]) -> Callable[P, T]:
         """Attach or replace the loader callable and reset execution state."""
@@ -77,7 +84,7 @@ class Loader[**P, T]:
 
     def reset(self) -> None:
         """Allow a one-shot loader to run again."""
-        self._ran = False
+        self._ran = False  # FIX: do this at 1 location, reset??
 
     def clone(self) -> Self:
         """Create an independent copy with fresh execution state (for per-owner slots)."""
@@ -99,11 +106,11 @@ class Loader[**P, T]:
             if self._default is not VOID:
                 return self._default
             if self._fn is not None:
-                self._ran = True
+                self._ran = True  # FIX: do this at 1 location, __call__??
                 return self._fn(*args, **kwargs)
         else:
             if self._fn is not None:
-                self._ran = True
+                self._ran = True  # FIX: do this at 1 location, __call__??
                 return self._fn(*args, **kwargs)
             if self._default is not VOID:
                 return self._default

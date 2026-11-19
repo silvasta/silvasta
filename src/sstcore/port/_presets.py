@@ -8,12 +8,36 @@ Group PreSets as Classes and Merge them to Modules
 """  # TODO:
 
 __all__: list[str] = [
-    "AnnotationPresets",
+    "PresetMeta",  # NEXT: where to expose??
     "LinkPresets",
+    "AnnotationPresets",
 ]
 
 
-from .structures import PresetMeta
+from typing import Any
+
+from ._types import Types as _T  # noqa: N814
+from ._types import _LockedClsMeta
+from .primitives import HashedTuple
+
+
+class PresetMeta(_LockedClsMeta):  # waiting for own module?
+    def __new__(mcls, name: str, bases: _T.Bases, namespace: _T.NameSpace):
+        """
+        Convert Mutable Structures and lock everything possible
+
+        - set  -> frozenset
+        - list -> tuple
+        - dict -> frozendict
+        """
+        frozen_items: dict[str, Any] = {
+            key: HashedTuple.hash(value)
+            for key, value in namespace.items()
+            if not key.startswith("_")  # LATER: by toggle? (AttrFilter)
+        }
+        namespace.update(frozen_items)
+        namespace.setdefault("__slots__", ())
+        return super().__new__(mcls, name, bases, namespace)
 
 
 class LinkPresets(metaclass=PresetMeta):

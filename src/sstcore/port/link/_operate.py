@@ -31,8 +31,8 @@ from typing import TYPE_CHECKING, Any, Literal, Self
 
 from .._presets import LinkPresets as _LPs
 from ..empty import VOID, MayBe
+from ..primitives import DunderSet, Params
 from ..raising import SstPortError
-from ..structures import DunderSet, Params
 from . import _define as _def
 from ._define import Doc, Docs, PlugDocs, PortDoc, PortDocs
 from ._raise import LinkRaiser

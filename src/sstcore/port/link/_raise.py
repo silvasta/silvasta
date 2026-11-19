@@ -22,7 +22,7 @@ from enum import auto
 from typing import Any, Protocol, Unpack
 
 from .. import raising
-from ..raising import Raiser, StaticErrorField, StaticRaiserMeta
+from ..raising import Raiser, RaiserField, RaiserMeta
 
 
 class PortLinkError(raising.SstPortError):
@@ -50,19 +50,19 @@ class PortLinkError(raising.SstPortError):
 # NEXT: decide on setup on next update
 
 
-class PortLinkRaiser(metaclass=StaticRaiserMeta):
+class PortLinkRaiser(metaclass=RaiserMeta):
     """Fast V2 Raiser for port.link operations."""
 
-    missing_plug = StaticErrorField[[type, str]](
+    missing_plug = RaiserField[[type, str]](
         AttributeError, "Not found: {0.__name__} for attr={1!r}"
     )
-    pipeline = StaticErrorField[[type, str]](
+    pipeline = RaiserField[[type, str]](
         RuntimeError, "Pipeline issue with {0.__name__} for attr={1!r}"
     )
-    inject = StaticErrorField[[type, str, str]](
+    inject = RaiserField[[type, str, str]](
         AttributeError, "Inject issue for {0.__name__}.{1}, __doc__={2!r}"
     )
-    reflect = StaticErrorField[[type, str, str]](
+    reflect = RaiserField[[type, str, str]](
         AttributeError, "Reflect issue for {0.__name__}.{1}, __doc__={2!r}"
     )
 

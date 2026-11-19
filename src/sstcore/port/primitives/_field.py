@@ -11,31 +11,31 @@ __all__: list[str] = [
     "TupleField",
 ]
 
-from collections.abc import Callable, Hashable
+import weakref
+from collections.abc import Callable
 from typing import Any, Self, overload
 
 from ..empty import VOID, MayBe, MayNot
 
 
-class TupleField[Value]:  # RENAME: at second usage!
+class TupleField[Value]:
     """
-    Descriptor on Immutable Object
+    Generate Non-Member Field for (Named)Tuple with mutable values
 
-    Assign WithOut type hint, like:
+    Assign WITHOUT type hint, like:
       - sep = TupleField[str]("=")
-      - otherwise the Field is included in the Tuple!
+      - otherwise the Field is included as tuple member!
 
     """
 
-    def __init__(self, default: MayBe[Value]):
+    def __init__(self, default: MayBe[Value], /):
         self._default: MayBe[Value] = default
-        self._values: dict[Hashable, Value] = {}
+        self._cache: dict[int, Value] = {}
 
     def __set_name__(self, host: type, name: str) -> None:
         """Define the Name, Assigner:{initial owner} and Hoster:{last owner}"""
         self._name: str = name
         self._host: type = host
-        # NEXT: find best naming
         self._caller: type = host
 
     def __call__[Fn: Callable](self, func: Fn) -> Fn:
@@ -49,7 +49,7 @@ class TupleField[Value]:  # RENAME: at second usage!
 
     def __repr__(self):
         """Represent the Field, Owner(s) and show the Cache"""
-        return f"{type(self).__name__}::{self}[{self._values=}]"
+        return f"{type(self).__name__}::{self}[{self._cache=}]"
 
     @property
     def _scope(self) -> str:
@@ -69,34 +69,35 @@ class TupleField[Value]:  # RENAME: at second usage!
 
     def __get__(self, unit: MayNot, caller: type) -> Self | Value:
         """Access the cache by generated Key or set Default"""
-        self._caller = caller
-        if unit is None:
-            return self
-        if unit not in self:
-            self[unit] = self._default
-        return self[unit]
+        self._caller = caller  # CHECK: where is this needed now?
+        return self if unit is None else self[unit]
 
     def __set__(self, unit: Any, value: Value) -> None:
         """Update the per Instance Cache with the Value"""
+        # AI: if tracking the caller, maybe here? at most matters on changes
         self[unit] = value
 
     def __contains__(self, unit: Any):
-        return self._id(unit) in self._values
+        """Heavily Wired! Change with care..."""
+        return id(unit) in self._cache
 
     def __getitem__(self, unit: Any):
-        return self._values[self._id(unit)]
+        """Extract per Unit from Cache or try set Default"""
+        print(f"{self=}")  # TEST:
+        if unit not in self:
+            self[unit] = self._default
+        return self._cache[id(unit)]
 
     def __setitem__(self, unit: Any, value: Any):
+        """Finalize the WeakRef for the Cache Key and Reject VOID"""
+        # AI: this as cache guard should check for void and raise
         if value is VOID:
             raise RuntimeError(f"Assign Value or Default to Access: {self}")
-        self._values[self._id(unit)] = value
+        if unit not in self:
+            # AI_QUESTION: how does this work exactly?
+            weakref.finalize(unit, self._cache.pop, id(unit), None)
+        self._cache[id(unit)] = value
 
     def __delete__(self, unit: Any) -> None:
         """Remove the Value of Unit from the Cache"""
-        self._values.pop(self._id(unit), None)
-
-    # TASK: improve _id management and cache delete
-
-    def _id(self, unit: Any, /) -> Hashable:
-        """Subhook: Hopefully randomized enough"""
-        return id(self), id(unit), id(type(unit))
+        self._cache.pop(id(unit), None)

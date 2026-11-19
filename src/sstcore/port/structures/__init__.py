@@ -5,69 +5,29 @@ Draw the Shape of the Core Data Structures
 """
 
 __all__: list[str] = [
-    "NormSet",
-    "FieldSet",
-    "DunderSet",
-    "frozendict",
-    "HashedTuple",
-    "Params",
     # dataclass
-    "DataClass",
     "CachedDataclassMeta",
     "create_field_resolver",
     "SpecBase",
     "DataClassSpec",
     "ParamSpec",
     "ArgSpec",
-    # module
-    "DotPath",
-    "ModulePath",
     # enum
     "SstEnumMeta",
     "EnumId",
     "EnumStr",
     "EnumRepr",
     "EnumRelation",
-    # cls namespaces
-    "PresetMeta",
-    "LockedClsMeta",
+    # CHECK: PresetMeta?
 ]
 
-from typing import Any as _Any
 
-from .._types import Types as _T  # noqa: N814
-from .._types import _LockedClsMeta as LockedClsMeta
 from ._dataclass import (
     ArgSpec,
     CachedDataclassMeta,
-    DataClass,
     DataClassSpec,
     ParamSpec,
     SpecBase,
     create_field_resolver,
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
-from ._frozen import frozendict
-from ._hashed import HashedTuple
-from ._module import DotPath, ModulePath
-from ._primitives import Params
-from ._set import DunderSet, FieldSet, NormSet
-
-
-class PresetMeta(LockedClsMeta):  # waiting for own module?
-    def __new__(mcls, name: str, bases: _T.Bases, namespace: _T.NameSpace):
-        """
-        Convert Mutable Structures and lock everything possible
-
-        - set  -> frozenset
-        - list -> tuple
-        - dict -> frozendict
-        """
-        frozen_items: dict[str, _Any] = {
-            key: HashedTuple.hash(value)
-            for key, value in namespace.items()
-            if not key.startswith("_")  # LATER: by toggle? (AttrFilter)
-        }
-        namespace.update(frozen_items)
-        namespace.setdefault("__slots__", ())
-        return super().__new__(mcls, name, bases, namespace)

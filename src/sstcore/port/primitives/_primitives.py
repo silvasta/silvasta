@@ -12,7 +12,14 @@ __all__: list[str] = [
     "BaseControl",
 ]
 
-from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
+from collections.abc import (
+    Callable,
+    Iterable,
+    Iterator,
+    KeysView,
+    Mapping,
+    Sequence,
+)
 from itertools import combinations
 from typing import Any, NamedTuple, Self
 
@@ -21,29 +28,21 @@ from ._field import TupleField
 
 class BaseControl:
     __iter__: Any
-    # inner = TupleField[str]("=")
-    # outer = TupleField[str](", ")
-    outer: str
-    inner: str
+    # sep: str
 
-    def __str__(self):
-        return f"{type(self).__name__}[{self.data()}]"
+    sep = TupleField[str](", ")
 
-    def data(self) -> str:
-        # return self.outer.join(self.item(x) for x in self.__tokens__())
-        return self.outer.join(self.item(x) for x in self)
+    def __str__(self):  # LATER: this as __repr__ and joined as __str__?
+        return f"{type(self).__name__}[{self.joined}]"
 
-    def item(self, entry) -> str:
-        is_kwarg: bool = (
-            isinstance(entry, tuple)
-            and not isinstance(entry, BaseControl)
-            and len(entry) == 2
-        )
-        return f"{entry[0]}{self.inner}{entry[1]}" if is_kwarg else f"{entry}"
+    @property
+    def joined(self) -> str:
+        return self.sep.join(f"{x}" for x in self)
 
     @classmethod
     def mix[T](cls: type[Self], target: type[T]) -> type[T & Self]:  # ty:ignore
-        namespace = {  # IDEA: preset?
+        # IMPORTANT: pickling!
+        namespace: dict[str, Any] = {  # IDEA: preset?
             "__qualname__": target.__qualname__,
             "__module__": target.__module__,
             "__doc__": target.__doc__,
@@ -52,191 +51,265 @@ class BaseControl:
 
 
 @BaseControl.mix
-class Var(NamedTuple):
+class Var[T: Any = Any](NamedTuple):
     name: str
-    value: Any
+    value: T
 
-    # inner = TupleField[str]("=")
-    outer = TupleField[str]("=")  # AI: somehow here the outer is needed...
+    sep = TupleField[str]("=")
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Invoke the Value if callable or provide its Representation"""
+        if callable(self.value):
+            return self.value(*args, **kwargs)
+        return f"Not Callable: {self}[{self.value!r}]"  # LATER: VOID?
+
+    def __bool__(self) -> bool:
+        return bool(self.value)
+
+    def __getitem__(self, key: str | int) -> Any:  # ty: ignore
+        match key:
+            case int() as index if index == 0:
+                return self.name
+            case int() as index if index == 1:
+                return self.value
+            case int() as index:
+                raise IndexError(f"{self} got {index=} but needs [0, 1]")
+            case str() if key != (name := self.name):
+                raise KeyError(f"{self} got {key=} but needs {name=}")
+            case str():
+                return self.value
+            case _:
+                raise TypeError(f"{self}: Unknown {type(key)}[{key=}]")
+
+    def keys(self) -> KeysView[str]:
+        return KeysView({self.name: None})
 
     @classmethod
     def gettr(cls, target: Any, name: str, /) -> Self:
         """Hit the Target with the Name to get the Attr"""
         return cls(name, value=getattr(target, name))
 
-    def keys(self) -> KeysView[str]:
-        return {self.name: None}.keys()
-
-    def __getitem__(self, key: str) -> Any:  # ty: ignore
-        if key == (name := self.name):
-            return self.value
-        raise KeyError(f"Got {name=} but need {key=} for value[{self.value}]")
-
-    def __bool__(self) -> bool:
-        return bool(self.value)
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        """Invoke the Value if callable or provide its Representation"""
-        if callable(self.value):
-            return self.value(*args, **kwargs)
-        return f"Not Callable: {self}[{self.value!r}]"
-
 
 @BaseControl.mix
 class Args(NamedTuple):
+    """Capture and Visualize Positional Parameter"""
+
     args: Sequence = ()
 
-    # inner = TupleField[str]("=")
-    outer = TupleField[str](", ")
+    # sep = TupleField[str](", ")
+    keyformat = TupleField[Callable[[Any], str]](lambda v: f"{v}")
 
     def __iter__(self) -> Iterator[object]:  # ty:ignore
         yield from self.args
 
+    def __len__(self) -> int:  # ty:ignore
+        return len(self.args)
+
     def __bool__(self) -> bool:
         return bool(self.args)
 
+    def __getitem__(self, index: int) -> Any:  # ty: ignore
+        """Forward Index to inner Tuple"""
+        return self.args[index]
+
+    def keys(self):
+        # IDEA: mode like index,string,custom keyformat
+        # - use for format, maybe for keys/kwargs? but ensure unique!
+        # - maybe on Var? define the rules at the lowest node
+        return KeysView({i: None for i, _ in enumerate(self)})
+
     def kwargs(self) -> Kwargs:
         """Transform Sequential Args into Mapped Kwargs"""
-        return Kwargs.absorb(*(Var(f"{v}", v) for v in self))
+        return Kwargs({self.keyformat(v): v for v in self})
 
     @classmethod
     def absorb(cls, *args) -> Self:
         return cls(args)
 
+    @classmethod
+    def slots(cls, target, /) -> Self:
+        """Build from __slots__s of Target"""
+        return cls(tuple(iter_slots(target)))
+
+
+def iter_slots(target) -> Iterable[Var]:
+    seen: set[str] = set()
+    for cls in type(target).__mro__:
+        for slot in _get_slot(cls):
+            if slot in ("__dict__", "__weakref__"):
+                continue
+            if slot.startswith("__") and not slot.endswith("__"):
+                slot = f"_{cls.__name__.lstrip('_')}{slot}"
+            if slot not in seen and hasattr(target, slot):
+                seen.add(slot)
+                yield Var.gettr(target, slot)
+
+
+def _get_slot(cls: type) -> Iterable[str]:
+    _slots = cls.__dict__.get("__slots__", ())
+    return _slots if not isinstance(_slots, str) else (_slots,)
+
 
 @BaseControl.mix
 class Kwargs(NamedTuple):
-    kwargs: Mapping[str, Any] = {}
+    """Capture and Visualize Keyword Parameter"""
 
-    inner = TupleField[str]("=")
-    outer = TupleField[str](", ")
+    kwargs: Mapping[str, Any] = {}  # LATER: frozen or not?
+
+    # sep = TupleField[str](", ")
 
     def __iter__(self) -> Iterator[Var]:
         for name, value in self.kwargs.items():
             yield Var(name, value)
 
+    def __len__(self) -> int:  # ty:ignore
+        return len(self.kwargs)
+
     def __bool__(self) -> bool:
         return bool(self.kwargs)
 
-    def keys(self) -> KeysView[str]:
-        return self.kwargs.keys()
-
-    def __getitem__(self, key: str) -> Any:  # ty: ignore
+    def __getitem__(self, key: str | int) -> Any:  # ty: ignore
+        if isinstance(key, int):
+            return self[tuple(self.keys())[key]]
         return self.kwargs[key]
 
-    @classmethod
-    def vars(cls, target, /) -> Self:
-        """Build from vars of Target"""
-        return cls(kwargs=vars(target).items())
+    def keys(self) -> KeysView[str]:
+        return self.kwargs.keys()
 
     def args(self) -> Args:
         """Transform Mapped Kwargs into Sequential Args"""
         return Args.absorb(*(Var(name, value) for name, value in self))
 
     @classmethod
-    def absorb(cls, *args: Var | Iterable[Var], **kwargs) -> Self:
-        """Accept multiple `Var` instances, an iterable of `Var`s, or raw **kwargs."""
-        merged: dict[str, Any] = {}
-        for arg in args:
-            if isinstance(arg, Var):
-                merged[arg.name] = arg.value
-            elif isinstance(arg, Iterable):
-                for v in arg:
-                    merged[v.name] = v.value
-        merged.update(kwargs)
-        return cls(merged)
+    def absorb(cls, **kwargs) -> Self:
+        return cls(kwargs)
+
+    @classmethod
+    def vars(cls, target, /, *, live_view=False) -> Self:
+        """Build from vars of Target - direct reference with live_view"""
+        return cls(kwargs=vars(target) if live_view else dict(vars(target)))
 
 
 @BaseControl.mix
 class Params(NamedTuple):
     """Capture and Visualize 1 Signature"""
 
-    inner = TupleField[str]("=")
-    outer = TupleField[str](", ")
-
     args: Args = Args()
     kwargs: Kwargs = Kwargs()
 
-    @classmethod
-    def absorb(cls, *args, **kwargs) -> Self:
-        return cls(Args.absorb(*args), Kwargs.absorb(**kwargs))
+    # sep = TupleField[str](", ")
+
+    def __str__(self):
+        return f"{type(self).__name__}[{self.args}{self.sep}{self.kwargs}]"
 
     def __iter__(self) -> Iterator[Any]:
         yield from self.args
 
+    def __getitem__(self, key: str) -> Any:  # ty: ignore
+        return self.kwargs[key]
+
     def keys(self) -> KeysView[str]:
         return self.kwargs.keys()
 
-    def __getitem__(self, key: str) -> Any:  # ty: ignore
-        return self.kwargs[key]
+    def feed[R](self, func: Callable[..., R], /) -> R:
+        """Apply captured *args,**kwargs to Function"""
+        return func(*self, **self)
+
+    @classmethod
+    def absorb(cls, *args, **kwargs) -> Self:
+        return cls(Args(args), Kwargs(kwargs))
 
 
 #
 if __name__ == "__main__":
-    from rich import print as print
+
+    def main():
+        _all()
+        _var()
+        # _args()
+        # _args_kwargs()
+        # _param()
+        # _feeding()
+        pass
+
+    from rich import print
     from rich.panel import Panel
     from rich.text import Text
 
-    def _p(*args, **kwargs):
-        if args:
-            first, *rest = args
-            args = Text(str(first)), *rest
-        print(*args, **kwargs)
+    def _str(text, /, prefix=True):
+        return Text(f"{'str: ' if prefix else ''}{text}")
 
     def _panel(text, style="cyan", /):
         print(Panel(Text(f"{text}"), style=style))
 
     def _deref(param):
-        _panel(f"Start of Deref for {param}")
-        print(*kw)
-        print({**kw})
-        print(*kw, {**kw})
+        _panel(f"Start of deref for {param}")
+        print(*param)
+        print({**param})
+        print(*param, {**param})
 
     def _full(x):
-        _panel(str(x))
-        _p(str(x))
-        _p(repr(x))
-        for y in x:
-            print(y)
+        _panel(repr(x), "green")
+        print(f"{len(x)=}")
+        print("raw", x)
+        print(_str(x))
+        print("repr", repr(x))
+        for i, y in enumerate(x):
+            print(f"item[{i}]", y)
 
-    def connect(host: str, port: int, timeout: float = 5.0):
-        return f"{host}:{port} ({timeout}s)"
-
-    kw = Kwargs.absorb(host="localhost", port=8080)
-
-    print(connect(**kw))
-
-    config = {"timeout": 10.0, **kw, "port": 9090}
-    print(config)
-
-    _panel(kw)
-    _deref(kw)
+    def _args():
+        args = Args.absorb("ss", 5, {"hello", "set"})
+        _full(args)
+        print(args.keys())
+        for k in args.keys():
+            print(args[k])
+        _deref(args)
 
     var1 = Var("name", 5)
     var2 = Var("other", 20)
-    _panel({**var1, **var2})
 
-    for x in (var1, var2):
-        _full(x)
-
-    var1.outer = ":::::"
-
-    for x in (var1, var2):
-        _full(x)
+    def _var():
+        _full(var1)
+        _full(var2)
+        _panel({**var1, **var2}, "yellow")
+        for x in (var1, var2):
+            _full(x)
+        var1.sep = ":::::"
+        for x in (var1, var2):
+            _full(x)
 
     arg1 = Args()
     arg2 = Args.absorb("ss", 5, {"hello", "set"})
     kwarg1 = Kwargs()
-    kwarg2 = Kwargs({"a": 1, "b": 2, "c": 3})
+    kwarg2 = Kwargs({"a": 1, "b": 2, "c": 3, "d": 4})
 
-    for x in (arg1, arg2, kwarg1, kwarg2):
-        _panel(str(x), "blue")
-        _p(str(x))
-        _p(repr(x))
-        for y in x:
-            print(y)
+    def _args_kwargs():
+        _panel("Single", "gold3")
+        for x in (arg1, arg2, kwarg1, kwarg2):
+            _full(x)
 
-    for a, k in combinations((arg1, arg2, kwarg1, kwarg2), 2):
-        _panel(p := Params(a, k))
-        _full(p)
-        _deref(p)
+    def _param():
+        _panel("combinations", "gold3")
+        for a, k in combinations((arg1, arg2, kwarg1, kwarg2), 2):
+            _panel(p := Params(a, k))
+            _full(p)
+            _deref(p)
+
+    def _dip(header, text, color="yellow") -> Panel:
+        return Panel(f"{header} [{color}]{text}[/]", style="cyan")
+
+    param = Params.absorb("Start", "main text", color="green")
+
+    def _all():
+        _full(var2)
+        _full(arg2)
+        _full(kwarg2)
+        _full(param)
+
+    def _feeding():
+        print(param)
+        dipped = param.feed(_dip)
+        # reveal_type(dipped)
+        print(dipped)
+
+    main()

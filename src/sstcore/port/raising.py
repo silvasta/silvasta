@@ -12,8 +12,8 @@ Specify SstError before SstError is ready
 
 __all__: list[str] = [
     "SstError",
-    "StaticRaiserMeta",
-    "StaticErrorField",
+    "RaiserMeta",
+    "RaiserField",
     "SstPortError",
     #
     "ErrorDTO",
@@ -26,7 +26,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Never, Self, TypedDict, Unpack
 
-from ._error import SstError, SstPortError, StaticErrorField, StaticRaiserMeta
+from ._error import RaiserField, RaiserMeta, SstError, SstPortError
 from ._types import Types as _T  # noqa:N814
 from .solid import BaseEnum
 from .structures import ParamSpec
