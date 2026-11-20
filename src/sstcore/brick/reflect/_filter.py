@@ -22,7 +22,7 @@ from dataclasses import dataclass, field, replace
 from typing import Self
 
 from ...port.annotate import AnnotationPresets as _AP  # noqa:N814
-from ...port.empty import VOID, MayBe, MayBeNot
+from ...port.empty import VOID, May, MayBe
 from ...port.structures import CachedDataclassMeta
 from ._check import Visibility
 
@@ -210,12 +210,12 @@ class AttrFilter(metaclass=CachedDataclassMeta):
     @classmethod
     def resolve(
         cls,
-        filter: MayBeNot[Self] = VOID,
+        filter: May[Self] = VOID,
         /,
         *,
         exclude: Iterable[str] = (),
     ) -> Self:
-        """Resolve a MayBeNot[AttrFilter] parameter into an active AttrFilter.
+        """Resolve a May[AttrFilter] parameter into an active AttrFilter.
 
         - VOID       -> cls.default(exclude=exclude)
         - None       -> cls.empty(exclude=exclude)

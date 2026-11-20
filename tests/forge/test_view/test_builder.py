@@ -13,7 +13,7 @@ from sstcore.forge.view import (
 )
 from sstcore.port.empty import ViewSentinel
 from sstcore.port.event.dto import LogDTO, PanelDTO
-from sstcore.port.raising import SstCoreError
+from sstcore.port.raising import SstError
 from sstcore.port.represent import CliSerializable, LogSerializable
 
 
@@ -47,7 +47,7 @@ def test_viewinjector_plus_and_duplicate_error():
     assert injector.cli is Cli.PANEL
     assert injector.log is Log.DATA
 
-    with pytest.raises(SstCoreError, match="Duplicated"):
+    with pytest.raises(SstError, match="Duplicated"):
         ViewInjector().plus(Cli.PANEL, Cli.LINE)
 
 

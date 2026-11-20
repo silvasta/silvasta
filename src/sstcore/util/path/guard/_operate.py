@@ -37,9 +37,9 @@ from ....brick.field import StrategyField
 from ....brick.reflect import clsname
 from ....error import PathGuardError, PathGuardReason
 from ....forge.func import SafeFunctor
+from ....port._modulepath import DotPath
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
-from ....port.structures._module import DotPath
 from .._pathcast import PathArg, ResolvedSource, SourcePath, TargetPath
 from . import _ensure, _increment
 

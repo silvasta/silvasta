@@ -12,7 +12,7 @@ __all__: list[str] = [
 from ....brick.color.box import Colors
 from ....brick.reflect import clsname
 from ....forge.engine import StaticFuncMeta, StaticFuncMetaData
-from ....port.structures import DotPath, ModulePath
+from ....port._modulepath import DotPath, ModulePath
 from .. import _module
 from ._field import LazyModuleField
 

@@ -15,9 +15,6 @@ Todo:
 
 """
 
-from contextlib import suppress
-from functools import partial
-
 __all__: list[str] = [
     "GenericSpec",
     "extract_type_args",
@@ -29,23 +26,28 @@ __all__: list[str] = [
     "remembering_getitem",
 ]
 
+import operator
 import weakref
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import suppress
 from dataclasses import dataclass
+from functools import reduce
 from types import GenericAlias, UnionType, get_original_bases
 from typing import (
     Any,
     Concatenate,
     Generic,
+    NamedTuple,
     ParamSpec,
     Protocol,
+    Self,
     TypeVar,
     TypeVarTuple,
     get_args,
     get_origin,
 )
 
-from ..empty import VOID
+from ..empty import VOID, MayBe, MayNot
 
 _TYPE_PARAMS = (TypeVar, ParamSpec, TypeVarTuple)
 _IGNORED_ORIGINS = frozenset({Generic, Protocol})
@@ -60,27 +62,34 @@ def extract_type_args(target: Any) -> tuple[GenericSpec, ...]:
     An unspecialized generic class contributes one implicit spec whose
     arguments are its own parameters.
     """
-    env: dict[Any, Any] = {}  # LATER: make this 3 like some container
-    specs: list[GenericSpec] = []
-    seen: set[Any] = set()
+    data = _ExtractDTO(env={}, specs=[], seen=set())
 
     if _is_alias_object(target):
-        _consume(target, env, specs, seen)
-        _origin = _alias_parts(target)
-        if _origin is not None and isinstance(_origin[0], type):
-            _walk_bases(_origin[0], env, specs, seen)
-        return tuple(specs)
+        _consume(target, *data)
+        if (parts := _alias_parts(target)) and isinstance(parts.origin, type):
+            _walk_bases(parts.origin, *data)
+        return tuple(data.specs)
 
     if not isinstance(target, type):
         if (orig := _orig_class_of(target)) is not None:
-            _consume(orig, env, specs, seen)
+            _consume(orig, *data)
 
     cls: type = target if isinstance(target, type) else type(target)
 
-    _walk_bases(cls, env, specs, seen)
-    _add_identity(cls, specs, seen)
+    _walk_bases(cls, *data)
+    _add_identity(cls, data)
 
-    return tuple(specs)
+    return tuple(data.specs)
+
+
+class _ExtractDTO(NamedTuple):
+    env: dict[Any, Any]
+    specs: list[GenericSpec]
+    seen: set[Any]
+
+    def record(self, spec: GenericSpec, /) -> None:  # LATER: use this!
+        self.specs.append(spec)
+        self.seen.add(spec.origin)
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,7 +108,7 @@ class GenericSpec:
     explicit: bool
 
     def get(self, name: str, default: Any = VOID) -> Any:
-        if not self.aligned:
+        if not self.aligned or len(self.parameters) != len(self.arguments):
             return default
         for param, arg in zip(self.parameters, self.arguments, strict=True):
             if getattr(param, "__name__", None) == name:
@@ -108,8 +117,16 @@ class GenericSpec:
 
     def __str__(self) -> str:
         _origin = getattr(self.origin, "__qualname__", f"{self.origin}")
-        # AI: the aligned made like no difference, maybe UnTyped/VOID or (...) or ..., bettr collapse
-        return f"{_origin}[{format_type_arg(self.arguments)}]?"
+        if not self.aligned:
+            _body = ", ".join(format_type_arg(arg) for arg in self.arguments)
+            return f"{_origin}[{_body}]?"
+        parts: list[str] = [
+            format_parameters(arg)
+            if isinstance(param, ParamSpec)
+            else format_type_arg(arg)
+            for param, arg in zip(self.parameters, self.arguments, strict=True)
+        ]
+        return f"{_origin}[{', '.join(parts)}]"
 
     def is_to_declare(self, origin: type) -> bool:
         return self.explicit and self.aligned and self.origin is origin
@@ -132,6 +149,19 @@ def format_type_arg(arg: Any, /) -> str:
     if isinstance(name := getattr(arg, "__name__", None), str):
         return name
     return str(arg).removeprefix("typing.")
+
+
+def format_parameters(arg: Any, /) -> str:
+    """ParamSpec slot. ``(...)`` is unspecified, ``()`` is an empty list.
+
+    ``format_type_arg(Ellipsis)`` is only ``...``. Using it here erases
+    that difference, so this is a second rule, not a second copy.
+    """
+    if arg is VOID or arg is Ellipsis:
+        return "(...)"
+    if isinstance(arg, tuple):
+        return "(" + ", ".join(format_type_arg(item) for item in arg) + ")"
+    return format_type_arg(arg)
 
 
 def is_type_parameter(target: Any, /) -> bool:
@@ -183,7 +213,7 @@ def _probe_preserves_alias() -> bool:
 
     try:
         instance = _Probe[int]()
-    except TypeError, Exception:
+    except TypeError:
         return False
     return getattr(instance, "__orig_class__", None) is not None
 
@@ -239,27 +269,47 @@ def _is_alias_object(target: Any) -> bool:
         return False
     if isinstance(target, GenericAlias):
         return True
-    _parts = _alias_parts(target)
-    if _parts is None or not isinstance(_parts[0], type):
+    parts: MayNot[_AliasParts] = _alias_parts(target)
+    if parts is None or not isinstance(parts.origin, type):
         return False
-    return not isinstance(target, _parts[0])
+    return not isinstance(target, parts.origin)
 
 
-def _alias_parts(target: Any, /) -> tuple[Any, tuple[Any, ...]] | None:
+class _AliasParts(NamedTuple):
+    origin: Any
+    args: tuple[Any, ...]
+
+    @classmethod
+    def fetch(
+        cls, target, origin: MayBe = VOID, args: MayBe[tuple[Any, ...]] = VOID
+    ) -> Self:
+        return cls(
+            origin=get_origin(target) if origin is VOID else origin,
+            args=get_args(target) if args is VOID else args,
+        )
+
+    @classmethod
+    def gettr(cls, target) -> MayNot[Self]:
+        if (origin := getattr(target, "__origin__", None)) is None:
+            return None
+        if not isinstance(args := getattr(target, "__args__", None), tuple):
+            return None
+        return cls(origin, args)
+
+
+def _alias_parts(target: Any, /) -> _AliasParts | None:
     if target is None or isinstance(target, type):
         return None
     if isinstance(target, GenericAlias):
-        return get_origin(target), get_args(target)
+        return _AliasParts.fetch(target)
     if (origin := get_origin(target)) is not None:
-        return origin, get_args(target)
-    _origin = getattr(target, "__origin__", None)
-    _args = getattr(target, "__args__", None)
-    if _origin is not None and isinstance(_args, tuple):
-        return _origin, _args
-    return None
+        return _AliasParts.fetch(target, origin)
+    if (alias_parts := _AliasParts.gettr(target)) is None:
+        return None
+    return alias_parts
 
 
-def _is_paramspec_token(target: Any) -> bool:
+def _is_paramspec_token(target: Any, /) -> bool:
     if target is Ellipsis or isinstance(target, ParamSpec):
         return True
     origin = get_origin(target)
@@ -271,6 +321,7 @@ def _is_paramspec_token(target: Any) -> bool:
 
 def _walk_bases(
     cls: type,
+    /,
     env: dict[Any, Any],
     specs: list[GenericSpec],
     seen: set[Any],
@@ -280,7 +331,7 @@ def _walk_bases(
             _consume(base, env, specs, seen)
 
 
-def _original_bases(cls: type, /) -> Iterator[type]:
+def _original_bases(cls: type, /) -> Iterator[Any]:
     with suppress(TypeError):
         yield from get_original_bases(cls)
 
@@ -292,87 +343,87 @@ def _consume(
     specs: list[GenericSpec],
     seen: set[Any],
 ) -> None:
-    if (parts := _alias_parts(alias)) is None:
+    if (  # LATER: basically validation of _AliasParts
+        (parts := _alias_parts(alias)) is None
+        or not isinstance(parts.origin, type)
+        or parts.origin in _IGNORED_ORIGINS
+        or parts.origin in seen
+    ):
         return
 
-    _origin, _raw_args = parts  # WARN: does this proper unpack?
+    _substituted = tuple(_apply_subst(item, env) for item in parts.args)
 
-    if not isinstance(_origin, type) or _ignored(_origin) or _origin in seen:
-        return
-
-    _substituted = _apply_subst_on_iter(_raw_args, env)
-    _params, _aligned, _ok = _align_args(_origin, _substituted)
-    if _ok:
-        _extend_env(env, _params, _aligned)
+    if (align_args := _align_args(parts.origin, _substituted)).ok:
+        _extend_env(env, align_args.params, align_args.aligned)
 
     specs.append(
         GenericSpec(
-            origin=_origin,
-            parameters=_params,
-            arguments=_aligned,
-            aligned=_ok,
+            origin=parts.origin,
+            parameters=align_args.params,
+            arguments=align_args.aligned,
+            aligned=align_args.ok,  # TASK: resolve naming confusion
             explicit=True,
         )
     )
-    seen.add(_origin)
-
-
-def _ignored(origin: Any, /) -> bool:
-    return origin in _IGNORED_ORIGINS
+    seen.add(parts.origin)
 
 
 def _extend_env(
-    env: dict[Any, Any], params: tuple[Any, ...], args: tuple[Any, ...]
+    env: dict[Any, Any], params: tuple[Any, ...], args: tuple[Any, ...], /
 ) -> None:
     for param, arg in zip(params, args, strict=True):
         if is_type_parameter(param) and param not in env:
             env[param] = arg
 
 
-def _align_args(
-    origin: Any, args: tuple[Any, ...]
-) -> tuple[tuple[Any, ...], tuple[Any, ...], bool]:
+class _AlignArgs(NamedTuple):
+    params: tuple[Any, ...]
+    aligned: tuple[Any, ...]
+    ok: bool
+
+
+def _align_args(origin: Any, args: tuple[Any, ...], /) -> _AlignArgs:
     """Pair ``args`` with ``origin``'s parameters.
 
     A ParamSpec occupies one logical slot even when its list was flattened
     into ``__args__``. A single TypeVarTuple is handled the same way.
     """
     if not (params := _type_parameters(origin)):
-        return (), args, False
+        return _AlignArgs(params=(), aligned=args, ok=False)
 
     variadic: list[int] = [
         index
         for index, param in enumerate(params)
+        # AI_QUESTION: what about TypeVar?
+        # - otherwise just use: is_type_parameter
         if isinstance(param, (ParamSpec, TypeVarTuple))
     ]
-    if not variadic:
-        return params, args, len(args) == len(params)
     if len(variadic) != 1:
-        return params, args, len(args) == len(params)
+        return _AlignArgs(params, aligned=args, ok=len(args) == len(params))
 
     index = variadic[0]
     fixed_before = index
     fixed_after = len(params) - index - 1
     if len(args) < fixed_before + fixed_after:
-        return params, args, False
+        return _AlignArgs(params=(), aligned=args, ok=False)
 
-    before = args[:fixed_before]
-    after = args[len(args) - fixed_after :] if fixed_after else ()
-    middle = args[
+    before: tuple[Any, ...] = args[:fixed_before]
+    middle: tuple[Any, ...] = args[
         fixed_before : len(args) - fixed_after if fixed_after else len(args)
     ]
-    param = params[index]
-    if isinstance(param, ParamSpec):
-        mid: Any
+    after: tuple[Any, ...] = (
+        args[len(args) - fixed_after :] if fixed_after else ()
+    )
+    if isinstance(_param := params[index], ParamSpec):
         if len(middle) == 1 and _is_paramspec_token(middle[0]):
-            mid = middle[0]
+            mid: Any = middle[0]
         elif len(middle) == 1 and isinstance(middle[0], (tuple, list)):
-            mid = tuple(middle[0])
+            mid: tuple[Any, ...] = tuple(middle[0])
         else:
-            mid = middle
+            mid: tuple[Any, ...] = middle
     else:
-        mid = middle
-    return params, before + (mid,) + after, True
+        mid: tuple[Any, ...] = middle
+    return _AlignArgs(params, aligned=before + (mid,) + after, ok=True)
 
 
 def _type_parameters(origin: Any) -> tuple[Any, ...]:
@@ -381,41 +432,26 @@ def _type_parameters(origin: Any) -> tuple[Any, ...]:
     return tuple(getattr(origin, "__parameters__", ()))
 
 
-def _apply_subst_on_iter(iterable: Iterable, /, env: Mapping):
-    return tuple(_apply_subst(item, env) for item in iterable)
-
-
 def _apply_subst(arg: Any, env: Mapping[Any, Any], /) -> Any:
     if not env:
         return arg
     if is_type_parameter(arg):
         return env.get(arg, arg)
 
-    _apply_on_iter = partial(_apply_subst_on_iter, env=env)
-
     if isinstance(arg, tuple):
-        return _apply_on_iter(arg)
+        return tuple(_apply_subst(x, env) for x in arg)
     if isinstance(arg, UnionType):
-        return _rebuild_union(_apply_on_iter(arg.__args__))
+        return _rebuild_union(tuple(_apply_subst(x, env) for x in arg.__args__))
 
-    if (origin := get_origin(arg)) is None:
+    if (origin := get_origin(arg)) is None or not (raw := get_args(arg)):
         return arg
-    if not (raw := get_args(arg)):
+    if (updated := tuple(_apply_subst(x, env) for x in raw)) == raw:
         return arg
-    if (updated := (_apply_on_iter(raw))) == raw:
-        return arg
-
     return _respecialize(origin, updated)
 
 
 def _rebuild_union(parts: tuple[Any, ...], /) -> Any:
-    if not parts:
-        return VOID
-    _current, *_maybe_following = parts
-    for part in _maybe_following:
-        # AI_QUESTION: is there like a comprehension for | ?
-        _current = _current | part
-    return _current
+    return reduce(operator.or_, parts) if parts else VOID
 
 
 def _respecialize(origin: Any, args: tuple[Any, ...]) -> Any:
@@ -429,12 +465,12 @@ def _respecialize(origin: Any, args: tuple[Any, ...]) -> Any:
         return args
 
 
-def _add_identity(cls: type, specs: list[GenericSpec], seen: set[Any]) -> None:
-    if cls in seen:
+def _add_identity(cls: type, data: _ExtractDTO) -> None:
+    if cls in data.seen:
         return
     if not (params := tuple(getattr(cls, "__type_params__", ()))):
         return
-    specs.append(
+    data.record(
         GenericSpec(
             origin=cls,
             parameters=params,
@@ -443,4 +479,3 @@ def _add_identity(cls: type, specs: list[GenericSpec], seen: set[Any]) -> None:
             explicit=False,
         )
     )
-    seen.add(cls)

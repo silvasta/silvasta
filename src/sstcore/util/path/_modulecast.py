@@ -22,10 +22,10 @@ from typing import Unpack as _U  # noqa:N814
 from typing_extensions import TypedDict
 
 from ...brick.call import ArgCast, ArgCaster, ArgCasting, CastInput
+from ...port._modulepath import ModulePath
 from ...port.empty import VOID, MayBe
 from ...port.link import portlink
 from ...port.structures import ArgSpec
-from ...port.structures._module import ModulePath
 
 
 class _ModuleInput(TypedDict, total=False):

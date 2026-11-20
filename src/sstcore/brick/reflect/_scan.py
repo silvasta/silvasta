@@ -13,7 +13,7 @@ __all__: list[str] = [
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from ...port.empty import VOID, MayBeNot
+from ...port.empty import VOID, May
 from ...port.represent import PydanticModel, is_basemodel
 from ._filter import AttrFilter
 
@@ -23,7 +23,7 @@ _IGNORE = (classmethod, staticmethod, property)
 def data(
     target: Any,
     /,
-    filter: MayBeNot[AttrFilter] = VOID,
+    filter: May[AttrFilter] = VOID,
     *,
     exclude: Iterable[str] = (),
 ) -> dict[str, Any]:
@@ -43,7 +43,7 @@ def data(
 def pydantic(
     target: PydanticModel,
     /,
-    filter: MayBeNot[AttrFilter] = VOID,
+    filter: May[AttrFilter] = VOID,
     *,
     exclude: Iterable[str] = (),
 ) -> dict[str, Any]:

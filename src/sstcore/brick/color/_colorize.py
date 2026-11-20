@@ -23,8 +23,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from ...port._modulepath import ModulePath
 from ...port.color import ColorArg
-from ...port.structures import ModulePath
 from ..call import castarg
 from .box import Colors
 

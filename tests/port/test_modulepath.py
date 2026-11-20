@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 
 import sstcore.port.structures as structures_pkg
-from sstcore.port.structures._module import DotPath, ModulePath
+from sstcore.port._modulepath import DotPath, ModulePath
 from sstcore.util.path._modulecast import ModuleArg, ModuleInput, ModuleSpec
 from sstcore.util.path.guard import ModuleGuard
 
@@ -268,7 +268,7 @@ def test_modulespec_from_path_rejects_objects() -> None:
         "math", "sqrt"
     )
     with pytest.raises(TypeError):
-        ModuleSpec.from_path(DummyClass)  # ty: ignore[invalid-argument-type]
+        ModuleSpec.from_path(DummyClass)  # ty:ignore
 
 
 # LINE: -- 5. ModuleGuard Filesystem & Introspection Tests -- -- - -- -- - -- --

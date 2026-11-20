@@ -20,7 +20,7 @@ from importlib.machinery import ModuleSpec as _PyModuleSpec
 from pathlib import Path
 from typing import Any
 
-from ...port.structures._module import ModulePath
+from ...port._modulepath import ModulePath
 from ._modulecast import ModuleSpec
 
 

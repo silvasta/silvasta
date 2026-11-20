@@ -8,7 +8,7 @@ from rich import print
 from rich.panel import Panel
 
 from sstcore.brick.color import colorize
-from sstcore.port.structures import DotPath, ModulePath
+from sstcore.port._modulepath import DotPath, ModulePath
 
 dot1: DotPath = DotPath("my.dot.path")
 dot2: DotPath = dot1 / "extends.longer"

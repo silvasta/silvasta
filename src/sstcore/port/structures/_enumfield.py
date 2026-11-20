@@ -76,7 +76,7 @@ class EnumField[T]:
     ) -> Self:
         """Create Lazy Field by 'module.path:Attr' evaluation"""
         return cls.lazy(
-            path.lazy_loader(call_if_callable=call_it),
+            path.lazy_loader(call_if_callable=call_it),  # ty:ignore FIX:
             default=default,
             fallback=fallback,
         )
@@ -122,7 +122,7 @@ class BoundEnumField[EnumT: Enum, T]:  # RENAME: this is acually not a Field...
     @property
     def is_loaded(self) -> bool:
         # REMOVE: why on this here??
-        return self._loader.is_done and (bool(self._data))
+        return self._loader.is_done and (bool(self._data))  # ty:ignore FIX:
 
     def bind_loader(self, loader: Loader[[EnumT], T]) -> Loader[[EnumT], T]:
         # REMOVE: why on this here??
@@ -171,7 +171,7 @@ class BoundEnumField[EnumT: Enum, T]:  # RENAME: this is acually not a Field...
 
     def _ensure_loaded(self, member) -> bool:
         # TODO: check with registry, add somehow there
-        if (resolved := self._loader.try_resolve(member)) is not VOID:
+        if (resolved := self._loader.try_resolve(member)) is not VOID:  # ty:ignore FIX:
             self._data[member] = resolved
             return True
         return False

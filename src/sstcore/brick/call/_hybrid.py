@@ -18,10 +18,10 @@ import functools
 from collections.abc import Callable
 from typing import Any, TypedDict, TypeGuard, Unpack
 
-from ...port.raising import SstCoreError
+from ...port.raising import SstError
 
 
-class HybridError(TypeError, SstCoreError): ...
+class HybridError(TypeError, SstError): ...
 
 
 class HybridPolicy(TypedDict, total=False): ...
