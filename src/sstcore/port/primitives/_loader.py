@@ -53,6 +53,10 @@ class LoaderClsInput(_LoaderClsInput, LoaderInput, TypedDict):
 class Loader[**P, T]:
     """Govern the tools and state for predefined Loading"""
 
+    Input = LoaderInput
+    # TEST:
+    Func = LoadFunc
+
     @property
     def value(self) -> T:
         """Provide the loaded Value or Raise"""
@@ -66,12 +70,12 @@ class Loader[**P, T]:
 
     def __init__(
         self,
-        func: MayNot[LoadFunc[P, T]] = None,
+        func: MayNot[Func[P, T]] = None,
         /,
-        **tkw: _t.Unpack[LoaderInput[T]],
+        **tkw: _t.Unpack[Input[T]],
     ):
         """So far no check if Loader can complete, use Loader.__bool__"""
-        self._func: MayNot[LoadFunc[P, T]] = func
+        self._func: MayNot[Loader.Func[P, T]] = func
         self._default: MayBe[T] = tkw.get("default", VOID)
         self._prefer: Prefer = tkw.get("prefer", "func")
 
@@ -81,7 +85,7 @@ class Loader[**P, T]:
 
     def bind(self, fn: Callable[P, T]) -> Callable[P, T]:
         """Attach or replace the loader callable and reset execution state"""
-        self._func: LoadFunc[P, T] = fn
+        self._func: Loader.Func[P, T] = fn
         self.reset()
         return fn
 
@@ -93,7 +97,10 @@ class Loader[**P, T]:
 
     @classmethod
     def loading(
-        cls, loading: MayNot[Loading[P, T]], /, **tkw: _t.Unpack[LoaderInput[T]]
+        cls,
+        loading: MayNot[Loading[P, T]],
+        /,
+        **tkw: _t.Unpack[Input[T]],
     ) -> Self:
         """Create from existing loader, function or just from kwargs"""
         return (
@@ -102,7 +109,7 @@ class Loader[**P, T]:
             else cls(loading, **tkw)
         )
 
-    def updated(self, **tkw: _t.Unpack[LoaderInput[T]]) -> Self:
+    def updated(self, **tkw: _t.Unpack[Input[T]]) -> Self:
         if (default := tkw.get("default", VOID)) is not VOID:
             self._default: T | VOID = default
         if (prefer := tkw.get("prefer", VOID)) is not VOID:
@@ -137,6 +144,11 @@ class Loader[**P, T]:
                 yield from loaders
             case "default":
                 yield from reversed(loaders)
+
+                # NEXT:
+                # NEXT:
+                # NEXT:
+                # NEXT:
 
     def _counted_call(self, *args: P.args, **kwargs: P.kwargs) -> MayBe[T]:
         """Increment Counter on Launch of Loader Function"""

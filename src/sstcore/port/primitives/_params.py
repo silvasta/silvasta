@@ -20,7 +20,6 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
-from itertools import combinations
 from typing import Any, NamedTuple, Self
 
 from ._field import TupleField
@@ -29,16 +28,19 @@ from ._hashed import HashedTuple
 
 class TupleBase:
     __iter__: Any
-
     sep = TupleField[str](", ")
-    # sep: str
 
     def __str__(self):
         return f"{type(self).__name__}[{self.joined}]"
 
     @property
     def joined(self) -> str:
-        return self.sep.join(f"{x}" for x in self)
+        """Concat all items in joins that needs to be joined"""
+        return self.sep.join(f"{x}" for x in self.joins())
+
+    def joins(self) -> Iterator:
+        """Stream the visual representation joins (indepenent of __iter__)"""
+        yield from self
 
     @classmethod
     def mix[T](cls, target: type[T], /) -> type[T]:
@@ -110,7 +112,7 @@ class Args(NamedTuple):
 
     args: Sequence = ()
 
-    # sep = TupleField[str](", ")
+    sep = TupleField[str](", ")
     keyformat = TupleField[Callable[[Any], str]](lambda v: f"{v}")
 
     def __iter__(self) -> Iterator[object]:  # ty:ignore
@@ -142,7 +144,7 @@ class Args(NamedTuple):
 
     @classmethod
     def slots(cls, target, /) -> Self:
-        """Build from __slots__s of Target"""
+        """Build from __slots__ of Target"""
         return cls(tuple(iter_slots(target)))
 
 
@@ -162,6 +164,9 @@ def iter_slots(target) -> Iterable[Var]:
 def _get_slot(cls: type) -> Iterable[str]:
     _slots = cls.__dict__.get("__slots__", ())
     return _slots if not isinstance(_slots, str) else (_slots,)
+
+
+# LATER: decide who holds vars/slots or both for all
 
 
 @TupleBase.mix
@@ -220,6 +225,10 @@ class Params(NamedTuple):
     def __bool__(self) -> bool:
         return bool(self.args) or bool(self.kwargs)
 
+    def joins(self) -> Iterator:  # TEST:
+        yield from self.args
+        yield from self.kwargs
+
     def __iter__(self) -> Iterator[Any]:
         yield from self.args
 
@@ -236,98 +245,3 @@ class Params(NamedTuple):
     @classmethod
     def absorb(cls, *args, **kwargs) -> Self:
         return cls(Args(args), Kwargs(kwargs))
-
-
-#
-if __name__ == "__main__":
-
-    def main():
-        _all()
-        _var()
-        # _args()
-        # _args_kwargs()
-        # _param()
-        # _feeding()
-        pass
-
-    from rich import print
-    from rich.panel import Panel
-    from rich.text import Text
-
-    def _str(text, /, prefix=True):
-        return Text(f"{'str: ' if prefix else ''}{text}")
-
-    def _panel(text, style="cyan", /):
-        print(Panel(Text(f"{text}"), style=style))
-
-    def _full(x):
-        _panel(repr(x), "green")
-        print(f"{len(x)=}")
-        print("raw", x)
-        print(_str(x))
-        print("repr", repr(x))
-        for i, y in enumerate(x):
-            print(f"item[{i}]", y)
-
-    def _deref(param):
-        _panel(f"Start of deref for {param}")
-        print(*param)
-        print({**param})
-        print(*param, {**param})
-
-    def _args():
-        args = Args.absorb("ss", 5, {"hello", "set"})
-        _full(args)
-        print(args.keys())
-        for k in args.keys():
-            print(args[k])
-        _deref(args)
-
-    var1 = Var("name", 5)
-    var2 = Var("other", 20)
-
-    def _var():
-        _full(var1)
-        _full(var2)
-        _panel({**var1, **var2}, "yellow")
-        for x in (var1, var2):
-            _full(x)
-        var1.sep = ":::::"
-        for x in (var1, var2):
-            _full(x)
-
-    arg1 = Args()
-    arg2 = Args.absorb("ss", 5, {"hello", "set"})
-    kwarg1 = Kwargs()
-    kwarg2 = Kwargs({"a": 1, "b": 2, "c": 3, "d": 4})
-
-    def _args_kwargs():
-        _panel("Single", "gold3")
-        for x in (arg1, arg2, kwarg1, kwarg2):
-            _full(x)
-
-    def _param():
-        _panel("combinations", "gold3")
-        for a, k in combinations((arg1, arg2, kwarg1, kwarg2), 2):
-            _panel(p := Params(a, k))  # ty:ignore
-            _full(p)
-            _deref(p)
-
-    def _dip(header, text, color="yellow") -> Panel:
-        return Panel(f"{header} [{color}]{text}[/]", style="cyan")
-
-    param = Params.absorb("Start", "main text", color="green")
-
-    def _all():
-        _full(var2)
-        _full(arg2)
-        _full(kwarg2)
-        _full(param)
-
-    def _feeding():
-        print(param)
-        dipped = param.feed(_dip)
-        # reveal_type(dipped)
-        print(dipped)
-
-    main()
