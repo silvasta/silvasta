@@ -53,6 +53,13 @@ class Loader[**P, T]:
         self._total_counter: int = 0
         self._value: MayBe[T] = VOID
 
+    def updated(self, **tkw: _t.Unpack[LoaderInput[T]]) -> Self:
+        if (default := tkw.get("default", VOID)) is not VOID:
+            self._default: T | VOID = default
+        if (prefer := tkw.get("prefer", VOID)) is not VOID:
+            self._prefer: Prefer = prefer
+        return self
+
     def __str__(self) -> str:
         _maybe_value = f"{self.value}::" if self._value is not VOID else ""
         _type_args = self.type_args.render()

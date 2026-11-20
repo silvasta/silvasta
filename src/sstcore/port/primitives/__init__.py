@@ -15,6 +15,11 @@ __all__: list[str] = [
     "Args",
     "Kwargs",
     "TupleBase",
+    #
+    "Loader",
+    "LoaderInput",
+    "Loading",
+    "Prefer",
     # cls namespaces
     "LockedClsMeta",
     # CHECK: PresetMeta?
@@ -23,5 +28,6 @@ __all__: list[str] = [
 from .._types import _LockedClsMeta as LockedClsMeta
 from ._frozen import frozendict
 from ._hashed import HashedTuple
+from ._loader import Loader, LoaderInput, Loading, Prefer
 from ._params import Args, Kwargs, Params, TupleBase, Var
 from ._set import DunderSet, FieldSet, NormSet

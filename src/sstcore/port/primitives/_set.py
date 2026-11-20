@@ -14,24 +14,13 @@ __all__: list[str] = [
 from collections.abc import Mapping, MutableMapping
 from dataclasses import fields
 from functools import cache
-from typing import Any, ClassVar, Protocol, Self, TypeGuard
+from typing import Any, Self, TypeGuard
 
-from .._types import _Stringable, _Stringables
+from .._types import DataClassOrType, _DataClass, _Stringable, _Stringables
 from ..empty import MayNot
 
 
-class _DataClass(Protocol):  # RENAME: DataClassing??
-    # MOVE: types!
-    """Define the minimal Shape for typing a DataClass"""
-
-    __dataclass_fields__: ClassVar[dict[str, Any]]
-
-
-type DataClassOrType = _DataClass | type[_DataClass]  # MOVE: types!
-
-
 def _mutable(data: Mapping, /) -> TypeGuard[MutableMapping]:
-    # CHECK: Is.mutable?
     return isinstance(data, MutableMapping)
 
 

@@ -32,7 +32,7 @@ class TupleBase:
     sep = TupleField[str](", ")
     # sep: str
 
-    def __str__(self):  # LATER: this as __repr__ and joined as __str__?
+    def __str__(self):
         return f"{type(self).__name__}[{self.joined}]"
 
     @property
@@ -70,7 +70,7 @@ class Var[T: Any = Any](NamedTuple):
         """Invoke the Value if callable or provide its Representation"""
         if callable(self.value):
             return self.value(*args, **kwargs)
-        return f"Not Callable: {self}[{self.value!r}]"  # LATER: VOID?
+        return f"Not Callable: {self}[{self.value!r}]"
 
     def __bool__(self) -> bool:
         return bool(self.value)

@@ -7,18 +7,13 @@ Mappings
 
 """
 
-from collections.abc import Callable, Hashable, Iterator, Mapping
+from collections.abc import Callable, Hashable, Iterator, KeysView, Mapping
 from contextlib import contextmanager
-from enum import Enum
-from typing import Any, Protocol
+from typing import Any, ClassVar, Unpack
 
 from .._error import RaiserField, RaiserMeta, SstError, SstPortError
 from ..empty import VOID, MayBe, MayNot
-
-
-class Loader[**P, V](Protocol):  # CHECK: Loader??
-    # MOVE: Types?
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> V: ...
+from ..primitives import Loader, LoaderInput, Loading
 
 
 class MapGate[K: Hashable, V]:
@@ -26,27 +21,30 @@ class MapGate[K: Hashable, V]:
         self._data: dict[K, V] = data or {}
 
     def __contains__(self, key: Any) -> bool:
-        """Do not touch!"""
+        """Is the processed Key in Data?"""
         with self.safe():
             if self.locksmith(key) in self._data:
                 return True  # needed for type checker
         return False
 
     def __getitem__(self, key: Any) -> V:
-        """Do not touch!"""
-        lock: K = self.locksmith(key)
-        if lock not in self:
-            self._data[lock] = self.__missing__(lock)
-        return self._data[lock]
+        """Read Value or Forward to SetItem or Missing"""
+        if key not in self:
+            self[key] = self.__missing__(key)
+        return self._data[self.locksmith(key)]
+
+    def __missing__(self, key: Any) -> V:
+        """Subhook on Missing - provide writable value or Raise"""
+        raise KeyError(key)
 
     def __setitem__(self, key: Any, value: Any) -> None:
-        """Do not touch!"""
+        """Sanitize Inputs, write Value or handle merge result on duplication"""
         lock: K = self.locksmith(key)
         data: V = self.refine(value)
-        if lock in self:
-            if (_resolved := self.merge(lock, data)) is VOID:
-                # CHECK: merge should add or raise? or pass result?
-                return
+        if key in self:
+            resolved: MayBe[V] = self.merge(lock, data)
+            if resolved is not VOID:
+                data: V = resolved
         self._data[lock] = data
 
     def __delitem__(self, key: Any) -> None:
@@ -61,10 +59,6 @@ class MapGate[K: Hashable, V]:
         except KeyError, TypeError:
             pass
 
-    def __missing__(self, lock: K) -> V:
-        """Subhook on Missing"""
-        raise KeyError
-
     def merge(self, _lock: K, data: V, /) -> MayBe[V]:
         """Subhook on Duplicated: default=overwrite"""
         return data
@@ -76,6 +70,13 @@ class MapGate[K: Hashable, V]:
     def refine(self, value: Any) -> V:
         """Subhook on incoming Value"""
         return value
+
+    def keys(self) -> KeysView:
+        """Provide Keys for **unpacking"""
+        return self._data.keys()
+
+    def values(self) -> Iterator[V]:
+        yield from self._data.values()
 
     def __iter__(self) -> Iterator[K]:  # Any?
         return iter(self._data)
@@ -90,9 +91,9 @@ class MapGate[K: Hashable, V]:
         text: str = "\n".join(f"{key}::{self[key]}" for key in self)
         return f"{self}[{f'\n{text}\n' if text else 'X'}]"
 
-    def absorb(self, items: Mapping | None = None, /) -> Any:
-        """Helper to register from Map"""
-        for key, item in (items or {}).items():
+    def absorb(self, map: Mapping | None = None, /) -> Any:
+        """Register from Map if values provided"""
+        for key, item in (map or {}).items():
             self[key] = item
 
 
@@ -104,34 +105,26 @@ class LazyMap[K: Hashable, V](MapGate[K, V]):
 
     def __init__(
         self,
-        loader: Loader[[K], V] | None = None,
-        default: MayBe[V] = VOID,
+        loader: Loader[[K], V] | Loading[[K], V] | None = None,
         fallback: MayNot[Callable[[K], V]] = None,
-        **kwargs,
+        **tkw: Unpack[LoaderInput[V]],
     ):
-        super().__init__(**kwargs)
-        self._loader: Loader[[K], V] | None = loader
-        # AI: hard to say if all 3 are required or if some are even useful on MapGate
-        self._default: MayBe[V] = default
+        super().__init__()
+        self.loader: Loader[[K], V] = (
+            loader.updated(**tkw)
+            if isinstance(loader, Loader)
+            else Loader(loader, **tkw)
+        )
         self._fallback: MayNot[Callable[[K], V]] = fallback
 
-    @property
-    def loader(self) -> Loader[[K], V]:
-        if self._loader is None:
-            raise RuntimeError(f"{self} failed without any loader...")
-        return self._loader
-
-    def __missing__(self, lock: K) -> V:
-        if self._loader is not None:
-            return self.loader(lock)
-        if self._default is not VOID:
-            return self._default
+    def __missing__(self, key: Any) -> V:
+        if (value := self.loader.install(key)) is not VOID:
+            return value
         if self._fallback is not None:
-            return self._fallback(lock)
+            return self._fallback(key)
         raise KeyError("All loader and defaults failed...")
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
@@ -144,37 +137,54 @@ class ActiveMap[K: Hashable, V](MapGate[K, V]):
         self.absorb(named)
 
 
-class EnumFieldMap(ActiveMap):
-    """Store not shared Data for single Enum Member per Field or BoundField"""
-
-
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class EnumMemberMap[E: Enum, V](ActiveMap[E, V]):
-    """Store Enums by Member for Global Meta Registry"""
+class CacheGate[K: Hashable, V](MapGate[K, V]):
+    """Observable Flyweight Cache Gate with hit/miss tracking and size guard."""
 
-    def __init__(self, owner: type[E], label: str = "") -> None:
+    _all_caches: ClassVar[list[CacheGate[Any, Any]]] = []
+
+    def __init__(
+        self,
+        owner: type[V],
+        # TODO: forward to super()__init__: loader: Callable[[K], V],
+        max_size: int | None = None,
+    ) -> None:
         super().__init__()
-        self.owner: type[E] = owner
-        self.label: str = label or owner.__name__
+        self.owner: type[V] = owner
+        # self._loader: Callable[[K], V] = loader
+        self.max_size: int | None = max_size
+        self.hits: int = 0
+        self.misses: int = 0
+        self._all_caches.append(self)
 
-    def locksmith(self, key: Any) -> E:
-        if type(key) is self.owner:
-            return key
-        if isinstance(key, str):  # TODO: SstEnumMeta.resolve
-            try:
-                return self.owner._member_map_[key]  # ty:ignore
-            except KeyError:
-                # TODO: better error texts, or move to safe
-                raise KeyError(
-                    f"{self.label}: unknown member {key!r}"
-                ) from None
-        raise TypeError(
-            # TODO: better error texts, or move to safe
-            f"{self.label}: expected {self.owner.__name__} or name, "
-            f"got {type(key).__name__}"
+    def fetch(self, key: K, factory: Callable[[], V]) -> V:
+        if key in self._data:
+            self.hits += 1
+            return self._data[key]
+        self.misses += 1
+        if self.max_size is not None and len(self._data) >= self.max_size:
+            # Evict oldest inserted key (FIFO) or trigger warning hook
+            self._data.pop(next(iter(self._data)))
+        value: V = factory()
+        self._data[key] = value
+        return value
+
+    @property
+    def hit_rate(self) -> float:
+        total = self.hits + self.misses
+        return (self.hits / total) if total else 0.0
+
+    def __str__(self) -> str:
+        return (
+            f"CacheGate[{self.owner.__name__}: "
+            f"size={len(self)}, hits={self.hits}, misses={self.misses}, "
+            f"hit_rate={self.hit_rate:.1%}]"
         )
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class GateRaiser(metaclass=RaiserMeta):
@@ -182,6 +192,14 @@ class GateRaiser(metaclass=RaiserMeta):
 
     _base_error: type[SstError] = SstPortError
 
+    enum_member = RaiserField[[str, str]](
+        KeyError,
+        "{label}: Unknown Enum Member: {member!r}",
+    )
+    enum_type = RaiserField[[str, str, str]](
+        TypeError,
+        "{label}: Expected {owner} but received {incoming}",
+    )
     cache1 = RaiserField[[str]](
         KeyError,
         "Cache miss for lookup key {0!r}",

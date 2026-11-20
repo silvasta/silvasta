@@ -18,14 +18,13 @@ __all__: list[str] = [
     "EnumStr1",
     "EnumStr2",
     "EnumRepr1",
-    "EnumRepr2",
 ]
 
 
 from enum import Enum, EnumDict, EnumMeta
 from typing import Any, NamedTuple, Self
 
-from ._enumfield import BoundEnumField, EnumField
+from ._enumfield import EnumFieldMap
 
 type EnumId[EnumT: Enum] = EnumT | str | int
 
@@ -39,8 +38,7 @@ class SstEnumMeta(EnumMeta):
 
     _walk_for_zero: bool = False
     _zero_indexed: bool = False
-    _enum_fields_: dict[str, BoundEnumField[Any, Any]]
-    _registered_enums_: list[SstEnumMeta] = []
+    _enum_fields_: EnumFieldMap
 
     @classmethod
     def __prepare__(
@@ -78,10 +76,8 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
 
-        new_enum_cls._enum_fields_ = iter_enum_fields(new_enum_cls)
-
-        if new_enum_cls._enum_fields_ and len(new_enum_cls) > 0:
-            metacls._registered_enums_.append(new_enum_cls)
+        # AI: here is one of the important applications
+        new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)
 
         return new_enum_cls
 
@@ -119,8 +115,7 @@ class SstEnumMeta(EnumMeta):
 
     def validate_fields(cls) -> None:
         """Validate all EnumField descriptors attached to this Enum."""
-        for field in cls._enum_fields_.values():
-            field.validate()
+        cls._enum_fields_.validate()
 
     def fields_ready(cls) -> bool:
         """Check whether all attached EnumFields have been hydrated."""
@@ -129,26 +124,7 @@ class SstEnumMeta(EnumMeta):
     @classmethod
     def validate_all_registered(metacls) -> None:  # noqa:N804
         """Single test-suite hook to hydrate & validate every EnumField in sstcore."""
-        for enum_cls in metacls._registered_enums_:
-            enum_cls.validate_fields()
-
-
-def iter_enum_fields(cls: EnumType) -> dict[str, BoundEnumField]:
-    # IDEA: Iter.enum_fields?
-    """Collect all bound EnumFields across EnumCls and its MRO"""
-    return {
-        name: getattr(cls, name)
-        for base in reversed(cls.__mro__)
-        for name, attr in vars(base).items()
-        if isinstance(attr, EnumField)
-    }
-
-
-def validate_enum_fields(enum_cls: EnumType) -> None:
-    """Validate all EnumFields on any Enum or IntFlag class"""
-    for field in iter_enum_fields(enum_cls).values():
-        field.validate()  # IDEA: count success/fail?
-        # IDEA: select if run all or until first error
+        EnumFieldMap.validate_all()
 
 
 class WalkZero(NamedTuple):
@@ -192,14 +168,6 @@ class EnumStr2(Enum):
 class EnumRepr1(Enum):
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.value}]::{self}"
-
-
-class EnumRepr2(Enum):
-    def __repr__(self) -> str:  # CHECK: how that works for Enum
-        if attributes := vars(self):
-            _vars = [f"{k}={v!r}" for k, v in attributes.items()]
-            return f"{type(self).__name__}[{', '.join(_vars)}]"
-        return f"{type(self).__name__}{self}"
 
 
 EnumStr = EnumStr2

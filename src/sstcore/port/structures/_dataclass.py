@@ -25,10 +25,10 @@ from collections.abc import Mapping
 from dataclasses import MISSING
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
+from .._types import _DataClass as DataClass
 from ..empty import VOID, MayBe
-from ..primitives._hashed import HashedTuple
-from ..primitives._set import FieldSet
-from ..primitives._set import _DataClass as DataClass
+from ..primitives import FieldSet, HashedTuple
+from ._gate import CacheGate
 
 type _CacheKey = tuple[HashedTuple, ...]
 
@@ -55,8 +55,17 @@ class CachedDataclassMeta(type):
     def __init__(cls, name: str, bases: tuple, namespace: dict[str, Any]):
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
         super().__init__(name, bases, namespace)
-        cls._cache: dict[_CacheKey, DataClass] = {}
+        cls._cache: CacheGate[_CacheKey, DataClass] = CacheGate(
+            # FIX:
+            owner=cls,
+            max_size=namespace.get("__cache_max__", None),
+        )
         cls._sig: inspect.Signature | None = None
+
+    @property
+    def cache(cls) -> CacheGate[_CacheKey, Any]:
+        """Public class-level gate: e.g. AttrFilter.cache.hits or print(AttrFilter.cache)"""
+        return cls._cache
 
     @property
     def __signature__(cls) -> inspect.Signature:
@@ -87,10 +96,10 @@ class CachedDataclassMeta(type):
             HashedTuple(name, _resolve_field_value(name, value))
             for name, value in bound.arguments.items()
         )
-        if cache_key not in cls._cache:
-            cls._cache[cache_key] = super().__call__(*args, **kwargs)
-
-        return cls._cache[cache_key]
+        return cls._cache.fetch(  # AI: check if this works
+            cache_key,
+            lambda: super(CachedDataclassMeta, cls).__call__(*args, **kwargs),
+        )
 
 
 def create_field_resolver(cls: DataClass, provided_args: set[str]):

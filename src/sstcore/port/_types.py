@@ -4,9 +4,8 @@ Group TypeDefs as Classes and Merge them to Modules
 - bundle loose type definitions for the different port modules
 - belongs to their corresponding port module, import from there, not from here!
 
-                                                 DependencyLevel[1]
-                                                                 +
-"""  # TODO:
+                                                 DependencyLevel[0]
+"""
 
 __all__: list[str] = [
     "RegistryTypes",
@@ -24,9 +23,9 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
-from typing import Any, Literal, Never, Protocol, runtime_checkable
+from typing import Any, ClassVar, Literal, Never, Protocol, runtime_checkable
 
-from .empty import VOID, MayBe  # NEXT: bump DependencyLevel
+from .empty import VOID, MayBe
 
 
 @runtime_checkable
@@ -35,6 +34,15 @@ class _Stringable(Protocol):
 
 
 type _Stringables = Iterable[_Stringable]
+
+
+class _DataClass(Protocol):
+    """Define the minimal Shape for typing a DataClass"""
+
+    __dataclass_fields__: ClassVar[dict[str, Any]]
+
+
+type DataClassOrType = _DataClass | type[_DataClass]
 
 
 @runtime_checkable
