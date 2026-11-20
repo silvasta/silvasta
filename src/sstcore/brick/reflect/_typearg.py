@@ -41,15 +41,19 @@ from typing import (
     ParamSpec,
     Protocol,
     Self,
+    TypeIs,
     TypeVar,
     TypeVarTuple,
     get_args,
     get_origin,
 )
 
-from ..empty import VOID, MayBe, MayNot
+from ...port.empty import VOID, MayBe, MayNot
 
 _TYPE_PARAMS = (TypeVar, ParamSpec, TypeVarTuple)
+_VARIADICS = (ParamSpec, TypeVarTuple)
+# AI: how to use only 1 definition of (C1,C1) and C1|C2 ?
+_VARIADICS_ = ParamSpec | TypeVarTuple
 _IGNORED_ORIGINS = frozenset({Generic, Protocol})
 _STAMPS: weakref.WeakKeyDictionary[Any, Any] = weakref.WeakKeyDictionary()
 
@@ -180,6 +184,11 @@ def is_concrete_type(target: Any, /) -> bool:
     if isinstance(target, tuple):
         return all(is_concrete_type(item) for item in target)
     return True
+
+
+def is_variadic(target: Any, /) -> TypeIs[_VARIADICS_]:
+    # AI: how to use only 1 definition of (C1,C1) and C1|C2 ?
+    return isinstance(target, _VARIADICS)
 
 
 def normalize_orig_bases(cls: type) -> None:
@@ -392,12 +401,9 @@ def _align_args(origin: Any, args: tuple[Any, ...], /) -> _AlignArgs:
         return _AlignArgs(params=(), aligned=args, ok=False)
 
     variadic: list[int] = [
-        index
-        for index, param in enumerate(params)
-        # AI_QUESTION: what about TypeVar?
-        # - otherwise just use: is_type_parameter
-        if isinstance(param, (ParamSpec, TypeVarTuple))
+        index for index, param in enumerate(params) if is_variadic(param)
     ]
+
     if len(variadic) != 1:
         return _AlignArgs(params, aligned=args, ok=len(args) == len(params))
 

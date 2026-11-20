@@ -15,14 +15,26 @@ __all__: list[str] = [
 
 
 import typing as _t
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
-from inspect import Signature, signature
-from typing import Any, Literal, Self, TypedDict
+from inspect import Parameter, Signature, signature
+from typing import (
+    Any,
+    Generic,
+    Literal,
+    NamedTuple,
+    ParamSpec,
+    Protocol,
+    Self,
+    TypedDict,
+    TypeVar,
+    TypeVarTuple,
+    get_args,
+    get_origin,
+)
+from typing import Unpack as _U  # noqa: N814
 
 from ..empty import VOID, MayBe, MayNot
-from . import _typearg
-from ._typearg import extract_type_args, format_type_arg
 
 
 class LoadFunc[**P, Target](_t.Protocol):
@@ -31,7 +43,6 @@ class LoadFunc[**P, Target](_t.Protocol):
 
 
 type Loading[**P, T] = Loader[P, T] | LoadFunc[P, T]
-
 type Prefer = Literal["func", "default"]
 
 
@@ -53,9 +64,8 @@ class LoaderClsInput(_LoaderClsInput, LoaderInput, TypedDict):
 class Loader[**P, T]:
     """Govern the tools and state for predefined Loading"""
 
-    Input = LoaderInput
-    # TEST:
-    Func = LoadFunc
+    Input = LoaderInput  # TEST:
+    Func = LoadFunc  # TEST:
 
     @property
     def value(self) -> T:
@@ -68,12 +78,7 @@ class Loader[**P, T]:
     def is_ready(self) -> bool:
         return self._value is not VOID
 
-    def __init__(
-        self,
-        func: MayNot[Func[P, T]] = None,
-        /,
-        **tkw: _t.Unpack[Input[T]],
-    ):
+    def __init__(self, func: MayNot[Func[P, T]] = None, /, **tkw: _U[Input[T]]):
         """So far no check if Loader can complete, use Loader.__bool__"""
         self._func: MayNot[Loader.Func[P, T]] = func
         self._default: MayBe[T] = tkw.get("default", VOID)
@@ -97,10 +102,7 @@ class Loader[**P, T]:
 
     @classmethod
     def loading(
-        cls,
-        loading: MayNot[Loading[P, T]],
-        /,
-        **tkw: _t.Unpack[Input[T]],
+        cls, loading: MayNot[Loading[P, T]], /, **tkw: _U[Input[T]]
     ) -> Self:
         """Create from existing loader, function or just from kwargs"""
         return (
@@ -134,21 +136,19 @@ class Loader[**P, T]:
 
     def _order(self) -> Iterator:
         """Provide Locations in Prefered Order to Install new Value"""
-        # NOTE: latest when 3 dispatches occur... it will be difficult
         loaders: list[LoadFunc] = [
             lambda *a, **k: self._counted_call(*a, **k),
             lambda *_, **__: self._default,
         ]
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
         match self._prefer:
             case "func":
                 yield from loaders
             case "default":
                 yield from reversed(loaders)
-
-                # NEXT:
-                # NEXT:
-                # NEXT:
-                # NEXT:
 
     def _counted_call(self, *args: P.args, **kwargs: P.kwargs) -> MayBe[T]:
         """Increment Counter on Launch of Loader Function"""
@@ -186,345 +186,353 @@ class Loader[**P, T]:
 
     #  LINE: -- Experimental -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    if not _typearg.preserves_generic_alias_on_instance():
-
-        def __class_getitem__(cls, params: Any) -> Any:
-            return _typearg.remembering_getitem(cls, params)
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        _typearg.normalize_orig_bases(cls)
+    def __class_getitem__(cls, params: Any) -> Any:
+        return _LoaderAlias(cls, params)
 
     @property
-    def type_args(self) -> LoaderTypes:
-        """Full spectrum and the resolved ``(P, T)`` pair."""
-        return resolve_loader_types(self)
+    def type_args(self) -> TypeArg:
+        return TypeArg.from_loader(self)
+
+    @property
+    def _type_args(self) -> TypeView:
+        return type_view(self, Loader)
 
     @property
     def target_type(self) -> Any:
-        """Resolved value type. VOID when no channel produced one.
-
-        Open TypeVars are returned as themselves. The parameter list and
-        the unused channels are on ``type_args``, not here.
-        """
         return self.type_args.value
 
 
 #  LINE: -- TypeArg Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-@dataclass(frozen=True, slots=True)
-class LoaderTypes:
-    """Spectrum plus the one pair ``__str__`` should show.
+_PARAM = (TypeVar, ParamSpec, TypeVarTuple)
+_SKIP = (Generic, Protocol)
 
-    ``specs`` is everything the extractor found, including an implicit
-    identity spec. ``value`` and ``parameters`` are the resolved pair.
-    """
 
-    specs: tuple[_typearg.GenericSpec, ...]
+class TypeView(NamedTuple):
     value: Any
     parameters: Any
     value_source: str
     parameters_source: str
-    func_return: Any = VOID
-    func_parameters: Any = VOID
-    default_type: Any = VOID
+    func_return: Any
+    default_type: Any
 
     def render(self) -> str:
-        value = "UnTyped" if self.value is VOID else format_type_arg(self.value)
-        return f"{format_type_arg(self.parameters)}, {value}"
+        shown = "UnTyped" if self.value is VOID else _show(self.value)
+        return f"{_show_params(self.parameters)}, {shown}"
 
-    def summary(self) -> str:
-        explicit = ", ".join(str(spec) for spec in self.specs if spec.explicit)
-        generic: str = explicit or "-"
-        return f"{self.render()} via {self.value_source}; generic=[{generic}]"
-
-
-def _declared_spec(
-    specs: tuple[_typearg.GenericSpec, ...], origin: type
-) -> MayNot[_typearg.GenericSpec]:
-    for spec in specs:
-        if spec.is_to_declare(origin):
-            return spec
-    return None
+    def extras(self) -> str:
+        parts: list[str] = []
+        if self.func_return is not VOID:
+            parts.append(f"func={_show(self.func_return)}")
+        if self.default_type is not VOID:
+            parts.append(f"default={_show(self.default_type)}")
+        return ", ".join(parts) or "-"
 
 
-def _looks_generic(target: Any) -> bool:
-    if (
-        not isinstance(target, type)
-        and getattr(target, "__orig_class__", None) is not None
-    ):
-        return True
-    cls = target if isinstance(target, type) else type(target)
-    for klass in cls.__mro__:
-        if getattr(klass, "__type_params__", ()):
-            return True
-        if getattr(klass, "__orig_bases__", ()):
-            return True
-    return False
-
-
-def _pick_value(
-    declared: _typearg.GenericSpec | None,
-    func_return: Any,
-    default_type: Any,
-) -> tuple[Any, str]:
-    declared_value = VOID if declared is None else declared.get("T")
-
-    if _typearg.is_concrete_type(declared_value):
-        return declared_value, "generic"
-    if _typearg.is_concrete_type(func_return):
-        return func_return, "func"
-    if default_type is not VOID:
-        return default_type, "default"
-    if _typearg.is_type_parameter(declared_value):
-        return declared_value, "unbound"
-
-    return VOID, "none"
-
-
-def _pick_parameters(
-    declared: _typearg.GenericSpec | None,
-    func_parameters: Any,
-) -> tuple[Any, str]:
-    if declared is not None:
-        declared_parameters = declared.get("P")
-        if declared_parameters is not VOID:
-            return declared_parameters, "generic"
-
-    if func_parameters is not VOID:
-        return func_parameters, "func"
-
-    return Ellipsis, "unknown"
-
-
-def resolve_loader_types(loader: Loader) -> LoaderTypes:
-    """Merge generic specialization with this loader's own channels.
-
-    The extractor runs only when the object looks generic. A similar class
-    that is not generic skips it and still uses the callable and default.
-    """
-    specs = extract_type_args(loader) if _looks_generic(loader) else ()
-    declared = _declared_spec(specs, Loader)
-
-    func_parameters: Any = VOID
-    func_return: Any = VOID
-    if loader._func is not None:
-        func_parameters, func_return = _signature_types(loader._func)
-
-    if loader._default is VOID:
-        default_type: Any = VOID
-    elif loader._default is None:
-        default_type = None
+def type_view(loader: Any, origin: type) -> TypeView:
+    declared = _pair(loader, origin)
+    func_params, func_return = (
+        _signature_types(loader._func)
+        if loader._func is not None
+        else (VOID, VOID)
+    )
+    default_type: Any = (
+        VOID
+        if loader._default is VOID
+        else None
+        if loader._default is None
+        else type(loader._default)
+    )
+    d_params, d_value = declared if declared is not None else (VOID, VOID)
+    if _concrete(d_value):
+        value, value_source = d_value, "generic"
+    elif _concrete(func_return):
+        value, value_source = func_return, "func"
+    elif default_type is not VOID:
+        value, value_source = default_type, "default"
+    elif isinstance(d_value, _PARAM):
+        value, value_source = d_value, "unbound"
     else:
-        default_type = type(loader._default)
-
-    value, value_source = _pick_value(declared, func_return, default_type)
-    parameters, parameters_source = _pick_parameters(declared, func_parameters)
-    return LoaderTypes(
-        specs=specs,
-        value=value,
-        parameters=parameters,
-        value_source=value_source,
-        parameters_source=parameters_source,
-        func_return=func_return,
-        func_parameters=func_parameters,
-        default_type=default_type,
+        value, value_source = VOID, "none"
+    if d_params is not VOID:
+        parameters, parameters_source = d_params, "generic"
+    elif func_params is not VOID:
+        parameters, parameters_source = func_params, "func"
+    else:
+        parameters, parameters_source = Ellipsis, "unknown"
+    return TypeView(
+        value,
+        parameters,
+        value_source,
+        parameters_source,
+        func_return,
+        default_type,
     )
 
 
-def _signature_types(func: Callable[..., Any]) -> tuple[Any, Any]:
-    """``(parameter types, return type)`` from annotations, not inference.
+def _pair(obj: Any, origin: type) -> tuple[Any, Any] | None:
+    env: dict[Any, Any] = {}
+    found: tuple[Any, ...] | None = None
 
-    Failure of either ``signature`` or ``get_type_hints`` degrades that
-    side to VOID or to the raw annotation. An empty parameter tuple is a
-    real answer (``Loader[(), str]``), so it is not VOID.
-    """
+    def take(alias: Any) -> None:
+        nonlocal found
+        owner = get_origin(alias)
+        if not isinstance(owner, type) or owner in _SKIP:
+            return
+        params = tuple(getattr(owner, "__type_params__", ()))
+        aligned = _align(params, tuple(_subst(a, env) for a in get_args(alias)))
+        if len(params) != len(aligned):
+            return
+        if owner is origin and found is None:
+            found = aligned
+        for param, arg in zip(params, aligned, strict=False):
+            if isinstance(param, _PARAM) and param not in env:
+                env[param] = arg
+
+    if not isinstance(obj, type) and (
+        stamped := getattr(obj, "__orig_class__", None)
+    ):
+        take(stamped)
+    cls = obj if isinstance(obj, type) else type(obj)
+    for klass in cls.__mro__:
+        for base in getattr(klass, "__orig_bases__", ()):
+            take(base)
+    if found is None:
+        return None
+    if len(found) == 2:
+        return found[0], found[1]
+    named = {
+        getattr(param, "__name__", ""): arg
+        for param, arg in zip(
+            getattr(origin, "__type_params__", ()), found, strict=False
+        )
+    }
+    return named.get("P", VOID), named.get("T", found[-1])
+
+
+def _align(params: tuple[Any, ...], args: tuple[Any, ...]) -> tuple[Any, ...]:
+    idxs = [
+        i
+        for i, param in enumerate(params)
+        if isinstance(param, (ParamSpec, TypeVarTuple))
+    ]
+    if len(idxs) != 1:
+        return args
+    index, tail = idxs[0], len(params) - idxs[0] - 1
+    if len(args) < index + tail:
+        return args
+    mid = args[index : len(args) - tail if tail else len(args)]
+    token = mid[0] if len(mid) == 1 else None
+    if isinstance(params[index], ParamSpec) and (
+        token is Ellipsis
+        or getattr(get_origin(token), "__name__", None) == "Concatenate"
+    ):
+        packed: Any = token
+    elif len(mid) == 1 and isinstance(mid[0], tuple):
+        packed = mid[0]
+    else:
+        packed = mid
+    return args[:index] + (packed,) + (args[-tail:] if tail else ())
+
+
+def _subst(arg: Any, env: Mapping[Any, Any]) -> Any:
+    if not env:
+        return arg
+    if isinstance(arg, _PARAM):
+        return env.get(arg, arg)
+    if isinstance(arg, tuple):
+        return tuple(_subst(item, env) for item in arg)
+    owner, raw = get_origin(arg), get_args(arg)
+    if owner is None or not raw:
+        return arg
+    updated = tuple(_subst(item, env) for item in raw)
+    if updated == raw:
+        return arg
+    try:
+        return owner[updated[0]] if len(updated) == 1 else owner[updated]
+    except TypeError:
+        return arg
+
+
+def _signature_types(func: Callable[..., Any]) -> tuple[Any, Any]:
     try:
         sig = signature(func)
     except TypeError, ValueError:
         return VOID, VOID
-
-    hints: dict[str, Any] | None
     try:
-        hints = _t.get_type_hints(func)
+        hints = __import__("typing").get_type_hints(func)
     except NameError, TypeError, ValueError:
-        hints = None
-
-    if hints is not None and "return" in hints:
-        returned: Any = hints["return"]
-    else:
-        returned = sig.return_annotation
-        if returned is Signature.empty:
-            returned = VOID
-
-    parameters: list[Any] = []
-    for name, param in sig.parameters.items():
-        if hints is not None and name in hints:
-            parameters.append(hints[name])
-        elif param.annotation is not Signature.empty:
-            parameters.append(param.annotation)
-        else:
-            parameters.append(Any)
-    return tuple(parameters), returned
+        hints = {}
+    returned = hints.get("return", sig.return_annotation)
+    if returned is Signature.empty:
+        returned = VOID
+    params = tuple(
+        hints.get(
+            name,
+            Any if param.annotation is Signature.empty else param.annotation,
+        )
+        for name, param in sig.parameters.items()
+    )
+    return params, returned
 
 
-if __name__ == "__main__":
-    # MOVE: create new module outside library in examples/...
+def _show(arg: Any) -> str:
+    if arg is VOID:
+        return "VOID"
+    if arg is Ellipsis:
+        return "..."
+    if arg is None:
+        return "None"
+    if isinstance(arg, type):
+        return arg.__qualname__
+    if isinstance(arg, tuple):
+        return "(" + ", ".join(_show(item) for item in arg) + ")"
+    if isinstance(arg, _PARAM) or isinstance(
+        getattr(arg, "__name__", None), str
+    ):
+        return arg.__name__
+    return str(arg).removeprefix("typing.")
 
-    def main():
-        # test_1()
-        test_2()
-        pass
 
-    from rich import print
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.text import Text
+def _show_params(arg: Any) -> str:
+    if arg is VOID or arg is Ellipsis:
+        return "(...)"
+    return _show(arg)
 
-    def test_1():
 
-        def _inspect(name: str, loader: Loader[Any, Any]) -> None:
-            lines = [
-                f"str:   {loader}",
-                f"repr:  {loader!r}",
-                f"type:  {loader.target_type!r} (via {loader.type_args.value_source})",
-                f"specs: {[str(s) for s in loader.type_args.specs]}",
-            ]
-            print(
-                Panel(Text("\n".join(lines)), title=name, border_style="cyan")
-            )
+def _concrete(arg: Any) -> bool:
+    if arg is VOID or arg is Ellipsis or isinstance(arg, _PARAM):
+        return False
+    if isinstance(arg, tuple):
+        return all(_concrete(item) for item in arg)
+    return True
 
-        l_empty = Loader()
-        l_default = Loader(default=42)
-        l_none = Loader(default=None)
 
-        l_explicit = Loader[[str, int], float]()
-        l_ellipsis = Loader[..., list[str]]()
+#  LINE: -- TypeArg Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- TypeArg Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- TypeArg Helper -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-        def fetch(host: str, port: int) -> dict[str, Any]:
-            return {"host": host, "port": port}
 
-        l_func = Loader(fetch)
-        l_func_loaded = Loader(fetch)
-        l_func_loaded("localhost", 8080)
+class _LoaderAlias:
+    """Lightweight generic alias preserving __orig_class__ on instantiation."""
 
-        class IntLoader[**P](Loader[P, int]): ...
+    __slots__ = ("__origin__", "__args__")
 
-        class ZeroArgIntLoader(IntLoader[[]]): ...
-
-        class GenericBoxLoader[T](Loader[[T], list[T]]): ...
-
-        class StrBoxLoader(GenericBoxLoader[str]): ...
-
-        class UnboundLoader[T](Loader[[int], T]): ...
-
-        examples: list[tuple[str, Loader[Any, Any]]] = [
-            ("Empty", l_empty),
-            ("Default int", l_default),
-            ("Default None", l_none),
-            ("Explicit [[str, int], float]", l_explicit),
-            ("Explicit [..., list[str]]", l_ellipsis),
-            ("Typed func (unloaded)", l_func),
-            ("Typed func (loaded)", l_func_loaded),
-            ("Subclass IntLoader", IntLoader()),
-            ("Subclass ZeroArgIntLoader", ZeroArgIntLoader()),
-            ("Multi-level StrBoxLoader", StrBoxLoader()),
-            ("Unbound GenericBoxLoader", GenericBoxLoader()),
-            ("UnboundLoader[T]", UnboundLoader()),
-        ]
-
-        for label, ldr in examples:
-            _inspect(label, ldr)
-
-    def test_2():
-
-        def _str(text: object, /, prefix: bool = True) -> Text:
-            return Text(f"{'str: ' if prefix else ''}{text}")
-
-        def _panel(text: object, style: str = "cyan", /) -> None:
-            print(Panel(Text(str(text)), style=style))
-
-        def _full(items: tuple[object, ...], /) -> None:
-            _panel(repr(items), "green")
-            print(f"{len(items)=}")
-            print(_str(items))
-            for index, item in enumerate(items):
-                print(f"item[{index}]", item)
-
-        def load_str() -> str:
-            return "loaded"
-
-        def load_int(n: int) -> int:
-            return n
-
-        def load_union() -> int | str:
-            return 1
-
-        class IntLoader(Loader[..., int]): ...
-
-        class SubIntLoader(IntLoader): ...
-
-        class OpenLoader[X](Loader[..., X]): ...
-
-        class ListLoader[X](Loader[..., list[X]]): ...
-
-        class IntListLoader(ListLoader[int]): ...
-
-        class PairLoader(Loader[[int, str], bool]): ...
-
-        ready = Loader(load_str)
-        ready()
-        held = Loader(load_int, default=0, prefer="default")
-        held(4)
-
-        samples = (
-            ("bare", Loader()),
-            ("subscript", Loader[..., int]()),
-            ("int subclass", IntLoader()),
-            ("deep subclass", SubIntLoader()),
-            ("open", OpenLoader()),
-            ("open + default", OpenLoader(default=5)),
-            ("substituted", IntListLoader()),
-            ("param list", PairLoader()),
-            ("default", Loader(default=5)),
-            ("default none", Loader(default=None)),
-            ("default bool", Loader(default=True)),
-            ("func", Loader(load_str)),
-            ("func args", Loader(load_int)),
-            ("union func", Loader(load_union)),
-            ("func beats default", Loader(load_str, default=5)),
-            ("explicit beats both", IntLoader(load_str, default="nope")),  # ty:ignore
-            ("loaded", ready),
-            ("prefer default", held),
+    def __init__(self, origin: type, /, params: Any) -> None:
+        self.__origin__: type = origin
+        self.__args__: tuple[Any, ...] = (
+            params if isinstance(params, tuple) else (params,)
         )
 
-        _panel("loader spectrum")
-        table = Table(show_lines=True)
-        for column in ("case", "str", "T", "T from", "P", "P from", "also"):
-            table.add_column(column)
-        for case, loader in samples:
-            found = loader.type_args
-            extra = []
-            if found.func_return is not VOID:
-                extra.append(f"func={format_type_arg(found.func_return)}")
-            if found.default_type is not VOID:
-                extra.append(f"default={format_type_arg(found.default_type)}")
-            table.add_row(
-                case,
-                str(loader),
-                format_type_arg(found.value),
-                found.value_source,
-                _typearg.format_parameters(found.parameters),
-                found.parameters_source,
-                ", ".join(extra) or "-",
+    def __mro_entries__(self, bases: tuple[Any, ...]) -> tuple[type, ...]:
+        _ = bases
+        return (self.__origin__,)
+
+    def __call__(self, *args, **kwargs) -> Any:
+        unit: Any = self.__origin__(*args, **kwargs)
+        unit.__orig_class__ = self
+        return unit
+
+
+@dataclass(frozen=True, slots=True)
+class TypeArg:
+    """Minimal best-effort type visualizer for port.Loader."""
+
+    parameters: Any = Ellipsis
+    value: Any = VOID
+    source: str = "none"
+
+    def render(self) -> str:
+        val: str = "UnTyped" if self.value is VOID else _fmt(self.value)
+        return f"{_fmt(self.parameters, is_param=True)}, {val}"
+
+    def summary(self) -> str:
+        return f"{self.render()} via {self.source}"
+
+    @classmethod
+    def from_loader(cls, loader: Loader[Any, Any]) -> Self:
+        g_params, g_val = _extract_generic_pair(loader)
+        f_params, f_val = _extract_func_pair(loader._func)
+
+        # 1. Resolve Value (T): concrete generic > func annotation > default > unbound TypeVar
+        if _is_concrete(g_val):
+            val, src = g_val, "generic"
+        elif _is_concrete(f_val):
+            val, src = f_val, "func"
+        elif loader._default is not VOID:
+            val = None if loader._default is None else type(loader._default)
+            src = "default"
+        elif g_val is not VOID:
+            val, src = g_val, "unbound"
+        else:
+            val, src = VOID, "none"
+
+        # 2. Resolve Parameters (P): generic > func annotation > Ellipsis
+        params = (
+            g_params
+            if g_params is not VOID
+            else (f_params if f_params is not VOID else Ellipsis)
+        )
+        return cls(parameters=params, value=val, source=src)
+
+
+def _extract_generic_pair(loader: Loader[Any, Any]) -> tuple[Any, Any]:
+    aliases = [getattr(loader, "__orig_class__", None)]
+    for klass in type(loader).__mro__:
+        aliases.extend(getattr(klass, "__orig_bases__", ()))
+
+    env: dict[Any, Any] = {}
+    for alias in aliases:
+        origin = getattr(alias, "__origin__", None)
+        args = getattr(alias, "__args__", ())
+        if not origin or not args:
+            continue
+        args = tuple(env.get(a, a) for a in args)
+        tparams = getattr(origin, "__type_params__", ())
+        if len(tparams) == len(args):
+            env.update(zip(tparams, args, strict=False))
+        if origin is Loader:
+            return (
+                (args[0], args[1]) if len(args) == 2 else (args[:-1], args[-1])
             )
-        print(table)
+    return VOID, VOID
 
-        _panel("IntListLoader bases, after substitution")
-        _full(extract_type_args(IntListLoader()))
 
-        _panel("OpenLoader, X stays open")
-        _full(extract_type_args(OpenLoader()))
+def _extract_func_pair(func: Any) -> tuple[Any, Any]:
+    if func is None:
+        return VOID, VOID
+    try:
+        sig = signature(func)
+    except TypeError, ValueError:
+        return VOID, VOID
+    params = tuple(
+        Any if p.annotation is Parameter.empty else p.annotation
+        for p in sig.parameters.values()
+    )
+    ret = (
+        VOID
+        if sig.return_annotation is Signature.empty
+        else sig.return_annotation
+    )
+    return params, ret
 
-    main()
+
+def _is_concrete(tp: Any) -> bool:
+    return (
+        tp is not VOID
+        and tp is not Ellipsis
+        and not isinstance(tp, (TypeVar, ParamSpec))
+    )
+
+
+def _fmt(tp: Any, *, is_param: bool = False) -> str:
+    if tp is VOID or tp is Ellipsis:
+        return "(...)" if is_param else "..."
+    if tp is None:
+        return "None"
+    if isinstance(tp, (tuple, list)):
+        return "(" + ", ".join(_fmt(x) for x in tp) + ")"
+    if isinstance(tp, type):
+        return tp.__qualname__
+    return getattr(tp, "__name__", str(tp)).removeprefix("typing.")
