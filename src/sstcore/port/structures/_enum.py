@@ -24,6 +24,7 @@ __all__: list[str] = [
 from enum import Enum, EnumDict, EnumMeta
 from typing import Any, NamedTuple, Self
 
+from .._error import SstError
 from ._enumfield import EnumFieldMap
 
 type EnumId[EnumT: Enum] = EnumT | str | int
@@ -76,8 +77,7 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
 
-        # AI: here is one of the important applications
-        new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)
+        new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)  # TEST:
 
         return new_enum_cls
 
@@ -150,6 +150,52 @@ def from_zero(name, start, count, last_values):
     """Start from Index Zero"""
     _, _, _ = name, start, last_values
     return count
+
+
+class EnumError(SstError, TypeError):
+    """Temporary Resolve the SstEnumMeta blinding"""
+
+    # AI_QUESTION: How to apply typing to a MetaCls?
+    # - so far I used this Error in 1 layer higher, for sure I just could derive a separate cls from the meta here
+    # - still I want to keep the inheritance line as compact as possible, at least for this Error
+    # - Any ideas how to resulte the features below with the SstEnumMeta?
+
+    # AI: info from port.solid:
+    # class BaseEnum(EnumView, metaclass=SstEnumMeta):
+    #     """Provide Base with Simple View and Modified Access"""
+
+    # def __init__(
+    #     self, member_or_cls: Enum | type[Enum], /, reason="", *args, **kwargs
+    # ) -> None:
+    #     """Forward Args to Exception"""
+    #     reason: str = reason or "Failed"
+    #     match BaseEnum.membership(member_or_cls):
+    #         case ():
+    #             who = f"Unknown: {member_or_cls=}"
+    #         case (enum_cls,):
+    #             self.enum: type[BaseEnum] = enum_cls
+    #             who = f"BaseEnum: {enum_cls}"
+    #         case (enum_cls, member):
+    #             self.enum: type[BaseEnum] = enum_cls
+    #             self.member: BaseEnum = member
+    #             who = f"BaseEnum: {enum_cls=}, {member=}"
+    #     super().__init__(f"{who} | {reason=}", *args, **kwargs)
+
+    # AI: infor from port._error:
+    # class SstError(Exception):
+    #     """The Root of all sst Exceptions"""
+    #
+    #     def __init__(self, text: str = "", /, *args, **kwargs) -> None:
+    #         """Handle the final Message and capture all Arg/Kwargs"""
+    #         if text:
+    #             self.params: Params = Params.absorb(text, *args, **kwargs)
+    #             super().__init__(text)
+    #         else:
+    #             self.params: Params = Params.absorb(*args, **kwargs)
+    #             if self.params:
+    #                 super().__init__(self.params)
+    #             else:
+    #                 super().__init__()
 
 
 #  LINE: -- views -- -- - -- -- - -- -- - -- -- - -- -- - -- --

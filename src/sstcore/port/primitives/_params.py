@@ -24,6 +24,7 @@ from itertools import combinations
 from typing import Any, NamedTuple, Self
 
 from ._field import TupleField
+from ._hashed import HashedTuple
 
 
 class TupleBase:
@@ -92,6 +93,10 @@ class Var[T: Any = Any](NamedTuple):
 
     def keys(self) -> KeysView[str]:
         return KeysView({self.name: None})
+
+    def hashed(self, strict=True) -> HashedTuple:
+        """Recursively Enforce Freeze and Hash (strict=False -> str(obj))"""
+        return HashedTuple(*self, strict=strict)
 
     @classmethod
     def gettr(cls, target: Any, name: str, /) -> Self:
@@ -165,9 +170,10 @@ class Kwargs(NamedTuple):
 
     kwargs: Mapping[str, Any] = {}  # LATER: frozen or not?
 
-    # sep = TupleField[str](", ")
+    sep = TupleField[str](", ")
 
     def __iter__(self) -> Iterator[Var]:  # ty:ignore
+        # IDEA: lock this down? avoid accidental usage as Args
         for name, value in self.kwargs.items():
             yield Var(name, value)
 

@@ -299,13 +299,13 @@ class ModulePath(_ModulePathBase):
             if DotPath.accepts(normalized):
                 yield normalized
 
-    def lazy_loader[R](
+    def lazy_loader(
         self,
         *,
         call_if_callable: bool = True,
         ensure_exists: bool = False,
         package: str | None = None,
-    ) -> Callable[[], R]:
+    ) -> Callable[[], Any]:
         """Bind Zero-Arg Closure that importes resolved Target"""
 
         if ensure_exists and not self.importable(package=package):
@@ -315,7 +315,7 @@ class ModulePath(_ModulePathBase):
         def _call_it(target, /) -> bool:
             return call_if_callable and callable(target)
 
-        def loader() -> R:
+        def loader() -> Any:
             return (
                 target()
                 if _call_it(target := self.importing(package))

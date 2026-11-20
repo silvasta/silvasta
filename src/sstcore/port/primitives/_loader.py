@@ -5,10 +5,12 @@ Loader
 """
 
 __all__: list[str] = [
-    "Loader",
+    "LoaderClsInput",
     "LoaderInput",
-    "Loading",
     "Prefer",
+    "LoadFunc",
+    "Loading",
+    "Loader",
 ]
 
 
@@ -16,42 +18,89 @@ import typing as _t
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from inspect import Signature, signature
-from typing import Any, Literal, Self
+from typing import Any, Literal, Self, TypedDict
 
 from ..empty import VOID, MayBe, MayNot
 from . import _typearg
 from ._typearg import extract_type_args, format_type_arg
 
 
-class Loading[**P, Target](_t.Protocol):
+class LoadFunc[**P, Target](_t.Protocol):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Target:
-        """Define the Requirements for Loading the Loader Value"""
+        """Define the Typed and Parametrized Call of the Loader"""
 
 
-class LoaderInput[T](_t.TypedDict, total=False):
-    default: MayBe[T]
-    prefer: Prefer
-
+type Loading[**P, T] = Loader[P, T] | LoadFunc[P, T]
 
 type Prefer = Literal["func", "default"]
 
 
+class LoaderInput[T](_t.TypedDict, total=False):
+    """Define the Base for the Typed Kwargs"""
+
+    default: MayBe[T]
+    prefer: Prefer
+
+
+class _LoaderClsInput[P, T](_t.TypedDict, total=False):
+    loader: Loader[[P], T] | Loading[[P], T] | None
+
+
+class LoaderClsInput(_LoaderClsInput, LoaderInput, TypedDict):
+    """Extend the Base with the Loader Cls itself"""
+
+
 class Loader[**P, T]:
-    """Stateful lazy callable + static default resolver with selectable order."""  # NEXT:
+    """Govern the tools and state for predefined Loading"""
+
+    @property
+    def value(self) -> T:
+        """Provide the loaded Value or Raise"""
+        if self._value is not VOID:
+            return self._value
+        raise LookupError(f"{self!r} has neither a callable nor a default")
+
+    @property
+    def is_ready(self) -> bool:
+        return self._value is not VOID
 
     def __init__(
         self,
-        func: MayNot[Loading[P, T]] = None,
+        func: MayNot[LoadFunc[P, T]] = None,
         /,
         **tkw: _t.Unpack[LoaderInput[T]],
     ):
-        self._func: MayNot[Loading[P, T]] = func
+        """So far no check if Loader can complete, use Loader.__bool__"""
+        self._func: MayNot[LoadFunc[P, T]] = func
         self._default: MayBe[T] = tkw.get("default", VOID)
         self._prefer: Prefer = tkw.get("prefer", "func")
 
         self._counter: int = 0
         self._total_counter: int = 0
         self._value: MayBe[T] = VOID
+
+    def bind(self, fn: Callable[P, T]) -> Callable[P, T]:
+        """Attach or replace the loader callable and reset execution state"""
+        self._func: LoadFunc[P, T] = fn
+        self.reset()
+        return fn
+
+    def clone(self) -> Self:
+        """Copy same Configuration but with fresh State and Value"""
+        return type(self)(
+            self._func, default=self._default, prefer=self._prefer
+        )
+
+    @classmethod
+    def loading(
+        cls, loading: MayNot[Loading[P, T]], /, **tkw: _t.Unpack[LoaderInput[T]]
+    ) -> Self:
+        """Create from existing loader, function or just from kwargs"""
+        return (
+            loading.clone().updated(**tkw)  # ty:ignore
+            if isinstance(loading, Loader)
+            else cls(loading, **tkw)
+        )
 
     def updated(self, **tkw: _t.Unpack[LoaderInput[T]]) -> Self:
         if (default := tkw.get("default", VOID)) is not VOID:
@@ -60,39 +109,11 @@ class Loader[**P, T]:
             self._prefer: Prefer = prefer
         return self
 
-    def __str__(self) -> str:
-        _maybe_value = f"{self.value}::" if self._value is not VOID else ""
-        _type_args = self.type_args.render()
-        return f"{type(self).__name__}[{_maybe_value}{_type_args}]"
-
-    def __repr__(self) -> str:
-        func: str = getattr(self._func, "__name__", repr(self._func))
-        default: str = repr(self._default)
-        prefer: str = self._prefer
-        counter = f"{self._counter}/{self._total_counter}"
-        types: str = self.type_args.summary()
-        return f"{self}({func=}, {default=}, {prefer=}, {counter=}, {types=})"
-
-    def __bool__(self) -> bool:
-        """True if either a callable or a static default is configured."""
-        return self._func is not None or self._default is not VOID
-
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
-        """Extract or Install Value by configured order or Raise if Empty"""
-        self.install(*args, **kwargs)
-        return self.value
-
-    @property
-    def value(self) -> T:
-        """Provide Extracted Value or Raise"""
-        if self._value is not VOID:
-            return self._value
-        raise LookupError(f"{self!r} has neither a callable nor a default")
-
-    @property
-    def is_ready(self) -> bool:
-        """Everything Loaded?"""
-        return self._value is not VOID
+    def reset(self) -> int:
+        """Delete the fetched Value and reset and provide the current Counter"""
+        _counted, self._counter = self._counter, 0
+        self._value: VOID = VOID
+        return _counted
 
     def install(self, *args: P.args, **kwargs: P.kwargs) -> MayBe[T]:
         """Fetch Value or Assign from launched Loaders in Prefered Order"""
@@ -107,7 +128,7 @@ class Loader[**P, T]:
     def _order(self) -> Iterator:
         """Provide Locations in Prefered Order to Install new Value"""
         # NOTE: latest when 3 dispatches occur... it will be difficult
-        loaders: list[Loading] = [
+        loaders: list[LoadFunc] = [
             lambda *a, **k: self._counted_call(*a, **k),
             lambda *_, **__: self._default,
         ]
@@ -129,23 +150,27 @@ class Loader[**P, T]:
             return VOID
         return self._func(*args, **kwargs)
 
-    def bind(self, fn: Callable[P, T]) -> Callable[P, T]:
-        """Attach or replace the loader callable and reset execution state"""
-        self._func: Loading[P, T] = fn
-        self.reset()
-        return fn
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        """Extract or Install Value by configured order or Raise if Empty"""
+        self.install(*args, **kwargs)
+        return self.value
 
-    def clone(self) -> Self:
-        """Establish Copy with same configuration but without State and Value"""
-        return type(self)(
-            self._func, default=self._default, prefer=self._prefer
-        )
+    def __bool__(self) -> bool:
+        """True if either a callable or a static default is configured."""
+        return self._func is not None or self._default is not VOID
 
-    def reset(self) -> int:
-        """Delete the fetched Value and reset and provide the current Counter"""
-        _counted, self._counter = self._counter, 0
-        self._value: VOID = VOID
-        return _counted
+    def __str__(self) -> str:
+        _maybe_value = f"{self.value}::" if self._value is not VOID else ""
+        _type_args = self.type_args.render()
+        return f"{type(self).__name__}[{_maybe_value}{_type_args}]"
+
+    def __repr__(self) -> str:
+        func: str = getattr(self._func, "__name__", repr(self._func))
+        default: str = repr(self._default)
+        prefer: str = self._prefer
+        counter = f"{self._counter}/{self._total_counter}"
+        types: str = self.type_args.summary()
+        return f"{self}({func=}, {default=}, {prefer=}, {counter=}, {types=})"
 
     #  LINE: -- Experimental -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
