@@ -22,6 +22,7 @@ __all__: list[str] = [
     "RaiserMeta",
 ]
 
+import copyreg
 from collections.abc import Callable, Iterator
 from enum import Enum
 from functools import cache
@@ -29,29 +30,38 @@ from typing import Any, Self
 
 from ._types import Types as _T  # noqa:N814
 from ._types import _LockedClsMeta
-from .empty import MayNotT
-from .primitives import Kwargs, Var
+from .empty import MayNotCls
+from .primitives import Params, Var
 from .solid import BaseEnum
 
 
 class SstError(Exception):
     """The Root of all sst Exceptions"""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Forward Args to Exception and Flatten Kwargs"""
-        super().__init__(*args, *Kwargs(kwargs).args())  # NEXT: Args.by(kwargs)
+    def __init__(self, text: str = "", /, *args, **kwargs) -> None:
+        """Handle final Message and Arg/Kwarg assignment"""
+
+        if text:
+            self.params: Params = Params.absorb(text, *args, **kwargs)
+            super().__init__(text)
+        else:
+            self.params: Params = Params.absorb(*args, **kwargs)
+            if self.params:
+                super().__init__(self.params)
+            else:
+                super().__init__()
 
     @property
     def name(self) -> str:
         return type(self).__name__
 
     def __repr__(self) -> str:
-        return f"{self.name}[{Kwargs.vars(self)}]"
+        return f"{self.name}[({self.params!r})]"
 
     @classmethod
     def weave(
         cls,
-        builtin: MayNotT[Exception] = None,  # CHECK: MayNotType better?
+        builtin: MayNotCls[Exception] = None,  # CHECK: MayNotClsype better?
         *,
         prefix: str = "",
         module: str = "",
@@ -62,38 +72,57 @@ class SstError(Exception):
             return cls
 
         return mix_error(
-            name=_error_name(cls, builtin, prefix),
-            bases=(cls, builtin) if builtin else (cls,),
-            module=module or cls.__module__,
-        )  # ty:ignore (parametrize mix_error too complicated..)
+            _error_name(cls, builtin, prefix),
+            (cls, builtin) if builtin else (cls,),
+            module or cls.__module__,
+        )  # ty:ignore
 
 
-class SstPortError(SstError):
-    """Match and Catch all Errors in the lowest Port Layers"""
+class _WovenErrorMeta(type):
+    """Give dynamically woven classes a tiny metaclass to register a reducer"""
+
+    _weave_spec: tuple[str, _T.Errors, str]
+
+
+def _reduce_woven_cls(cls: _WovenErrorMeta) -> tuple[Any, ...]:
+    return (mix_error, cls._weave_spec)
+
+
+copyreg.pickle(_WovenErrorMeta, _reduce_woven_cls)
 
 
 @cache
-def mix_error(name: str, bases: _T.Errors, module: str = "") -> type[SstError]:
+def mix_error(
+    name: str, bases: _T.Errors, module: str = "", /
+) -> type[SstError]:
     """Dynamically create and cache a picklable Exception Class"""
 
     def _reduce(self: Exception) -> tuple[Any, ...]:
-        return (rebuild, (name, bases, module, self.args))
+        state: dict[str, Any] | None = self.__dict__ or None
+        return (rebuild, (name, bases, module, self.args), state)
 
     namespace: dict[str, Any] = {
         "__module__": module or __name__,
         "__qualname__": name,
         "__reduce__": _reduce,
+        "_weave_spec": (name, bases, module),
     }
-    return type(name, bases, namespace)
+    return _WovenErrorMeta(name, bases, namespace)  # ty:ignore
 
 
 def rebuild(name: str, bases: _T.Errors, module: str, args: tuple) -> SstError:
     """Top-level pickle hook to rebuild a dynamically mixed exception"""
-    return mix_error(name, bases, module)(*args)
+    cls: type[SstError] = mix_error(name, bases, module)
+    error: SstError = cls.__new__(cls)
+    error.args = args
+    return error
 
 
 def _error_name(
-    custom: type[SstError], root: MayNotT[Exception] = None, /, prefix: str = ""
+    custom: type[SstError],
+    root: MayNotCls[Exception] = None,
+    /,
+    prefix: str = "",
 ) -> str:
     """Create target Error Name out of 2 Exception Names"""
     return (
@@ -114,6 +143,10 @@ def _raiser_prefix(raiser: type, /) -> str:  # CHECK: deterministic enough?
 
 
 #  LINE: -- Implementations -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class SstPortError(SstError):
+    """Match and Catch all Errors in the lowest Port Layers"""
 
 
 class FailedDispatchError(SstError, NotImplementedError):
@@ -213,7 +246,7 @@ class RaiserField[**P]:
 
         return self.error_type(message.strip())
 
-    def __get__(self, _unit: Any, _host: MayNotT) -> Callable[P, SstError]:
+    def __get__(self, _unit: Any, _host: MayNotCls) -> Callable[P, SstError]:
         return self._build
 
 

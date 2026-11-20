@@ -82,7 +82,7 @@ def _load_printer() -> PortPrinter:
             try:
                 self.console.print(*args, **kwargs)
             except NotRenderableError as error:
-                param = Params(args, kwargs)
+                param: Params = Params.absorb(*args, **kwargs)
                 self.panel(f"{param}", title=f"{error}", color="red")
 
         def line(self, *target, color: str = "yellow"):

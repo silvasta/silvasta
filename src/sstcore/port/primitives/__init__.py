@@ -14,7 +14,7 @@ __all__: list[str] = [
     "Var",
     "Args",
     "Kwargs",
-    "BaseControl",
+    "TupleBase",
     # cls namespaces
     "LockedClsMeta",
     # CHECK: PresetMeta?
@@ -23,5 +23,5 @@ __all__: list[str] = [
 from .._types import _LockedClsMeta as LockedClsMeta
 from ._frozen import frozendict
 from ._hashed import HashedTuple
-from ._params import Args, BaseControl, Kwargs, Params, Var
+from ._params import Args, Kwargs, Params, TupleBase, Var
 from ._set import DunderSet, FieldSet, NormSet

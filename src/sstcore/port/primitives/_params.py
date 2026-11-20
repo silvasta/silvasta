@@ -9,7 +9,7 @@ __all__: list[str] = [
     "Args",
     "Kwargs",
     "Params",
-    "BaseControl",
+    "TupleBase",
 ]
 
 from collections.abc import (
@@ -26,7 +26,7 @@ from typing import Any, NamedTuple, Self
 from ._field import TupleField
 
 
-class BaseControl:  # RENAME:
+class TupleBase:
     __iter__: Any
 
     sep = TupleField[str](", ")
@@ -40,8 +40,10 @@ class BaseControl:  # RENAME:
         return self.sep.join(f"{x}" for x in self)
 
     @classmethod
-    def mix[T](cls: type[Self], target: type[T]) -> type[T & Self]:  # ty:ignore
-        # IMPORTANT: pickling!
+    def mix[T](cls, target: type[T], /) -> type[T]:
+        # NOTE: intersection partially works, but probably too many side effects
+        # def mix[T](cls, target: type[T], /) -> type[T & Self]:
+        """Inject Behaviour into Named Tuples"""
         namespace: dict[str, Any] = {
             "__qualname__": target.__qualname__,
             "__module__": target.__module__,
@@ -49,8 +51,15 @@ class BaseControl:  # RENAME:
         }
         return type(target.__name__, (target, cls), namespace)  # ty:ignore
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Provide anchor for Pickling"""
+        raw_fields: tuple[Any, ...] = tuple(tuple.__iter__(self))  # ty:ignore
+        if state := getattr(self, "__dict__", None):
+            return type(self), raw_fields, state
+        return type(self), raw_fields
 
-@BaseControl.mix
+
+@TupleBase.mix
 class Var[T: Any = Any](NamedTuple):
     name: str
     value: T
@@ -90,7 +99,7 @@ class Var[T: Any = Any](NamedTuple):
         return cls(name, value=getattr(target, name))
 
 
-@BaseControl.mix
+@TupleBase.mix
 class Args(NamedTuple):
     """Capture and Visualize Positional Parameter"""
 
@@ -150,7 +159,7 @@ def _get_slot(cls: type) -> Iterable[str]:
     return _slots if not isinstance(_slots, str) else (_slots,)
 
 
-@BaseControl.mix
+@TupleBase.mix
 class Kwargs(NamedTuple):
     """Capture and Visualize Keyword Parameter"""
 
@@ -158,7 +167,7 @@ class Kwargs(NamedTuple):
 
     # sep = TupleField[str](", ")
 
-    def __iter__(self) -> Iterator[Var]:
+    def __iter__(self) -> Iterator[Var]:  # ty:ignore
         for name, value in self.kwargs.items():
             yield Var(name, value)
 
@@ -190,7 +199,7 @@ class Kwargs(NamedTuple):
         return cls(kwargs=vars(target) if live_view else dict(vars(target)))
 
 
-@BaseControl.mix
+@TupleBase.mix
 class Params(NamedTuple):
     """Capture and Visualize 1 Signature"""
 
@@ -201,6 +210,9 @@ class Params(NamedTuple):
 
     def __str__(self):
         return f"{type(self).__name__}[{self.args}{self.sep}{self.kwargs}]"
+
+    def __bool__(self) -> bool:
+        return bool(self.args) or bool(self.kwargs)
 
     def __iter__(self) -> Iterator[Any]:
         yield from self.args
@@ -291,7 +303,7 @@ if __name__ == "__main__":
     def _param():
         _panel("combinations", "gold3")
         for a, k in combinations((arg1, arg2, kwarg1, kwarg2), 2):
-            _panel(p := Params(a, k))
+            _panel(p := Params(a, k))  # ty:ignore
             _full(p)
             _deref(p)
 

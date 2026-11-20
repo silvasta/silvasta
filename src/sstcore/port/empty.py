@@ -26,13 +26,13 @@ Use the VOID Sentinel as Value and as Type!
 
 __all__: list[str] = [
     "VOID",
-    "sentinel",
-    #
+    "May",
     "MayBe",
     "MayNot",
-    "May",
-    #
-    # TODO: MayT types??
+    "MayCls",
+    "MayBeCls",
+    "MayNotCls",
+    "sentinel",
     #
     "ViewSentinel",
     "Ghost",
@@ -56,12 +56,9 @@ type MayBe[Some] = Some | VOID
 type MayNot[Some] = Some | None
 type May[Some] = Some | VOID | None
 
-# type MayBeType[Some] = type[Some] | VOID  # CHECK: is this proper?
-# type MayNotType[Some] = type[Some] | None  # CHECK: is this proper?
-# type MayType[Some] = type[Some] | VOID | None  # CHECK: is this proper?
-type MayBeT[Some] = type[Some] | VOID  # CHECK: is this proper?
-type MayNotT[Some] = type[Some] | None  # CHECK: is this proper?
-type MayT[Some] = type[Some] | VOID | None  # CHECK: is this proper?
+type MayBeCls[Some] = type[Some] | VOID
+type MayNotCls[Some] = type[Some] | None
+type MayCls[Some] = type[Some] | VOID | None
 
 
 class _GhostBaseEradicator:

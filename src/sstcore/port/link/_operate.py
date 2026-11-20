@@ -65,7 +65,7 @@ class EasyCatch(EasyCore):
     _last_call: MayBe[Params] = VOID
 
     def __call__(self, *args, **kwargs):
-        self._last_call = Params(args, kwargs)
+        self._last_call: Params = Params.absorb(*args, **kwargs)
         with self:
             return super().__call__(*args, **kwargs)
 
