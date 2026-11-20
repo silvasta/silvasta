@@ -26,11 +26,11 @@ from typing import Any, NamedTuple, Self
 from ._field import TupleField
 
 
-class BaseControl:
+class BaseControl:  # RENAME:
     __iter__: Any
-    # sep: str
 
     sep = TupleField[str](", ")
+    # sep: str
 
     def __str__(self):  # LATER: this as __repr__ and joined as __str__?
         return f"{type(self).__name__}[{self.joined}]"
@@ -42,7 +42,7 @@ class BaseControl:
     @classmethod
     def mix[T](cls: type[Self], target: type[T]) -> type[T & Self]:  # ty:ignore
         # IMPORTANT: pickling!
-        namespace: dict[str, Any] = {  # IDEA: preset?
+        namespace: dict[str, Any] = {
             "__qualname__": target.__qualname__,
             "__module__": target.__module__,
             "__doc__": target.__doc__,
@@ -197,7 +197,7 @@ class Params(NamedTuple):
     args: Args = Args()
     kwargs: Kwargs = Kwargs()
 
-    # sep = TupleField[str](", ")
+    sep = TupleField[str](", ")
 
     def __str__(self):
         return f"{type(self).__name__}[{self.args}{self.sep}{self.kwargs}]"
@@ -242,12 +242,6 @@ if __name__ == "__main__":
     def _panel(text, style="cyan", /):
         print(Panel(Text(f"{text}"), style=style))
 
-    def _deref(param):
-        _panel(f"Start of deref for {param}")
-        print(*param)
-        print({**param})
-        print(*param, {**param})
-
     def _full(x):
         _panel(repr(x), "green")
         print(f"{len(x)=}")
@@ -256,6 +250,12 @@ if __name__ == "__main__":
         print("repr", repr(x))
         for i, y in enumerate(x):
             print(f"item[{i}]", y)
+
+    def _deref(param):
+        _panel(f"Start of deref for {param}")
+        print(*param)
+        print({**param})
+        print(*param, {**param})
 
     def _args():
         args = Args.absorb("ss", 5, {"hello", "set"})

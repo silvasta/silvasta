@@ -23,5 +23,5 @@ __all__: list[str] = [
 from .._types import _LockedClsMeta as LockedClsMeta
 from ._frozen import frozendict
 from ._hashed import HashedTuple
-from ._primitives import Args, BaseControl, Kwargs, Params, Var
+from ._params import Args, BaseControl, Kwargs, Params, Var
 from ._set import DunderSet, FieldSet, NormSet
