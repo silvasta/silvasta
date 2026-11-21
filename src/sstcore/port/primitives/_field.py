@@ -17,7 +17,7 @@ from typing import Any, Self, overload
 from ..empty import VOID, MayBe, MayNot
 
 
-class TupleField[Value]:
+class TupleField[Value]:  # CHECK: Tuple?
     """
     Generate Non-Member Field for (Named)Tuple with mutable values
 

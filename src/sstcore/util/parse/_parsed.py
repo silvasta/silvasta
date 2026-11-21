@@ -57,7 +57,7 @@ class ParsedName[DTO](NameParser):
     @overload
     def __call__(self, target: dict | list | tuple) -> str: ...
 
-    def __call__(self, target: Any) -> Any:  # ty:ignore
+    def __call__(self, target: Any) -> Any:
         """Route Target to Extract (String -> DTO) or Format (DTO -> String)"""
 
         # TASK: figure out how to exploit this as base

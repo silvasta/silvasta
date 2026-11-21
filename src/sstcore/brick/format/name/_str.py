@@ -8,13 +8,16 @@ Transform to str, be the pattern and parse the pattern
 from pathlib import Path
 from typing import Any, Self
 
-from ._parse import NameParser
+from ....port.link import portlink
+from ....port.normalize import NameParsing
+from ....port.primitives import NameParser
 
 __all__: list[str] = [
     "Name",
 ]
 
 
+@portlink(NameParsing)
 class Name(NameParser, str):
     """
     EXPERIMENTAL!
@@ -32,8 +35,6 @@ class Name(NameParser, str):
         data = ev.parse()          # → dict
     """
 
-    # IDEA: slots?
-
     def __new__(cls, value: str | Path, **kwargs: Any) -> Self:
         if isinstance(value, Path):
             value = value.name
@@ -45,13 +46,58 @@ class Name(NameParser, str):
         new_name._parser = parser  # ty:ignore
         return new_name
 
-    def parse(self) -> dict[str, Any]:
-        return self.extract(str(self))
-
-    def format(self, keys: dict | list | tuple) -> Name:  # ty:ignore
-        """Override str.format with NameParser.format"""  # CHECK:
-        new_value: str = self.format(keys)
+    def render(self, keys: dict | list | tuple) -> Name:
+        new_value: str = super().render(keys)
         return type(self)(new_value)
 
-    def __rich__(self) -> str:
-        return f"[bold {self._color}]{self}[/]"
+
+if __name__ == "__main__":
+    from rich.console import Console
+
+    print = Console().print
+
+    def rawreprstr(x):
+        print("RAW_", end=" ")
+        print(x)
+        print("REPR", end=" ")
+        print(repr(x))
+        print("STR_", end=" ")
+        print(str(x))
+
+    names = [
+        Name("Hello {user}, select {task} to {do}"),
+        Name("New {input} for {Raiser}?"),
+    ]
+    for name in names:
+        rawreprstr(name)
+        print(name.keys)
+        print(name.__rich__())
+
+    render = [
+        [
+            ("silvan", "refactor", "delay"),
+            ("silvan", "refactor", "complete"),
+        ],
+        [
+            ("Parser", "RAISER"),
+            ("Input", "Error"),
+        ],
+    ]
+
+    for name, _input in zip(names, render, strict=True):
+        for i in _input:
+            print(name(i))
+
+    extract = [
+        [
+            "Hello Raiser, select failure to raise",
+            "Hello Silvan, select beer to drink",
+        ],
+        [
+            "New color for paint?",
+            "New target for RAISE?",
+        ],
+    ]
+    for name, _input in zip(names, extract, strict=True):
+        for i in _input:
+            print(name(i))

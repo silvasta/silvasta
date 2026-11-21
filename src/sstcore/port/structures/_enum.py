@@ -77,7 +77,7 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
 
-        new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)  # TEST:
+        # new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)  # TEST:
 
         return new_enum_cls
 

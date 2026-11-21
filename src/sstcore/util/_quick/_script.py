@@ -94,6 +94,15 @@ def double_print(_target, *args, **kwargs):
     print(_target, *args, **kwargs)
 
 
+def rawreprstr(x):
+    print("raw", end=" ")
+    print(x)
+    print("repr", end=" ")
+    print(repr(x))
+    print("str", end=" ")
+    print(str(x))
+
+
 if __name__ == "__main__":
 
     def main():

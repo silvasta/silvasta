@@ -15,7 +15,6 @@ __all__: list[str] = [
     "RaiserField",
     "SstPortError",
     #
-    "FailedDispatchError",
     "FailedHackError",
     "RaiserField",
     "RaiserMeta",
@@ -148,16 +147,6 @@ def _raiser_prefix(raiser: type, /) -> str:
 
 class SstPortError(SstError):
     """Match and Catch all Errors in the lowest Port Layers"""
-
-
-class FailedDispatchError(SstError, NotImplementedError):
-    # LATER: sync with NotImplementedDispatchError(sstcore.error.SstCoreError)
-    """Raise on missing TargetType for singledispatch(method)"""
-
-    def __init__(self, first: Any, *args: Any, **kwargs):
-        self.first = first
-        msg = f"Missing dispatch target for {type(first).__name__}"
-        super().__init__(msg, *(first, *args), **kwargs)
 
 
 class FailedHackError(SstError):

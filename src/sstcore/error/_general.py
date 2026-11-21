@@ -52,6 +52,7 @@ class PropertyNotInitializedError(SstCoreError):
 
 
 class NotImplementedDispatchError(SstCoreError, NotImplementedError):
+    # CHECK: DispatchError(NotSstError)
     """Raise on missing TargetType for singledispatch(method)"""
 
     def __init__(self, first: Any, *args: Any, **kwargs):

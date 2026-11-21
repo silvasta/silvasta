@@ -6,12 +6,7 @@ Define the Shape of the Processing Pipelines
 - labor: input and mission -> result
 
                                     DependencyLevel.sstcore.port[0]
-"""
-
-# TASK: Parametrize!!
-# - keep it general here, no early data_type selection
-# - find the minimal required shape
-# - use type Xxx[T1,...]=... to connect pipeline steps
+"""  # TODO: out-outdated...
 
 __all__: list[str] = [
     "NamingPattern",
@@ -53,32 +48,36 @@ class NormalizingMaybe[ExpectedT: _Stringable](
 #  LINE: -- ParsedName Normalizing Pipeline -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+# TASK: Parametrization
+
+
 class NamingPattern(Protocol):
-    # TODO: think about parametrization
     """Compile the Pattern, format and parse Keys and Names"""
 
-    def format(self, keys: dict[str, str]) -> str:
+    def render(self, keys: dict[str, str]) -> str:
         """Format string with keywords and pattern"""
 
     def extract(self, name: str) -> dict[str, str]:
-        """Extract keywords from string or Raise"""  # LATER: safe mode with -> None ?
+        # LATER: safe mode with -> None ?
+        # (current safe mode is with (avoidable) catch)
+        """Extract keywords from string or Raise"""
 
-    def update_pattern(self, pattern: str) -> None:
+    def update(self, pattern: str) -> None:
         """Recompile internal pattern and keywords"""
 
 
 class FormatNormalize(Protocol):
-    def normalize_keys(  # LATER: think about name and parametrization
+    def normalize_keys(  # LATER: remove? implementation detail
         self, target: dict[str, str | datetime] | list[Any] | tuple[Any, ...]
     ) -> dict[str, str]:
         """Ensure all keys are present and stringable"""
 
-    def format(self, keys: dict | list | tuple) -> str:
+    def render(self, keys: dict | list | tuple) -> str:
         """Render normalized keywords"""
 
 
 class ExtractNormalize(Protocol):
-    def normalize_name(self, target: Path | str) -> str:  # LATER: sync naming
+    def normalize_name(self, target: Path | str) -> str:  # LATER: remove?
         """Ensure stringable name and sanitizing"""
 
     def extract(self, name: Path | str) -> dict[str, str]:
@@ -86,7 +85,6 @@ class ExtractNormalize(Protocol):
 
 
 class BidirectNaming(Protocol):
-    # TODO: think about parametrization
     """Route the Calls trough the right channel"""
 
     @overload

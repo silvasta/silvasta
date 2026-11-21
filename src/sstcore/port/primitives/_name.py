@@ -10,8 +10,10 @@ Format and Parse Names in both directions
 
 - NameParser: Facade and Final Assembly 󰣏
 
-                                                       DependencyLevel[1]
+                                  DependencyLevel.sstcore.port[0:3]
 """
+
+# TASK: Parametrization
 
 __all__: list[str] = [
     "NamePattern",
@@ -21,24 +23,22 @@ __all__: list[str] = [
     "NameParser",
 ]
 
+
 import re
 import string
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, overload
+from typing import Any, overload
 
-from ....port import normalize
-from ....port._error import FailedDispatchError
-from ....port.empty import Ghost
-from ....port.link import portlink
-from ._zero import NameView
+from .. import normalize
+from ._zero import NameView, _portlink1
 
 
-@portlink(normalize.NamingPattern)
+@_portlink1(normalize.NamingPattern)
 class NamePattern(NameView):
     def __init__(self, pattern: str, **_kwargs: Any) -> None:
-        self.update_pattern(pattern)
+        self.update(pattern)
 
     def _compile_pattern(
         self, format_string: str, /
@@ -58,11 +58,11 @@ class NamePattern(NameView):
 
         return re.compile("".join(regex_parts)), tuple(keys)
 
-    def update_pattern(self, pattern: str) -> None:
+    def update(self, pattern: str) -> None:
         self._regex, self.keys = self._compile_pattern(pattern)
         self.pattern = pattern
 
-    def format(self, keys: dict[str, str]) -> str:
+    def render(self, keys: dict[str, str]) -> str:
         if missing := set(self.keys) - set(keys.keys()):
             raise ValueError(f"{self} Missing keys: {missing}")
         return self.pattern.format(**keys)
@@ -73,7 +73,7 @@ class NamePattern(NameView):
         raise ValueError(f"No match for {self}: {name}")
 
 
-@portlink(normalize.FormatNormalize)
+@_portlink1(normalize.FormatNormalize)
 class FormatNormalizer(NamePattern):
     def __init__(
         self,
@@ -103,12 +103,12 @@ class FormatNormalizer(NamePattern):
             for key, val in keys.items()
         }
 
-    def format(self, keys: dict | list | tuple) -> str:
+    def render(self, keys: dict | list | tuple) -> str:
         keys: dict[str, str] = self.normalize_keys(keys)
-        return super().format(keys)
+        return super().render(keys)
 
 
-@portlink(normalize.ExtractNormalize)
+@_portlink1(normalize.ExtractNormalize)
 class ExtractNormalizer(NamePattern):
     def __init__(
         self,
@@ -139,14 +139,8 @@ class ExtractNormalizer(NamePattern):
         return super().extract(clean_string)
 
 
-if TYPE_CHECKING:
-    _Normalized = type("Normalized", (ExtractNormalizer, FormatNormalizer), {})
-else:
-    _Normalized = Ghost
-
-
-@portlink(normalize.BidirectNaming)
-class BidirectionalName(_Normalized):
+@_portlink1(normalize.BidirectNaming)
+class BidirectionalName(NamePattern):
     """Route the Calls trough the right channel"""
 
     @overload
@@ -156,7 +150,7 @@ class BidirectionalName(_Normalized):
     def safe(self, target: Any, /) -> dict[str, str] | str | None:
         try:
             return self(target)
-        except ValueError, FailedDispatchError:
+        except ValueError, _DispatchTypeError:
             return None
 
     @overload
@@ -168,43 +162,23 @@ class BidirectionalName(_Normalized):
             case Path() | str():
                 return self.extract(target)
             case dict() | list() | tuple():
-                return self.format(target)
-        raise FailedDispatchError(target)
+                return self.render(target)
+        raise _DispatchTypeError(target)
 
 
-if TYPE_CHECKING:
-    _BidirectParser = BidirectionalName
-else:
-    _types = (BidirectionalName, ExtractNormalizer, FormatNormalizer)
-    _BidirectParser = type("BidirectParser", _types, {})
+class _DispatchTypeError(TypeError):
+    def __init__(self, target: Any, *args: Any, types: tuple[type, ...] = ()):
+        self.target = target
+        self.available_types: tuple[type, ...] = types
+        msg = f"No Dispatch available for {target}[{type(target).__name__}]"
+        super().__init__(msg, *(target, *args))
 
 
-@portlink(normalize.NameParsing)
-class NameParser(_BidirectParser):
+@_portlink1(normalize.NameParsing)
+class NameParser(BidirectionalName, FormatNormalizer, ExtractNormalizer):
     """
     󰣏 Toggle Keyword and String Representation 󰣏
 
     - Unite the Format and Extract Pipeline
     - Start as new Root for many Parsed Names
     """
-
-
-if TYPE_CHECKING:  # REMOVE: when portlink confirmed superior
-    _pattern: normalize.NamingPattern = NamePattern("hello {name}")
-    _format: normalize.FormatNormalize = FormatNormalizer(pattern="hi {name}")
-    _extraat: normalize.ExtractNormalize = ExtractNormalizer(pattern="h{name}")
-    _call: normalize.BidirectNaming = BidirectionalName(pattern="hello {name}")
-    _parser: normalize.NameParsing = NameParser(pattern="hello {name}")
-
-if __name__ == "__main__":
-    """Activate this for test:
-
-    HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
-        "report",
-        # "init",
-        "name",
-    )
-    """
-    portlink.show()
-    portlink.tap.printer(NameParser.__doc__)
-    portlink.tap.printer(portlink.registry[BidirectionalName])

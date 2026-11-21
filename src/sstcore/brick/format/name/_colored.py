@@ -10,7 +10,7 @@ from typing import Any
 
 from rich.text import Text
 
-from ._parse import NameParser
+from ....port.primitives import NameParser
 
 __all__: list[str] = [
     "ColoredName",
