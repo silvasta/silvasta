@@ -73,7 +73,7 @@ class NameView:
 
     @property
     def _short(self) -> str:
-        return f"{len(self.keys)}::"
+        return f"{len(self.keys)}:"
 
     def __str__(self):
         return f"{type(self).__name__}[{self._short}]"

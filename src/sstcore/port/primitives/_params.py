@@ -19,21 +19,10 @@ import typing as _typing
 from collections.abc import Callable
 from typing import Any, Self
 
+from ..empty import MayNot
 from ._field import TupleField
 from ._frozen import frozendict
 from ._hashed import HashedTuple
-
-
-class KeyFormatting(_typing.Protocol):
-    # IDEA: mode like index,string,custom keyformat
-    # - use for format, maybe for keys/kwargs? but ensure unique!
-    # - maybe on Var? define the rules at the lowest node
-    def __call__(self, target: object, /) -> str:
-        """Render the Value to a valid Key"""
-
-
-# LATER: decide who holds vars/slots or both for all
-type VarsView = _typing.Literal["live", "dict", "frozen"]
 
 
 class TupleBase:
@@ -41,7 +30,7 @@ class TupleBase:
     sep = TupleField[str](", ")
 
     def __str__(self):
-        return f"{type(self).__name__}[{self.joined}]"
+        return f"{type(self).__name__}[-{self.joined}]"
 
     @property
     def joined(self) -> str:
@@ -54,8 +43,6 @@ class TupleBase:
 
     @classmethod
     def mix[T](cls, target: type[T], /) -> type[T]:
-        # NOTE: intersection partially works, but probably too many side effects
-        # def mix[T](cls, target: type[T], /) -> type[T & Self]:
         """Inject Behaviour into Named Tuples"""
         namespace: dict[str, Any] = {
             "__qualname__": target.__qualname__,
@@ -70,6 +57,18 @@ class TupleBase:
         if state := getattr(self, "__dict__", None):
             return type(self), raw_fields, state
         return type(self), raw_fields
+
+
+class KeyFormatting(_typing.Protocol):
+    # IDEA: mode like index,string,custom keyformat
+    # - use for format, maybe for keys/kwargs? but ensure unique!
+    # - maybe on Var? define the rules at the lowest node
+    def __call__(self, target: object, /) -> str:
+        """Render the Value to a valid Key"""
+
+
+# LATER: decide who holds vars/slots or both for all
+type VarsView = _typing.Literal["live", "dict", "frozen"]
 
 
 @TupleBase.mix
@@ -153,6 +152,10 @@ class Args(_typing.NamedTuple):
         return cls(args)
 
     @classmethod
+    def create(cls, args: MayNot[_cabc.Sequence | Args] = None) -> Self:
+        return args if isinstance(args, cls) else cls(args or ())
+
+    @classmethod
     def slots(cls, target: object, /) -> Self:
         """Build from __slots__ of Target"""
         return cls(args=tuple(iter_slots(target)))
@@ -180,12 +183,11 @@ def _get_slot(cls: type) -> _cabc.Iterable[str]:
 class Kwargs(_typing.NamedTuple):
     """Capture and Visualize Keyword Parameter"""
 
-    kwargs: _cabc.Mapping[str, Any] = {}  # LATER: frozen or not?
+    kwargs: _cabc.Mapping[str, Any]  # = {}  # LATER: frozen or not?
 
     sep = TupleField[str](", ")
 
     def __iter__(self) -> _cabc.Iterator[Var]:  # ty:ignore
-        # IDEA: lock this down? avoid accidental usage as Args
         for name, value in self.kwargs.items():
             yield Var(name, value)
 
@@ -212,6 +214,16 @@ class Kwargs(_typing.NamedTuple):
         return cls(kwargs)
 
     @classmethod
+    def create(
+        cls, kwargs: MayNot[_cabc.Mapping[str, Any] | Kwargs] = None
+    ) -> Self:
+        return (
+            kwargs
+            if isinstance(kwargs, cls)
+            else cls(kwargs=kwargs if isinstance(kwargs, _cabc.Mapping) else {})
+        )
+
+    @classmethod
     def vars(cls, target, /, *, view: VarsView = "dict") -> Self:
         """Build from vars of Target - direct reference with live_view"""
         match view:
@@ -227,10 +239,18 @@ class Kwargs(_typing.NamedTuple):
 class Params(_typing.NamedTuple):
     """Capture and Visualize 1 Signature"""
 
-    args: Args = Args()
-    kwargs: Kwargs = Kwargs()
+    args: Args
+    kwargs: Kwargs
 
     sep = TupleField[str](", ")
+
+    @property
+    def arg_tuple(self) -> tuple[Any, ...]:
+        return tuple(self.args.args)
+
+    @property
+    def kwarg_dict(self) -> dict[str, Any]:
+        return dict(self.kwargs.kwargs)
 
     def __str__(self):
         return f"{type(self).__name__}[{self.args}{self.sep}{self.kwargs}]"
@@ -258,3 +278,11 @@ class Params(_typing.NamedTuple):
     @classmethod
     def absorb(cls, *args, **kwargs) -> Self:
         return cls(Args(args), Kwargs(kwargs))
+
+    @classmethod
+    def create(
+        cls,
+        args: MayNot[_cabc.Sequence | Args] = None,
+        kwargs: MayNot[_cabc.Mapping | Kwargs] = None,
+    ) -> Self:
+        return cls(args=Args.create(args), kwargs=Kwargs.create(kwargs))

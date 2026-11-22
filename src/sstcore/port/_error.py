@@ -1,36 +1,43 @@
 """
-Adapt the SstError to PortLink
+Install the Cached Mixing Setup for the SstError
 
-- This is intends as the one and only Raiser Implementation in the port
-- Still experimental, like the setups outside the port
+- SstError: root of all Errors
+- SstPortError: root of all Errors launched inside the port
 
-                                  DependencyLevel.sstcore.port[0.X]
+- Raiser: MetaClass with Fields to collect and distribute Error Definitions
+
+                                  DependencyLevel.sstcore.port[0:2]
 """
 
 __all__: list[str] = [
     "SstError",
-    "mix_error",
-    "rebuild",
-    "RaiserMeta",
-    "RaiserField",
+    "mix_error",  # cached factory
     "SstPortError",
-    #
     "FailedHackError",
-    "RaiserField",
+    # raising
     "RaiserMeta",
+    "RaiserField",
+    "RaiserParams",
+    "ErrorProducer",
+    "ErrorProcessor",
+    # type guarding
+    "is_raiser",
+    "is_ssterror",
+    "is_ssterror_cls",
+    "is_porterror",
+    "is_porterror_cls",
 ]
 
 import copyreg
+import typing as _typing
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from functools import cache
-from typing import Any, NamedTuple, Self
+from typing import Any, Self, Unpack
 
 from ._types import Types as _T  # noqa:N814
 from ._types import _LockedClsMeta
 from .empty import MayNot, MayNotCls
-from .primitives import Args, Kwargs, Params, Var
-
-type ErrorClosure = Callable[[type[Exception]], type[SstError]]
+from .primitives import Args, Kwargs, NameParser, Params, Var
 
 
 class SstError(Exception):
@@ -52,27 +59,34 @@ class SstError(Exception):
     def name(self) -> str:
         return type(self).__name__
 
+    __str__ = Exception.__str__  # avoid 'KeyError.__str__ brackets'
+
     def __repr__(self) -> str:
         return f"{self.name}[({self.params!r})]"
 
+    @_typing.overload
     @classmethod
-    def weave(
-        cls,
-        builtin: MayNotCls[Exception] = None,
-        *,
-        prefix: str = "",
-        module: str = "",
-    ) -> type[Self]:
+    def weave[BuiltinError: Exception](
+        cls, builtin: type[BuiltinError], **tkw: Unpack[_WeaveInput]
+    ) -> type[_WovenError[Self, BuiltinError]]: ...
+    @_typing.overload
+    @classmethod
+    def weave(cls, builtin: None, **tkw: Unpack[_WeaveInput]) -> type[Self]: ...
+
+    @classmethod
+    def weave[BuiltinError: Exception](
+        cls, builtin: MayNotCls[BuiltinError] = None, **tkw: Unpack[_WeaveInput]
+    ) -> type[_MixedError[Self, BuiltinError]]:
         """Mix the Error with a builtin Exception (cached and picklable)"""
 
-        if builtin is None and not prefix:
+        if builtin is None and not tkw.get("prefix"):
             return cls
 
-        _name = _error_name(cls, builtin, prefix)
-        _bases = (cls, builtin) if builtin else (cls,)
-        _module = (module or cls.__module__,)
+        name: str = _error_name(cls, builtin, **tkw)
+        bases: tuple[type, ...] = (cls, builtin) if builtin else (cls,)
+        module: str = tkw.get("module", cls.__module__)
 
-        return mix_error(_name, _bases, _module)  # ty:ignore
+        return mix_error(name, bases, module)  # ty:ignore
 
 
 @cache
@@ -83,7 +97,7 @@ def mix_error(
 
     def _reduce(self: Exception) -> tuple[Any, ...]:
         state: dict[str, Any] | None = self.__dict__ or None
-        return (rebuild, (name, bases, module, self.args), state)
+        return (_rebuild, (name, bases, module, self.args), state)
 
     namespace: dict[str, Any] = {
         "__module__": module or __name__,
@@ -94,7 +108,7 @@ def mix_error(
     return _ErrorWeaverMeta(name, bases, namespace)  # ty:ignore
 
 
-def rebuild(name: str, bases: _T.Errors, module: str, args: tuple) -> SstError:
+def _rebuild(name: str, bases: _T.Errors, module: str, args: tuple) -> SstError:
     """Top-level pickle hook to rebuild a dynamically mixed exception"""
     cls: type[SstError] = mix_error(name, bases, module)
     error: SstError = cls.__new__(cls)
@@ -113,33 +127,6 @@ def _reduce_woven_cls(cls: _ErrorWeaverMeta) -> tuple[Any, ...]:
 
 
 copyreg.pickle(_ErrorWeaverMeta, _reduce_woven_cls)
-
-
-#  LINE: -- Formatting -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def _error_name(
-    custom: type[SstError],
-    root: MayNotCls[Exception] = None,
-    /,
-    prefix: str = "",
-) -> str:
-    """Create target Error Name out of 2 Exception Names"""
-    return (
-        f"{prefix}{_error_stem(custom)}{root.__name__}"
-        if root
-        else f"{prefix}{custom.__name__}"
-    )
-
-
-def _error_stem(cls: type[Exception], /) -> str:
-    """Extract Error Name Part"""
-    return cls.__name__[:-5] if cls.__name__.endswith("Error") else cls.__name__
-
-
-def _raiser_prefix(raiser: type, /) -> str:
-    """Extract Raiser Name Part"""
-    return raiser.__name__.removesuffix("Raiser")
 
 
 #  LINE: -- Implementations -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -161,126 +148,284 @@ class FailedHackError(SstError):
         super().__init__("...I told you it will fail!", *args)
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Type Guarding -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class RaiserField[**P]:
+def is_raiser(target: object, /) -> _typing.TypeIs[RaiserMeta]:
+    """Is the Target a Class Instance of the RaiserMeta?"""
+    return isinstance(target, RaiserMeta)
+
+
+def is_ssterror_cls(target: object, /) -> _typing.TypeIs[type[SstError]]:
+    """Is the Target a Subclass of the SstError?"""
+    return isinstance(target, type) and issubclass(target, SstError)
+
+
+def is_ssterror(target: object, /) -> _typing.TypeIs[SstError]:
+    """Is the Target an Instance of the SstError?"""
+    return isinstance(target, SstError)
+
+
+def is_porterror_cls(target: object, /) -> _typing.TypeIs[type[SstPortError]]:
+    """Is the Target a Subclass of the SstError?"""
+    return isinstance(target, type) and issubclass(target, SstPortError)
+
+
+def is_porterror(target: object, /) -> _typing.TypeIs[SstPortError]:
+    """Is the Target an Instance of the SstError?"""
+    return isinstance(target, SstPortError)
+
+
+#  LINE: -- Formatting -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _error_name(
+    custom: type[SstError],
+    root: MayNotCls[Exception] = None,
+    /,
+    **tkw: Unpack[_ErrorNameInput],
+) -> str:
+    """Create target Error Name out of 2 Exception Names"""
+    _prefix, _middle = tkw.get("prefix", ""), tkw.get("middle", "")
+    return (
+        f"{_prefix}{_error_stem(custom)}{_middle}{root.__name__}"
+        if root
+        else f"{_prefix}{custom.__name__}{_middle}"
+    )
+
+
+def _error_stem(cls: type[Exception], /) -> str:
+    """Extract Error Name Part"""
+    return cls.__name__[:-5] if cls.__name__.endswith("Error") else cls.__name__
+
+
+def _raiser_prefix(raiser: type, /) -> str:
+    """Extract Raiser Name Part"""
+    return raiser.__name__.removesuffix("Raiser")
+
+
+#  LINE: -- Input, Alias and Definitions -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class _ErrorNameInput(_typing.TypedDict, total=False):
+    prefix: str
+    middle: str
+
+
+class _WeaveInput(_ErrorNameInput, total=False):
+    module: str
+
+
+type _ErrorWeaver[
+    SE: SstError,
+    BE: Exception,
+] = Callable[[type[BE]], type[_MixedError[SE, BE]]]
+
+
+type _WovenError[SE: SstError, BE: Exception] = SE & BE  # ty:ignore
+
+type _MixedError[SE: SstError, BE: Exception] = SE | _WovenError[SE, BE]
+
+
+class ErrorProducer[**P, WE: SstError = SstError](_typing.Protocol):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> WE:
+        """Fill the weaved Error with the final Params"""
+
+
+class ErrorProcessor[**P](_typing.Protocol):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RaiserParams:
+        """Preparete the Params before Error Assembly"""
+
+
+#  LINE: -- Raiser -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
     """Wire error name, owner class, and provide message template"""
 
-    @property
-    def sst_error(self) -> type[SstError]:
-        """Use Custom Error (from __init__) or base_error from Raiser"""
-        return (
-            self.custom_error
-            if self.custom_error is not None
-            else self.base_error
-            if self.base_error is not None
-            else SstError
-        )
+    _default_error: type[SstError] = SstError
 
-    def __new__[E: Exception](cls, *_args, **_kwargs) -> Callable[P, SstError]:
-        """Perfectly annotate Field on Locked Cls Body"""
-        return super().__new__(cls)  # ty:ignore
+    class _Extras(_typing.TypedDict):
+        processor: MayNot[Callable[P, Any]]
+        sst_error: MayNotCls[SE]
 
-    def __init__[E: Exception](
-        # IDEA: accept defaults that can be used for empty rendering!
-        # - meaning the error can be displayed in CLI with mock data
-        self,
-        builtin_error: type[E],
+    @classmethod
+    def deco[**P2, BE2: Exception, SE2: SstError = SstError](
+        cls,
+        builtin_error: type[BE],
         template: str,
         /,
-        ___defaults: Any = None,
+        test_input: tuple[object, ...] = (),
+        *,
+        sst_error: MayNotCls[SE2] = None,
+    ) -> Callable[[Callable[P2, RaiserParams]], RaiserField[P2, SE2, BE2]]:
+        # LATER: decorators for different configuration
+        # - either handling the params, the entire formatting, something else
+        def _bind(
+            func: Callable[P2, RaiserParams], /
+        ) -> RaiserField[P2, SE2, BE2]:
+            return RaiserField(
+                builtin_error,
+                template,
+                test_input,
+                processor=func,
+                sst_error=sst_error,
+            )
+
+        return _bind
+
+    def __init__(
+        self,
+        builtin_error: type[BE],
+        template: str,
+        /,
+        test_input: tuple[object, ...] = (),
         *,
         processor: MayNot[Callable[P, Any]] = None,
-        sst_error: MayNotCls[SstError] = None,
+        sst_error: MayNotCls[SE] = None,
     ):
         """Fill all tools, processor intended for multiple purposes"""
 
-        self.builtin_error: type[Exception] = builtin_error
-        self.template: str = template
+        self.builtin_error: type[BE] = builtin_error
+        self.name_parser = NameParser(pattern=template)  # LATER: cls attribute
+
+        # LATER: confirm it matches
+        self.test_input: tuple[object, ...] = test_input
+
+        self.processor: MayNot[ErrorProcessor[P]] = processor
+        self._sst_error: MayNotCls[SE] = sst_error
+
         self.name: str = ""
-        self.processor: MayNot[Callable[P, Any]] = processor
-        self.custom_error: MayNotCls[SstError] = sst_error
 
     def __str__(self):
         return f"{self.owner.__name__}.{self.name}"
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Extract owner data including Error and bind it"""
-        self.owner = owner
+        # AI: owner?
+        self.owner: type = owner
         self.name: str = name
-        self.base_error: MayNotCls[SstError] = getattr(
-            owner, "base_error", None
-        )
 
-        def _weave_with_owner_data(error: type[Exception], /) -> type[SstError]:
+        def _weave_with_owner_data(
+            error: type[BE], /
+        ) -> type[_MixedError[SE, BE]]:
             return self.sst_error.weave(
                 builtin=error,
-                prefix=_raiser_prefix(owner),
+                middle=owner.__name__,
                 module=owner.__module__,
             )
 
-        self.weave: ErrorClosure = _weave_with_owner_data
-        self.mixed_error: type[SstError] = self.weave(self.builtin_error)
+        self.weave: _ErrorWeaver[SE, BE] = _weave_with_owner_data
+        self.mixed_error: type[_MixedError[SE, BE]] = self.weave(
+            self.builtin_error
+        )
 
-    def __call__(self, func: Callable[P, Any], /) -> Self:
-        """Expose with Function Signature and custom Processing"""
-        self.processor: Callable[P, Any] = func
-        if not self.name:  # AI: when can this happen?
-            self.name: str = getattr(func, "__name__", "")
-        return self
+    @_typing.overload
+    def __get__(self, unit: None, host: type) -> Self: ...
+    @_typing.overload
+    def __get__(
+        self, unit: object, host: type
+    ) -> ErrorProducer[P, _MixedError[SE, BE]]: ...
+    def __get__(
+        self, unit: MayNot, _host: type
+    ) -> ErrorProducer[P, _MixedError[SE, BE]] | Self:
+        # AI: XXX
 
-    def __get__(self, _unit: Any, _host: MayNotCls) -> Callable[P, SstError]:
-        return self._pipeline_assemble
+        return self if unit is None else self._pipeline_assemble
 
-    def _pipeline_assemble(self, *args, **kwargs):
+    def __call__(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> _MixedError[SE, BE]:
+        """Assemble the woven SstError instance"""
+        return self._pipeline_assemble(*args, **kwargs)
+
+    def assemble_defaults(self, **error_kwargs) -> _MixedError[SE, BE]:
+        return self._pipeline_assemble(*self.test_input, **error_kwargs)
+
+    def _pipeline_assemble(self, *args, **kwargs) -> _MixedError[SE, BE]:
         """Route Payloud trough Process and Format"""
         params = Params(Args(args), Kwargs(kwargs))
-        dto: RaiserDTO = self._process(params)
-        text: str = self._format(*dto.text_pa, **dto.text_kw)
+        prepared: RaiserParams = self._process(params)
+
+        text: str = self._format(params=prepared.text)
         message: str = self._redact(text)
-        return self.mixed_error(message, *dto.error_posarg, **dto.error_keyarg)
 
-    def _process(self, params) -> RaiserDTO:
-        """Split, sort and assemble the incoming params"""
-        # TODO: as well other branches that e.g. don't need the DTO
-        if self.processor is None:
-            return RaiserDTO(
-                error_posarg=Args(),
-                error_keyarg=params.kwargs,
-                text_pa=params.args,
-                text_kw=Kwargs(),
-            )
-        return self.processor(params)  # ty:ignore FIX: typinjg
-
-    def _format(self, *args, **kwargs) -> str:
-        """Create the message Text"""
-        return self.template.format(*args, **kwargs)
+        return self.mixed_error(
+            message, *prepared.error.args, **prepared.error.kwargs
+        )
 
     def _redact(self, text: str) -> str:
         """Create the final Layout"""
         return f"[{self}] {text}".strip()
 
+    def _format(self, params: Params) -> str:
+        """Create the message Text"""
+        if params.args and params.kwargs:
+            raise NotImplementedError("Insert either args or kwargs")
+        return self.name_parser(
+            params.arg_tuple if params.args else params.kwarg_dict
+        )
 
-class RaiserDTO(NamedTuple):
-    error_posarg: Args
-    error_keyarg: Kwargs
-    text_pa: Args
-    text_kw: Kwargs
+    def _process(self, params: Params) -> RaiserParams:
+        """Split, sort and assemble the incoming params"""
+        if self.processor is None:
+            return RaiserParams.create(
+                text_args=params.args,
+                error_kwargs=params.kwargs,
+            )
+        return params.feed(self.processor)
+
+    @property
+    def sst_error(self) -> type[SE]:
+        """Use SstError injected in Init, extracted from Raiser or Default"""
+        return (
+            self._sst_error
+            if self._sst_error is not None
+            else self.raiser_error
+            if self.raiser_error is not None
+            else self.default_error  # ty:ignore (cast SstError -> SE)
+        )
+
+    @property
+    def raiser_error(self) -> MayNotCls[SstError]:
+        """Access the SstError mounted on the Raiser"""
+        if is_raiser(self.owner):
+            return self.owner.raiser_error
+
+    @property
+    def default_error(self) -> type[SstError]:
+        """Ensure at least one Error is available + Subhook to overwrite"""
+        return self._default_error
+
+    @default_error.setter
+    def default_error(self, error: SE | type[SE]) -> None:
+        """Ensure at least one Error is available + Subhook to overwrite"""
+        match error:
+            case _ if is_ssterror_cls(error):
+                self._default_error: type[SE] = error
+            case _ if is_ssterror(error):
+                self._default_error: type[SE] = type(error)
+            case _:
+                raise TypeError(f"[{self}] Invalid Assignment: {error=}")
+
+
+class RaiserParams(_typing.NamedTuple):
+    """Handle incoming Params for Message and for Exception"""
+
+    text: Params
+    error: Params
 
     @classmethod
-    def empty(
+    def create(
         cls,
-        error_posarg: MayNot[Sequence] = None,
-        error_keyarg: MayNot[Mapping] = None,
-        text_pa: MayNot[Sequence] = None,
-        text_kw: MayNot[Mapping] = None,
+        text_args: MayNot[Sequence | Args] = None,
+        text_kwargs: MayNot[Mapping | Kwargs] = None,
+        error_args: MayNot[Sequence | Args] = None,
+        error_kwargs: MayNot[Mapping | Kwargs] = None,
     ) -> Self:
-        return cls(  # EXTRACT: maybe to Params?
-            Args(error_posarg or ()),
-            Kwargs(error_keyarg or {}),
-            Args(text_pa or ()),
-            Kwargs(text_kw or {}),
+        return cls(
+            text=Params.create(text_args, text_kwargs),
+            error=Params.create(error_args, error_kwargs),
         )
 
 
@@ -291,13 +436,13 @@ class RaiserMeta(_LockedClsMeta, type):
     _error: type[SstError] = SstError
 
     @property
-    def base_error(cls) -> type[SstError]:
+    def raiser_error(cls) -> type[SstError]:
         return cls._error
 
     def _meta_and_cls_attrs(cls) -> dict[str, Any]:
         return {**type(cls).__dict__, **cls.__dict__}
 
     def __iter__(cls) -> Iterator[Var]:
-        for name in cls._meta_and_cls_attrs():
-            if not name.startswith("_"):
+        for name, value in cls._meta_and_cls_attrs().items():
+            if not name.startswith("_") and callable(value):
                 yield Var.gettr(cls, name)

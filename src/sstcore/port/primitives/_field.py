@@ -60,7 +60,7 @@ class TupleField[Value]:  # CHECK: Tuple?
     @overload
     def __get__(self, unit: None, caller: type) -> Self: ...
     @overload
-    def __get__(self, unit: Any, caller: type) -> Value: ...
+    def __get__(self, unit: object, caller: type) -> Value: ...
 
     def __get__(self, unit: MayNot, caller: type) -> Self | Value:
         """Extract per Unit from Cache or try set Default"""
@@ -68,27 +68,28 @@ class TupleField[Value]:  # CHECK: Tuple?
         # print(f"Get: {self}")
         # print(f"{self._host=}\n{self._caller=}\n{self._inherited=}")
         # print(f"{id(self._host)=}\n{id(self._caller)=}\n{id(self._inherited)=}")
-        self._caller = caller  # TODO: where to place this??
+        self._caller: type = caller  # TODO: where to place this??
         return self if unit is None else self[unit]
 
-    def __set__(self, unit: Any, value: Value) -> None:
+    def __set__(self, unit: object, value: Value) -> None:
         """Update the per Instance Cache with the Value"""
         self[unit] = value
 
-    def __getitem__(self, unit: Any):
+    def __getitem__(self, unit: object):
         if unit not in self:
             self[unit] = self._default
         return vars(unit)[self._name]
 
-    def __setitem__(self, unit: Any, value: Any):
+    def __setitem__(self, unit: object, value: Any):
         if value is VOID:
             raise RuntimeError(f"Assign Value or Default to Access: {self}")
+        # NEXT: Validate (type of) Value, extract TypeArg?
         vars(unit)[self._name] = value
 
-    def __contains__(self, unit: Any):
+    def __contains__(self, target: object):
         """Heavily Wired! Change with care..."""
-        return self._name in vars(unit)
+        return self._name in vars(target)
 
-    def __delete__(self, unit: Any) -> None:
+    def __delete__(self, unit: object) -> None:
         """Remove the Value of Unit from the Cache"""
         vars(unit).pop(self._name, None)

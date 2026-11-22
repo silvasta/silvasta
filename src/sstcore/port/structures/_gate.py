@@ -10,11 +10,18 @@ Govern the Behaviour of tiny helper Mappings
 
 from collections.abc import Callable, Iterator, KeysView, Mapping
 from contextlib import contextmanager
+from enum import Enum, auto
 from inspect import Parameter, signature
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar, Literal, reveal_type
 from typing import Unpack as _U  # noqa: N814
 
-from .._error import RaiserDTO, RaiserField, RaiserMeta, SstPortError
+from .._error import (
+    RaiserField,
+    RaiserMeta,
+    RaiserParams,
+    SstError,
+    SstPortError,
+)
 from .._types import _Stringable
 from ..empty import VOID, MayBe, MayNot
 from ..primitives import Args, Kwargs, Loader, Loading, Var
@@ -282,58 +289,89 @@ class CacheGate[K: str, V](MapGate[K, V]):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
+class _TestEnum(Enum):
+    FAILING = auto()
+
+
 class GateRaiser(metaclass=RaiserMeta):
     """Explain Failures Meaningful"""
 
     _error = SstPortError
 
-    # NEXT: assign defaults list/dict/tuple for cli view
-
     enum_member = RaiserField[[str, str]](
         KeyError,
         "{label}: Unknown Enum Member: {member!r}",
+        test_input=("LABEL", _TestEnum.FAILING),
     )
     enum_type = RaiserField[[str, str, str]](
         TypeError,
         "{label}: Expected {owner} but received {incoming}",
+        test_input=(Loader(), _TestEnum, Enum),
     )
     key_miss = RaiserField[[_Stringable, _Stringable]](
         KeyError,
-        "Invalid {key!} for {self}!",
+        "Invalid {key!r} for {self}!",
+        test_input=(423, Loader(default="data")),
     )
 
-    @RaiserField(TypeError, "Expected {0}, got {1} ({2}")
+    @RaiserField.deco(
+        TypeError,
+        "Expected {data}, got {other} ({type})",
+        test_input=("DATA", 22.5),
+    )
     def deco1(expected: type, actual: Any, /):  # noqa:N805
         args = Args.absorb(expected.__name__, actual, type(actual).__name__)
-        return RaiserDTO.empty(text_pa=args)
-
-    @RaiserField(TypeError, "")  # CHECK: maybe with "{0}"??
-    def deco2(expected: type, actual: Any, /):  # noqa:N805
-        text = f"Expected {expected.__name__}, got {actual!r} ({type(actual).__name__})"
-        return RaiserDTO.empty(text_pa=Args.absorb(text))
+        return RaiserParams.create(text_args=args)
 
 
 if __name__ == "__main__":
     from rich import print
     from rich.panel import Panel
+    from rich.text import Text
 
     def _panel(text, style="cyan", /):
         print(Panel(text, style=style))
 
-    for attr in GateRaiser:
-        try:
-            _panel(f"{attr}")
-            print(task := attr("hello"))
+    error = GateRaiser.enum_member.assemble_test_input()
+    print(error)
+    print(f"{error!r}")
+    reveal_type(error)
+    other = GateRaiser.key_miss.sst_error
+    print(other)
+    print(f"{other=}")
 
-            if isinstance(task, BaseException):
-                _panel("RAISE", "bold white on purple3")
-                raise task
-            else:
-                _panel(f"Nothing to raise: {task}", "green")
+    def show(raiser_attr: Var):
+        _panel(f"{raiser_attr.name}")
+        print(f"{raiser_attr.value=}")
+
+    def create_safe(error_attr):
+        try:
+            return error_attr.value.assemble_test_input()
         except Exception as error:
-            _panel(f"Error: {task}", "red")
+            _panel(f"CREATE FAIL: {error}", "b black on yellow")
+
+    def launch_safe(sst_error):
+        try:
+            if isinstance(sst_error, BaseException):
+                _panel("RAISE", "bold white on purple3")
+                raise sst_error
+            else:
+                _panel(f"Nothing to raise: {sst_error}", "green")
+        except Exception as error:
+            if isinstance(error, SstError):
+                _panel(f"Error: {sst_error}", "red")
+            else:
+                _panel(f"LAUNCH FAIL: {error}", "b black on yellow")
             print(f"{error}")
             print(f"{error=}")
             print(error)
         finally:
-            print("--- " * 5)
+            print(Text(" " * 80, style="on blue", justify="full"))
+
+    for error_attr in GateRaiser:
+        show(error_attr)
+        if sst_error := create_safe(error_attr):
+            launch_safe(sst_error)
+
+    print("deco1-manual", _d1 := GateRaiser.deco1(int, "hello"))
+    launch_safe(_d1)

@@ -34,21 +34,26 @@ from typing import Any, overload
 from .. import normalize
 from ._zero import NameView, portlink1
 
+type _Keys = tuple[str, ...]
+
 
 @portlink1(normalize.NamingPattern)
 class NamePattern(NameView):
     def __init__(self, pattern: str, **_kwargs: Any) -> None:
         self.update(pattern)
 
-    def _compile_pattern(
-        self, format_string: str, /
-    ) -> tuple[re.Pattern, tuple[str, ...]]:
+    def update(self, pattern: str) -> None:
+        self._regex, self.keys = self._compile_pattern(pattern)
+        self.pattern = pattern
+
+    def _compile_pattern(self, pattern: str, /) -> tuple[re.Pattern, _Keys]:
 
         keys: list[str] = []
         regex_parts: list[str] = ["^"]
-        parsed: Iterable = string.Formatter().parse(format_string)
+        parsed: Iterable = string.Formatter().parse(pattern)
 
         for literal_text, field_name, _format_spec, _conversion in parsed:
+            # CHECK: formatspec!?
             if literal_text:
                 regex_parts.append(re.escape(literal_text))
             if field_name is not None:
@@ -57,10 +62,6 @@ class NamePattern(NameView):
         regex_parts.append("$")
 
         return re.compile("".join(regex_parts)), tuple(keys)
-
-    def update(self, pattern: str) -> None:
-        self._regex, self.keys = self._compile_pattern(pattern)
-        self.pattern = pattern
 
     def render(self, keys: dict[str, str]) -> str:
         if missing := set(self.keys) - set(keys.keys()):
@@ -98,7 +99,10 @@ class FormatNormalizer(NamePattern):
             key: (
                 f"{val:{self.datetime_format}}"
                 if isinstance(val, datetime)
-                else str(val)
+                # LATER: make this like configurable
+                else f"{val.__name__}"
+                if isinstance(val, type)
+                else val
             )
             for key, val in keys.items()
         }
