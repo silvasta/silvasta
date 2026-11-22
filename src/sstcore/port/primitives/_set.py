@@ -20,7 +20,7 @@ from .._types import DataClassOrType, _DataClass, _Stringable, _Stringables
 from ..empty import MayNot
 
 
-def _mutable(data: Mapping, /) -> TypeGuard[MutableMapping]:
+def _mutable(data: object, /) -> TypeGuard[MutableMapping]:
     return isinstance(data, MutableMapping)
 
 

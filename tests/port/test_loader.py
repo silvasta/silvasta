@@ -128,7 +128,7 @@ def test_resolved_channels(
 ) -> None:
     found = loader.type_args
     assert found.value == value, case
-    assert found.value_source == value_source
+    assert found.value_source == value_source  # ty:ignore FIX:
     assert found.parameters == parameters
     assert found.parameters_source == parameters_source
     assert loader.target_type == value
@@ -158,8 +158,8 @@ def test_loaded_value_is_in_str() -> None:
 def test_unused_channels_stay_on_the_spectrum() -> None:
     found = IntLoader(load_str, default="nope").type_args  # ty:ignore
     assert found.value is int
-    assert found.func_return is str
-    assert found.default_type is str
+    assert found.func_return is str  # ty:ignore FIX:
+    assert found.default_type is str  # ty:ignore FIX:
     assert "Pair" not in found.summary()
     assert "int" in found.summary()
 

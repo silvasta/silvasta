@@ -21,6 +21,8 @@ class TupleField[Value]:  # CHECK: Tuple?
     """
     Generate Non-Member Field for (Named)Tuple with mutable values
 
+    - Cache Data per Instance by using the unit.__dict__ as cache
+
     Assign WITHOUT type hint, like:
       - sep = TupleField[str]("=")
       - otherwise the Field is included as tuple member!
@@ -43,13 +45,12 @@ class TupleField[Value]:  # CHECK: Tuple?
 
     def __str__(self):
         """Represent (HostCls::)Cls.field_name"""
-        return f"{self._scope}.{self._name}"
+        return f"{self._host.__name__}{self._scope}.{self._name}"
 
     @property
     def _scope(self) -> str:
         """Represent Host or Host::Caller"""
-        _maybe_caller = f"::{self._caller.__name__}" if self._inherited else ""
-        return f"{self._host.__name__}{_maybe_caller}"
+        return f"::{self._caller.__name__}" if self._inherited else ""
 
     @property
     def _inherited(self) -> bool:

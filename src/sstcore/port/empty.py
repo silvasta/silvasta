@@ -52,6 +52,7 @@ _VOID = sentinel("VOID")
 
 VOID: _VOID = _VOID
 
+
 type MayBe[Some] = Some | VOID
 type MayNot[Some] = Some | None
 type May[Some] = Some | VOID | None

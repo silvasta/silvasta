@@ -1,8 +1,7 @@
 """
 Transform to str, be the pattern and parse the pattern
 
-  (Experimental Setup)
-                                                       DependencyLevel[2]
+                        DependencyLevel.sstcore.brick.format[1.0:0]
 """
 
 from pathlib import Path
@@ -19,36 +18,24 @@ __all__: list[str] = [
 
 @portlink(NameParsing)
 class Name(NameParser, str):
-    """
-    EXPERIMENTAL!
+    """Integrate the NameParser and Pattern directly into str"""
 
-    Immutable string that knows its own pattern.
+    def __new__(cls, pattern: str | Path, /, **kwargs: Any) -> Self:
+        """Create str from prepared Pattern and attach NameParser"""
+        if isinstance(pattern, Path):
+            pattern = pattern.name
 
-    Useful for event names, bus keys, or any place where you want
-    a validated string that can still parse itself.
+        parser = NameParser(pattern=getattr(cls, "pattern", pattern), **kwargs)
+        parser.extract(pattern)  # Validate on construction
 
-    Example:
-        class EventName(Name):
-            pattern = "{namespace}.{event}"
-
-        ev = EventName("ui.click")
-        data = ev.parse()          # → dict
-    """
-
-    def __new__(cls, value: str | Path, **kwargs: Any) -> Self:
-        if isinstance(value, Path):
-            value = value.name
-
-        parser = NameParser(pattern=getattr(cls, "pattern", value), **kwargs)
-        parser.extract(value)  # Validate on construction
-
-        new_name: Self = str.__new__(cls, value)
+        new_name: Self = str.__new__(cls, pattern)
         new_name._parser = parser  # ty:ignore
         return new_name
 
     def render(self, keys: dict | list | tuple) -> Name:
-        new_value: str = super().render(keys)
-        return type(self)(new_value)
+        # CHECK: is this even helpful? the parsed string contains probably no {keys}
+        new_pattern: str = super().render(keys)
+        return type(self)(new_pattern)
 
 
 if __name__ == "__main__":
@@ -56,20 +43,24 @@ if __name__ == "__main__":
 
     print = Console().print
 
-    def rawreprstr(x):
-        print("RAW_", end=" ")
-        print(x)
-        print("REPR", end=" ")
-        print(repr(x))
+    def _str_repr_raw(x):
         print("STR_", end=" ")
         print(str(x))
+        print("REPR", end=" ")
+        print(repr(x))
+        print(x)
+        print()
+        print("RAW_", end=" ")
+        print(x)
 
     names = [
-        Name("Hello {user}, select {task} to {do}"),
-        Name("New {input} for {Raiser}?"),
+        name1 := Name("Hello {user}, select {task} to {do}"),
+        name2 := Name("New {input} for {Raiser}?"),
     ]
+
+    print("\n", "--- basic", "\n")
     for name in names:
-        rawreprstr(name)
+        _str_repr_raw(name)
         print(name.keys)
         print(name.__rich__())
 
@@ -84,8 +75,10 @@ if __name__ == "__main__":
         ],
     ]
 
-    for name, _input in zip(names, render, strict=True):
-        for i in _input:
+    print("\n", "--- render")
+    for name, task in zip(names, render, strict=True):
+        print("\n", name, "\n", f"{task=}", "\n")
+        for i in task:
             print(name(i))
 
     extract = [
@@ -98,6 +91,39 @@ if __name__ == "__main__":
             "New target for RAISE?",
         ],
     ]
-    for name, _input in zip(names, extract, strict=True):
-        for i in _input:
+
+    print("\n", "--- extract")
+    for name, task in zip(names, extract, strict=True):
+        print("\n", name, "\n", f"{task=}", "\n")
+        for i in task:
             print(name(i))
+
+    print("\n", "ColorFlip", "\n")
+
+    class NewName(Name): ...
+
+    name3 = NewName("My {new} Pattern")
+
+    print(f"{name1.color=}")
+    print(name1)
+    print(name2)
+    print(name3)
+    print()
+
+    name1.color = "red"
+
+    print(f"{name1.color=}")
+    print(name1)
+    print(name2)
+    print(name3)
+    print()
+
+    name3.color = "purple3"
+    print(name1)
+    print(name2)
+    print(name3)
+
+    name2.color = "gold3"
+    print(name1)
+    print(name2)
+    print(name3)

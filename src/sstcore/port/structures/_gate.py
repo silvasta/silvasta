@@ -189,7 +189,7 @@ class LazyMap[K: str, V](MapGate[K, V]):
     def __missing__(self, key: Any) -> MayBe[V]:
         """Launch the Loader to fetch the Value or use Fallback"""
 
-        value: V | VOID = self.loader.install(key)
+        value: V | VOID = self.loader.load(key)
 
         if value is not VOID:
             return value
@@ -234,9 +234,9 @@ class CacheGate[K: str, V](MapGate[K, V]):
         **tkw: _U[LoaderClsInput],
     ):
         # AI: the common loader root is missing... maybe 1 class that only operates as root fork
-        super().__init__(
-            **tkw  # NOTE: maybe the loader needs to be split and inserted positionally
-        )
+        # super().__init__(
+        #     **tkw  # NOTE: maybe the loader needs to be split and inserted positionally
+        # )
         self.owner: type[V] = owner
         # self._loader: Callable[[K], V] = loader
         self.max_size: int | None = max_size

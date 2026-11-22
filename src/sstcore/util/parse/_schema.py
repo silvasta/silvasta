@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
-from ...brick.format.name import NameParser
+from ...port.primitives import NameParser
 
 __all__: list[str] = [
     "SchemaName",
@@ -38,4 +38,4 @@ class SchemaName(BaseModel, NameParser):
 
     def model_post_init(self, __context: Any) -> None:
         """Runs exactly once after the model is initialized."""
-        self.update_pattern(self.pattern)
+        self.update(self.pattern)

@@ -17,6 +17,12 @@ from sstcore.brick.reflect._typearg import extract_type_args, format_type_arg
 from sstcore.port.empty import VOID
 
 
+def main():
+    # NEXT: compare port::typeargs with brick::typeargs
+    # test_1()
+    test_2()
+
+
 def test_1() -> None:
     def _inspect(name: str, loader: Loader[Any, Any]) -> None:
         lines = [
@@ -161,5 +167,4 @@ def test_2() -> None:
 
 
 if __name__ == "__main__":
-    test_1()
-    test_2()
+    main()

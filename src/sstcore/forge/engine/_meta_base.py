@@ -39,8 +39,9 @@ class SstMeta(type):
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
-        data: SstMetaData,  # AI: only 1 way to insert param allowed, by the DTO
+        data: SstMetaData,
     ):
+        """Process and Attach Data, Reject any Kwargs! (Single DTO Required)"""
         cls = super().__new__(mcls, name, bases, namespace)
         cls._data = data
         return cls

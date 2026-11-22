@@ -4,8 +4,7 @@ from typing import Generic
 
 import pytest
 
-from sstcore.port.empty import VOID
-from sstcore.port.primitives._typearg import (
+from sstcore.brick.reflect._typearg import (
     GenericSpec,
     extract_type_args,
     format_parameters,
@@ -14,6 +13,7 @@ from sstcore.port.primitives._typearg import (
     is_type_parameter,
     preserves_generic_alias_on_instance,
 )
+from sstcore.port.empty import VOID
 
 
 class Pair[**P, T]: ...

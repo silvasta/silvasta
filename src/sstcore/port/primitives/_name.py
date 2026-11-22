@@ -32,10 +32,10 @@ from pathlib import Path
 from typing import Any, overload
 
 from .. import normalize
-from ._zero import NameView, _portlink1
+from ._zero import NameView, portlink1
 
 
-@_portlink1(normalize.NamingPattern)
+@portlink1(normalize.NamingPattern)
 class NamePattern(NameView):
     def __init__(self, pattern: str, **_kwargs: Any) -> None:
         self.update(pattern)
@@ -73,7 +73,7 @@ class NamePattern(NameView):
         raise ValueError(f"No match for {self}: {name}")
 
 
-@_portlink1(normalize.FormatNormalize)
+@portlink1(normalize.FormatNormalize)
 class FormatNormalizer(NamePattern):
     def __init__(
         self,
@@ -108,7 +108,7 @@ class FormatNormalizer(NamePattern):
         return super().render(keys)
 
 
-@_portlink1(normalize.ExtractNormalize)
+@portlink1(normalize.ExtractNormalize)
 class ExtractNormalizer(NamePattern):
     def __init__(
         self,
@@ -139,7 +139,7 @@ class ExtractNormalizer(NamePattern):
         return super().extract(clean_string)
 
 
-@_portlink1(normalize.BidirectNaming)
+@portlink1(normalize.BidirectNaming)
 class BidirectionalName(NamePattern):
     """Route the Calls trough the right channel"""
 
@@ -174,7 +174,7 @@ class _DispatchTypeError(TypeError):
         super().__init__(msg, *(target, *args))
 
 
-@_portlink1(normalize.NameParsing)
+@portlink1(normalize.NameParsing)
 class NameParser(BidirectionalName, FormatNormalizer, ExtractNormalizer):
     """
     󰣏 Toggle Keyword and String Representation 󰣏

@@ -1,7 +1,7 @@
 """
 Draw the Shape of the Data Primitives
 
-                                  DependencyLevel.sstcore.port[0.1]
+                                  DependencyLevel.sstcore.port[0:1]
 """
 
 __all__: list[str] = [
@@ -10,10 +10,10 @@ __all__: list[str] = [
     "DunderSet",
     "frozendict",
     "HashedTuple",
-    "Params",
     "Var",
     "Args",
     "Kwargs",
+    "Params",
     "TupleBase",
     # load
     "Loader",
@@ -27,8 +27,12 @@ __all__: list[str] = [
     "BidirectionalName",
     "NameParser",
     # cls namespaces
-    "LockedClsMeta",
     # CHECK: PresetMeta?
+    "LockedClsMeta",
+    # utils and types (maybe move)
+    "unpack_types",
+    "HashIttr",
+    "is_hashittr",
 ]
 
 from .._types import _LockedClsMeta as LockedClsMeta
@@ -44,3 +48,4 @@ from ._name import (
 )
 from ._params import Args, Kwargs, Params, TupleBase, Var
 from ._set import DunderSet, FieldSet, NormSet
+from ._zero import unpack_types

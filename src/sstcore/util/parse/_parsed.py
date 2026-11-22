@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast, overload
 
-from ...brick.format.name import NameParser
+from ...port.primitives import NameParser
 
 __all__: list[str] = [
     "ParsedName",
@@ -57,7 +57,7 @@ class ParsedName[DTO](NameParser):
     @overload
     def __call__(self, target: dict | list | tuple) -> str: ...
 
-    def __call__(self, target: Any) -> Any:
+    def __call__(self, target: Any) -> Any:  # ty:ignore
         """Route Target to Extract (String -> DTO) or Format (DTO -> String)"""
 
         # TASK: figure out how to exploit this as base

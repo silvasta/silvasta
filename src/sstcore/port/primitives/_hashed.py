@@ -6,6 +6,8 @@ Create immutable, identifiably container
 
 __all__: list[str] = [
     "HashedTuple",
+    "HashIttr",
+    "is_hashittr",
 ]
 
 
@@ -14,12 +16,14 @@ from functools import partial
 from typing import Any, NamedTuple, TypeIs
 
 from ._frozen import frozendict
+from ._zero import unpack_types
+
+type HashIttr = tuple | frozenset | frozendict
 
 
-def is_hashittr(target: Hashable, /) -> TypeIs[tuple | frozenset | frozendict]:
-    # CHECK: Is.hashiter?
+def is_hashittr(target, /) -> TypeIs[HashIttr]:
     """Ensure and Annotate Target to be Hashable Iterable"""
-    return isinstance(target, (tuple, frozenset, frozendict))
+    return isinstance(target, unpack_types(HashIttr))
 
 
 class _HashedTupleBase(NamedTuple):

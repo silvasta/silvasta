@@ -6,7 +6,6 @@ Temporary Storage - until next improvisation
 
 from collections.abc import Generator as _Generator
 from collections.abc import Iterable as _Iterable
-from contextlib import contextmanager
 from itertools import combinations
 from pathlib import Path
 
@@ -26,6 +25,15 @@ class Config:
     def target_file(name: str) -> Path:  # LATER: PathGuard
         dir: Path = Path.home() / "sstcore/src/sstcore/brick/stack"
         return dir / "_stubs" / f"_{name.lower()}.pyi"
+
+
+def _str_repr_raw(x):
+    print("STR_", end=" ")
+    print(str(x))
+    print("REPR", end=" ")
+    print(repr(x))
+    print("RAW_", end=" ")
+    print(x)
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -55,11 +63,6 @@ def separator():
     print("\n---\n")
 
 
-# NEXT: absorb examples.index_color
-
-
-@contextmanager
-# NEXT: absorb examples.index_color
 def section(_title: str) -> _Generator:
     start(_title)
     # NEXT: absorb examples.index_color

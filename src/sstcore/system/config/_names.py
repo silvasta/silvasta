@@ -16,10 +16,10 @@ from functools import cached_property
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from ...brick.format.name import NameParser
 from ...brick.time import day_count
 from ...port.config import Names
 from ...port.link import portlink
+from ...port.primitives import NameParser
 from ...port.represent import Stringable
 
 
