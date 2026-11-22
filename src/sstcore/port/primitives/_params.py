@@ -24,8 +24,44 @@ from ._field import TupleField
 from ._frozen import frozendict
 from ._hashed import HashedTuple
 
+# AI_TASK: Access to members:
+# - Args() or Kwargs() should build without a default (other members as well)
+# - so far args.args or kwargs.kwargs was fine, still it could be improved
+# - quick conversion presets:
+#  - already installed are arg_tuple and kwarg_dict on Params
+#  - something like this could be established everywhere
+#  - Ideas: args.tuple, args.list, args.set, kwargs.frozendict, kwargs.dict
+#  - probably difficult because of the naming conflict with builtins...
+#  - if possible, short names, 1 word names, something that can be stacked:
+#    - Params.arg_tuple might be replaced by Params.args.tuple
+#    - instead of combined words, just dot-get it one layer deeper
+#    - Ideas: Params.kwargs.frozen or Params.kwargs.as_dict or Params.args.hashed
+
+# AI_TASK: unified strategy for methods:
+# - create: method to avoid inserting empty defaults
+#   - concept needed that works fast and efficeant not only for here,
+#     but for other locations like RaiserParams or andy other new setup
+#   - for Var at minimum the name, probably better both args are required
+#   - maybe with __init__ or __new__? (after subclassing the fixed members class)
+#   - possible to encode in TupleBase? (including proper typing)
+# - absorb: swallow the dereferenced params, proved already very helpful
+#   - so far fine, maybe ideas how to forward this to classes that hold params
+# - vars/slots: fine so far, maybe future ideas how to make them better availabel
+
+# AI_TASK: Rendering:
+# - Something like this for each member: icon = TupleField[str]("X")
+# - used inside the brackets [X|name=...] (first position with rich.print != a..z)
+# - for stacked ones like Kwargs it sometimes helps when each variable is clearly separated like  Var[name=value],...
+#   depending on the visualization setup this can as well be polluting, ideas how to make this configurable?
+# - Soon I want to build some other NamedTuples that handle small pieces of Data
+#   - one of them is for collecting and formatting help-messages
+#   - some rendering core controlled by TupleBase and precisely injected will help
+# - I assume __format__ can help here, even injected to all, allowing still for only that rendering that is desired
+
 
 class TupleBase:
+    """Inject Behaviour into NamedTuples"""
+
     __iter__: Any
     sep = TupleField[str](", ")
 
@@ -43,6 +79,8 @@ class TupleBase:
 
     @classmethod
     def mix[T](cls, target: type[T], /) -> type[T]:
+        # PARAM: toggle that sometimes helps and sometimes not
+        # def mix[T](cls, target: type[T], /) -> type[T & Self]:  # ty:ignore
         """Inject Behaviour into Named Tuples"""
         namespace: dict[str, Any] = {
             "__qualname__": target.__qualname__,
@@ -77,6 +115,9 @@ class Var[T: Any = Any](_typing.NamedTuple):
     value: T
 
     sep = TupleField[str]("=")
+
+    # IDEA: render attributes depending on their type!
+    # - like for functions the name, or for types, maybe hasattr(x,__name__)
 
     def __call__(self, *args, **kwargs) -> Any:
         """Invoke the Value if callable or provide its Representation"""

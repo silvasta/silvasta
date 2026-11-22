@@ -295,14 +295,24 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         self.processor: MayNot[ErrorProcessor[P]] = processor
         self._sst_error: MayNotCls[SE] = sst_error
 
-        self.name: str = ""
+        self.name: str = ""  # ensure always available
 
     def __str__(self):
         return f"{self.owner.__name__}.{self.name}"
 
+    def __repr__(self):
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        # NEXT:
+        tests: list[str] = [
+            f"{self}[{Kwargs.vars(self)}]",
+            f"{self}[{Kwargs.vars(self).joined}]",
+        ]
+        return "\n\n".join(tests)
+
     def __set_name__(self, owner: type, name: str) -> None:
-        """Extract owner data including Error and bind it"""
-        # AI: owner?
+        """Extract data from owner(=Raiser) including Error and bind it"""
         self.owner: type = owner
         self.name: str = name
 
@@ -321,16 +331,15 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         )
 
     @_typing.overload
-    def __get__(self, unit: None, host: type) -> Self: ...
+    def __get__(self, unit: None, _raiser: type) -> Self: ...
     @_typing.overload
     def __get__(
-        self, unit: object, host: type
+        self, unit: object, _raiser: type
     ) -> ErrorProducer[P, _MixedError[SE, BE]]: ...
     def __get__(
-        self, unit: MayNot, _host: type
+        self, unit: MayNot, _raiser: type
     ) -> ErrorProducer[P, _MixedError[SE, BE]] | Self:
-        # AI: XXX
-
+        """Basically No-Op as Unit is always None (when used with Raiser)"""
         return self if unit is None else self._pipeline_assemble
 
     def __call__(
@@ -339,12 +348,13 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         """Assemble the woven SstError instance"""
         return self._pipeline_assemble(*args, **kwargs)
 
-    def assemble_defaults(self, **error_kwargs) -> _MixedError[SE, BE]:
+    def assemble_test(self, **error_kwargs) -> _MixedError[SE, BE]:
         return self._pipeline_assemble(*self.test_input, **error_kwargs)
 
     def _pipeline_assemble(self, *args, **kwargs) -> _MixedError[SE, BE]:
         """Route Payloud trough Process and Format"""
         params = Params(Args(args), Kwargs(kwargs))
+        _demo_of_absorb_params = Params.absorb(*args, **kwargs)
         prepared: RaiserParams = self._process(params)
 
         text: str = self._format(params=prepared.text)

@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterator, KeysView, Mapping
 from contextlib import contextmanager
 from enum import Enum, auto
 from inspect import Parameter, signature
-from typing import Any, ClassVar, Literal, reveal_type
+from typing import Any, ClassVar, Literal
 from typing import Unpack as _U  # noqa: N814
 
 from .._error import (
@@ -317,7 +317,7 @@ class GateRaiser(metaclass=RaiserMeta):
     @RaiserField.deco(
         TypeError,
         "Expected {data}, got {other} ({type})",
-        test_input=("DATA", 22.5),
+        test_input=(str, 22.5),
     )
     def deco1(expected: type, actual: Any, /):  # noqa:N805
         args = Args.absorb(expected.__name__, actual, type(actual).__name__)
@@ -329,49 +329,64 @@ if __name__ == "__main__":
     from rich.panel import Panel
     from rich.text import Text
 
+    print("enum_member")
+    print(f"{GateRaiser.enum_member}")
+    print(f"{GateRaiser.enum_member.test_input}")
+    print(f"{GateRaiser.enum_member.assemble_test()}")
+    print()
+    print("deco1")
+    print(f"{GateRaiser.deco1}")
+    print(f"{GateRaiser.deco1.test_input}")
+    print(f"{GateRaiser.deco1.assemble_test()}")
+    print()
+
     def _panel(text, style="cyan", /):
         print(Panel(text, style=style))
-
-    error = GateRaiser.enum_member.assemble_test_input()
-    print(error)
-    print(f"{error!r}")
-    reveal_type(error)
-    other = GateRaiser.key_miss.sst_error
-    print(other)
-    print(f"{other=}")
 
     def show(raiser_attr: Var):
         _panel(f"{raiser_attr.name}")
         print(f"{raiser_attr.value=}")
+        print()
+        print("Var")
+        for var in Kwargs.vars(raiser_attr.value):
+            print(f"{var}")
+            print()
+            print(f"{var=}")
+            print()
+            print(var)
 
     def create_safe(error_attr):
         try:
-            return error_attr.value.assemble_test_input()
+            return error_attr.value.assemble_test()
         except Exception as error:
             _panel(f"CREATE FAIL: {error}", "b black on yellow")
 
     def launch_safe(sst_error):
         try:
+            print("Start of:", sst_error)
             if isinstance(sst_error, BaseException):
                 _panel("RAISE", "bold white on purple3")
                 raise sst_error
             else:
                 _panel(f"Nothing to raise: {sst_error}", "green")
+                pass
         except Exception as error:
             if isinstance(error, SstError):
                 _panel(f"Error: {sst_error}", "red")
+                pass
             else:
                 _panel(f"LAUNCH FAIL: {error}", "b black on yellow")
+                pass
             print(f"{error}")
             print(f"{error=}")
             print(error)
         finally:
             print(Text(" " * 80, style="on blue", justify="full"))
 
+    # print("deco1-manual", _d1 := GateRaiser.deco1(int, "hello"))
+    # launch_safe(_d1)
+
     for error_attr in GateRaiser:
         show(error_attr)
-        if sst_error := create_safe(error_attr):
-            launch_safe(sst_error)
-
-    print("deco1-manual", _d1 := GateRaiser.deco1(int, "hello"))
-    launch_safe(_d1)
+        # if sst_error := create_safe(error_attr):
+        #     launch_safe(sst_error)
