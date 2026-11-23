@@ -39,7 +39,8 @@ from typing import Any, ClassVar, Union
 from .._types import Types as _T  # noqa:N814
 from ..empty import VOID, Ghost
 
-_VALID_FLAGS: frozenset[str] = frozenset("bivn")  # LATER:  NormSet or similar
+_VALID_FLAGS: frozenset[str] = frozenset("bivn")
+_EXPLAIN_FLAGS: frozenset[str] = frozenset("bivnte")
 
 
 def portlink1[C, P](_protocol: type[P], /) -> Callable[[type[C & P]], type[C]]:  # ty:ignore
@@ -342,13 +343,22 @@ def _format_child(child: object, child_spec: str, /) -> str:
     return stringed(child, verbose="v" in child_spec)
 
 
+def is_explain_spec(spec: str, /) -> bool:
+    """Check if a format_spec targets ExplainTuple rendering (t, e, v, n, i, ;sep)"""
+    if not spec:
+        return False
+    flags, has_sep, _ = spec.partition(";")
+    return bool(flags or has_sep) and set(flags) <= (_EXPLAIN_FLAGS - {"b"})
+
+
 class _SpecParse(_typing.NamedTuple):
     bare: bool
     icon_only: bool
     verbose: bool
     multiline: bool
-
-    separator: str | None
+    title_only: bool = False
+    explain_only: bool = False
+    separator: str | None = None
 
     def active_sep(self, fallback: str) -> str:
         if self.separator is not None:
@@ -361,10 +371,16 @@ class _SpecParse(_typing.NamedTuple):
         return f"{base}n" if self.multiline else base
 
     @classmethod
-    def read(cls, spec: str, /) -> _SpecParse:
-        """Parse Format Spec"""
+    def read(
+        cls,
+        spec: str,
+        /,
+        *,
+        valid: frozenset[str] = _VALID_FLAGS,
+    ) -> _SpecParse:
+        """Parse Format Spec against allowed flag set."""
         _flags, _has_sep, _sep = spec.partition(";")
-        if unknown := set(_flags) - _VALID_FLAGS:
+        if unknown := set(_flags) - valid:
             raise ValueError(
                 f"Unknown format flag(s): {''.join(sorted(unknown))!r}"
             )
@@ -373,6 +389,8 @@ class _SpecParse(_typing.NamedTuple):
             icon_only="i" in _flags,
             verbose="v" in _flags,
             multiline="n" in _flags,
+            title_only="t" in _flags,
+            explain_only="e" in _flags,
             separator=_sep if _has_sep else None,
         )
 
@@ -383,6 +401,15 @@ def _split_spec(spec) -> tuple[str, str]:
         if ";" in spec
         else (spec, "")
     )
+
+
+def _collapse_or_multiline(
+    text: str, *, multiline: bool, sep: str = " | "
+) -> str:
+    """Collapse multiline composite text into single-line unless multiline (:n) is active."""
+    if multiline or "\n" not in text:
+        return text
+    return sep.join(line.strip() for line in text.splitlines() if line.strip())
 
 
 def _format_box(self, icon_only: bool, body: str) -> str:
@@ -405,6 +432,56 @@ def format_named_value(self, spec: str) -> str:
 
 def _rich_colorize(target, color="bold cyan", /):
     return f"[{color}]{target}[/]" if color else target
+
+
+def format_explain(self: Any, spec: str, /) -> str:
+    """
+    Composable Format Mini-Language for ExplainTuple:
+
+      '' / 't' : title (collapsed to single-line unless 'n' is set)
+      'e'      : extended detail only
+      'v'      : verbose (title + detail)
+      'n'      : multiline output (title followed by indented detail)
+      'i'      : wrap in icon box ([ⓘ | ...])
+      'b'      : bare (unboxed, also compatible with TupleControl child_spec)
+      ';X'     : custom separator between parts
+    """
+    parsed: _SpecParse = _SpecParse.read(spec, valid=_EXPLAIN_FLAGS)
+    line_sep: str = parsed.separator or " | "
+
+    title: str = _collapse_or_multiline(
+        self.title, multiline=parsed.multiline, sep=line_sep
+    )
+    detail: str = _collapse_or_multiline(
+        self.detail, multiline=parsed.multiline, sep=line_sep
+    )
+
+    include_both: bool = (
+        (parsed.verbose or (parsed.multiline and not parsed.title_only))
+        and not parsed.explain_only
+    ) or (parsed.title_only and parsed.explain_only)
+
+    if parsed.explain_only and not parsed.title_only:
+        body: str = detail
+    elif include_both and detail:
+        if parsed.multiline:
+            indented: str = "\n".join(
+                f"  {line}" for line in self.detail.splitlines()
+            )
+            body = f"{title}\n{indented}"
+        else:
+            sep: str = parsed.active_sep(fallback=getattr(self, "sep", " — "))
+            body = f"{title}{sep}{detail}"
+    else:
+        body = title
+
+    if parsed.icon_only:
+        if parsed.multiline and body:
+            indented_box = "\n".join(f"  {line}" for line in body.splitlines())
+            body = f"\n{indented_box}\n"
+        return _format_box(self, icon_only=True, body=body)
+
+    return body
 
 
 _c = _rich_colorize

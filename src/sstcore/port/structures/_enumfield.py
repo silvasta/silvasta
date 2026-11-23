@@ -6,9 +6,9 @@ Define Fields for Enums
 
 __all__: list[str] = [
     "EnumMemberMap",
-    "EnumMemberMap",
-    "EnumField",
     "EnumFieldMap",
+    "EnumFieldLoader",
+    "EnumField",
 ]
 
 
@@ -87,7 +87,9 @@ class EnumMemberMap[E: Enum, V](LazyMap[E, V]):
         allowed: set[E] = set(self.owner._member_map_.values())  # ty:ignore
         actual: set[E] = set(self._data)
 
-        if extra := actual - allowed:
+        if extra := {  # CHECK:
+            m for m in (actual - allowed) if not isinstance(m, self.owner)
+        }:
             names: str = ", ".join(str(m) for m in extra)
             raise GateRaiser.enum_extra(self.label, names)
 
@@ -115,11 +117,18 @@ class EnumField[T]:
         self._fallback: Loader[[Any], T] = Loader.loading(fallback, **tkw)
         self._cache_fallback: bool = cache_fallback
         self._name: str = ""
-        self._slots: LazyMap[type[Enum], EnumMemberMap[Any, T]] = LazyMap(
-            self._make_slot,
-            mode="item",
-            cache_fallback=True,
-        )
+
+        # AI: this was before, the EnumMemberMap should replace the LazyMap!
+        # self._slots: LazyMap[type[Enum], EnumMemberMap[Any, T]] = LazyMap(
+        #     self._make_slot,
+        #     mode="item",
+        #     cache_fallback=True,
+        # )
+        self._owner: type[Any] = Enum
+        # AI_TASK: replacing exactly this _slots:dict by a Map was the purpose of the entire Map project
+        # - analyze the _gate.MapGate->LazyMap->EnumMemberMap pipeline
+        # - fix this issue below with the proper mapping
+        self._slots: dict[type[Enum], EnumMemberMap[Any, T]] = {}
 
     def __set_name__(self, owner: type[Any], name: str) -> None:
         self._owner: type[Any] = owner

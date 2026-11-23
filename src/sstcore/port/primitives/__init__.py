@@ -26,6 +26,7 @@ __all__: list[str] = [
     "is_notext_sequence",
     "KeyFormatting",
     "VarsView",
+    "ExplainTuple",
     # load
     "Loader",
     "LoaderInput",
@@ -46,8 +47,8 @@ __all__: list[str] = [
     # cls namespaces
     "LockedClsMeta",
 ]
-
 from .._types import _LockedClsMeta as LockedClsMeta
+from ._explain import ExplainTuple
 from ._frozen import frozendict
 from ._hashed import HashedTuple
 from ._loader import Loader, LoaderInput, Loading, Prefer

@@ -18,7 +18,11 @@ __all__: list[str] = [
     "EnumStr",
     "EnumRepr",
     "EnumRelation",
-    # CHECK: PresetMeta?
+    # enumfield
+    "EnumMemberMap",
+    "EnumFieldMap",
+    "EnumFieldLoader",
+    "EnumField",
 ]
 
 
@@ -31,3 +35,4 @@ from ._dataclass import (
     create_field_resolver,
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
+from ._enumfield import EnumField, EnumFieldLoader, EnumFieldMap, EnumMemberMap
