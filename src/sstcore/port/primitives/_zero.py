@@ -5,15 +5,31 @@ Utils
 """
 
 __all__: list[str] = [
-    "unpack_types",
-    "NameView",
     "portlink1",
-    # AI_TASK: all important objects from the module, probably most public objects
+    "unpack_types",
+    "get_slots",
+    "iter_slot_names",
+    # tuple features
+    "TupleBase",
+    "is_tuplebase_cls",
+    "is_tuplebase",
+    "is_notext_sequence",
+    "create",
+    "merge_into_mapping",
+    "merge_into_sequence",
+    "get_named_value_item",
+    # formatting
+    "unique",
+    "stringed",
+    "tuple_format",
+    "format_named_value",
+    # views
+    "NameView",
+    "LoaderView",
 ]
 
 import collections.abc as _cabc
 import inspect as _inspect
-import typing as _t
 import typing as _typing
 from collections.abc import Callable
 from functools import cache
@@ -41,7 +57,7 @@ def portlink1[C, P](_protocol: type[P], /) -> Callable[[type[C & P]], type[C]]: 
 def unpack_types(target: object, /) -> _T.Tuple[type]:
     """Flatten TypeAliases or UnionTypes into runtime-checkable Classes"""
 
-    if isinstance(target, _t.TypeAliasType):
+    if isinstance(target, _typing.TypeAliasType):
         return unpack_types(target.__value__)
 
     if isinstance(target, UnionType) or _typing.get_origin(target) is Union:
@@ -123,7 +139,6 @@ def _tuple_schema(
         if (
             field not in defaults
             and param.default is not _inspect.Parameter.empty
-            and param.default is not VOID
         ):
             defaults[field] = param.default
 
@@ -327,7 +342,7 @@ def _format_child(child: object, child_spec: str, /) -> str:
     return stringed(child, verbose="v" in child_spec)
 
 
-class _SpecParse(_t.NamedTuple):
+class _SpecParse(_typing.NamedTuple):
     bare: bool
     icon_only: bool
     verbose: bool
@@ -338,7 +353,7 @@ class _SpecParse(_t.NamedTuple):
     def active_sep(self, fallback: str) -> str:
         if self.separator is not None:
             return self.separator
-        return "\n  " if self.multiline else fallback
+        return "\n" if self.multiline else fallback
 
     @property
     def child_spec(self) -> str:
@@ -371,18 +386,9 @@ def _split_spec(spec) -> tuple[str, str]:
 
 
 def _format_box(self, icon_only: bool, body: str) -> str:
-    prefix: str = f"{self.icon}|" if self.icon else ""
+    prefix: str = f"{self.icon} | " if self.icon else ""
     header: str = "" if icon_only else type(self).__name__
     return f"{header}[{prefix}{body}]"
-
-
-def ___format_box(self, icon_only: bool, body: str) -> str:
-    mark: str = self.icon or "-"
-    if mark[:1].isalpha() or mark[:1] == "/":
-        mark = f"-{mark}"
-    shown: str = f"{mark}|{body}" if body else mark
-    header: str = "" if icon_only else type(self).__name__
-    return f"{header}[{shown}]"
 
 
 def format_named_value(self, spec: str) -> str:
@@ -440,7 +446,7 @@ class NameView:
         return f"{_name}[{self._short} | '{self.pattern}' -> {{{_keys}}}]"
 
 
-if _t.TYPE_CHECKING:
+if _typing.TYPE_CHECKING:
     from ._loader import Loader
 
     _LoaderViewBase = Loader
@@ -489,7 +495,7 @@ class _LoaderView(_LoaderViewBase):
         return f"{_name}[{_is_ready}({_value}) | {_typearg} via {_source}]"
 
 
-if _t.TYPE_CHECKING:
+if _typing.TYPE_CHECKING:
 
     class LoaderView: ...
 else:

@@ -10,12 +10,22 @@ __all__: list[str] = [
     "DunderSet",
     "frozendict",
     "HashedTuple",
+    # params
     "Var",
     "Args",
     "Kwargs",
     "Params",
+    ## control & bases
+    "NamedValue",
+    "SingleTuple",
+    "Variadics",
     "TupleBase",
     "TupleControl",
+    "is_tuplebase_cls",
+    "is_tuplebase",
+    "is_notext_sequence",
+    "KeyFormatting",
+    "VarsView",
     # load
     "Loader",
     "LoaderInput",
@@ -27,13 +37,14 @@ __all__: list[str] = [
     "ExtractNormalizer",
     "BidirectionalName",
     "NameParser",
-    # cls namespaces
-    # CHECK: PresetMeta?
-    "LockedClsMeta",
     # utils and types (maybe move)
-    "unpack_types",
     "HashIttr",
     "is_hashittr",
+    "unpack_types",
+    "get_slots",
+    "iter_slot_names",
+    # cls namespaces
+    "LockedClsMeta",
 ]
 
 from .._types import _LockedClsMeta as LockedClsMeta
@@ -47,6 +58,25 @@ from ._name import (
     NameParser,
     NamePattern,
 )
-from ._params import Args, Kwargs, Params, TupleControl, Var
+from ._params import (
+    Args,
+    KeyFormatting,
+    Kwargs,
+    NamedValue,
+    Params,
+    SingleTuple,
+    TupleControl,
+    Var,
+    Variadics,
+    VarsView,
+)
 from ._set import DunderSet, FieldSet, NormSet
-from ._zero import TupleBase, unpack_types
+from ._zero import (
+    TupleBase,
+    get_slots,
+    is_notext_sequence,
+    is_tuplebase,
+    is_tuplebase_cls,
+    iter_slot_names,
+    unpack_types,
+)

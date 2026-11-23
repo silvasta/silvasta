@@ -7,12 +7,16 @@ Most basic parts
 __all__: list[str] = [
     "Var",
     "Args",
-    "KeyFormatting",
     "Kwargs",
-    "VarsView",
     "Params",
+    # control & bases
     "TupleControl",
-    # AI_TASK: all important objects from the module, probably most public objects
+    "NamedValue",
+    "SingleTuple",
+    "Variadics",
+    # types & protocols
+    "VarsView",
+    "KeyFormatting",
 ]
 
 import builtins as _b
@@ -68,11 +72,6 @@ class TupleControl(_z.TupleBase):
     def joined(self) -> str:
         """Concat all items in joins (equivalent to f'{self:b}')."""
         return self.__format__("b")
-
-    @property
-    def _joined(self) -> str:  # CHECK: still needed?
-        """Concat all items in joins that needs to be joined"""
-        return self.sep.join(f"{x}" for x in self.joins())
 
     def joins(self) -> _cabc.Iterator:
         """Stream the visual representation joins (indepenent of __iter__)"""
@@ -304,14 +303,14 @@ class Kwargs[M: _T.Map](SingleTuple[M]):
 
     @overload
     def _normalize(
-        self, target: object, /, *, _set=Literal[False]
+        self, target: object, /, *, _set: Literal[False] = False
     ) -> _T.Map | VOID: ...
     @overload
     def _normalize(
-        self, target: object, /, *, _set=Literal[True]
+        self, target: object, /, *, _set: Literal[True]
     ) -> _T.Map | _cabc.Set | VOID: ...
     def _normalize(
-        self, target: object, /, *, _set=False
+        self, target: object, /, *, _set: bool = False
     ) -> _T.Map | _cabc.Set | VOID:
         """Prepare Key or Map for Operator"""
         match target:
@@ -319,7 +318,7 @@ class Kwargs[M: _T.Map](SingleTuple[M]):
                 return target.data
             case _ if isinstance(target, _cabc.Mapping):
                 return target
-            case _ if isinstance(target, _cabc.Set):
+            case _ if _set and isinstance(target, _cabc.Set):
                 return target
             case _:
                 return VOID
@@ -401,7 +400,7 @@ class Kwargs[M: _T.Map](SingleTuple[M]):
             for name in _z.iter_slot_names(target)
             if (val := getattr(target, name, VOID)) is not VOID
         }
-        return cls(kwargs=frozendict(data) if frozen else data)
+        return cls(frozendict(data) if frozen else data)
 
 
 _EMPTY_ARGS: Args = Args()
@@ -424,18 +423,16 @@ class Params(Variadics):
         kwargs: Kwargs[Any] | _T.StrMap = _EMPTY_KWARGS,
     ) -> Self: ...
     def __new__(cls, args: Any = _EMPTY_ARGS, kwargs: Any = _EMPTY_KWARGS):
-        match args, kwargs:
-            case cls(), _:
-                if kwargs is _EMPTY_KWARGS:
-                    return args
-                raise TypeError(
-                    f"{cls.__name__}() cannot take kwargs with a {cls.__name__} instance"
-                )
-            case _ if not isinstance(args, Args):
-                args: Args = Args(args)
-            case _ if not isinstance(kwargs, Kwargs):
-                kwargs: Kwargs = Kwargs(kwargs)
-
+        if isinstance(args, cls):
+            if kwargs is _EMPTY_KWARGS:
+                return args
+            raise TypeError(
+                f"{cls.__name__}() cannot take kwargs with a {cls.__name__} instance"
+            )
+        if not isinstance(args, Args):
+            args = Args(args)
+        if not isinstance(kwargs, Kwargs):
+            kwargs = Kwargs(kwargs)
         return tuple.__new__(cls, (args, kwargs))
 
     def __or__(self, other: Params | Kwargs[Any] | _T.StrMap, /) -> Self:

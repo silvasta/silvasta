@@ -300,20 +300,20 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         return f"{self.owner.__name__}.{self.name}"
 
     def __repr__(self):
-        rr = [
-            "--- b",
-            f"{self}[{Kwargs.vars(self):b}]",
-            "--- i",
-            f"{self}[{Kwargs.vars(self):i}]",
-            "--- n",
-            f"{self}[{Kwargs.vars(self):n}]",
-            "--- v",
-            f"{self}[{Kwargs.vars(self):v}]",
-            "--- nv",
-            f"{self}[{Kwargs.vars(self):nv}]",
-        ]
-        # return f"{self}[{Kwargs.vars(self):nv}]"  # PARAM: FORMAT
-        return "\n".join(rr)
+        # rr = [
+        #     "--- b",
+        #     f"{self}[{Kwargs.vars(self):b}]",
+        #     "--- i",
+        #     f"{self}[{Kwargs.vars(self):i}]",
+        #     "--- n",
+        #     f"{self}[{Kwargs.vars(self):n}]",
+        #     "--- v",
+        #     f"{self}[{Kwargs.vars(self):v}]",
+        #     "--- nv",
+        #     f"{self}[{Kwargs.vars(self):nv}]",
+        # ]
+        # return "\n".join(rr)
+        return f"{self}[{Kwargs.vars(self):nv}]"  # PARAM: FORMAT
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Extract data from owner(=Raiser) including Error and bind it"""
