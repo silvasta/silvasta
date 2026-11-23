@@ -30,14 +30,14 @@ __all__: list[str] = [
 
 import copyreg
 import typing as _typing
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator
 from functools import cache
 from typing import Any, Self, Unpack
 
 from ._types import Types as _T  # noqa:N814
 from ._types import _LockedClsMeta
 from .empty import MayNot, MayNotCls
-from .primitives import Args, Kwargs, NameParser, Params, Var
+from .primitives import Args, Kwargs, NameParser, Params, TupleControl, Var
 
 
 class SstError(Exception):
@@ -289,8 +289,7 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         self.builtin_error: type[BE] = builtin_error
         self.name_parser = NameParser(pattern=template)  # LATER: cls attribute
 
-        # LATER: confirm it matches
-        self.test_input: tuple[object, ...] = test_input
+        self.test_input: tuple[object, ...] = test_input  # LATER: validate
 
         self.processor: MayNot[ErrorProcessor[P]] = processor
         self._sst_error: MayNotCls[SE] = sst_error
@@ -301,15 +300,20 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         return f"{self.owner.__name__}.{self.name}"
 
     def __repr__(self):
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        # NEXT:
-        tests: list[str] = [
-            f"{self}[{Kwargs.vars(self)}]",
-            f"{self}[{Kwargs.vars(self).joined}]",
+        rr = [
+            "--- b",
+            f"{self}[{Kwargs.vars(self):b}]",
+            "--- i",
+            f"{self}[{Kwargs.vars(self):i}]",
+            "--- n",
+            f"{self}[{Kwargs.vars(self):n}]",
+            "--- v",
+            f"{self}[{Kwargs.vars(self):v}]",
+            "--- nv",
+            f"{self}[{Kwargs.vars(self):nv}]",
         ]
-        return "\n\n".join(tests)
+        # return f"{self}[{Kwargs.vars(self):nv}]"  # PARAM: FORMAT
+        return "\n".join(rr)
 
     def __set_name__(self, owner: type, name: str) -> None:
         """Extract data from owner(=Raiser) including Error and bind it"""
@@ -360,9 +364,7 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         text: str = self._format(params=prepared.text)
         message: str = self._redact(text)
 
-        return self.mixed_error(
-            message, *prepared.error.args, **prepared.error.kwargs
-        )
+        return self.mixed_error(message, *prepared.error, **prepared.error)
 
     def _redact(self, text: str) -> str:
         """Create the final Layout"""
@@ -370,10 +372,11 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
 
     def _format(self, params: Params) -> str:
         """Create the message Text"""
+        # print(f"{params=}")
         if params.args and params.kwargs:
             raise NotImplementedError("Insert either args or kwargs")
         return self.name_parser(
-            params.arg_tuple if params.args else params.kwarg_dict
+            params.args.tuple if params.args else params.kwargs.dict
         )
 
     def _process(self, params: Params) -> RaiserParams:
@@ -419,24 +422,33 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
                 raise TypeError(f"[{self}] Invalid Assignment: {error=}")
 
 
+class RaiserParams1(_typing.NamedTuple):
+    """Handle incoming Params for Message and for Exception"""
+
+    text: Params
+    error: Params
+
+
+@TupleControl.mix
 class RaiserParams(_typing.NamedTuple):
     """Handle incoming Params for Message and for Exception"""
 
     text: Params
     error: Params
 
-    @classmethod
-    def create(
-        cls,
-        text_args: MayNot[Sequence | Args] = None,
-        text_kwargs: MayNot[Mapping | Kwargs] = None,
-        error_args: MayNot[Sequence | Args] = None,
-        error_kwargs: MayNot[Mapping | Kwargs] = None,
-    ) -> Self:
-        return cls(
-            text=Params.create(text_args, text_kwargs),
-            error=Params.create(error_args, error_kwargs),
-        )
+    if _typing.TYPE_CHECKING:
+
+        @classmethod
+        def create(
+            cls,
+            text: MayNot[Params] = None,
+            error: MayNot[Params] = None,
+            *,
+            text_args: MayNot[Iterable[Any] | Args[Any]] = None,
+            text_kwargs: MayNot[_T.StrMap | Kwargs[Any]] = None,
+            error_args: MayNot[Iterable[Any] | Args[Any]] = None,
+            error_kwargs: MayNot[_T.StrMap | Kwargs[Any]] = None,
+        ) -> Self: ...
 
 
 class RaiserMeta(_LockedClsMeta, type):

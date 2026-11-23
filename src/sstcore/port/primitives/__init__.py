@@ -15,6 +15,7 @@ __all__: list[str] = [
     "Kwargs",
     "Params",
     "TupleBase",
+    "TupleControl",
     # load
     "Loader",
     "LoaderInput",
@@ -46,6 +47,6 @@ from ._name import (
     NameParser,
     NamePattern,
 )
-from ._params import Args, Kwargs, Params, TupleBase, Var
+from ._params import Args, Kwargs, Params, TupleControl, Var
 from ._set import DunderSet, FieldSet, NormSet
-from ._zero import unpack_types
+from ._zero import TupleBase, unpack_types

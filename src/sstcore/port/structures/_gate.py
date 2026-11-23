@@ -345,15 +345,16 @@ if __name__ == "__main__":
 
     def show(raiser_attr: Var):
         _panel(f"{raiser_attr.name}")
-        print(f"{raiser_attr.value=}")
+        print(f"--- {raiser_attr.value}")
+        print(f"{raiser_attr.value!r}")
         print()
         print("Var")
-        for var in Kwargs.vars(raiser_attr.value):
-            print(f"{var}")
-            print()
-            print(f"{var=}")
-            print()
-            print(var)
+        # for var in Kwargs.vars(raiser_attr.value):
+        #     print(f"{var}")
+        #     print()
+        #     print(f"{var=}")
+        #     print()
+        #     print(var)
 
     def create_safe(error_attr):
         try:

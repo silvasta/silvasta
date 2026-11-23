@@ -97,8 +97,15 @@ class Types(metaclass=_LockedClsMeta):
     type Mixin = type
     type Slot = tuple[Mixin, Proto] | Mixin | Proto  # CHECK: usage?
 
+    type Tuple[T: Any = Any] = tuple[T, ...]
     type Dict[K, V] = dict[K, V]
-    type Tuple[T] = tuple[T, ...]
+    type StrDict[T: Any = Any] = dict[str, T]
+    type Map[K, V] = Mapping[K, V]
+    type StrMap[V: Any = Any] = Mapping[str, V]
+    type Seq[T] = Sequence[T]
+
+    type _Intersect[T, S] = type[T & S]  # ty:ignore
+    type _NoIntersect[T, S] = type[T]
 
 
 # NEXT: KeyView for (Mapping)[str,Any]??
@@ -129,7 +136,6 @@ class RegistryTypes(metaclass=_LockedClsMeta):
 
     type List[T] = list[T]  # REMOVE: why?
     type Tuple[T] = tuple[T, ...]  # CHECK:
-    type Seq[T] = Sequence[T]  # CHECK: where used?
 
     type ItrB[T] = Iterable[T]
     type ItrO[T] = Iterator[T]
