@@ -64,10 +64,19 @@ class Loader[**P, T](LoaderView):
         _maybe = "but is" if self.is_ready else "and not"
         raise LookupError(f"Value not loaded, {_maybe} available: {self!r}")
 
+    def __bool__(self) -> bool:
+        """Is the Value loaded by Call or any Fallback?"""
+        return self._value is not VOID
+
     @property
     def is_ready(self) -> bool:
         """Is a Callable or static Default configured?"""
         return self._func is not None or self._default is not VOID
+
+    @property
+    def is_pending(self) -> bool:
+        """No Value loaded but Loader is Ready"""
+        return self.is_ready and not bool(self)
 
     def __init__(self, func: MayNot[Func[P, T]] = None, /, **tkw: _U[Input[T]]):
         """So far no check if Loader can complete, use Loader.__bool__"""
@@ -78,10 +87,6 @@ class Loader[**P, T](LoaderView):
         self._counter: int = 0
         self._total_counter: int = 0
         self._value: MayBe[T] = VOID
-
-    def __bool__(self) -> bool:
-        """Is the Value loaded by Call or any Fallback?"""
-        return self._value is not VOID
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
         """Extract or Install Value by configured order or Raise if Empty"""
@@ -95,7 +100,6 @@ class Loader[**P, T](LoaderView):
         for maybe_loaded_value in self._load(*args, **kwargs):
             if maybe_loaded_value is not VOID:
                 self._value: T = maybe_loaded_value
-                print(maybe_loaded_value)
                 return maybe_loaded_value
         return VOID
 
@@ -105,11 +109,9 @@ class Loader[**P, T](LoaderView):
             case "func":
                 yield self._call(*args, **kwargs)
                 yield self._default
-                print("end func")
             case "default":
                 yield self._default
                 yield self._call(*args, **kwargs)
-                print("end default")
 
     def _call(self, *args: P.args, **kwargs: P.kwargs) -> MayBe[T]:
         """Launch Loader Function and Increment Counter on Success"""

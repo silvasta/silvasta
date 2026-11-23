@@ -22,7 +22,7 @@ from enum import auto
 from typing import Any, Protocol, Unpack
 
 from .. import raising
-from ..raising import Raiser, RaiserField, RaiserMeta
+from ..raising import Raiser, RaiserMeta
 
 
 class PortLinkError(raising.SstPortError):
@@ -53,18 +53,19 @@ class PortLinkError(raising.SstPortError):
 class PortLinkRaiser(metaclass=RaiserMeta):
     """Fast V2 Raiser for port.link operations."""
 
-    missing_plug = RaiserField[[type, str]](
-        AttributeError, "Not found: {0.__name__} for attr={1!r}"
-    )
-    pipeline = RaiserField[[type, str]](
-        RuntimeError, "Pipeline issue with {0.__name__} for attr={1!r}"
-    )
-    inject = RaiserField[[type, str, str]](
-        AttributeError, "Inject issue for {0.__name__}.{1}, __doc__={2!r}"
-    )
-    reflect = RaiserField[[type, str, str]](
-        AttributeError, "Reflect issue for {0.__name__}.{1}, __doc__={2!r}"
-    )
+    # FIX: breaks NameParser
+    # missing_plug = RaiserField[[type, str]](
+    #     AttributeError, "Not found: {0} for attr={1!r}"
+    # )
+    # pipeline = RaiserField[[type, str]](
+    #     RuntimeError, "Pipeline issue with {0} for attr={1!r}"
+    # )
+    # inject = RaiserField[[type, str, str]](
+    #     AttributeError, "Inject issue for {0}.{1}, __doc__={2!r}"
+    # )
+    # reflect = RaiserField[[type, str, str]](
+    #     AttributeError, "Reflect issue for {0}.{1}, __doc__={2!r}"
+    # )
 
 
 #  LINE: -- Raiser with Enum Setup -- -- - -- -- - -- -- - -- -- - -- -- - -- --

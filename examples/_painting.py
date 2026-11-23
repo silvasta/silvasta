@@ -43,6 +43,8 @@ def basic():
     azure = Paint(Color.AZURE, "cyan", lambda x: _r(x, "cyan"))
     special = Paint(Color.PURPLE, "purple3", lambda x: _r(x, "purple3"))
 
+    Color.validate_all_registered()
+
     print(f"{(_check_type := 'yes' if isinstance(azure, str) else 'no')=}")
 
     with printy.section("Check Colors"):

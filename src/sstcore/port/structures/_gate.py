@@ -8,20 +8,25 @@ Govern the Behaviour of tiny helper Mappings
 
 """
 
+__all__: list[str] = [
+    "MapGate",
+    "LazyMap",
+    "CacheGate",
+    "is_nullary",
+    "LoadMode",
+    "Fallback",
+    "GateRaiser",
+]
+
+
 from collections.abc import Callable, Hashable, Iterator, KeysView, Mapping
 from contextlib import contextmanager
 from enum import Enum, auto
 from inspect import Parameter, signature
-from typing import Any, ClassVar, Literal, Unpack
+from typing import Any, ClassVar, Literal, Self, Unpack
 from typing import Unpack as _U  # noqa: N814
 
-from .._error import (
-    RaiserField,
-    RaiserMeta,
-    RaiserParams,
-    SstError,
-    SstPortError,
-)
+from .. import _error as _err
 from .._types import _Stringable
 from ..empty import VOID, MayBe, MayNot
 from ..primitives import Args, Kwargs, Loader, Loading, Var
@@ -30,88 +35,64 @@ type LoadMode = Literal["auto", "item", "table"]
 type Fallback[K, V] = Callable[[K], V] | Loader[[K], V]
 
 
-def _is_nullary(func: Callable[..., Any] | None) -> bool:
-    """True when func can be called with no arguments."""
-    if func is None:
-        return False
-    try:
-        params = signature(func).parameters.values()
-    except TypeError, ValueError:
-        return False
-    return not any(
-        param.kind
-        in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
-        and param.default is Parameter.empty
-        for param in params
-    )
-
-
 class MapGate[K: Hashable, V]:
-    def __init__(self, data: dict[K, V] | None = None):
+    """Prepare the Structure for the Gating Mappings"""
+
+    def __init__(self, data: Mapping[K, V] | None = None):
         self._data: dict[K, V] = {}
         if data:
             self.absorb(data)
 
-    def __delitem__(self, key: Any) -> None:
-        del self._data[self.locksmith(key)]
+    def __getitem__(self, key: object, /) -> V:
+        """Read Value or call Missing and Raise on Fail"""
 
-    def __contains__(self, key: Any) -> bool:
-        # INFO: ignore multiple locksmith hits for now
-        # - far away, that will not be relevant soon
-        """Is the processed Key in Data?"""
-        with self.safe():
-            if self.locksmith(key) in self._data:
-                return True  # type check mock
-        return False
+        lock: K = self.locksmith(key)
 
-    def __getitem__(self, key: Any, /) -> V:
-        """
-        Read Value or call Missing and Raise on Fail
+        if lock in self._data:
+            return self._data[lock]
 
-        - Later: use the Loader/TypeArg setup to ensure V is valid
-
-        """
-        if key in self:
-            return self._data[self.locksmith(key)]
-
-        recovery: MayBe[V] = self.__missing__(key)
+        recovery: MayBe[V] = self.__missing__(lock)
 
         if recovery is VOID:
             raise GateRaiser.key_miss(key, self)
 
         return recovery
 
-    def __setitem__(self, key: Any, value: Any) -> None:
+    def __missing__(self, _lock: K, /) -> MayBe[V]:
+        """Find a solution for an absent Key or return VOID to Raise"""
+        return VOID
+
+    def __setitem__(self, key: object, value: Any) -> None:
         """Sanitize Inputs, write Value or handle merge result on duplication"""
 
         lock: K = self.locksmith(key)
         data: V = self.refine(value)
 
-        if key not in self:
+        if lock not in self._data:
             self._data[lock] = data
             return
 
-        resolved: MayBe[V] = self.merge(lock, data)
+        resolved: MayBe[V] = self.__merging__(lock, data)
 
         if resolved is not VOID:
             self._data[lock] = resolved
 
-    def __missing__(self, _key: Any, /) -> MayBe[V]:
-        """
-        Find a Solution for an absent Key
-
-        - Provide some proper Value or return VOID to Raise
-
-        """
-        return VOID
-
-    def merge(self, _lock: K, data: V, /) -> MayBe[V]:
-        """
-        Find a Solution for a duplicated Key
-
-        - Provide the Value to store or VOID for Ignore
-        """
+    def __merging__(self, _lock: K, data: MayBe[V] = VOID, /) -> MayBe[V]:
+        """Find a solution for a duplicated Key or return VOID to Ignore"""
         return data
+
+    def __delitem__(self, key: Any) -> None:
+        lock: K = self.locksmith(key)
+        if lock not in self._data:
+            raise GateRaiser.key_miss(key, self)
+        del self._data[lock]
+
+    def __contains__(self, key: Any) -> bool:
+        """Is the processed Key in Data?"""
+        with self.safe():
+            if self.locksmith(key) in self._data:
+                return True  # type check mock
+        return False
 
     def locksmith(self, key: Any) -> K:
         """Prepare the incoming Key"""
@@ -130,8 +111,12 @@ class MapGate[K: Hashable, V]:
 
     def absorb(self, map: Mapping | None = None, /, **kwargs) -> Any:
         """Send mapped Items trough register pipeline"""
-        for key, item in (map or {} | kwargs).items():
+        if map is not None:
+            for key, item in map.items():
+                self[key] = item
+        for key, item in kwargs.items():
             self[key] = item
+        return self
 
     def get(self, key: Any, default: Any = None) -> Any:
         try:
@@ -153,10 +138,10 @@ class MapGate[K: Hashable, V]:
     def items(self) -> Iterator[tuple[K, V]]:
         yield from self._data.items()
 
-    def __iter__(self) -> Iterator[Var]:  # Any?
-        """Provide all Named key and value Tuple"""
+    def __iter__(self) -> Iterator[Var]:
+        """Provide all named key and value tuples."""
         for name, value in self._data.items():
-            var = Var(name, value)
+            var = Var(f"{name}", value)  # LATER: use Var.unique
             var.sep = "::"
             yield var
 
@@ -167,8 +152,7 @@ class MapGate[K: Hashable, V]:
         return f"{type(self).__name__}[{len(self)}]"
 
     def __repr__(self) -> str:
-        _kwargs = Kwargs(self._data)  # ty:ignore
-        return f"{self}[{f'\n{_kwargs:nv}\n' if _kwargs else 'X'}]"
+        return f"{self}[\n{Kwargs({str(k): v for k, v in self.items()}):nv}\n]"
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -179,31 +163,90 @@ class LazyMap[K: Hashable, V](MapGate[K, V]):
 
     def __init__(
         self,
-        loader: MayNot[Loading[[K], V]] = None,
-        fallback: MayNot[Fallback[K, V]] = None,
+        loader: MayNot[Loading[..., Any]] = None,
+        /,
         *,
+        source: MayNot[Loading[[], Mapping[Any, V]]] = None,
+        fallback: MayNot[Loading[[K], V]] = None,
         mode: LoadMode = "auto",
-        **tkw: Unpack[Loader.Input],
+        cache_fallback: bool = True,
+        data: Mapping[K, V] | None = None,
+        **tkw: Unpack[Loader.Input[V]],
     ) -> None:
-        super().__init__()
+        super().__init__(data)
         if mode not in ("auto", "item", "table"):
-            raise ValueError(f"unknown load mode: {mode!r}")
-        self.loader: Loader[[K], V] = Loader.loading(loader, **tkw)
-        self._fallback: MayNot[Fallback[K, V]] = fallback
+            raise GateRaiser.load_mode(mode, self)
+
+        item_loader: MayNot[Loading[[K], V]] = fallback
+
+        if loader is not None:
+            _raw_fn = loader._func if isinstance(loader, Loader) else loader
+            is_table: bool = mode == "table" or (
+                mode == "auto"
+                and source is None
+                and fallback is None
+                and is_nullary(_raw_fn)
+            )
+            if is_table and source is None:
+                source: Loader.Func = loader
+            elif item_loader is None:
+                item_loader: Loader.Func = loader
+
+        self.source: Loader[[], Mapping[Any, V]] = Loader.loading(source)
+        self.fallback: Loader[[K], V] = Loader.loading(item_loader, **tkw)
+        self.cache_fallback: bool = cache_fallback
         self._mode: LoadMode = mode
 
-    def __missing__(self, key: Any) -> MayBe[V]:
-        """Launch the Loader to fetch the Value or use Fallback"""
+    @property
+    def is_loaded(self) -> bool:
+        """True once no bulk source is pending and data or item loader exists"""
+        source_done: bool = not self.source.is_ready or bool(self.source)
+        data_available: bool = bool(self._data) or self.fallback.is_ready
+        return source_done and data_available
 
-        value: V | VOID = self.loader.load(key)
+    def hydrate(self) -> Self:
+        """Execute bulk table source once and absorb items through pipeline"""
+        if self.source.is_pending:
+            loaded: MayBe[Mapping[Any, V]] = self.source.load()
+            if loaded is not VOID:
+                if not isinstance(loaded, Mapping):
+                    raise GateRaiser.source_type(self, type(loaded).__name__)
+                self.absorb(loaded)
+        return self
 
-        if value is not VOID:
-            return value
+    def __missing__(self, lock: K, /) -> MayBe[V]:
+        """Hydrate pending bulk source first, then resolve via item loader"""
+        if self.source.is_pending:
+            self.hydrate()
+            if lock in self._data:
+                return self._data[lock]
 
-        if self._fallback is not None:
-            return self._fallback(key)
+        if self.fallback.is_ready:
+            self.fallback.reset()
+            value: MayBe[V] = self.fallback.load(lock)
+            if value is not VOID:
+                refined: V = self.refine(value)
+                if self.cache_fallback:
+                    self._data[lock] = refined
+                return refined
 
         return VOID
+
+
+def is_nullary(func: Callable[..., Any] | None, /) -> bool:
+    """Can this Function be called without any Arguments?"""
+    if func is None:
+        return False
+    try:
+        _params = signature(func).parameters.values()
+    except TypeError, ValueError:
+        return False
+    return not any(
+        param.kind
+        in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
+        and param.default is Parameter.empty
+        for param in _params
+    )
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
@@ -216,39 +259,69 @@ class CacheGate[K: Hashable, V](MapGate[K, V]):
 
     def __init__(
         self,
-        owner: type[V],
+        owner: type[V] | None = None,
         max_size: int | None = None,
         **tkw: _U[Loader.ClsInput],
     ):
-        self.owner: type[V] = owner
-        self.loader: Loader[[K], V] = Loader.loading(tkw.get("loader"), **tkw)
+        super().__init__()
+        _raw_loader = tkw.pop("loader", None)
+        self.owner: type[V] | None = owner
+        self.loader: Loader[[K], V] = Loader.loading(_raw_loader, **tkw)
         self.max_size: int | None = max_size
         self.hits: int = 0
         self.misses: int = 0
+        self.evictions: int = 0
         self._all_caches.append(self)
 
-    def fetch(self, key: K, factory: Callable[[], V]) -> V:
-        if key in self._data:
-            self.hits += 1
-            return self._data[key]
-        self.misses += 1
-        if self.max_size is not None and len(self._data) >= self.max_size:
-            # Evict oldest inserted key (FIFO) or trigger warning hook
+    def _evict_if_full(self, lock: K) -> None:
+        """Evict oldest inserted key (FIFO) when at capacity for a new key"""
+        if (
+            lock not in self._data
+            and self.max_size is not None
+            and self.max_size > 0
+            and len(self._data) >= self.max_size
+        ):
             self._data.pop(next(iter(self._data)))
-        value: V = factory()
-        self._data[key] = value
+            self.evictions += 1
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        if self.max_size is not None and self.max_size <= 0:
+            return
+        lock: K = self.locksmith(key)
+        self._evict_if_full(lock)
+        super().__setitem__(lock, value)
+
+    def __getitem__(self, key: Any, /) -> V:
+        misses_before: int = self.misses
+        value: V = super().__getitem__(key)
+        if self.misses == misses_before:
+            self.hits += 1
         return value
 
-    def __getitem__(self, key: Any) -> V:
-        # AI_TASK: wire this without destroying the MapGate.__getitem__ structure
-        # - maybe get self.misses in __missing__
-        # - here just count the total count?
+    def __missing__(self, lock: K, /) -> MayBe[V]:
+        self.misses += 1
+        if not self.loader.is_ready:
+            return VOID
+        self.loader.reset()
+        value: MayBe[V] = self.loader.load(lock)
+        if value is not VOID:
+            refined: V = self.refine(value)
+            self[lock] = refined
+            return refined
+        return VOID
+
+    def fetch(self, key: Any, factory: Callable[[], V] | None = None) -> V:
+        """Fetch cached value or compute via one-off factory / configured loader"""
+        if factory is None:
+            return self[key]
         lock: K = self.locksmith(key)
         if lock in self._data:
             self.hits += 1
             return self._data[lock]
         self.misses += 1
-        return self.__missing__(lock)
+        value: V = self.refine(factory())
+        self[lock] = value
+        return value
 
     @property
     def hit_rate(self) -> float:
@@ -260,17 +333,18 @@ class CacheGate[K: Hashable, V](MapGate[K, V]):
 
     def __str__(self) -> str:
         name: str = type(self).__name__
+        owner_label: str = f"{self.owner.__name__}::" if self.owner else ""
         _count: str = f"+{self.hits}|-{self.misses}={self.hits + self.misses}"
-        return f"{name}[{_count}::({len(self)})::{self.loader}]"
+        return f"{name}[{owner_label}{_count}::({len(self)})::{self.loader}]"
 
     def __repr__(self) -> str:
-        return f"{Kwargs.vars(self):nl}"
+        return f"{Kwargs.vars(self):nv}"
 
     @classmethod
     def report(cls) -> str:
         return (
-            "\n".join(str(cache) for cache in cls._all_caches)
-            or "CacheGate[none]"
+            "\n".join(f"{cache}" for cache in cls._all_caches)
+            or f"{cls.__name__}[none]"
         )
 
 
@@ -281,35 +355,55 @@ class _TestEnum(Enum):
     FAILING = auto()
 
 
-class GateRaiser(metaclass=RaiserMeta):
+class GateRaiser(metaclass=_err.RaiserMeta):
     """Explain Failures Meaningful"""
 
-    _error = SstPortError
+    _error = _err.SstPortError
 
-    enum_member = RaiserField[[str, str]](
+    enum_member = _err.RaiserField[[str, _Stringable]](
         KeyError,
         "{label}: Unknown Enum Member: {member!r}",
         test_input=("LABEL", _TestEnum.FAILING),
     )
-    enum_type = RaiserField[[str, str, str]](
+    enum_type = _err.RaiserField[[str, _Stringable, _Stringable]](
         TypeError,
         "{label}: Expected {owner} but received {incoming}",
-        test_input=(Loader(), _TestEnum, Enum),
+        test_input=("LABEL", _TestEnum, Enum),
     )
-    key_miss = RaiserField[[_Stringable, _Stringable]](
+    enum_extra = _err.RaiserField[[str, _Stringable]](
+        KeyError,
+        "{label}: Unexpected extra Enum Member(s): {extra}",
+        test_input=("LABEL", "EXTRA_MEMBER"),
+    )
+    enum_missing = _err.RaiserField[[str, _Stringable]](
+        KeyError,
+        "{label}: Missing value(s) for Enum Member(s): {missing}",
+        test_input=("LABEL", "MISSING_MEMBER"),
+    )
+    key_miss = _err.RaiserField[[_Stringable, _Stringable]](
         KeyError,
         "Invalid {key!r} for {self}!",
         test_input=(423, Loader(default="data")),
     )
+    load_mode = _err.RaiserField[[_Stringable, _Stringable]](
+        ValueError,
+        "Unknown load mode {mode!r} for {self}!",
+        test_input=("invalid_mode", "LazyMap[0]"),
+    )
+    source_type = _err.RaiserField[[_Stringable, str]](
+        TypeError,
+        "{self}: Bulk source must return a Mapping, got {actual_type}",
+        test_input=("LazyMap[0]", "list"),
+    )
 
-    @RaiserField.deco(
+    @_err.RaiserField.deco(
         TypeError,
         "Expected {data}, got {other} ({type})",
         test_input=(str, 22.5),
     )
     def deco1(expected: type, actual: Any, /):  # noqa:N805
-        args = Args.absorb(expected.__name__, actual, type(actual).__name__)
-        return RaiserParams.create(text_args=args)
+        _args = Args.absorb(expected.__name__, actual, type(actual).__name__)
+        return _err.RaiserParams.create(text_args=_args)
 
 
 if __name__ == "__main__":
@@ -360,7 +454,7 @@ if __name__ == "__main__":
                 _panel(f"Nothing to raise: {sst_error}", "green")
                 pass
         except Exception as error:
-            if isinstance(error, SstError):
+            if isinstance(error, _err.SstError):
                 _panel(f"Error: {sst_error}", "red")
                 pass
             else:

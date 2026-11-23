@@ -160,6 +160,9 @@ class Variadics(_typing.NamedTuple):
 class Var[T: Any = Any](NamedValue[T]):
     """Variable with Name and Value"""
 
+    # NEXT: add the keyformat to his here
+    # - maybe use __new__ to cast incoming not-str to str
+
     sep = TupleField[str]("=")
 
     def __call__(self, *args, **kwargs) -> Any:

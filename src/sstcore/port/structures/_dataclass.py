@@ -26,7 +26,7 @@ from dataclasses import MISSING
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from .._types import _DataClass as DataClass
-from ..empty import VOID, MayBe
+from ..empty import VOID, MayBe, MayNot
 from ..primitives import FieldSet, HashedTuple
 from ._gate import CacheGate
 
@@ -56,13 +56,13 @@ class CachedDataclassMeta(type):
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
         super().__init__(name, bases, namespace)
 
-        # AI_TASK: here needs the other cache be installed
-        cls._cache: CacheGate[_CacheKey, DataClass] = CacheGate(
-            # FIX:
-            owner=cls,
-            max_size=namespace.get("__cache_max__", None),
+        max_size: int | None = namespace.get(
+            "__cache_max__", getattr(cls, "__cache_max__", None)
         )
-        cls._sig: inspect.Signature | None = None
+        cls._cache: CacheGate[_CacheKey, DataClass] = CacheGate[
+            _CacheKey, DataClass
+        ](owner=cls, max_size=max_size)  # ty:ignore
+        cls._sig: MayNot[inspect.Signature] = None
 
     @property
     def cache(cls) -> CacheGate[_CacheKey, Any]:
@@ -98,9 +98,12 @@ class CachedDataclassMeta(type):
             HashedTuple(name, _resolve_field_value(name, value))
             for name, value in bound.arguments.items()
         )
-        return cls._cache.fetch(  # AI: check if this works
+
+        return cls._cache.fetch(
             cache_key,
-            lambda: super(CachedDataclassMeta, cls).__call__(*args, **kwargs),
+            factory=lambda: super(CachedDataclassMeta, cls).__call__(
+                *bound.args, **bound.kwargs
+            ),
         )
 
 
@@ -224,3 +227,55 @@ class ArgSpec[T](DataClassSpec, frozen=True):
     def validate(self) -> T:
         """Execute all Checks that the Target must fulfill"""
         return self.target
+
+
+if __name__ == "__main__":
+    from dataclasses import dataclass, field
+
+    from rich import print
+
+    @dataclass(frozen=True)
+    class QueryFilter(metaclass=CachedDataclassMeta):
+        __cache_max__ = 2  # small FIFO cap to show evictions
+
+        name: str
+        tags: list[str] = field(default_factory=lambda: ["core"])
+        flags: dict[str, bool] = field(default_factory=dict)
+
+    print(CacheGate.report())
+    # 1. Miss -> creates and caches instance (unhashable list/dict normalized)
+    f1 = QueryFilter("alpha", ["a", "b"], {"strict": True})
+    print(CacheGate.report())
+
+    # 2. Hit -> identical normalized key returns the exact same object
+    f2 = QueryFilter(name="alpha", tags=["a", "b"], flags={"strict": True})
+    assert f1 is f2
+
+    print(CacheGate.report())
+    # 3. Second unique entry (default_factory resolves to ["core"])
+    f3 = QueryFilter("beta")
+
+    print(CacheGate.report())
+    # 4. Third unique entry exceeds __cache_max__ = 2 -> evicts "alpha" (FIFO)
+    f4 = QueryFilter("gamma")
+
+    print(CacheGate.report())
+    # Inspect class-level CacheGate stats
+    gate = QueryFilter.cache
+    print(gate)
+    # CacheGate[QueryFilter::+1|-3=4::(2)::Loader[empty]]
+    print(
+        f"hits={gate.hits}, misses={gate.misses}, "
+        f"evictions={gate.evictions}, hit_rate={gate.hit_rate:.0%}"
+    )
+    # hits=1, misses=3, evictions=1, hit_rate=25%
+
+    # Inspect all CacheGate instances registered across the process
+    print(CacheGate.report())
+    print()
+    print(CachedDataclassMeta.cache)
+    print()
+    print(f"{CachedDataclassMeta.cache}")
+    print()
+    print(f"{QueryFilter.cache!r}")
+    print(f"{QueryFilter.cache._data!r}")

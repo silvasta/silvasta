@@ -26,6 +26,7 @@ from typing import Any, NamedTuple, Self
 
 from .._error import SstError
 from ._enumfield import EnumFieldMap
+from ._gate import GateRaiser
 
 type EnumId[EnumT: Enum] = EnumT | str | int
 
@@ -76,14 +77,13 @@ class SstEnumMeta(EnumMeta):
         new_enum_cls = super().__new__(metacls, cls, bases, classdict, **kwds)
         new_enum_cls._zero_indexed = resolved.zero
         new_enum_cls._walk_for_zero = resolved.walk
-
-        # AI_TASK: here should one of the Maps be installed
-        new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)
+        if issubclass(new_enum_cls, Enum):
+            new_enum_cls._enum_fields_ = EnumFieldMap(new_enum_cls)
 
         return new_enum_cls
 
     def membership(cls, target, /) -> EnumRelation:
-        """Check if Target is ClsEnum (Sub-)Class or Member"""
+        """Check with EnumCls if Target is (Sub-)Class or Member"""
         if isinstance(target, cls):
             return (type(target), target)
         if isinstance(target, EnumMeta) and issubclass(target, cls):
@@ -92,7 +92,7 @@ class SstEnumMeta(EnumMeta):
 
     @classmethod
     def classify(metacls, target: Any, /) -> EnumRelation:  # noqa: N804
-        """Check if Target is any SstEnumMeta Enum Class or Member"""
+        """Check with SstEnumMeta if Target is (Sub-)Class or Member"""
         if isinstance(target, metacls):
             return (target,)
         if isinstance(type(target), metacls) and isinstance(target, Enum):
@@ -108,30 +108,28 @@ class SstEnumMeta(EnumMeta):
                     return cls(index)
                 case str() as name:
                     for member_name, member in cls._member_map_.items():
-                        # NEXT:
                         if name.lower() == member_name.lower():
                             return member
-                    # NEXT: Raiser?
-                    raise KeyError(f"Unrecognized name: {identifier!r}")
+                    raise GateRaiser.enum_member(cls.__name__, identifier)
                 case _:
-                    raise TypeError(f"Unrecognized type: {identifier!r}")
-        except (ValueError, KeyError, TypeError) as error:
+                    raise GateRaiser.enum_type("Resolve", cls, identifier)
+        except ValueError, KeyError, TypeError:
             if default is None:
-                raise type(error)(f"Resolving {cls} failed") from error
+                raise
         return default
 
-    def validate_fields(cls) -> None:
+    def validate_fields(cls, *, strict: bool = False) -> None:
         """Validate all EnumField descriptors attached to this Enum."""
-        cls._enum_fields_.validate()
+        cls._enum_fields_.validate(strict=strict)
 
     def fields_ready(cls) -> bool:
         """Check whether all attached EnumFields have been hydrated."""
-        return all(field.is_loaded for field in cls._enum_fields_.values())
+        return cls._enum_fields_.is_ready
 
-    @classmethod
-    def validate_all_registered(metacls) -> None:  # noqa:N804
-        """Single test-suite hook to hydrate & validate every EnumField in sstcore."""
-        EnumFieldMap.validate_all()
+    @staticmethod
+    def validate_all_registered(*, strict: bool = False) -> None:
+        """Single test-suite hook to hydrate & validate every EnumField"""
+        EnumFieldMap.validate_all(strict=strict)
 
 
 class WalkZero(NamedTuple):
