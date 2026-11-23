@@ -26,7 +26,7 @@ class ColoredName(NameParser):
         """Intercept rich pattern, compile both versions"""
         self.color_pattern = pattern
         raw_pattern = Text.from_markup(pattern).plain
-        super().update_pattern(raw_pattern)
+        super().update(raw_pattern)
 
     def rich(self, target: dict | list | tuple, /) -> str:
         """Colored output using the original rich markup pattern."""
@@ -37,7 +37,7 @@ class ColoredName(NameParser):
 
     def raw(self, target: dict | list | tuple, /) -> str:
         """Explicit raw alias (same as default __call__)."""
-        return self.format(target)
+        return self.render(target)
 
     def extract(self, name: Path | str) -> dict[str, Any]:  # CHECK: why?
         """Always extract from the raw (stripped) version."""

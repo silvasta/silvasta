@@ -36,8 +36,9 @@ def data(
     if is_basemodel(target):
         return pydantic(target, filter, exclude=exclude)
 
-    active = AttrFilter.resolve(filter, exclude=exclude)
-    return _scan_object(target, active)
+    _active = AttrFilter.resolve(filter, exclude=exclude)
+
+    return _scan_object(target, _active)
 
 
 def pydantic(
@@ -68,7 +69,7 @@ def pydantic(
 
 
 def _scan_object(  # LATER: expose?
-    target: Any, /, accept: Callable[[str], bool] | None = None
+    target: Any, accept: Callable[[str], bool] | None = None, /
 ) -> dict[str, Any]:
     """Extract and Filter Instance and relevant Class Attributes"""
 

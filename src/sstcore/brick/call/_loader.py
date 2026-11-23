@@ -1,7 +1,8 @@
 """
 Reflective Loader & Full Generic Spectrum Resolution
 
-.
+- moved here from the port as the small helper went out of control
+
 """
 
 __all__: list[str] = [
@@ -17,7 +18,7 @@ from sstcore.port.empty import VOID, MayNot
 from sstcore.port.primitives._loader import Loader as _PortLoader
 
 from ..reflect import _typearg
-from ..reflect._signature import extract_signature_types, looks_generic
+from ..reflect.___signature import extract_signature_types, looks_generic
 from ..reflect._typearg import extract_type_args, format_type_arg
 
 

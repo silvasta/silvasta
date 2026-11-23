@@ -4,70 +4,50 @@ Type Test
 .
 """
 
-from typing import Any, ParamSpec, TypeIs, TypeVarTuple, get_args
+from collections.abc import Callable
+from typing import (
+    Any,
+    ParamSpec,
+    TypeAliasType,
+    TypeIs,
+    TypeVarTuple,
+    get_args,
+    reveal_type,
+)
 
-#  LINE: -- Currently Used -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-_CURRENT_VARIADICS = (ParamSpec, TypeVarTuple)
-_CURRENT_VARIADICS_ = ParamSpec | TypeVarTuple
-
-
-def is_variadic(target: Any, /) -> TypeIs[_CURRENT_VARIADICS_]:
-    return isinstance(target, _CURRENT_VARIADICS)
-
-
-def _is_variadic1(target: Any, /) -> TypeIs[_CURRENT_VARIADICS]:  # AI: issue?
-    return isinstance(target, _CURRENT_VARIADICS)  # AI: runtime issue right?
-
-
-# Option 1: Plain UnionType (works directly in annotations AND isinstance)
 type Variadic = ParamSpec | TypeVarTuple
+# EXTRACT:
 VARIADICS: tuple[type, ...] = get_args(Variadic.__value__)
-# -> (<class 'typing.ParamSpec'>, <class 'typing.TypeVarTuple'>)
-
-# Option 2: Direct UnionType variable (no .__value__ needed)
-_Variadic = ParamSpec | TypeVarTuple
-_VARIADICS: tuple[type, ...] = get_args(_Variadic)
-
-VAR = ParamSpec | TypeVarTuple
 
 
-def _is_variadic2(target: Any, /) -> TypeIs[Variadic]:
-    # FAIL:
-    #   File "/home/silvan/PolyBox/Code/sstcore/latest/src/sstcore/brick/reflect/___typearg.py", line 37, in _is_variadic2
-    #     return isinstance(target, Variadic)
-    # TypeError: isinstance() arg 2 must be a type, a tuple of types, or a union
-    return isinstance(target, Variadic)
+def is_variadic(target: Any, /) -> TypeIs[Variadic]:
+    # EXTRACT:
+    # EXTRACT:
+    return isinstance(target, get_args(Variadic.__value__))
 
 
-def _is_variadic3(target: Any, /) -> TypeIs[VARIADICS]:
-    return isinstance(target, VARIADICS)
+def unpack_type(target: TypeAliasType, /) -> tuple[type, ...]:
+    # EXTRACT:
+    # EXTRACT:
+    reveal_type(target)
+    return (
+        get_args(target.__value__)
+        if hasattr(target, "__value__")
+        else (target,)
+        if isinstance(target, type)
+        else (type(target),)
+    )
 
 
-#  LINE: -- ... -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-def _is_variadic4(target: Any, /) -> TypeIs[Variadic]:
-    return isinstance(target, VARIADICS)
-
-
-def _is_variadic5(target: Any, /) -> TypeIs[_Variadic]:
-    return isinstance(target, _VARIADICS)
-
-
-def _is_variadic6(target: Any, /) -> TypeIs[_VARIADICS]:
-    return isinstance(target, _Variadic)
+reveal_type(unpack_type(Variadic))
+reveal_type(unpack_type(VARIADICS))
+reveal_type(unpack_type("str"))
 
 
 if __name__ == "__main__":
-    variadics = [
+    variadics: list[Callable] = [
         is_variadic,
-        _is_variadic1,
-        # _is_variadic2,
-        _is_variadic3,
-        _is_variadic4,
-        _is_variadic5,
-        _is_variadic6,
+        unpack_type,
     ]
     tests = ["hello", 1, ParamSpec("arg1")]
     for is_v in variadics:
