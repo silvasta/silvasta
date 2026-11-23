@@ -8,11 +8,11 @@ Govern the Behaviour of tiny helper Mappings
 
 """
 
-from collections.abc import Callable, Iterator, KeysView, Mapping
+from collections.abc import Callable, Hashable, Iterator, KeysView, Mapping
 from contextlib import contextmanager
 from enum import Enum, auto
 from inspect import Parameter, signature
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar, Literal, Unpack
 from typing import Unpack as _U  # noqa: N814
 
 from .._error import (
@@ -25,7 +25,6 @@ from .._error import (
 from .._types import _Stringable
 from ..empty import VOID, MayBe, MayNot
 from ..primitives import Args, Kwargs, Loader, Loading, Var
-from ..primitives._loader import LoaderClsInput
 
 type LoadMode = Literal["auto", "item", "table"]
 type Fallback[K, V] = Callable[[K], V] | Loader[[K], V]
@@ -47,16 +46,11 @@ def _is_nullary(func: Callable[..., Any] | None) -> bool:
     )
 
 
-class MapGate[K: str, V]:
+class MapGate[K: Hashable, V]:
     def __init__(self, data: dict[K, V] | None = None):
-        self._data: dict[str, V] = {}
+        self._data: dict[K, V] = {}
         if data:
             self.absorb(data)
-
-    def absorb(self, map: Mapping | None = None, /, **kwargs) -> Any:
-        """Send mapped Items trough register pipeline"""
-        for key, item in (map or {} | kwargs).items():
-            self[key] = item
 
     def __delitem__(self, key: Any) -> None:
         del self._data[self.locksmith(key)]
@@ -134,6 +128,20 @@ class MapGate[K: str, V]:
         except KeyError, TypeError:
             pass
 
+    def absorb(self, map: Mapping | None = None, /, **kwargs) -> Any:
+        """Send mapped Items trough register pipeline"""
+        for key, item in (map or {} | kwargs).items():
+            self[key] = item
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError, TypeError:
+            return default
+
+    def clear(self) -> None:
+        self._data.clear()
+
     def keys(self) -> KeysView:
         """Provide Keys for **unpacking"""
         return self._data.keys()
@@ -141,6 +149,9 @@ class MapGate[K: str, V]:
     def values(self) -> Iterator[V]:
         """Stream all Values"""
         yield from self._data.values()
+
+    def items(self) -> Iterator[tuple[K, V]]:
+        yield from self._data.items()
 
     def __iter__(self) -> Iterator[Var]:  # Any?
         """Provide all Named key and value Tuple"""
@@ -155,36 +166,24 @@ class MapGate[K: str, V]:
     def __str__(self) -> str:
         return f"{type(self).__name__}[{len(self)}]"
 
-    # CHECK: compare new formatting with this
-    # def __repr__(self) -> str:  # LATER: use Var and Kwargs
-    #     text: str = "\n".join(f"{key}::{self[key]}" for key in self)
-    #     return f"{self}[{f'\n{text}\n' if text else 'X'}]"
-
     def __repr__(self) -> str:
-        # IDEA: assing Kwargs in __init__, like the live viewer
-        kwargs = Kwargs(self._data)
-        kwargs.sep = "\n"
-
-        # REMOVE:
-        _text: str = "\n".join(f"{var}" for var in self)
-        _text: str = f"{kwargs}"
-
-        return f"{self}[{f'\n{kwargs}\n' if kwargs else 'X'}]"
+        _kwargs = Kwargs(self._data)  # ty:ignore
+        return f"{self}[{f'\n{_kwargs:nv}\n' if _kwargs else 'X'}]"
 
 
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class LazyMap[K: str, V](MapGate[K, V]):
+class LazyMap[K: Hashable, V](MapGate[K, V]):
     """Loader may be for all keys or only for incoming"""
 
     def __init__(
         self,
-        loader: Loader[[K], V] | Loading[[K], V] | None = None,
+        loader: MayNot[Loading[[K], V]] = None,
         fallback: MayNot[Fallback[K, V]] = None,
         *,
         mode: LoadMode = "auto",
-        **tkw: Any,
+        **tkw: Unpack[Loader.Input],
     ) -> None:
         super().__init__()
         if mode not in ("auto", "item", "table"):
@@ -210,26 +209,7 @@ class LazyMap[K: str, V](MapGate[K, V]):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class ActiveMap[K: str, V](MapGate[K, V]):
-    def __init__(
-        self,
-        data: Mapping[K, V] | None = None,
-        /,
-        **named: V,
-    ) -> None:
-        super().__init__()
-        if data is not None or named:
-            self.register(data, **named)
-
-    def register(self, map: Mapping[K, V] | None = None, /, **named: V) -> None:
-        self.absorb(map)
-        self.absorb(named)
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class CacheGate[K: str, V](MapGate[K, V]):
+class CacheGate[K: Hashable, V](MapGate[K, V]):
     """Observable Flyweight Cache Gate with hit/miss tracking and size guard."""
 
     _all_caches: ClassVar[list[CacheGate[Any, Any]]] = []
@@ -238,14 +218,10 @@ class CacheGate[K: str, V](MapGate[K, V]):
         self,
         owner: type[V],
         max_size: int | None = None,
-        **tkw: _U[LoaderClsInput],
+        **tkw: _U[Loader.ClsInput],
     ):
-        # AI: the common loader root is missing... maybe 1 class that only operates as root fork
-        # super().__init__(
-        #     **tkw  # NOTE: maybe the loader needs to be split and inserted positionally
-        # )
         self.owner: type[V] = owner
-        # self._loader: Callable[[K], V] = loader
+        self.loader: Loader[[K], V] = Loader.loading(tkw.get("loader"), **tkw)
         self.max_size: int | None = max_size
         self.hits: int = 0
         self.misses: int = 0
@@ -263,20 +239,32 @@ class CacheGate[K: str, V](MapGate[K, V]):
         self._data[key] = value
         return value
 
+    def __getitem__(self, key: Any) -> V:
+        # AI_TASK: wire this without destroying the MapGate.__getitem__ structure
+        # - maybe get self.misses in __missing__
+        # - here just count the total count?
+        lock: K = self.locksmith(key)
+        if lock in self._data:
+            self.hits += 1
+            return self._data[lock]
+        self.misses += 1
+        return self.__missing__(lock)
+
     @property
     def hit_rate(self) -> float:
         total: int = self.hits + self.misses
-        return self.hits / total if total else 0.0
+        return (self.hits / total) if total else 0.0
+
+    def reset_stats(self) -> None:
+        self.hits = self.misses = self.evictions = 0
 
     def __str__(self) -> str:
-        owner: str = getattr(self.owner, "__name__", "?")
-        return (
-            f"CacheGate[{owner}: size={len(self)}, hits={self.hits}, "
-            f"misses={self.misses}, hit_rate={self.hit_rate:.1%}]"
-        )
+        name: str = type(self).__name__
+        _count: str = f"+{self.hits}|-{self.misses}={self.hits + self.misses}"
+        return f"{name}[{_count}::({len(self)})::{self.loader}]"
 
     def __repr__(self) -> str:
-        return str(self)
+        return f"{Kwargs.vars(self):nl}"
 
     @classmethod
     def report(cls) -> str:

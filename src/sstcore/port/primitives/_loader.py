@@ -51,8 +51,8 @@ class LoaderClsInput(_LoaderClsInput, LoaderInput, TypedDict):
 class Loader[**P, T](LoaderView):
     """Govern the tools and state for predefined Loading"""
 
-    Func = LoadFunc
     # CHECK: naming proper and mounting useful?
+    Func = LoadFunc
     Input = LoaderInput
     ClsInput = LoaderClsInput
 

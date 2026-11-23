@@ -5,20 +5,29 @@ Define Fields for Enums
 """
 
 __all__: list[str] = [
+    "EnumMemberMap",
+    "EnumSlot",
     "EnumField",
-    "BoundEnumField",
-    "Loader",
+    "EnumFieldMap",
 ]
 
 
 from collections.abc import Mapping
 from enum import Enum
-from typing import Any, ClassVar, Protocol, Self, overload, runtime_checkable
+from typing import (
+    Any,
+    ClassVar,
+    Protocol,
+    Self,
+    Unpack,
+    overload,
+    runtime_checkable,
+)
 
 from .._modulepath import ModulePath
-from ..empty import VOID, MayBe, MayNot
-from ..primitives import Loader
-from ._gate import ActiveMap, GateRaiser
+from ..empty import MayNot
+from ..primitives import Loader, Loading
+from ._gate import GateRaiser, LazyMap, MapGate
 
 
 @runtime_checkable
@@ -27,28 +36,47 @@ class EnumFieldLoader[E: Enum, Value: Any](Protocol):
         """Prepare Enum Data for Field"""
 
 
-class EnumFieldMap(ActiveMap):
+# AI: this is enum map type 1, the member registry
+class EnumMemberMap[E: Enum, V](LazyMap):
     """Store not shared Data for single Enum Member per Field or BoundField"""
 
-    _registry: ClassVar[list[EnumFieldMap]] = []
+    _registry: ClassVar[list[EnumMemberMap]] = []
 
-    def __init__(self, owner: type[Enum]) -> None:
-        unit = super().__init__()
-        unit.register(  # TODO: maybe classmethod on base for this
-            {
-                name: getattr(owner, name)
-                for base in reversed(owner.__mro__)
-                for name, attr in vars(base).items()
-                if isinstance(attr, EnumField)
-            }
+    def __init__(
+        self,
+        owner: type[E],
+        label: str = "",
+        *,
+        fallback: Loading[[E], V] | None = None,
+        source: Loading[[], Mapping[Any, V]] | None = None,
+        cache_fallback: bool = False,
+        **tkw: Unpack[Loader.Input[V]],
+    ) -> None:
+        super().__init__(
+            # FIX: something with self.source is wrong
+            fallback,
+            source=source,
+            cache_fallback=cache_fallback,
+            **tkw,
         )
-        self.owner: type[Enum] = owner
-        if self and len(owner) > 0:
-            self._registry.append(self)
+        self.owner: type[E] = owner
+        self.label: str = label or owner.__name__
 
     @property
     def is_ready(self) -> bool:
         return all(field.is_loaded for field in self.values())
+
+    def locksmith(self, key: Any) -> E:
+        if type(key) is self.owner:
+            return key
+        if isinstance(key, str):
+            try:
+                return self.owner._member_map_[key]  # ty:ignore
+            except KeyError as error:
+                raise GateRaiser.enum_member(self.label, key) from error
+        raise GateRaiser.enum_type(
+            self.label, self.owner.__name__, type(key).__name__
+        )
 
     def validate(self):
         """Ensure all Enum Members on this Cls are Loaded and Valid"""
@@ -65,59 +93,110 @@ class EnumFieldMap(ActiveMap):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class EnumMemberMap[E: Enum, V](ActiveMap[E, V]):
-    """Store Enums by Member for Global Meta Registry"""
+# AI: unsure if this one is required, maybe merge with upper
+class EnumSlot[EnumT: Enum, T](EnumMemberMap[EnumT, T]):
+    """Per-Enum-class bound storage, lazy hydrator, and validator."""
 
-    def __init__(self, owner: type[E], label: str = "") -> None:
-        super().__init__()
-        self.owner: type[E] = owner
-        self.label: str = label or owner.__name__
+    def __init__(
+        self,
+        owner: type[EnumT],
+        name: str,
+        *,
+        source: Loader[[], Mapping[Any, T]] | None = None,
+        fallback: Loader[[EnumT], T] | None = None,
+    ) -> None:
+        super().__init__(
+            owner=owner,
+            label=f"{owner.__name__}.{name}",
+            source=source,
+            fallback=fallback,
+            cache_fallback=False,
+        )
+        self.name: str = name
 
-    def locksmith(self, key: Any) -> E:
-        if type(key) is self.owner:
-            return key
-        if isinstance(key, str):  # TODO: SstEnumMeta.resolve
-            try:
-                return self.owner._member_map_[key]  # ty:ignore
-            except KeyError as error:
-                raise GateRaiser.enum_member(self.label, key) from error
+    @property
+    def is_loaded(self) -> bool:
+        """True once no bulk source is pending and data or fallback exists."""
+        # FIX: something with self.source is wrong
+        source_done: bool = not self.source or self.source.is_ready
+        return source_done and (bool(self._data) or bool(self.fallback))
 
-        raise GateRaiser.enum_type(self.label, key, type(key).__name__)
+    def bind_loader(
+        self, fn: EnumFieldLoader[EnumT, T]
+    ) -> EnumFieldLoader[EnumT, T]:
+        """Attach or replace the bulk lazy loader (usable as a decorator)."""
+        return self.source.bind(fn)
+
+    def validate(self, *, strict: bool = False) -> None:
+        """Hydrate and verify member coverage.
+
+        Unknown keys always raise. Missing members raise unless a fallback or
+        default is configured (pass strict=True to enforce 1-to-1 coverage).
+        """
+        self.hydrate()
+        allowed: set[EnumT] = set(self.owner._member_map_.values())  # ty:ignore
+        actual: set[EnumT] = set(self._data)
+
+        if extra := actual - allowed:
+            raise GateRaiser.enum_extra(self.label, extra)
+
+        if strict or not self.fallback:
+            required: set[EnumT] = set(self.owner)
+            if missing := required - actual:
+                names: str = ", ".join(m.name or str(m) for m in missing)
+                raise GateRaiser.enum_missing(self.label, names)
 
 
+# AI: the field to mount it
 class EnumField[T]:
     """Setup independent Descriptor per EnumCls with Lazy data binding"""
 
     def __init__(
         self,
         *,
-        # AI_TASK: apply Loader and maybe directly cachemap?
-        loader: MayNot[Loader[[Enum], T]] = None,
-        default: MayBe[T] = VOID,
-        fallback: MayNot[Loader[[Enum], T]] = None,
+        source: MayNot[
+            Loader[[], Mapping[Any, T]] | EnumFieldLoader[Any, T]
+        ] = None,
+        fallback: MayNot[Loader[[Any], T] | Loading[[Any], T]] = None,
+        **tkw: Unpack[Loader.Input[T]],
     ) -> None:
-        self._loader: Loader[[Enum], T] = (
-            Loader(fallback, default=default) if loader is None else loader
+        self._source: Loader[[], Mapping[Any, T]] = (
+            source if isinstance(source, Loader) else Loader(source)
+        )
+        self._fallback: Loader[[Any], T] = (
+            fallback.update(**tkw)
+            if isinstance(fallback, Loader)
+            else Loader(fallback, **tkw)
         )
         self._name: str = ""
-        self._slots: dict[type[Any], BoundEnumField[Any, T]] = {}  # NEXT:
+        self._slots: LazyMap[Enum, EnumSlot[Any, T]] = LazyMap(
+            self._make_slot, cache_fallback=True
+        )
 
-    def __set_name__(self, owner: type, name: str) -> None:
-        # LATER: owner?
-        self._name: str = name
+    def __set_name__(self, owner: type[Any], name: str) -> None:
+        _ = owner
+        self._name = name
+
+    def _make_slot[E: Enum](self, owner: type[E]) -> EnumSlot[E, T]:
+        return EnumSlot(
+            owner=owner,
+            name=self._name,
+            source=self._source.clone(),
+            fallback=self._fallback.clone(),
+        )
 
     @overload
     def __get__[E: Enum](
         self, member: None, owner: type[E]
-    ) -> BoundEnumField[E, T]: ...
+    ) -> EnumSlot[E, T]: ...
     @overload
     def __get__(self, member: Enum, owner: type[Any]) -> T: ...
     def __get__[E: Enum](
         self, member: E | None, owner: type[E]
-    ) -> BoundEnumField[E, T] | T:
-        """Provide BoundEnumField for EnumCls or extract Value for Member"""
-        slot: BoundEnumField[E, T] = self._slot_for(owner)
-        return slot if member is None else slot.get(member)
+    ) -> EnumSlot[E, T] | T:
+        """Return EnumSlot on class access, or resolve member value."""
+        slot: EnumSlot[E, T] = self._slots[owner]
+        return slot if member is None else slot[member]
 
     @classmethod
     def imports(
@@ -125,110 +204,58 @@ class EnumField[T]:
         path: ModulePath,
         *,
         call_it: bool = False,
-        # TODO: loader or default/fallback
-        default: MayBe[T] = VOID,
-        fallback: MayNot[Loader[[Enum], T]] = None,
+        fallback: MayNot[Loading[[Any], T]] = None,
+        **tkw: Unpack[Loader.Input[T]],
     ) -> Self:
-        """Create Lazy Field by 'module.path:Attr' evaluation"""
-        return cls.lazy(  # FIX:
+        """Create lazy field via deferred 'module.path:Attr' resolution."""
+        return cls.lazy(
             path.lazy_loader(call_if_callable=call_it),
-            default=default,
             fallback=fallback,
+            **tkw,
         )
 
     @classmethod
     def lazy(
         cls,
-        loader: Loader[[Enum], T],
+        loader: Loader[[], Mapping[Any, T]] | EnumFieldLoader[Any, T],
         *,
-        default: MayBe[T] = VOID,
-        fallback: MayNot[Loader[[Enum], T]] = None,  # REMOVE: ??
+        fallback: MayNot[Loader[[Any], T] | Loading[[Any], T]] = None,
+        **tkw: Unpack[Loader.Input[T]],
     ) -> Self:
-        """Create Lazy Field with Zero-Arg Loader"""
-        return cls(loader=loader, default=default, fallback=fallback)
-
-    def _slot_for[E: Enum](self, owner: type[E]) -> BoundEnumField[E, T]:
-        """Provide per owner cached Field and load if needed"""
-        if owner not in self._slots:
-            self._slots[owner] = BoundEnumField(
-                owner, self._name, loader=self._loader.clone()
-            )
-        return self._slots[owner]
+        """Create lazy field backed by a zero-arg bulk table loader."""
+        return cls(source=loader, fallback=fallback, **tkw)
 
 
-class BoundEnumField[EnumT: Enum, T]:  # RENAME: this is acually not a Field...
-    """Per-Enum-class storage, lazy loader, and validator for EnumField"""
+# AI: this is enum map type 2, for the meta registry
+class EnumFieldMap[E: Enum](MapGate[E, EnumSlot[Any, Any]]):
+    """Per-EnumCls map of field_name -> EnumSlot with global registry."""
 
-    def __init__(
-        self, owner: type[EnumT], name: str, loader: Loader[[EnumT], T]
-    ) -> None:
-        self.owner: type[EnumT] = owner
-        self.name: str = name
-        # WARN: dispatch of Load Full Table and Load Single Enum
-        self._loader: Loader[[EnumT], T] = loader
-        self._data: dict[EnumT, T] = {}  # NEXT: CacheMap
+    _registry: ClassVar[list[EnumFieldMap]] = []
 
-    def __str__(self):
-        return f"{self.owner.__name__}.{self.name}"
-
-    def __repr__(self):
-        return f"{self}[{self._loader=},{self._data=}]"
-
-    # AI_TASK: establish Loader and LazyMap
+    def __init__(self, owner: type[Enum]) -> None:
+        super().__init__(
+            {
+                name: getattr(owner, name)
+                for base in reversed(owner.__mro__)
+                for name, attr in vars(base).items()
+                if isinstance(attr, EnumField)
+            }
+        )
+        self.owner: type[Enum] = owner
+        if self and len(owner) > 0:
+            self._registry.append(self)
 
     @property
-    def is_loaded(self) -> bool:
-        # REMOVE: replaced by loader
-        return self._loader.is_done and (bool(self._data))  #
+    def is_ready(self) -> bool:
+        return all(slot.is_loaded for slot in self.values())
 
-    def bind_loader(self, loader: Loader[[EnumT], T]) -> Loader[[EnumT], T]:
-        # REMOVE: replaced by loader
-        """Attach Lazy Loader externally (e.g. as decorator)"""
-        self._loader: Loader[[EnumT], T] = loader
-        return loader
+    def validate(self, *, strict: bool = False) -> None:
+        """Hydrate and validate all EnumSlots attached to this Enum class."""
+        for slot in self.values():
+            slot.validate(strict=strict)
 
-    def get(self, member: EnumT) -> T:
-        """Fetch Member Data or Fallback or use Default or Raise"""
-        if member not in self._data and not self._ensure_loaded(member):
-            raise RuntimeError(f"Missing Data for {member} on {self}")
-        return self._data[member]
-
-    def register(
-        self,
-        mapping: Mapping[EnumT, T] | None = None,
-        /,
-        **by_name: T,
-    ) -> None:
-        """Update cached data by Enum member mapping or directly by  member name kwargs"""
-        # NEXT: CacheMap, here will not a lot remain
-        if mapping:
-            self._data.update(mapping)
-        if by_name:
-            members: dict[str, EnumT] = self.owner._member_map_  # ty:ignore - better than cast
-            for key, value in by_name.items():
-                try:
-                    member: EnumT = members[key]
-                except KeyError:
-                    raise KeyError(f"{self}: unknown member {key!r}") from None
-                self._data[member] = value
-
-    def validate(self) -> None:  # IDEA: return bool?
-        """Ensure 1-to-1 coverage between Enum members and registered values."""
-        # CHECK:self._ensure_loaded()
-        required: set[EnumT] = set(self.owner)
-        allowed: set[EnumT] = set(self.owner._member_map_.values())  # ty:ignore - better than cast
-        actual: set[EnumT] = set(self._data)
-
-        if missing := required - actual:
-            names: str = ", ".join(m.name or str(m) for m in missing)
-            raise ValueError(f"{self} Missing for Members: {names}")
-
-        if extra := actual - allowed:
-            raise ValueError(f"{self} Unknown Keys: {extra}")
-
-    def _ensure_loaded(self, member) -> bool:
-        # TODO: check with registry, add somehow there
-        if (resolved := self._loader.try_resolve(member)) is not VOID:  # ty:ignore FIX:
-            self._data[member] = resolved
-            return True
-        return False
+    @classmethod
+    def validate_all(cls, *, strict: bool = False) -> None:
+        """Hydrate and validate every registered EnumField across sstcore."""
+        for field_map in cls._registry:
+            field_map.validate(strict=strict)

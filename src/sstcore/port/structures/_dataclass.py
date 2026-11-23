@@ -55,6 +55,8 @@ class CachedDataclassMeta(type):
     def __init__(cls, name: str, bases: tuple, namespace: dict[str, Any]):
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
         super().__init__(name, bases, namespace)
+
+        # AI_TASK: here needs the other cache be installed
         cls._cache: CacheGate[_CacheKey, DataClass] = CacheGate(
             # FIX:
             owner=cls,
