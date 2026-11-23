@@ -23,24 +23,15 @@ import inspect
 import typing as _t
 from collections.abc import Mapping
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeGuard, TypeIs
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from .._types import _DataClass as DataClass
 from ..empty import VOID, MayBe, MayNot
 from ..primitives import FieldSet, HashedTuple
 from ._gate import CacheGate
 
-type CacheKey = tuple[HashedTuple, ...]
-
 type Cache = CacheGate[CacheKey, DataClass]
-
-
-def _is_cached_datacls_guard(target: object, /) -> TypeGuard[type[DataClass]]:
-    return isinstance(target, CachedDataclassMeta)
-
-
-def _is_cached_datacls_is(target: object, /) -> TypeIs[type[DataClass]]:
-    return isinstance(target, CachedDataclassMeta)
+type CacheKey = tuple[HashedTuple, ...]
 
 
 class CachedDataclassMeta(type):
@@ -63,22 +54,23 @@ class CachedDataclassMeta(type):
         __dataclass_fields__: ClassVar[dict[str, _dc.Field[Any]]]
 
     def __init__(cls, name: str, bases: tuple, namespace: dict[str, Any]):
-        # TODO: check if slotted dataclasses run twice / get cached twice
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
-
         super().__init__(name, bases, namespace)
 
-        cls._cache: Cache = CacheGate[CacheKey, DataClass](
-            owner=cls,  # ty:ignore - not already dataclass...
-            max_size=namespace.get(
-                "__cache_max__", getattr(cls, "__cache_max__", None)
-            ),
-        )
         cls._sig: MayNot[inspect.Signature] = None
+        cls._cache_max: MayNot[int] = namespace.get(
+            "__cache_max__", getattr(cls, "__cache_max__", None)
+        )
+        cls._cache: MayNot[Cache] = None
 
     @property
     def cache(cls) -> CacheGate[CacheKey, DataClass]:
         """Public class-level gate: e.g. AttrFilter.cache.hits or print(AttrFilter.cache)"""
+        if cls._cache is None:
+            cls._cache: Cache = CacheGate[CacheKey, DataClass](
+                owner=_t.cast(type[DataClass], cls),
+                max_size=cls._cache_max,
+            )
         return cls._cache
 
     @property
@@ -111,7 +103,7 @@ class CachedDataclassMeta(type):
             for name, value in bound.arguments.items()
         )
 
-        return cls._cache.fetch(
+        return cls.cache.fetch(
             cache_key,
             factory=lambda: super(CachedDataclassMeta, cls).__call__(
                 *bound.args, **bound.kwargs
