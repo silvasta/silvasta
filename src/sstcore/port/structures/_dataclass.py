@@ -23,14 +23,24 @@ import inspect
 import typing as _t
 from collections.abc import Mapping
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeGuard, TypeIs
 
 from .._types import _DataClass as DataClass
 from ..empty import VOID, MayBe, MayNot
 from ..primitives import FieldSet, HashedTuple
 from ._gate import CacheGate
 
-type _CacheKey = tuple[HashedTuple, ...]
+type CacheKey = tuple[HashedTuple, ...]
+
+type Cache = CacheGate[CacheKey, DataClass]
+
+
+def _is_cached_datacls_guard(target: object, /) -> TypeGuard[type[DataClass]]:
+    return isinstance(target, CachedDataclassMeta)
+
+
+def _is_cached_datacls_is(target: object, /) -> TypeIs[type[DataClass]]:
+    return isinstance(target, CachedDataclassMeta)
 
 
 class CachedDataclassMeta(type):
@@ -53,19 +63,21 @@ class CachedDataclassMeta(type):
         __dataclass_fields__: ClassVar[dict[str, _dc.Field[Any]]]
 
     def __init__(cls, name: str, bases: tuple, namespace: dict[str, Any]):
+        # TODO: check if slotted dataclasses run twice / get cached twice
         """Setup Cache and lazy load Signature to avoid import-time overhead"""
+
         super().__init__(name, bases, namespace)
 
-        max_size: int | None = namespace.get(
-            "__cache_max__", getattr(cls, "__cache_max__", None)
+        cls._cache: Cache = CacheGate[CacheKey, DataClass](
+            owner=cls,  # ty:ignore - not already dataclass...
+            max_size=namespace.get(
+                "__cache_max__", getattr(cls, "__cache_max__", None)
+            ),
         )
-        cls._cache: CacheGate[_CacheKey, DataClass] = CacheGate[
-            _CacheKey, DataClass
-        ](owner=cls, max_size=max_size)  # ty:ignore
         cls._sig: MayNot[inspect.Signature] = None
 
     @property
-    def cache(cls) -> CacheGate[_CacheKey, Any]:
+    def cache(cls) -> CacheGate[CacheKey, DataClass]:
         """Public class-level gate: e.g. AttrFilter.cache.hits or print(AttrFilter.cache)"""
         return cls._cache
 
@@ -84,7 +96,7 @@ class CachedDataclassMeta(type):
         Bypass __init__ on cached hits and avoid dataclass FrozenInstanceError
 
         - Map Arg/Kwargs using the DataClass Signature
-        - Build Hashable _CacheKey by normalizing unhashable list/set/maps
+        - Build Hashable CacheKey by normalizing unhashable list/set/maps
         - Provide fetched unique Instance, create and cache if needed
 
         """
@@ -94,7 +106,7 @@ class CachedDataclassMeta(type):
 
         _resolve_field_value = create_field_resolver(cls, provided_args)
 
-        cache_key: _CacheKey = tuple(
+        cache_key: CacheKey = tuple(
             HashedTuple(name, _resolve_field_value(name, value))
             for name, value in bound.arguments.items()
         )
@@ -234,7 +246,7 @@ if __name__ == "__main__":
 
     from rich import print
 
-    @dataclass(frozen=True)
+    @dataclass(frozen=True, slots=True)
     class QueryFilter(metaclass=CachedDataclassMeta):
         __cache_max__ = 2  # small FIFO cap to show evictions
 

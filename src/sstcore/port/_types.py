@@ -23,7 +23,15 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
-from typing import Any, ClassVar, Literal, Never, Protocol, runtime_checkable
+from typing import (
+    Any,
+    ClassVar,
+    Literal,
+    Never,
+    Protocol,
+    TypeGuard,
+    runtime_checkable,
+)
 
 from .empty import VOID, MayBe
 
@@ -36,10 +44,15 @@ class _Stringable(Protocol):
 type _Stringables = Iterable[_Stringable]
 
 
+@runtime_checkable
 class _DataClass(Protocol):
     """Define the minimal Shape for typing a DataClass"""
 
     __dataclass_fields__: ClassVar[dict[str, Any]]
+
+
+def _is_dataclass(target: object, /) -> TypeGuard[_DataClass]:
+    return isinstance(target, _DataClass)
 
 
 type DataClassOrType = _DataClass | type[_DataClass]
