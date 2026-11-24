@@ -3,7 +3,7 @@
 import pytest
 
 from sstcore.port.empty import VOID
-from sstcore.port.primitives._loader import Loader
+from sstcore.port.structures import Loader
 
 
 def load_str() -> str:

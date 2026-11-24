@@ -8,8 +8,8 @@ import enum as _e
 from typing import Any
 
 from ._modulepath import ModulePath
-from .primitives import ExplainTuple
-from .primitives._zero import is_explain_spec
+from .primitives import ExplainedTuple
+from .primitives._format import SpecParse
 from .structures import EnumField
 
 EXPLAIN_PATH: ModulePath = ModulePath.parse(
@@ -18,10 +18,10 @@ EXPLAIN_PATH: ModulePath = ModulePath.parse(
 
 
 class _LspViolationBase(_e.IntFlag):
-    # IDEA: move entire thing here to somewhere hidden/ ExplainTuple.__format__?
-    explaining = EnumField[ExplainTuple[Any]].imports(
+    # IDEA: move entire thing here to somewhere hidden/ ExplainedTuple.__format__?
+    explaining = EnumField[ExplainedTuple[Any]].imports(
         EXPLAIN_PATH,
-        fallback=ExplainTuple.combine,
+        fallback=ExplainedTuple.combine,
         cache_fallback=True,
     )
 
@@ -55,13 +55,13 @@ class _LspViolationBase(_e.IntFlag):
 
     def __format__(self, format_spec: str) -> str:
         # TODO: what is actually needed?
-        # MOVE: close to ExplainTuple.__format__
+        # MOVE: close to ExplainedTuple.__format__
         match format_spec:
             case "":
                 return str(self)
             case "b":
                 return self.bits
-            case spec if is_explain_spec(spec):
+            case spec if SpecParse.accepts(spec):
                 return self.explaining.__format__(spec)
             case _:
                 if (

@@ -4,7 +4,7 @@ from typing import Generic
 
 import pytest
 
-from sstcore.brick.reflect._typearg import (
+from sstcore.brick.reflect.___typearg import (
     GenericSpec,
     extract_type_args,
     format_parameters,

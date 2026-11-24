@@ -1,5 +1,5 @@
 """
-Most basic parts
+Tuples assembled to Params
 
 .
 """
@@ -9,11 +9,6 @@ __all__: list[str] = [
     "Args",
     "Kwargs",
     "Params",
-    # control & bases
-    "TupleControl",
-    "NamedValue",
-    "SingleTuple",
-    "Variadics",
     # types & protocols
     "VarsView",
     "KeyFormatting",
@@ -28,9 +23,14 @@ from typing import Any, Literal, Self, overload
 from .._types import Types as _T  # noqa:N814
 from ..empty import VOID, MayNot
 from . import _zero as _z
-from ._field import TupleField
 from ._frozen import frozendict
-from ._hashed import HashedTuple
+from ._tuple import NamedValue, SingleTuple
+from ._tupled import (
+    TupleBase,
+    TupleField,
+    merge_into_mapping,
+    merge_into_sequence,
+)
 
 type VarsView = _typing.Literal["live", "dict", "frozen"]
 
@@ -43,120 +43,10 @@ class KeyFormatting(_typing.Protocol):
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class TupleControl(_z.TupleBase):
-    """Inject Behaviour into NamedTuples"""
-
-    __iter__: Any
-    icon = TupleField[str]("◈")
-    sep = TupleField[str](", ")
-
-    def __str__(self) -> str:
-        return self.__format__("")
-
-    def __format__(self, spec: str, /) -> str:
-        return _z.tuple_format(self, spec)
-
-    @classmethod
-    def create(cls, *args: Any, **kwargs: Any) -> Self:
-        """
-        Universal smart factory for any TupleControl NamedTuple.
-
-        Supports:
-          - None fallback to empty defaults / child .create()
-          - Auto-coercion of raw Sequences/Mappings into child TupleControl types
-          - Flattened prefix kwargs (e.g. text_args=..., error_kwargs=...)
-        """
-        return _z.create(cls, *args, **kwargs)
-
-    @property
-    def joined(self) -> str:
-        """Concat all items in joins (equivalent to f'{self:b}')."""
-        return self.__format__("b")
-
-    def joins(self) -> _cabc.Iterator:
-        """Stream the visual representation joins (indepenent of __iter__)"""
-        yield from self
-
-    @classmethod
-    def mix[T](cls, target: type[T], /) -> _T._NoIntersect[T, Self]:
-        """Inject Behaviour into Named Tuples"""
-        namespace: dict[str, Any] = {
-            "__qualname__": target.__qualname__,
-            "__module__": target.__module__,
-            "__doc__": target.__doc__,
-        }
-        return type(target.__name__, (target, cls), namespace)  # ty:ignore
-
-    def __reduce__(self) -> _T.Tuple:
-        """Provide anchor for Pickling"""
-        raw_fields: _T.Tuple = tuple(tuple.__iter__(self))  # ty:ignore
-        if state := getattr(self, "__dict__", None):
-            return type(self), raw_fields, state
-        return type(self), raw_fields
-
-
 #  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class NamedValue[T: Any = Any](_typing.NamedTuple):
-    name: str
-    value: T
-
-    def __bool__(self) -> bool:
-        return bool(self.value)
-
-    def __format__(self, spec: str) -> str:
-        return _z.format_named_value(self, spec)
-
-    def __getitem__(self, key: str | int) -> T | str:  # ty: ignore
-        """Hardcore Encode Default Behaviour plus Var()[name]=value access"""
-        return _z.get_named_value_item(self, key)
-
-    def keys(self) -> _cabc.KeysView[str]:
-        return _cabc.KeysView({self.name: None})
-
-    def hashed(self, strict: bool = True) -> HashedTuple:
-        """Recursively Enforce Freeze and Hash (strict=False -> str(obj))"""
-        return HashedTuple(*self, strict=strict)
-
-
-class SingleTuple[T: Any = Any](_typing.NamedTuple):
-    data: T
-
-    @property
-    def tuple(self):
-        return _b.tuple(self.data)
-
-    @property
-    def list(self):
-        return _b.list(self.data)
-
-    @property
-    def set(self):  # LATER: check for not hashable
-        return _b.set(self.data)
-
-    def __iter__(self) -> _cabc.Iterator:
-        yield from self.data
-
-    def __len__(self) -> int:  # ty:ignore
-        return len(self.data)
-
-    def __bool__(self) -> bool:
-        return bool(self.data)
-
-    def __contains__(self, item: object) -> bool:
-        return item in self.data
-
-
-class Variadics(_typing.NamedTuple):
-    args: Args
-    kwargs: Kwargs
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@TupleControl.mix
+@TupleBase.mix
 class Var[T: Any = Any](NamedValue[T]):
     """Variable with Name and Value"""
 
@@ -177,7 +67,7 @@ class Var[T: Any = Any](NamedValue[T]):
         return cls(name, value=getattr(target, name))
 
 
-@TupleControl.mix
+@TupleBase.mix
 class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S]):
     """Capture and Visualize Positional Parameter"""
 
@@ -220,7 +110,7 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S]):
 
     def __radd__[Seq: _cabc.Sequence](self, other: Seq) -> Seq:
         return (
-            _z.merge_into_sequence(other, self.data)
+            merge_into_sequence(other, self.data)
             if _z.is_notext_sequence(other)
             else NotImplemented
         )
@@ -237,7 +127,7 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S]):
                 if isinstance(item, Var)
                 else (self.keyformat(item), item)  # LATER: keyformat on Var
             )
-            out[_z.unique(_name, out)] = _val
+            out[_z.uniqued(_name, out)] = _val
         return Kwargs(**out)
 
     if _typing.TYPE_CHECKING:
@@ -264,7 +154,7 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S]):
 type _KeyFilter = _cabc.Set[str] | _cabc.Mapping[str, Any] | Kwargs[Any]
 
 
-@TupleControl.mix
+@TupleBase.mix
 class Kwargs[M: _T.Map](SingleTuple[M]):
     """Capture and Visualize Keyword Parameter"""
 
@@ -329,7 +219,7 @@ class Kwargs[M: _T.Map](SingleTuple[M]):
     def __or__(self, other: Self | _T.Map, /) -> Self:
         if (other_map := self._normalize(other)) is VOID:
             return NotImplemented
-        _merged = _z.merge_into_mapping(self.data, other_map)
+        _merged = merge_into_mapping(self.data, other_map)
         if _merged is NotImplemented:
             _merged: _T.Map = {**self.data, **other_map}
         return type(self)(_merged)
@@ -342,7 +232,7 @@ class Kwargs[M: _T.Map](SingleTuple[M]):
     def __ror__[T: _T.Map](self, other: T, /) -> T: ...
     def __ror__(self, other: _T.Map, /) -> Any:
         return (
-            _z.merge_into_mapping(other, self.data)
+            merge_into_mapping(other, self.data)
             if isinstance(other, _cabc.Mapping)
             else NotImplemented
         )
@@ -410,8 +300,14 @@ _EMPTY_ARGS: Args = Args()
 _EMPTY_KWARGS: Kwargs = Kwargs()
 
 
-@TupleControl.mix
-class Params(Variadics):
+class _Variadics[A: SingleTuple, K: SingleTuple](_typing.NamedTuple):
+    # TASK: compare with ._tuple._Variadics
+    args: Args
+    kwargs: Kwargs
+
+
+@TupleBase.mix
+class Params(_Variadics):
     """Capture and Visualize 1 Signature"""
 
     sep = TupleField[str](", ")

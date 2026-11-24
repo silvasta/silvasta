@@ -29,7 +29,8 @@ from typing import Unpack as _U  # noqa: N814
 from .. import _error as _err
 from .._types import _Stringable
 from ..empty import VOID, MayBe, MayNot
-from ..primitives import Args, Kwargs, Loader, Loading, Var
+from ..primitives import Args, Kwargs, Var
+from ._loader import Loader, Loading
 
 type LoadMode = Literal["auto", "item", "table"]
 type Fallback[K, V] = Callable[[K], V] | Loader[[K], V]

@@ -23,8 +23,12 @@ __all__: list[str] = [
     "EnumFieldMap",
     "EnumFieldLoader",
     "EnumField",
+    # load
+    "Loader",
+    "LoaderInput",
+    "Loading",
+    "Prefer",
 ]
-
 
 from ._dataclass import (
     ArgSpec,
@@ -36,3 +40,4 @@ from ._dataclass import (
 )
 from ._enum import EnumId, EnumRelation, EnumRepr, EnumStr, SstEnumMeta
 from ._enumfield import EnumField, EnumFieldLoader, EnumFieldMap, EnumMemberMap
+from ._loader import Loader, LoaderInput, Loading, Prefer

@@ -4,7 +4,7 @@ from rich import print
 from rich.panel import Panel
 from rich.table import Table
 
-from sstcore.port.primitives._loader import Loader
+from sstcore.port.structures import Loader
 
 
 def main() -> None:

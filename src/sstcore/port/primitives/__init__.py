@@ -18,20 +18,14 @@ __all__: list[str] = [
     ## control & bases
     "NamedValue",
     "SingleTuple",
-    "Variadics",
+    # "Variadics", CHECK: out of order
     "TupleBase",
-    "TupleControl",
     "is_tuplebase_cls",
     "is_tuplebase",
     "is_notext_sequence",
     "KeyFormatting",
     "VarsView",
-    "ExplainTuple",
-    # load
-    "Loader",
-    "LoaderInput",
-    "Loading",
-    "Prefer",
+    "ExplainedTuple",
     # name
     "NamePattern",
     "FormatNormalizer",
@@ -48,10 +42,8 @@ __all__: list[str] = [
     "LockedClsMeta",
 ]
 from .._types import _LockedClsMeta as LockedClsMeta
-from ._explain import ExplainTuple
 from ._frozen import frozendict
 from ._hashed import HashedTuple
-from ._loader import Loader, LoaderInput, Loading, Prefer
 from ._name import (
     BidirectionalName,
     ExtractNormalizer,
@@ -66,18 +58,20 @@ from ._params import (
     NamedValue,
     Params,
     SingleTuple,
-    TupleControl,
     Var,
-    Variadics,
+    # Variadics,
     VarsView,
 )
 from ._set import DunderSet, FieldSet, NormSet
-from ._zero import (
+from ._tuple import ExplainedTuple
+from ._tupled import (
     TupleBase,
-    get_slots,
-    is_notext_sequence,
     is_tuplebase,
     is_tuplebase_cls,
+)
+from ._zero import (
+    get_slots,
+    is_notext_sequence,
     iter_slot_names,
     unpack_types,
 )

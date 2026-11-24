@@ -37,7 +37,7 @@ from typing import Any, Self, Unpack
 from ._types import Types as _T  # noqa:N814
 from ._types import _LockedClsMeta
 from .empty import MayNot, MayNotCls
-from .primitives import Args, Kwargs, NameParser, Params, TupleControl, Var
+from .primitives import Args, Kwargs, NameParser, Params, TupleBase, Var
 
 
 class SstError(Exception):
@@ -429,7 +429,7 @@ class RaiserParams1(_typing.NamedTuple):
     error: Params
 
 
-@TupleControl.mix
+@TupleBase.mix
 class RaiserParams(_typing.NamedTuple):
     """Handle incoming Params for Message and for Exception"""
 

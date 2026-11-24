@@ -11,9 +11,9 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from sstcore.brick.call._loader import ReflectiveLoader as Loader
-from sstcore.brick.reflect import _typearg
-from sstcore.brick.reflect._typearg import extract_type_args, format_type_arg
+from sstcore.brick.call.___loader import ReflectiveLoader as Loader
+from sstcore.brick.reflect import ___typearg as _typearg
+from sstcore.brick.reflect.___typearg import extract_type_args, format_type_arg
 from sstcore.port.empty import VOID
 
 
@@ -132,7 +132,7 @@ def test_2() -> None:
         ("func args", Loader(load_int)),
         ("union func", Loader(load_union)),
         ("func beats default", Loader(load_str, default=5)),
-        ("explicit beats both", IntLoader(load_str, default="nope")),  # ty:ignore
+        ("explicit beats both", IntLoader(load_str, default="nope")),
         ("loaded", ready),
         ("prefer default", held),
     )

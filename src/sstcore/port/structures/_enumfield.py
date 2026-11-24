@@ -26,8 +26,8 @@ from typing import (
 
 from .._modulepath import ModulePath
 from ..empty import MayNot
-from ..primitives import Loader, Loading
 from ._gate import GateRaiser, LazyMap, MapGate
+from ._loader import Loader, Loading
 
 
 @runtime_checkable
