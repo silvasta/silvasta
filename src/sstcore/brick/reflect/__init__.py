@@ -8,64 +8,45 @@ Provide pure functional fragments ready to use or assemble
 """
 
 __all__: list[str] = [
-    # reflect
     "clsname",
     "funcname",
     "objname",
-    # scan
-    "data",
-    "pydantic",
+    # modules
     "scan",
+    "typehint",
+    "sig",
+    "attr",
+    "invoke",
+    ## invoke
+    "rich",
+    "cli",
+    "log",
     # check
-    "AttrFilter",
-    "Visibility",
     "is_private",
     "is_dunder",
     "is_protocol",
     "is_typing_generic",
-    # attr
-    "attr",
-    "doc",
-    "module",
-    "name",
-    "text",
-    # invoke
-    "invoke",
-    "rich",
-    "cli",
-    "log",
-    # __dict__
-    "dict",
+    "is_variadic",
+    "Visibility",
+    #
+    "AttrFilter",
 ]
 
-import sys
-from types import ModuleType
-from typing import Any
+# LATER: add dict::__dict__ again
 
 from . import _attr as attr
-from . import _dict as dict
 from . import _invoke as invoke
 from . import _scan as scan
-from ._attr import doc, module, name, text
+from . import _sig as sig
+from . import _typehint as typehint
 from ._check import (
     Visibility,
     is_dunder,
     is_private,
     is_protocol,
     is_typing_generic,
+    is_variadic,
 )
 from ._core import clsname, funcname, objname
 from ._filter import AttrFilter
 from ._invoke import cli, log, rich
-from ._scan import data, pydantic
-
-
-class CallablePackage(ModuleType):
-    # IDEA: make __core__ == CallableModule.__call__
-    # define it only once, on the module class,
-    # - apply it from there :D
-    def __call__(self, target: Any, /, default: str = "") -> str:
-        return objname(target, default)
-
-
-sys.modules[__name__].__class__ = CallablePackage

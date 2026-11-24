@@ -59,7 +59,7 @@ def pydantic(
 
     active_filter: AttrFilter = AttrFilter.resolve(filter, exclude=exclude)
     dump_exclude: set[str] = {
-        name  #
+        name
         for name in type(target).model_fields.keys()
         if not active_filter(name)
     }

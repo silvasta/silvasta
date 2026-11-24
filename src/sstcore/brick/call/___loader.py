@@ -18,7 +18,7 @@ from sstcore.port.empty import VOID, MayNot
 from sstcore.port.primitives._loader import Loader as _PortLoader
 
 from ..reflect import _typearg
-from ..reflect.___signature import extract_signature_types, looks_generic
+from ..reflect.___signature import extract_signature_types
 from ..reflect._typearg import extract_type_args, format_type_arg
 
 
@@ -105,9 +105,29 @@ def _pick_parameters(
     return Ellipsis, "unknown"
 
 
+def _looks_generic(target: Any) -> bool:
+    """Any Target in the MRO declaring type parameters or generic bases?"""
+
+    if not isinstance(target, type):
+        return True
+    if getattr(target, "__orig_class__", None) is not None:
+        return True
+
+    for _type in _type_instance(target).__mro__:
+        if getattr(_type, "__type_params__", ()):
+            return True
+        if getattr(_type, "__orig_bases__", ()):
+            return True
+    return False
+
+
+def _type_instance(target: object) -> type:
+    return target if isinstance(target, type) else type(target)
+
+
 def resolve_loader_types(loader: _PortLoader[Any, Any]) -> LoaderTypes:
     """Merge generic specialization with a loader's runtime channels."""
-    specs = extract_type_args(loader) if looks_generic(loader) else ()
+    specs = extract_type_args(loader) if _looks_generic(loader) else ()
     declared = _declared_spec(specs, (ReflectiveLoader, _PortLoader))
 
     func_parameters: Any = VOID

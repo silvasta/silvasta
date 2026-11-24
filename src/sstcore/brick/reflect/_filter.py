@@ -81,7 +81,7 @@ class AttrFilter(metaclass=CachedDataclassMeta):
             if self(name):
                 yield name
 
-    #  LINE: -- Evolver -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+    #  LINE: -- Evolve -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def __invert__(self) -> Self:
         """Invert the filter acceptance logic (~filter)"""
@@ -150,7 +150,7 @@ class AttrFilter(metaclass=CachedDataclassMeta):
             )
         )
 
-    #  LINE: -- Constructor -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+    #  LINE: -- Create -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     @classmethod
     def masked(

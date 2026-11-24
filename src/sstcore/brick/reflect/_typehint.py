@@ -5,50 +5,48 @@ Type Hint Detection
 """
 
 __all__: list[str] = [
-    "iter_type_hints",
-    "unwrap_type_hints",
-    "is_variadic",
+    "find",
+    "iter",
+    "unwrap",
 ]
 import typing as _t
-from typing import Any
+from collections.abc import Callable as _Callable
 
 from ...port._types import CallingTypes as _CT  # noqa: N814
+from ...port._types import Types as _T  # noqa:N814
+from ...port.empty import MayNot as _MayNot
 
-type Variadic = _t.ParamSpec | _t.TypeVarTuple
-
-# REMOVE: is now done by the func
-VARIADICS: tuple[type, ...] = _t.get_args(Variadic.__value__)
-
-
-def is_variadic(target: object, /) -> _t.TypeIs[Variadic]:
-    # CHECK: generally variadic? maybe better name
-    return isinstance(target, _t.get_args(Variadic.__value__))
+# TODO: check port.primitives._zero.unpack_types
 
 
-def unwrap_type_hints(target: _CT.Castable, /) -> _t.Iterator[tuple[str, Any]]:
+def find(func: _Callable, /) -> _MayNot[_T.StrDict]:
+    try:
+        return _t.get_type_hints(func)
+    except NameError, TypeError, ValueError:
+        return None
+
+
+def iter(target: _CT.Castable, /) -> _t.Iterator[tuple[str, _t.Any]]:
+    """Provide TypeHint with fully unpacked and iterated TypedDicts"""
+
+    for name, hint in unwrap(target):
+        if _t.get_origin(hint) is _t.Unpack:
+            _unpacked_typed_dict = _t.get_args(hint)[0]
+            yield name, _unpacked_typed_dict
+            yield from iter(_unpacked_typed_dict)
+        else:
+            yield name, hint
+
+
+# TODO: check _CT:Castable
+
+
+def unwrap(target: _CT.Castable, /) -> _t.Iterator[tuple[str, _t.Any]]:
     """Unwrap (Generic-) Aliases, like: Input[Args, Result] -> Input"""
     _origin = _t.get_origin(target) or target
     for name, hint in _t.get_type_hints(_origin, include_extras=True).items():
         if name == "return":
             continue
         while isinstance(hint, _t.TypeAliasType):
-            hint: Any = hint.__value__
+            hint: _t.Any = hint.__value__
         yield name, hint
-
-
-def iter_type_hints(target: _CT.Castable, /) -> _t.Iterator[tuple[str, Any]]:
-    # NEXT: NameHint tuple?
-    # CHECK: combine with unpack_type? weave it in?
-    """
-    Yield (Name,Annotation) and TypedDicts recursively
-
-    - provide full unpacked TypedDict plus iterate over its parts
-    """
-
-    for name, hint in unwrap_type_hints(target):
-        if _t.get_origin(hint) is _t.Unpack:
-            _unpacked_typed_dict = _t.get_args(hint)[0]
-            yield name, _unpacked_typed_dict
-            yield from iter_type_hints(_unpacked_typed_dict)
-        else:
-            yield name, hint

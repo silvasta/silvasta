@@ -14,18 +14,45 @@ __all__: list[str] = [
     "is_dunder",
     "is_protocol",
     "is_typing_generic",
+    "is_variadic",
 ]
 
 
-# NOTE: is_private_not_calling: AttrFilter = ~KEEP_CALLING
-# - removed as it now can easily be pulled from AttrFilter
-# REMOVE: the note above when everywhere established
-
+import typing as _t
 from collections.abc import Mapping
 from enum import IntFlag, auto
 from typing import Generic, Protocol
 
-# LATER: compare with port.link._operate or think about separate module here
+type _Variadic = _t.ParamSpec | _t.TypeVarTuple
+
+_VARIADICS = _t.get_args(_Variadic.__value__)
+
+
+def is_variadic(target: object, /) -> _t.TypeIs[_Variadic]:
+    # CHECK: generally variadic? maybe better name
+    return isinstance(target, _VARIADICS)
+
+
+def is_protocol(cls: type) -> bool:
+    """Check type first to avoid TypeError on second call"""
+    return (
+        isinstance(cls, type)
+        and issubclass(cls, Protocol)
+        and getattr(cls, "_is_protocol", False)
+    )
+
+
+def is_typing_generic(cls: type) -> bool:
+    # RENAME:
+    return cls in (object, Protocol, Generic)
+
+
+def is_private(attr: str, /) -> bool:
+    return attr.startswith("_")
+
+
+def is_dunder(attr: str, /) -> bool:
+    return len(attr) > 4 and attr.startswith("__") and attr.endswith("__")
 
 
 class Visibility(IntFlag):
@@ -67,24 +94,3 @@ class Visibility(IntFlag):
             return cls(vis)
         member: Mapping = cls.__members__
         raise ValueError(f"Bad Flag Number: {vis}, {max=}, {member=}")
-
-
-def is_private(attr: str, /) -> bool:
-    return attr.startswith("_")
-
-
-def is_dunder(attr: str, /) -> bool:
-    return len(attr) > 4 and attr.startswith("__") and attr.endswith("__")
-
-
-def is_protocol(cls: type) -> bool:
-    """Check type first to avoid TypeError on second call"""
-    return (
-        isinstance(cls, type)
-        and issubclass(cls, Protocol)
-        and getattr(cls, "_is_protocol", False)
-    )
-
-
-def is_typing_generic(cls: type) -> bool:
-    return cls in (object, Protocol, Generic)
