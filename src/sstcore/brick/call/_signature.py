@@ -184,7 +184,7 @@ class SigParam:
         # CHECK:
         if not isinstance(other, type(self)):
             return NotImplemented
-        merged = {**self._by_name, **other._by_name}
+        merged = {**self._by_name, **other._by_name}  # ty:ignore FIX:
         return type(self)(*merged.values())
 
 
@@ -359,7 +359,7 @@ class SigSpec:
         elif not self.args and not other.args and len(new_pos) < len(base_pos):
             violations |= LspViolation.REDUCED_MAX_POS
 
-        violations |= self.pos.check_renames(new_pos)
+        violations |= self.pos.check_renames(new_pos)  # ty:ignore FIX:
 
         # Positional parameter type contravariance
         overlap_len = min(len(base_pos), len(new_pos))
@@ -368,14 +368,16 @@ class SigSpec:
                 base_pos[idx].annotation, new_pos[idx].annotation
             )
 
-        if other.args.param is not None:
+        if other.args.param is not None:  # ty:ignore FIX:
             for idx in range(overlap_len, len(base_pos)):
                 violations |= _check_param_variance(
-                    base_pos[idx].annotation, other.args.param.annotation
+                    base_pos[idx].annotation,
+                    other.args.param.annotation,  # ty:ignore FIX:
                 )
-            if self.args.param is not None:
+            if self.args.param is not None:  # ty:ignore FIX:
                 violations |= _check_param_variance(
-                    self.args.param.annotation, other.args.param.annotation
+                    self.args.param.annotation,  # ty:ignore FIX:
+                    other.args.param.annotation,  # ty:ignore FIX:
                 )
 
         # 3. Keyword Vector & Access Modes
@@ -398,16 +400,18 @@ class SigSpec:
                 )
             elif name in new_pos_only_names:
                 violations |= LspViolation.LOST_KW_ACCESS
-            elif other.kwargs.param is not None:
+            elif other.kwargs.param is not None:  # ty:ignore FIX:
                 violations |= _check_param_variance(
-                    base_arg.annotation, other.kwargs.param.annotation
+                    base_arg.annotation,
+                    other.kwargs.param.annotation,  # ty:ignore FIX:
                 )
             else:
                 violations |= LspViolation.DROPPED_KW_NAME
 
-        if self.kwargs.param is not None and other.kwargs.param is not None:
+        if self.kwargs.param is not None and other.kwargs.param is not None:  # ty:ignore FIX:
             violations |= _check_param_variance(
-                self.kwargs.param.annotation, other.kwargs.param.annotation
+                self.kwargs.param.annotation,  # ty:ignore FIX:
+                other.kwargs.param.annotation,  # ty:ignore FIX:
             )
 
         # Newly introduced required keyword-addressable parameters

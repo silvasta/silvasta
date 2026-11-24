@@ -247,6 +247,7 @@ class ModulePath(_ModulePathBase):
     @classmethod
     def parse(cls, target: str, /, **tk: _U[_Rel]) -> Self:
         """Parse 'pkg.mod:Cls.attr' or 'pkg.mod' into canonical ModulePath"""
+        # TASK: optional check for is importable?
         return cls(*DotPath.double_dot(target, **tk))
 
     @classmethod

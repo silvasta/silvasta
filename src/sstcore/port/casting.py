@@ -13,11 +13,12 @@ from .primitives._zero import is_explain_spec
 from .structures import EnumField
 
 EXPLAIN_PATH: ModulePath = ModulePath.parse(
-    "sstcore.brick.call._explain:explain_lsp_violation"
+    "sstcore.brick.call._explain_lsp:explain_lsp_violation"
 )
 
 
 class _LspViolationBase(_e.IntFlag):
+    # IDEA: move entire thing here to somewhere hidden/ ExplainTuple.__format__?
     explaining = EnumField[ExplainTuple[Any]].imports(
         EXPLAIN_PATH,
         fallback=ExplainTuple.combine,
@@ -30,15 +31,18 @@ class _LspViolationBase(_e.IntFlag):
         return f"{self:0{len(type(self))}b}"
 
     @property
+    # REMOVE: make this on tuple, LspViolation.MEMBER.explain.brief?
     def title(self) -> str:
         """Short one-line summary of the violation(s)."""
         return self.explaining.title
 
     @property
+    # REMOVE: make this on tuple, LspViolation.MEMBER.explain.detail(ed)
     def detail(self) -> str:
         """Extended explanation of runtime and static typing impact."""
         return self.explaining.detail
 
+    # REMOVE: call directly the tuple by that
     def explain(self, brief: bool = False) -> str:
         """Return a human-readable explanation of this violation mask."""
         return self.explaining.explain(brief=brief)
@@ -50,6 +54,8 @@ class _LspViolationBase(_e.IntFlag):
         return f"{type(self).__name__}[{self.bits}]::{self.name}[{self.value}]"
 
     def __format__(self, format_spec: str) -> str:
+        # TODO: what is actually needed?
+        # MOVE: close to ExplainTuple.__format__
         match format_spec:
             case "":
                 return str(self)

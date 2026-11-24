@@ -10,8 +10,8 @@ from typing import Any
 
 import fire
 
-from sstcore.brick.format.name import NamePattern
 from sstcore.brick.time import day_count
+from sstcore.port.primitives import NamePattern
 from sstcore.util.parse import ParsedName, SchemaName
 from sstcore.util.print import printer
 
@@ -114,7 +114,7 @@ def pattern_namer():
         "topic": "arboreal",
         "suffix": "md",
     }
-    forward: str = namer.format(name_1)
+    forward: str = namer.render(name_1)
     printer(forward)
 
     backward: dict[str, str] = namer.extract(forward)

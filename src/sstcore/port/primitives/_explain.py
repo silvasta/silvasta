@@ -41,6 +41,10 @@ class ExplainTuple[O: Any = Any](_ExplainBase[O], _z.TupleBase):
         """Render human-readable explanation (brief title or multiline full)."""
         return self.__format__("t" if brief or not self.detail else "vn")
 
+    # NEXT: __call__ instead of explain! (but forward spec as well, brief:bool|str?)
+    # - make ExplainTuple.brief its own method?
+    # - __call__ with all format_specs?
+
     def __rich__(self) -> Any:
         from rich.console import Group
         from rich.panel import Panel
@@ -60,11 +64,11 @@ class ExplainTuple[O: Any = Any](_ExplainBase[O], _z.TupleBase):
         return out
 
     @classmethod
-    def combine[E: Enum](
+    def combine[E: Enum](  # FIX: strange parametization
         cls,
-        member: E,
+        member: O,
         field: Mapping[E, ExplainTuple[E]] | str = "explaining",
-    ) -> ExplainTuple[E]:
+    ) -> Self:
         """
         Synthesize a composite ExplainTuple for a combined Flag/IntFlag member.
 
@@ -73,12 +77,18 @@ class ExplainTuple[O: Any = Any](_ExplainBase[O], _z.TupleBase):
         table: Mapping[E, ExplainTuple[E]] = (
             getattr(type(member), field) if isinstance(field, str) else field
         )
-        flags: Iterable[E] = (
-            member if isinstance(member, Iterable) else (member,)
+
+        # CHECK:
+        flags: tuple[E, ...] = (
+            tuple(member) if isinstance(member, Iterable) else ()
         )
+        # CHECK:
+        if not flags or (len(flags) == 1 and flags[0] == member):
+            raise KeyError(member)
+
         parts: list[ExplainTuple[E]] = [table[flag] for flag in flags]
 
-        return ExplainTuple(
+        return cls(
             origin=member,
             title="\n".join(f"[{r.origin.value}] {r.title}" for r in parts),
             detail="\n".join(

@@ -49,7 +49,7 @@ def main() -> None:
         ("func args", Loader(load_int)),
         ("union func", Loader(load_union)),
         ("func beats default", Loader(load_str, default=5)),
-        ("explicit beats both", IntLoader(load_str, default="nope")),
+        ("explicit beats both", IntLoader(load_str, default="nope")),  # ty:ignore FIX:
         ("loaded", ready),
         ("prefer default", held),
     )

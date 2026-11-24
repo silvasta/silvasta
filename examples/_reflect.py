@@ -22,18 +22,18 @@ from sstcore.forge.func import BaseFunctor
 
 functor = BaseFunctor()
 
-print(reflect(functor))
+print(reflect(functor))  # ty:ignore FIX:
 print(reflect.clsname(functor))
-print(reflect.attr(functor, "_emit"))
+print(reflect.attr(functor, "_emit"))  # ty:ignore FIX:r
 print()
 print(repr(functor))
 print(str(functor))
 
 functor2 = BaseFunctor(name="Functor")
 
-print(reflect(functor2))
+print(reflect(functor2))  # ty:ignore FIX:
 print(reflect.clsname(functor2))
-print(reflect.attr(functor2, "_emit"))
+print(reflect.attr(functor2, "_emit"))  # ty:ignore FIX:
 print()
 print(repr(functor2))
 print(str(functor2))
