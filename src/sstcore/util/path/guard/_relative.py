@@ -11,7 +11,7 @@ from typing import overload
 
 from loguru import logger
 
-from ....brick.call._argcast import castarg
+from ....brick.call import castarg
 from ....error import (
     NotImplementedDispatchError,
     PathGuardError,

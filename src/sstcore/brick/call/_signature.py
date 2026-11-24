@@ -49,6 +49,7 @@ p = Parameter("name", _ParameterKind.KEYWORD_ONLY)
 
 
 class SigPart(EnumZero):
+    # CHECK: additional value to just using _ParameterKind?
     """
     Govern the 5 Parameter Kinds - f(a, /, b, b=B, *c, d=D, **e)
 
@@ -96,9 +97,9 @@ class SigArg(NamedTuple):
     """Define the Spec of 1 Signature Parameter"""
 
     name: str
-    kind: SigPart
-    default: Any = Any
-    annotation: Any = Any
+    kind: SigPart  # CHECK: default?
+    default: Any = VOID
+    annotation: Any = VOID
 
     def __str__(self) -> str:
         return f"{type(self).__name__}[{self.name}]::{self.kind}"

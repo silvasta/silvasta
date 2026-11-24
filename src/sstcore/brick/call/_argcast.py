@@ -11,7 +11,6 @@ What is the meaning of "cast" in this context?
 """
 
 __all__: list[str] = [
-    "castarg",
     "ArgCast",
     "ArgCaster",
     "ArgCasting",
@@ -33,6 +32,12 @@ from ...port._types import _ArgCasting as ArgCasting
 from ...port.empty import VOID, MayBe
 from ...port.link import portlink
 from . import _cast
+
+
+class CastInput[T](_TypedDict, total=False):
+    """Base Input for TypedKwarg Pipeline"""
+
+    default: MayBe[T]
 
 
 class ArgCast:
@@ -71,7 +76,7 @@ class ArgCast:
     def apply(cls, data: _CT.Data, target: _CT.Castable, /) -> _CT.Data:
         """Standalone helper: cast a kwargs dict against a Class/TypedDict/Func."""
         if plan := cls.walk(target):
-            _cast.cast_mapping(plan, data)
+            _cast.mapping(plan, data)
         return data
 
     def __call__[**P, R](self, func: Callable[P, R]) -> Callable[P, R]:
@@ -96,15 +101,6 @@ class ArgCast:
             return func(*bound.args, **bound.kwargs)
 
         return wrapper
-
-
-castarg = ArgCast()  # TARGET: Main Result
-
-
-class CastInput[T](_TypedDict, total=False):
-    """Base Input for TypedKwarg Pipeline"""
-
-    default: MayBe[T]
 
 
 @portlink(ArgCasting)
