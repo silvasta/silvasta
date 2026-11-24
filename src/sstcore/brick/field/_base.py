@@ -24,13 +24,13 @@ from typing import Any, Never, Self, overload
 from ...port import attach
 from ...port.empty import VOID
 from ...port.link import portlink
+from ...port.primitives import Kwargs
 from .. import reflect
 from ._raise import FieldRaiser
-from ._zero import FieldView  # CHECK:
 
 
 @portlink(attach.Descriptor)
-class NamedField(FieldView):
+class NamedField:
     """Provide Name for all Fields"""
 
     raiser: type[FieldRaiser] = FieldRaiser
@@ -39,12 +39,16 @@ class NamedField(FieldView):
         """Close the chain: super()"""
 
     def __set_name__(self, owner: type, name: str) -> None:
-        _owner = owner  # CHECK: Raiser here inside fails, never used?
+        _owner = owner  # CHECK: assign and use for "OwnerCls.public_name"?
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
     def __str__(self):
+        # IDEA:"SelfCls[OwnerCls.public_name]?
         return f"{reflect.clsname(self)}[({self.public_name})]"
+
+    def __repr__(self) -> str:
+        return f"{self}[\n{Kwargs.vars(self):nv}\n]"
 
     def name(self, unit_or_cls: Any, /) -> str:
         return f"{reflect.clsname(unit_or_cls)}.{self.public_name}"
@@ -90,7 +94,7 @@ class WriteField[FieldT](BaseField):
 
 
 class ReadOnlyField(BaseField):
-    # FIX: block read and delete field
+    # FIX: block read and delete field?
     def __set__(self, unit: object, value: Never) -> Never:
         raise self.raiser.ReadOnly(self, unit, value=value)
 

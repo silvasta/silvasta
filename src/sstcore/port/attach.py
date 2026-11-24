@@ -152,7 +152,7 @@ class MorphingDescriptor[**In, Out](CallingDescriptor[In, Out], _t.Protocol):
         """Install new Method with possible LSP Violation"""
 
 
-#  LINE: -- Next Steps -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+#  LINE: -- Future Steps -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 class EventDescriptor[T](_t.Protocol):
