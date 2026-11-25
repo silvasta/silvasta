@@ -25,27 +25,27 @@ class PrinterConfiguration:
 
     def mute(self) -> None:
         """Send all prints to nowhere"""
-        self.modus: PrintMode = PrintMode.NULL
+        self.mode: PrintMode = PrintMode.NULL
 
     def unmute(self) -> None:
         """Switch to regular Printer setup"""
-        self.modus: PrintMode = PrintMode.default()
+        self.mode: PrintMode = PrintMode.default()
 
     def debug(self) -> None:  # LATER: split PRINT/DEBUG
         """Switch to Python standard print of Args"""
-        self.modus: PrintMode = PrintMode.DEBUG
+        self.mode: PrintMode = PrintMode.DEBUG
 
     def muted(self) -> AbstractContextManager:
-        return self.in_mode(modus=PrintMode.NULL)
+        return self.in_mode(mode=PrintMode.NULL)
 
     @contextmanager
-    def in_mode(self, modus: PrintMode) -> Generator:
-        before: PrintMode = self.modus
+    def in_mode(self, mode: PrintMode) -> Generator:
+        before: PrintMode = self.mode
         try:
-            self.modus: PrintMode = modus
+            self.mode: PrintMode = mode
             yield
         finally:
-            self.modus: PrintMode = before
+            self.mode: PrintMode = before
 
 
 @portlink(PrintBase)
@@ -71,7 +71,7 @@ class PrinterBase(PrinterConfiguration):
 
     def __call__(self, target: Any, /, *more, **kwargs):
         """Handle all native Prints"""
-        match self.modus:
+        match self.mode:
             case PrintMode.NULL:
                 pass
             case PrintMode.PRINT:

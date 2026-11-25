@@ -13,7 +13,7 @@ __all__: list[str] = [
     "DipPrintFunctor",
 ]
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any, Literal, Self
 from typing import Unpack as _U  # noqa:N814
 
@@ -23,11 +23,7 @@ from ...port import functorial
 from ...port._types import EventTypes as _ET  # noqa: N814
 from ...port.color import Color, ColorArg
 from ...port.event import _param as _p
-from ...port.event.dto import (
-    EventDTO,
-    LineDTO,
-    PanelDTO,
-)
+from ...port.event.dto import EventDTO, LineDTO, PanelDTO
 from ...port.link import portlink
 from ._boxes import Boxes
 
@@ -47,7 +43,6 @@ class PrintFunctor[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
 
 @portlink(functorial.MountableFunctor)
 class LinePrintFunctor(PrintFunctor[LineDTO]):
-    # AI: this was the root that showd strange type checker messages in another project
     """
     Handle single separator lines, sequential lines, and counted line blocks.
 
@@ -58,38 +53,17 @@ class LinePrintFunctor(PrintFunctor[LineDTO]):
     """
 
     def __call__(
-        self, *content: _ET.CliSpec, **kw: _U[_p.LineInput]
+        self, *content: _ET.CliItem, **kw: _U[_p.LineInput]
     ) -> LineDTO:
-        return self.host(self.host._p.line(*content, **kw))
+        return self.host(self.host.dto.line(*content, **kw))
 
     def len(
         self,
         name: str,
-        *content: _ET.CliSpec | Sequence[_ET.CliSpec],
+        *content: _ET.CliItem,
         **kw: _U[_p.LinePresetInput],
     ) -> LineDTO:
-        if (
-            len(content) == 1
-            and isinstance(content[0], Sequence)
-            and not isinstance(content[0], (str, bytes))
-        ):
-            items: tuple[_ET.CliSpec, ...] = tuple(content[0])
-        else:
-            items: tuple[_ET.CliSpec, ...] = tuple(
-                c
-                for c in content
-                if not isinstance(c, Sequence) or isinstance(c, str)
-            )
-
-        header_title = f"{name}: {len(items)}"
-        merged: dict[str, Any] = dict(kw)
-        merged.setdefault("header_topic", name)
-        return self(
-            *items,
-            title=header_title,
-            stat=lambda vec: f"{name}: {len(vec)}",
-            **merged,
-        )
+        return self.host(self.host.dto.line.len(name, *content, **kw))
 
 
 @portlink(functorial.MountableFunctor)
@@ -98,30 +72,30 @@ class BoxPrintFunctor(PrintFunctor[PanelDTO]):
 
     def __call__(
         self,
-        *content: object,  # TEST:
+        *content: _ET.CliItem,
         box: Boxes = Boxes.OPEN,
         **kw: _U[_p.BoxInput],
     ) -> PanelDTO:
         return self.host.panel(*content, box=box, **kw)
 
-    def open(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
+    def open(self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.OPEN, **kw)
 
-    def round(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
+    def round(self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.ROUND, **kw)
 
-    def corner(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
+    def corner(self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.CORNER, **kw)
 
-    def up(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
+    def up(self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.UP, **kw)
 
-    def down(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
+    def down(self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.DOWN, **kw)
 
     def mini(
         self,
-        *content: _ET.CliSpec,
+        *content: _ET.CliItem,
         mode: Literal["up", "down", "both"] = "both",
         **kw: _U[_p.BoxInput],
     ) -> PanelDTO:
@@ -132,11 +106,11 @@ class BoxPrintFunctor(PrintFunctor[PanelDTO]):
         }
         return self(*content, box=box_map[mode], **kw)
 
-    def mini_up(self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]) -> PanelDTO:
+    def mini_up(self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]) -> PanelDTO:
         return self(*content, box=Boxes.MINI_UP, **kw)
 
     def mini_down(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
+        self, *content: _ET.CliItem, **kw: _U[_p.BoxInput]
     ) -> PanelDTO:
         return self(*content, box=Boxes.MINI_DOWN, **kw)
 
@@ -146,51 +120,51 @@ class TablePrintFunctor(PrintFunctor[TableViewDTO]):
     """Exposes all TableDtoProducer builders directly on `printer.table.*`."""
 
     def __call__(
-        self, content: _ET.Grid, /, **kw: _U[_p.TableInput]
+        self, content: _ET.MatrixInput, /, **kw: _U[_p.TableInput]
     ) -> TableViewDTO:
-        return self.host(self.host._p.table(content, **kw))
+        return self.host(self.host.dto.table(content, **kw))
 
     def matrix(
         self,
-        matrix: Sequence[Sequence[_ET.CliSpec]],
+        matrix: _ET.MatrixInput,
         /,
         **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
-        return self.host(self.host._p.table.matrix(matrix, **kw))
+        return self.host(self.host.dto.table.matrix(matrix, **kw))
 
     def rows(
         self,
-        rows: Mapping[str, _ET.CliSpec | Sequence[_ET.CliSpec]],
+        rows: _ET.RowsInput,
         /,
         **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
-        return self.host(self.host._p.table.rows(rows, **kw))
+        return self.host(self.host.dto.table.rows(rows, **kw))
 
     def cols(
         self,
-        cols: Mapping[str, Sequence[Any]],
+        cols: _ET.ColsInput,
         /,
         *,
         corner: str = "",
         **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
-        return self.host(self.host._p.table.cols(cols, corner=corner, **kw))
+        return self.host(self.host.dto.table.cols(cols, corner=corner, **kw))
 
     def records(
         self,
-        records: Sequence[Mapping[str, Any]],
+        records: _ET.RecordsInput,
         /,
         *,
         headers: Sequence[str] | None = None,
         **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.host(
-            self.host._p.table.records(records, headers=headers, **kw)
+            self.host.dto.table.records(records, headers=headers, **kw)
         )
 
     def kv(
         self,
-        mapping: Mapping[str, Any],
+        mapping: _ET.KvInput,
         /,
         *,
         key_col: str = "Key",
@@ -198,7 +172,7 @@ class TablePrintFunctor(PrintFunctor[TableViewDTO]):
         **kw: _U[_p.TablePresetInput],
     ) -> TableViewDTO:
         return self.host(
-            self.host._p.table.kv(
+            self.host.dto.table.kv(
                 mapping, key_col=key_col, val_col=val_col, **kw
             )
         )

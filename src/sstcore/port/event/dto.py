@@ -100,9 +100,6 @@ class LogDTO(EventDTO, name="log", kw_only=False):
         return {**self.extra, **self.metrics}
 
 
-# AI: here it is fine with the clunky tuple stacks as input
-
-
 class CliDTO[Content = _ET.Content](EventDTO, name="cli", kw_only=False):
     """Root of the Cli Pipeline"""
 

@@ -7,6 +7,8 @@ Group TypeDefs as Classes and Merge them to Modules
                                                  DependencyLevel[0]
 """
 
+from pathlib import Path
+
 __all__: list[str] = [
     "RegistryTypes",
     "StackTypes",
@@ -197,10 +199,17 @@ class EventTypes(metaclass=_LockedClsMeta):
     type StrDict[V = Any] = dict[str, V]
 
     type CliSpec = _CliSerial | _RichView | str
-
     type Content[Value: CliSpec | Tuple[CliSpec]] = EventTypes.Tuple[Value]
     type Vec = Content[CliSpec]
     type Grid = tuple[tuple[CliSpec, ...], ...]
+    type CliItem = (
+        CliSpec | _Stringable | Path | type | int | float | bool | object
+    )
+    type MatrixInput = Sequence[Sequence[CliItem]]
+    type RowsInput = Mapping[str, CliItem | Sequence[CliItem]]
+    type ColsInput = Mapping[str, Sequence[CliItem]]
+    type RecordsInput = Sequence[Mapping[str, CliItem]]
+    type KvInput = Mapping[str, CliItem]
 
 
 @runtime_checkable

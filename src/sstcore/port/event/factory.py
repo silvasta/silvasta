@@ -16,17 +16,13 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Mapping, Sequence
-from typing import Any, Protocol
+from collections.abc import Sequence
+from typing import Protocol
 from typing import Unpack as _U  # noqa: N814
 
 from .._types import EventTypes as _ET  # noqa: N814
-from .._types import _Stringable
 from . import _param as _p
 from .dto import CliDTO, LineDTO, LogDTO, MarkdownDTO, PanelDTO, TableDTO
-
-# AI_TASK: here is the layer where the raw DTO inputs get transformed to usable input
-# - the producer should accept anything (object) and transform it into something useful
 
 
 class EventDtoFactory(Protocol):
@@ -48,56 +44,63 @@ class EventDtoFactory(Protocol):
 
 class LogDelivering(Protocol):
     def __call__(
-        self, message: str, /, **kwargs: _U[_p.LogInput]
+        self, message: object, /, **kwargs: _U[_p.LogInput]
     ) -> LogDTO: ...
 
 
 class CliDelivering(Protocol):
     def __call__(
-        self, content: _ET.Content, /, **kwargs: _U[_p.CliInput]
+        self, *content: _ET.CliItem, **kwargs: _U[_p.CliInput]
     ) -> CliDTO: ...
 
 
 class PanelDelivering(Protocol):
     def __call__(
-        self, *content: _ET.CliSpec, **kwargs: _U[_p.PanelInput]
+        self, *content: _ET.CliItem, **kwargs: _U[_p.PanelInput]
     ) -> PanelDTO: ...
 
 
 class MarkdownDelivering(Protocol):
     def __call__(
-        self, content: _Stringable, /, **kwargs: _U[_p.MarkdownInput]
+        self, content: _ET.CliItem, /, **kwargs: _U[_p.MarkdownInput]
     ) -> MarkdownDTO: ...
 
 
 class LineDelivering(Protocol):
     def __call__(
-        self, *content: _ET.CliSpec, **kwargs: _U[_p.LineInput]
+        self, *content: _ET.CliItem, **kwargs: _U[_p.LineInput]
+    ) -> LineDTO: ...
+
+    def len(
+        self,
+        name: str,
+        *content: _ET.CliItem,
+        **kwargs: _U[_p.LinePresetInput],
     ) -> LineDTO: ...
 
 
 class TableDelivering(Protocol):
     def __call__(
-        self, content: _ET.Grid, /, **kwargs: _U[_p.TableInput]
+        self, content: _ET.MatrixInput, /, **kwargs: _U[_p.TableInput]
     ) -> TableDTO: ...
 
     def matrix(
         self,
-        matrix: Sequence[Sequence[_ET.CliSpec]],
+        matrix: _ET.MatrixInput,
         /,
         **kwargs: _U[_p.TablePresetInput],
     ) -> TableDTO: ...
 
     def rows(
         self,
-        rows: Mapping[str, _ET.CliSpec | Sequence[_ET.CliSpec]],
+        rows: _ET.RowsInput,
         /,
         **kwargs: _U[_p.TablePresetInput],
     ) -> TableDTO: ...
 
     def cols(
         self,
-        cols: Mapping[str, Sequence[Any]],
+        cols: _ET.ColsInput,
         /,
         *,
         corner: str = "",
@@ -106,7 +109,7 @@ class TableDelivering(Protocol):
 
     def records(
         self,
-        records: Sequence[Mapping[str, Any]],
+        records: _ET.RecordsInput,
         /,
         *,
         headers: Sequence[str] | None = None,
@@ -115,7 +118,7 @@ class TableDelivering(Protocol):
 
     def kv(
         self,
-        mapping: Mapping[str, Any],
+        mapping: _ET.KvInput,
         /,
         *,
         key_col: str = "Key",
