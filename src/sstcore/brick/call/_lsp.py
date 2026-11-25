@@ -8,9 +8,6 @@ LSP Signature Rules, Variance Evaluators, and Violation Explanations
 """
 
 __all__: list[str] = [
-    "SigVariable",
-    "SigSpecing",
-    #
     "LspRules",
     "evaluate",
     "allows",
@@ -18,12 +15,7 @@ __all__: list[str] = [
     "check_return_variance",
 ]
 
-__all__: list[str] = [
-    "check_param_variance",
-    "check_return_variance",
-]
-
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from inspect import _ParameterKind
 from typing import Any, NamedTuple, Self
@@ -31,6 +23,9 @@ from typing import Any, NamedTuple, Self
 from ...port._presets import PresetMeta
 from ...port.casting import LspViolation, SigSpecing, SigVariable
 from .. import reflect
+
+type _Predicate = Callable[[SigSpecing, SigSpecing], bool]
+type _Evaluator = Callable[[SigSpecing, SigSpecing], LspViolation]
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +62,10 @@ class _SigPair:
             },
             base_min_pos_only=sum(1 for a in base.pos if not a.has_default),
         )
+
+
+def _dropped_var_pos(base: SigSpecing, new: SigSpecing) -> bool:
+    return bool(base.args and not new.args)
 
 
 class SigSpecPair(NamedTuple):  # AI: this looks already like it is enough
@@ -303,12 +302,6 @@ def _eval_return_variance(p: _SigPair) -> LspViolation:
 
 #  LINE: -- Rule Registry & Evaluation Entrypoints -- -- - -- -- - -- --
 
-type LspPredicateMap = tuple[LspViolation, _Predicate]
-type LspEvaluateMap = tuple[LspViolation, _Evaluator]
-
-type _Predicate = Callable[[_SigPair], bool]
-type _Evaluator = Callable[[_SigPair], LspViolation]
-
 
 class LspRules(metaclass=PresetMeta):
     """Combine all Rules"""
@@ -324,7 +317,7 @@ class LspRules(metaclass=PresetMeta):
         | LspViolation.DISJOINT_RETURN_TYPE
     )
 
-    PREDICATES: dict[LspViolation, _Predicate] = {
+    PREDICATES: Mapping[LspViolation, _Predicate] = {
         # Execution Semantics
         LspViolation.SYNC_ASYNC_MISMATCH: _sync_async_mismatch,
         LspViolation.GENERATOR_MISMATCH: _generator_mismatch,
@@ -342,7 +335,7 @@ class LspRules(metaclass=PresetMeta):
         LspViolation.ADDED_REQUIRED_KW: _added_required_kw,
     }
 
-    EVALUATORS: dict[LspViolation, _Evaluator] = {
+    EVALUATORS: Mapping[LspViolation, _Evaluator] = {
         _PARAM_MASK: _eval_param_variance,
         _RETURN_MASK: _eval_return_variance,
     }

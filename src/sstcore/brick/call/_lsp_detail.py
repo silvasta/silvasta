@@ -24,7 +24,9 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "No violation",
             "Replacement signature is strictly LSP-compliant; not even positional-only parameter renaming is permitted.",
         ),
+        #
         #  LINE: -- Positional -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+        #
         ExplainedTuple(
             LspViolation.POS_ONLY_RENAMED,
             "Positional-only parameter renamed",
@@ -45,7 +47,9 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "Minimum required positional arguments increased",
             "Replacement demands more positional arguments than baseline's minimum (by removing a default or adding a required parameter).",
         ),
+        #
         #  LINE: -- Keyword / Binding Vectors -- -- - -- -- - -- -- - -- --
+        #
         ExplainedTuple(
             LspViolation.DROPPED_VAR_KW,
             "Keyword absorption lost",
@@ -71,7 +75,16 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "Mandatory keyword parameter added",
             "Replacement introduces a new keyword-only parameter without a default value; standard callers fail with TypeError.",
         ),
+        ExplainedTuple(
+            LspViolation.POS_KW_COLLISION,
+            "Positional/keyword binding collision",
+            "Replacement places a positional-or-keyword parameter where a "
+            "valid baseline call can supply both that positional slot and "
+            "that keyword name, raising TypeError for multiple values.",
+        ),
+        #
         #  LINE: -- Parameter Types (Contravariance) -- -- - -- -- - -- --
+        #
         ExplainedTuple(
             LspViolation.ADDED_PARAM_CONSTRAINT,
             "Parameter type annotation added",
@@ -87,7 +100,9 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "Incompatible parameter type",
             "Replacement parameter type has zero overlap with baseline's parameter type; guaranteed failure for any valid baseline input.",
         ),
+        #
         #  LINE: -- Return Types (Covariance) -- -- - -- -- - -- -- - -- --
+        #
         ExplainedTuple(
             LspViolation.WIDENED_RETURN_SUPERSET,
             "Return type widened to superset (covariance break)",
@@ -103,7 +118,9 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "Incompatible return type",
             "Replacement return type shares zero overlap with baseline's return type; safe only for sinks where the caller discards the return value.",
         ),
+        #
         #  LINE: -- Execution Semantics -- -- - -- -- - -- -- - -- -- - --
+        #
         ExplainedTuple(
             LspViolation.SYNC_ASYNC_MISMATCH,
             "Sync/async calling convention mismatch",
@@ -119,7 +136,9 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "Descriptor binding convention changed",
             "Changing between bound method, @classmethod, and @staticmethod alters implicit receiver (self/cls) injection and shifts positional indices.",
         ),
+        #
         #  LINE: -- Presets -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+        #
         ExplainedTuple(
             LspViolation.HOOK_PLUGIN,
             "Plugin/hook extension preset",

@@ -5,6 +5,7 @@ Define the Shape and Rules of the Input/Output Caster
 """
 
 import enum as _e
+from collections.abc import Mapping
 from enum import auto
 from inspect import Parameter, Signature, _ParameterKind
 from typing import Any, Protocol, Self, overload
@@ -17,46 +18,12 @@ from .solid import EnumZero
 from .structures import EnumField
 
 
-class SigVariable(Protocol):
-    @property
-    def name(self) -> str: ...
-    @property
-    def kind(self) -> _ParameterKind: ...
-    @property
-    def has_default(self) -> bool: ...
-    @property
-    def annotation(self) -> Any: ...
-
-
-class SigSpecing(Protocol):
-    """Read-only signature contract required by LSP rule evaluators."""
-
-    @property
-    def pos(self) -> tuple[SigVariable, ...]: ...
-    @property
-    def both(self) -> tuple[SigVariable, ...]: ...
-    @property
-    def args(self) -> tuple[SigVariable, ...]: ...
-    @property
-    def key(self) -> tuple[SigVariable, ...]: ...
-    @property
-    def kwargs(self) -> tuple[SigVariable, ...]: ...
-    @property
-    def result(self) -> Any: ...
-    @property
-    def is_async(self) -> bool: ...
-    @property
-    def is_generator(self) -> bool: ...
-    @property
-    def binding(self) -> Any: ...
-
-
 class LspViolation(_e.IntFlag):
     """Categorize different Levels of LSP Violations"""
 
     explain = EnumField[ExplainedTuple[Any]].imports(
         path=ModulePath.parse(
-            "sstcore.brick.call._lsp:explain_lsp_violation",
+            "sstcore.brick.call._lsp_detail:explain_lsp_violation",
         ),
         fallback=ExplainedTuple.combine,
         cache_fallback=True,
@@ -76,6 +43,7 @@ class LspViolation(_e.IntFlag):
     LOST_POS_ACCESS = _e.auto()
     DROPPED_KW_NAME = _e.auto()
     ADDED_REQUIRED_KW = _e.auto()
+    POS_KW_COLLISION = _e.auto()
 
     # Parameter Types (Contravariance)
     ADDED_PARAM_CONSTRAINT = _e.auto()
@@ -143,6 +111,49 @@ class LspViolation(_e.IntFlag):
                 ):
                     return format(str(self), format_spec)
                 return super().__format__(format_spec)
+
+
+class SigVariable(Protocol):
+    @property
+    def name(self) -> str: ...
+    @property
+    def kind(self) -> _ParameterKind: ...
+    @property
+    def has_default(self) -> bool: ...
+    @property
+    def annotation(self) -> Any: ...
+
+
+class SigSpecing(Protocol):
+    """Read-only signature contract required by LSP rule evaluators."""
+
+    @property
+    def pos(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def both(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def args(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def key(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def kwargs(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def result(self) -> Any: ...
+    @property
+    def is_async(self) -> bool: ...
+    @property
+    def is_generator(self) -> bool: ...
+    @property
+    def binding(self) -> Any: ...
+
+    @property
+    def positionals(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def keyword_map(self) -> Mapping[str, SigVariable]: ...
+    @property
+    def both_indices(self) -> Mapping[str, int]: ...
+    @property
+    def min_pos_only(self) -> int: ...
 
 
 #  LINE: -- Storage - Maybe Delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
