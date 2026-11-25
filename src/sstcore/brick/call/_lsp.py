@@ -1,220 +1,207 @@
 """
-Explain the Rules of the LSP Violation Levels
+LSP Signature Rules, Variance Evaluators, and Violation Explanations
 
--
+- SigVariable / SigSpecing: structural protocols decoupling rules from SigSpec
+- _SigPair: pre-indexed comparison context allocated once per evaluation
+- PREDICATES / EVALUATORS: declarative SSoT registry of all atomic LSP rules
+
 """
 
 __all__: list[str] = [
-    "explain_lsp_violation",
-    "LspViolationDetail",
+    "SigVariable",
+    "SigSpecing",
     #
+    "LspRules",
+    "evaluate",
+    "allows",
     "check_param_variance",
     "check_return_variance",
 ]
 
-from enum import auto
-from inspect import Parameter, Signature, _ParameterKind
-from typing import Any, Self, overload
+__all__: list[str] = [
+    "check_param_variance",
+    "check_return_variance",
+]
 
-from ...port.casting import LspViolation
-from ...port.empty import VOID
-from ...port.primitives import ExplainedTuple
-from ...port.solid import EnumZero
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass
+from inspect import _ParameterKind
+from typing import Any, NamedTuple, Self
+
+from ...port._presets import PresetMeta
+from ...port.casting import LspViolation, SigSpecing, SigVariable
 from .. import reflect
 
-type LspViolationDetail = ExplainedTuple[LspViolation]
+
+@dataclass(frozen=True, slots=True)
+class _SigPair:
+    # AI_TASK: resolve this, why not just a tuple that holds 2 classes?
+    """Normalized comparison views computed once per diff/allows call."""
+
+    base: SigSpecing
+    new: SigSpecing
+    base_pos: tuple[SigVariable, ...]
+    new_pos: tuple[SigVariable, ...]
+    base_kw: dict[str, SigVariable]
+    new_kw: dict[str, SigVariable]
+    base_both_idx: dict[str, int]
+    new_both_idx: dict[str, int]
+    base_min_pos_only: int
+
+    @classmethod
+    def build(cls, base: SigSpecing, new: SigSpecing) -> Self:
+        base_pos = (*base.pos, *base.both)
+        new_pos = (*new.pos, *new.both)
+        return cls(
+            base=base,
+            new=new,
+            base_pos=base_pos,
+            new_pos=new_pos,
+            base_kw={arg.name: arg for arg in (*base.both, *base.key)},
+            new_kw={arg.name: arg for arg in (*new.both, *new.key)},
+            base_both_idx={
+                arg.name: len(base.pos) + i for i, arg in enumerate(base.both)
+            },
+            new_both_idx={
+                arg.name: len(new.pos) + i for i, arg in enumerate(new.both)
+            },
+            base_min_pos_only=sum(1 for a in base.pos if not a.has_default),
+        )
 
 
-def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
-    """Build the lazy-loaded explanation mapping for LspViolation."""
-    return ExplainedTuple.table(
-        ExplainedTuple(
-            LspViolation.ZERO,
-            "No violation",
-            "Replacement signature is strictly LSP-compliant; not even positional-only parameter renaming is permitted.",
-        ),
-        #  LINE: -- Positional -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-        ExplainedTuple(
-            LspViolation.POS_ONLY_RENAMED,
-            "Positional-only parameter renamed",
-            "Callers cannot pass positional-only parameters by keyword, so runtime calls never break, though strict reflection or stub checkers flag the name mismatch.",
-        ),
-        ExplainedTuple(
-            LspViolation.DROPPED_VAR_POS,
-            "Variadic positional absorption lost",
-            "Baseline promised infinite positional argument absorption via *args; replacement caps positional arity.",
-        ),
-        ExplainedTuple(
-            LspViolation.REDUCED_MAX_POS,
-            "Finite positional capacity reduced",
-            "Baseline accepted a larger finite number of positional arguments than replacement; fails when optional positional arguments are supplied.",
-        ),
-        ExplainedTuple(
-            LspViolation.INCREASED_MIN_POS,
-            "Minimum required positional arguments increased",
-            "Replacement demands more positional arguments than baseline's minimum (by removing a default or adding a required parameter).",
-        ),
-        #  LINE: -- Keyword / Binding Vectors -- -- - -- -- - -- -- - -- --
-        ExplainedTuple(
-            LspViolation.DROPPED_VAR_KW,
-            "Keyword absorption lost",
-            "Baseline absorbed arbitrary keyword arguments; replacement rejects unknown keys with TypeError.",
-        ),
-        ExplainedTuple(
-            LspViolation.LOST_KW_ACCESS,
-            "Keyword access vector removed",
-            "Parameter still exists at the same position, but changed from positional-or-keyword to positional-only (/); callers passing it by keyword fail with TypeError.",
-        ),
-        ExplainedTuple(
-            LspViolation.LOST_POS_ACCESS,
-            "Positional access vector removed",
-            "Parameter still exists with the same name, but changed from positional-or-keyword to keyword-only (*); callers passing it positionally fail with TypeError.",
-        ),
-        ExplainedTuple(
-            LspViolation.DROPPED_KW_NAME,
-            "Named keyword parameter removed",
-            "A specific keyword parameter accepted by baseline no longer exists and cannot be absorbed by **kwargs.",
-        ),
-        ExplainedTuple(
-            LspViolation.ADDED_REQUIRED_KW,
-            "Mandatory keyword parameter added",
-            "Replacement introduces a new keyword-only parameter without a default value; standard callers fail with TypeError.",
-        ),
-        #  LINE: -- Parameter Types (Contravariance) -- -- - -- -- - -- --
-        ExplainedTuple(
-            LspViolation.ADDED_PARAM_CONSTRAINT,
-            "Parameter type annotation added",
-            "Baseline accepted Any (untyped), while replacement declares an explicit type constraint; safe in plain Python, fails under runtime type guards.",
-        ),
-        ExplainedTuple(
-            LspViolation.NARROWED_PARAM_TYPE,
-            "Parameter type narrowed (contravariance break)",
-            "Replacement accepts a strict subtype of baseline's input; fails whenever a valid supertype or union branch from baseline is passed.",
-        ),
-        ExplainedTuple(
-            LspViolation.DISJOINT_PARAM_TYPE,
-            "Incompatible parameter type",
-            "Replacement parameter type has zero overlap with baseline's parameter type; guaranteed failure for any valid baseline input.",
-        ),
-        #  LINE: -- Return Types (Covariance) -- -- - -- -- - -- -- - -- --
-        ExplainedTuple(
-            LspViolation.WIDENED_RETURN_SUPERSET,
-            "Return type widened to superset (covariance break)",
-            "Original return type remains included as a subtype or union member of the new return type; callers checking types dynamically can still handle it.",
-        ),
-        ExplainedTuple(
-            LspViolation.OVERLAPPING_RETURN_UNION,
-            "Return type partially shifted",
-            "Intersection exists between baseline and replacement return types, but some baseline return types disappear while unexpected new types appear.",
-        ),
-        ExplainedTuple(
-            LspViolation.DISJOINT_RETURN_TYPE,
-            "Incompatible return type",
-            "Replacement return type shares zero overlap with baseline's return type; safe only for sinks where the caller discards the return value.",
-        ),
-        #  LINE: -- Execution Semantics -- -- - -- -- - -- -- - -- -- - --
-        ExplainedTuple(
-            LspViolation.SYNC_ASYNC_MISMATCH,
-            "Sync/async calling convention mismatch",
-            "Switching between def and async def breaks the coroutine protocol: sync callers receive an unawaited coroutine, or async callers fail awaiting a non-awaitable.",
-        ),
-        ExplainedTuple(
-            LspViolation.GENERATOR_MISMATCH,
-            "Generator/eager execution mismatch",
-            "Switching between a standard return and yield changes immediate execution into lazy iterator creation.",
-        ),
-        ExplainedTuple(
-            LspViolation.DESCRIPTOR_BINDING_SHIFT,
-            "Descriptor binding convention changed",
-            "Changing between bound method, @classmethod, and @staticmethod alters implicit receiver (self/cls) injection and shifts positional indices.",
-        ),
-        #  LINE: -- Presets -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-        ExplainedTuple(
-            LspViolation.HOOK_PLUGIN,
-            "Plugin/hook extension preset",
-            "Allows narrowing open *args/**kwargs extension points into concrete typed parameters while permitting positional-only renames.",
-        ),
-        ExplainedTuple(
-            LspViolation.SINK_CALLBACK,
-            "Fire-and-forget sink callback preset",
-            "Ignores return type changes completely and allows dropping unused variadic or optional keyword arguments.",
-        ),
-        ExplainedTuple(
-            LspViolation.MORPHING_INCLUSIVE,
-            "Inclusive return-morphing preset",
-            "Allows widening the return type as long as the baseline return type remains a valid subtype or member of the new return contract.",
-        ),
-        ExplainedTuple(
-            LspViolation.MORPHING_ANY_RETURN,
-            "Unrestricted return-morphing preset",
-            "Allows replacing the return type with any type while preserving strict input call compatibility.",
-        ),
+class SigSpecPair(NamedTuple):  # AI: this looks already like it is enough
+    left: SigSpecing
+    right: SigSpecing
+
+
+#  LINE: -- Atomic Predicates: Execution Semantics -- -- - -- -- - -- --
+
+
+def _sync_async_mismatch(p: _SigPair) -> bool:
+    return p.base.is_async != p.new.is_async
+
+
+def _generator_mismatch(p: _SigPair) -> bool:
+    return p.base.is_generator != p.new.is_generator
+
+
+def _descriptor_binding_shift(p: _SigPair) -> bool:
+    return p.base.binding != p.new.binding
+
+
+#  LINE: -- Atomic Predicates: Positional -- -- - -- -- - -- -- - -- --
+
+
+def _pos_only_renamed(p: _SigPair) -> bool:
+    return any(
+        b.name != n.name for b, n in zip(p.base.pos, p.new_pos, strict=False)
     )
 
 
-class _SigPart(EnumZero):  # LATER: wire somehow?
-    """
-    Govern the 5 Parameter Kinds - f(a, /, b, b=B, *c, d=D, **e)
-
-    - 0: Pure Positional Arguments
-    - 1: Mixed Positional and Keyword Arguments
-    - 2: Unbound Tuple(len[0,..N]) with Positional Arguments
-    - 3: Pure Keyword Arguments
-    - 4: Unbound Dict(len[0,..N]) with Keyword Arguments
-
-    - 5: Return Value or not
-
-    """
-
-    POSARG = auto()
-    ANYARG = auto()
-    ARGS = auto()
-    KEYARG = auto()
-    KWARGS = auto()
-
-    def to_inspect(self) -> _ParameterKind:
-        """Provide corresponding inspect._ParameterKind"""
-        return _ParameterKind(self.value)
-
-    @overload
-    @classmethod
-    def map(cls, target: _SigPart, /) -> _ParameterKind: ...
-    @overload
-    @classmethod
-    def map(cls, target: _ParameterKind, /) -> _SigPart: ...
-    @classmethod
-    def map(
-        cls, target: _SigPart | _ParameterKind, /
-    ) -> _ParameterKind | _SigPart:
-        """Swap sstcore.Param or inspect._ParameterKind to counterpart"""
-        match target:
-            case _SigPart():
-                return _ParameterKind(target.value)
-            case _ParameterKind():
-                return _SigPart(target.value)
-
-    @classmethod
-    def buckets(cls, hints: dict[str, Any], sig: Signature) -> _Buckets:
-        """Fill Table with all SigVars mapped to _SigParts"""
-        buckets: _Buckets = {part: [] for part in _SigPart}
-        for param in sig.parameters.values():
-            resolved: Any = hints.get(param.name, param.annotation)
-            arg: _SigVar = _SigVar.detect(param, annotation=resolved)
-            buckets[arg.kind].append(arg)
-        return buckets
+def _dropped_var_pos(p: _SigPair) -> bool:
+    return bool(p.base.args and not p.new.args)
 
 
-type _Buckets = dict[_SigPart, list[_SigVar]]
+def _reduced_max_pos(p: _SigPair) -> bool:
+    return not p.new.args and len(p.new_pos) < len(p.base_pos)
 
 
-class _SigVar:
-    kind: _SigPart
+def _increased_min_pos(p: _SigPair) -> bool:
+    base_len = len(p.base_pos)
+    for i, arg in enumerate(p.new_pos):
+        if arg.has_default:
+            continue
+        if i < base_len:
+            if p.base_pos[i].has_default:
+                return True
+            if (
+                arg.kind is _ParameterKind.POSITIONAL_ONLY
+                and i >= p.base_min_pos_only
+                and arg.name != p.base_pos[i].name
+            ):
+                return True
+        else:
+            promoted_required_kw = (
+                not p.base.args
+                and arg.kind is _ParameterKind.POSITIONAL_OR_KEYWORD
+                and arg.name in p.base_kw
+                and not p.base_kw[arg.name].has_default
+            )
+            if not promoted_required_kw:
+                return True
+    return False
 
-    @classmethod
-    def detect(
-        cls, param: Parameter, default: Any = VOID, annotation: Any = VOID
-    ) -> Self:
-        raise NotImplementedError(param, default, annotation)
+
+#  LINE: -- Atomic Predicates: Keyword / Binding Vectors -- -- - -- --
+
+
+def _dropped_var_kw(p: _SigPair) -> bool:
+    return bool(p.base.kwargs and not p.new.kwargs)
+
+
+def _lost_kw_access(p: _SigPair) -> bool:
+    new_pos_only_len = len(p.new.pos)
+    for name, idx in p.base_both_idx.items():
+        if name in p.new_kw:
+            continue
+        if idx < new_pos_only_len and p.new.pos[idx].name == name:
+            if not p.new.kwargs or not p.new.pos[idx].has_default:
+                return True
+    return False
+
+
+def _lost_pos_access(p: _SigPair) -> bool:
+    """Catch both->key demotion and POS_OR_KW positional index shifts."""
+    for name, idx in p.base_both_idx.items():
+        if name not in p.new_kw:
+            continue
+        if name not in p.new_both_idx or p.new_both_idx[name] != idx:
+            return True
+    return False
+
+
+def _dropped_kw_name(p: _SigPair) -> bool:
+    if p.new.kwargs:
+        return False
+    new_pos_only_len = len(p.new.pos)
+    for name in p.base_kw:
+        if name in p.new_kw:
+            continue
+        idx = p.base_both_idx.get(name)
+        if (
+            idx is not None
+            and idx < new_pos_only_len
+            and p.new.pos[idx].name == name
+        ):
+            continue
+        return True
+    return False
+
+
+def _added_required_kw(p: _SigPair) -> bool:
+    for arg in p.new.key:
+        if not arg.has_default and (
+            arg.name not in p.base_kw or p.base_kw[arg.name].has_default
+        ):
+            return True
+
+    new_pos_only_len = len(p.new.pos)
+    for offset, arg in enumerate(p.new.both):
+        if arg.has_default:
+            continue
+        idx = new_pos_only_len + offset
+        if arg.name not in p.base_kw:
+            if idx >= p.base_min_pos_only:
+                return True
+        elif p.base_kw[arg.name].has_default and idx != p.base_both_idx.get(
+            arg.name
+        ):
+            return True
+
+    return False
+
+
+#  LINE: -- Variance Evaluators -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def check_param_variance(base_t: Any, new_t: Any) -> LspViolation:
@@ -254,3 +241,150 @@ def check_return_variance(base_r: Any, new_r: Any) -> LspViolation:
         return LspViolation.OVERLAPPING_RETURN_UNION
 
     return LspViolation.DISJOINT_RETURN_TYPE
+
+
+#  LINE: --  -- - -- -- - -- -- - -- --
+
+
+def _iter_param_type_pairs(p: _SigPair) -> Iterator[tuple[Any, Any]]:
+    """Yield every (base_type, new_type) binding pair across pos/kw/varargs."""
+    overlap = min(len(p.base_pos), len(p.new_pos))
+
+    # 1. Direct positional overlap
+    for i in range(overlap):
+        yield p.base_pos[i].annotation, p.new_pos[i].annotation
+
+    # 2. New *args absorbs trailing base positionals and base *args
+    if p.new.args:
+        new_var_t = p.new.args[0].annotation
+        for i in range(overlap, len(p.base_pos)):
+            yield p.base_pos[i].annotation, new_var_t
+        if p.base.args:
+            yield p.base.args[0].annotation, new_var_t
+
+    # 3. Base *args feeds extra concrete positional params in new
+    if p.base.args:
+        base_var_t = p.base.args[0].annotation
+        for i in range(len(p.base_pos), len(p.new_pos)):
+            yield base_var_t, p.new_pos[i].annotation
+
+    # 4. Named keyword matches and new **kwargs absorption
+    for name, base_arg in p.base_kw.items():
+        if name in p.new_kw:
+            if (
+                name in p.base_both_idx
+                and p.new_both_idx.get(name) == p.base_both_idx[name]
+            ):
+                continue  # Already checked in step 1
+            yield base_arg.annotation, p.new_kw[name].annotation
+        elif p.new.kwargs:
+            yield base_arg.annotation, p.new.kwargs[0].annotation
+
+    # 5. Base **kwargs feeds new **kwargs and newly introduced keyword params
+    if p.base.kwargs:
+        base_kw_t = p.base.kwargs[0].annotation
+        if p.new.kwargs:
+            yield base_kw_t, p.new.kwargs[0].annotation
+        for name, new_arg in p.new_kw.items():
+            if name not in p.base_kw:
+                yield base_kw_t, new_arg.annotation
+
+
+def _eval_param_variance(p: _SigPair) -> LspViolation:
+    found = LspViolation.ZERO
+    for base_t, new_t in _iter_param_type_pairs(p):
+        found |= check_param_variance(base_t, new_t)
+    return found
+
+
+def _eval_return_variance(p: _SigPair) -> LspViolation:
+    return check_return_variance(p.base.result, p.new.result)
+
+
+#  LINE: -- Rule Registry & Evaluation Entrypoints -- -- - -- -- - -- --
+
+type LspPredicateMap = tuple[LspViolation, _Predicate]
+type LspEvaluateMap = tuple[LspViolation, _Evaluator]
+
+type _Predicate = Callable[[_SigPair], bool]
+type _Evaluator = Callable[[_SigPair], LspViolation]
+
+
+class LspRules(metaclass=PresetMeta):
+    """Combine all Rules"""
+
+    _PARAM_MASK = (
+        LspViolation.ADDED_PARAM_CONSTRAINT
+        | LspViolation.NARROWED_PARAM_TYPE
+        | LspViolation.DISJOINT_PARAM_TYPE
+    )
+    _RETURN_MASK = (
+        LspViolation.WIDENED_RETURN_SUPERSET
+        | LspViolation.OVERLAPPING_RETURN_UNION
+        | LspViolation.DISJOINT_RETURN_TYPE
+    )
+
+    PREDICATES: dict[LspViolation, _Predicate] = {
+        # Execution Semantics
+        LspViolation.SYNC_ASYNC_MISMATCH: _sync_async_mismatch,
+        LspViolation.GENERATOR_MISMATCH: _generator_mismatch,
+        LspViolation.DESCRIPTOR_BINDING_SHIFT: _descriptor_binding_shift,
+        # Positional
+        LspViolation.POS_ONLY_RENAMED: _pos_only_renamed,
+        LspViolation.DROPPED_VAR_POS: _dropped_var_pos,
+        LspViolation.REDUCED_MAX_POS: _reduced_max_pos,
+        LspViolation.INCREASED_MIN_POS: _increased_min_pos,
+        # Keyword / Binding Vectors
+        LspViolation.DROPPED_VAR_KW: _dropped_var_kw,
+        LspViolation.LOST_KW_ACCESS: _lost_kw_access,
+        LspViolation.LOST_POS_ACCESS: _lost_pos_access,
+        LspViolation.DROPPED_KW_NAME: _dropped_kw_name,
+        LspViolation.ADDED_REQUIRED_KW: _added_required_kw,
+    }
+
+    EVALUATORS: dict[LspViolation, _Evaluator] = {
+        _PARAM_MASK: _eval_param_variance,
+        _RETURN_MASK: _eval_return_variance,
+    }
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def evaluate(
+    base: SigSpecing,
+    new: SigSpecing,
+    *,
+    ignore: LspViolation = LspViolation.ZERO,
+) -> LspViolation:
+    pair: _SigPair = _SigPair.build(base, new)
+    found: LspViolation = LspViolation.ZERO
+
+    for flag, predicate in LspRules.PREDICATES.items():
+        if (flag & ~ignore) and predicate(pair):
+            found |= flag
+
+    for mask, evaluator in LspRules.EVALUATORS.items():
+        if mask & ~ignore:
+            found |= evaluator(pair) & ~ignore
+
+    return found
+
+
+def allows(
+    base: SigSpecing,
+    new: SigSpecing,
+    tolerance: LspViolation = LspViolation.ZERO,
+) -> bool:
+    """Check whether `new` may substitute `base` under `tolerance` (fast-fail)."""
+    pair: _SigPair = _SigPair.build(base, new)
+
+    for flag, predicate in LspRules.PREDICATES.items():
+        if (flag & ~tolerance) and predicate(pair):
+            return False
+
+    for mask, evaluator in LspRules.EVALUATORS.items():
+        if (mask & ~tolerance) and (evaluator(pair) & ~tolerance):
+            return False
+
+    return True

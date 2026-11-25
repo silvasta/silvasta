@@ -5,12 +5,50 @@ Define the Shape and Rules of the Input/Output Caster
 """
 
 import enum as _e
-from typing import Any
+from enum import auto
+from inspect import Parameter, Signature, _ParameterKind
+from typing import Any, Protocol, Self, overload
 
 from ._modulepath import ModulePath
+from .empty import VOID
 from .primitives import ExplainedTuple
 from .primitives._format import SpecParse
+from .solid import EnumZero
 from .structures import EnumField
+
+
+class SigVariable(Protocol):
+    @property
+    def name(self) -> str: ...
+    @property
+    def kind(self) -> _ParameterKind: ...
+    @property
+    def has_default(self) -> bool: ...
+    @property
+    def annotation(self) -> Any: ...
+
+
+class SigSpecing(Protocol):
+    """Read-only signature contract required by LSP rule evaluators."""
+
+    @property
+    def pos(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def both(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def args(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def key(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def kwargs(self) -> tuple[SigVariable, ...]: ...
+    @property
+    def result(self) -> Any: ...
+    @property
+    def is_async(self) -> bool: ...
+    @property
+    def is_generator(self) -> bool: ...
+    @property
+    def binding(self) -> Any: ...
 
 
 class LspViolation(_e.IntFlag):
@@ -20,8 +58,6 @@ class LspViolation(_e.IntFlag):
         path=ModulePath.parse(
             "sstcore.brick.call._lsp:explain_lsp_violation",
         ),
-        # AI_TASK: here the wiring of ExplainedTuple.combine messed up...
-        # - find a solution that works just like here below
         fallback=ExplainedTuple.combine,
         cache_fallback=True,
     )
@@ -107,3 +143,71 @@ class LspViolation(_e.IntFlag):
                 ):
                     return format(str(self), format_spec)
                 return super().__format__(format_spec)
+
+
+#  LINE: -- Storage - Maybe Delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class _SigPart(EnumZero):  # LATER: wire somehow?
+    """
+    Govern the 5 Parameter Kinds - f(a, /, b, b=B, *c, d=D, **e)
+
+    - 0: Pure Positional Arguments
+    - 1: Mixed Positional and Keyword Arguments
+    - 2: Unbound Tuple(len[0,..N]) with Positional Arguments
+    - 3: Pure Keyword Arguments
+    - 4: Unbound Dict(len[0,..N]) with Keyword Arguments
+
+    - 5: Return Value or not
+
+    """
+
+    POSARG = auto()
+    ANYARG = auto()
+    ARGS = auto()
+    KEYARG = auto()
+    KWARGS = auto()
+
+    def to_inspect(self) -> _ParameterKind:
+        """Provide corresponding inspect._ParameterKind"""
+        return _ParameterKind(self.value)
+
+    @overload
+    @classmethod
+    def map(cls, target: _SigPart, /) -> _ParameterKind: ...
+    @overload
+    @classmethod
+    def map(cls, target: _ParameterKind, /) -> _SigPart: ...
+    @classmethod
+    def map(
+        cls, target: _SigPart | _ParameterKind, /
+    ) -> _ParameterKind | _SigPart:
+        """Swap sstcore.Param or inspect._ParameterKind to counterpart"""
+        match target:
+            case _SigPart():
+                return _ParameterKind(target.value)
+            case _ParameterKind():
+                return _SigPart(target.value)
+
+    @classmethod
+    def buckets(cls, hints: dict[str, Any], sig: Signature) -> _Buckets:
+        """Fill Table with all SigVars mapped to _SigParts"""
+        buckets: _Buckets = {part: [] for part in _SigPart}
+        for param in sig.parameters.values():
+            resolved: Any = hints.get(param.name, param.annotation)
+            arg: _SigVar = _SigVar.detect(param, annotation=resolved)
+            buckets[arg.kind].append(arg)
+        return buckets
+
+
+type _Buckets = dict[_SigPart, list[_SigVar]]
+
+
+class _SigVar:
+    kind: _SigPart
+
+    @classmethod
+    def detect(
+        cls, param: Parameter, default: Any = VOID, annotation: Any = VOID
+    ) -> Self:
+        raise NotImplementedError(param, default, annotation)
