@@ -86,7 +86,6 @@ class DeleteStrategy(PathStrategy[[Path], bool]):
 
     @StrategyField
     def _catch(self, error: Exception, target: PathArg) -> bool:
-        # LATER: add some nice views! maybe to intermediate PathStrategy?
         logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
         return False
 

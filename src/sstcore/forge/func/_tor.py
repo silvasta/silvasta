@@ -10,7 +10,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any, Self, TypeGuard, Unpack
+from typing import Any, Self, TypeGuard, Unpack, reveal_type
 
 from loguru import logger
 
@@ -77,41 +77,20 @@ class BaseFunctor[**Args, Result](
 
 
 if __name__ == "__main__":
-    # reveal_type(BaseFunctor._emit)
-    # x: BoundLog = BaseFunctor._emit
+    reveal_type(BaseFunctor._emit)
 
     def is_valid_emit(fn: Any) -> TypeGuard[BoundLog]:
         """Validation logic follows later..."""
         return True
 
     if is_valid_emit(BaseFunctor._emit):
-        # reveal_type(BaseFunctor._emit)
+        reveal_type(BaseFunctor._emit)
         y: BoundLog = BaseFunctor._emit
 
     _functor = BaseFunctor(name="TestFunctor")
-    # reveal_type(_functor._emit)
+    reveal_type(_functor._emit)
     _functor._emit("Hello", level="DEBUG", test=33)
     try:
         _functor._emit("this", "should", "fail", "fast")
     except TypeError as error:
         print(f"{error=}")
-
-    def new_emit(message: str, /, **_):
-        # FIX: self? how to add this?
-        print(message)
-
-    _functor._emit = new_emit
-    # reveal_type(_functor._emit)
-    _functor._emit("Hello", test=33)
-    try:
-        _functor._emit("this", "should", "fail", "fast")
-    except TypeError as error:
-        print(f"{error=}")
-
-    if is_valid_emit(_functor._emit):
-        # reveal_type(_functor._emit)
-        _functor._emit("Hello", level="DEBUG", test=33)
-        try:
-            _functor._emit("this", "should", "fail", "fast")  # ty:ignore
-        except TypeError as error:
-            print(f"{error=}")

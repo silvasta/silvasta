@@ -50,7 +50,6 @@ proc = Processor()
 print(f"{Kwargs.vars(proc):nv}")
 
 
-# Valid LSP replacement (contravariant parameter widening int -> int | float, extra optional param)
 def fast_compute(x: int | float, y: int = 1, scale: int = 2) -> int:
     return int(x + y) * scale
 

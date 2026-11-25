@@ -247,33 +247,46 @@ class SigSpec:
         target: MayNot[SigSpec] = self._coerce(other)
         if target is None:
             return NotImplemented
-        return target.allows(self)
+        tol: LspViolation = (
+            target.tolerance if isinstance(other, SigSpec) else self.tolerance
+        )
+        return target.allows(self, tolerance=tol)
 
     def __gt__(self, other: Self | Callable[..., Any]) -> bool:
         """Does `self` strictly allow `other` while differing from `other`?"""
         target: MayNot[SigSpec] = self._coerce(other)
         if target is None:
             return NotImplemented
-        return self != target and self.allows(target)
+        return self != target.evolve(tolerance=self.tolerance) and self.allows(
+            target
+        )
 
     def __lt__(self, other: Self | Callable[..., Any]) -> bool:
         """Is `self` a strict substitute for `other` while differing from `other`?"""
         target: MayNot[SigSpec] = self._coerce(other)
         if target is None:
             return NotImplemented
-        return self != target and target.allows(self)
+        tol: LspViolation = (
+            target.tolerance if isinstance(other, SigSpec) else self.tolerance
+        )
+        return self.evolve(
+            tolerance=target.tolerance
+        ) != target and target.allows(self, tolerance=tol)
 
     @classmethod
     def _coerce(cls, other: object) -> MayNot[Self]:
         match other:
             case cls():
                 return other
+            case _ if isinstance(sig := getattr(other, "signature", None), cls):
+                return sig
             case _ if callable(other):
                 return cls.detect(other)
             case _:
                 return None
 
     #  LINE: -- LSP Evaluation -- -- - -- -- - -- -- - -- -- - -- --
+
     def allows(
         self, other: SigSpec, tolerance: MayNot[LspViolation] = None
     ) -> bool:
@@ -312,9 +325,7 @@ class SigSpec:
             violation |= LspViolation.INCREASED_MIN_POS
         if self.args and not other.args:
             violation |= LspViolation.DROPPED_VAR_POS
-        elif (
-            not self.args and not other.args and len(_new_pos) < len(_base_pos)
-        ):
+        if not other.args and len(_new_pos) < len(_base_pos):
             violation |= LspViolation.REDUCED_MAX_POS
 
         for b_arg, n_arg in zip(self.pos, _new_pos, strict=False):
@@ -432,6 +443,7 @@ class SigSpec:
         include_extras: bool = False,
     ) -> Self:
         """Inspect Callable and build normalized SigSpec"""
+
         _binding = reflect.sig.Binding.detect(target)
         raw: Callable = _binding.raw(target)
         unwrapped: Callable = _inspect.unwrap(raw)
@@ -439,11 +451,7 @@ class SigSpec:
         hints: _T.StrDict = reflect.typehint.find(
             unwrapped, include_extras=include_extras
         )
-        # REMOVE:
-        # buckets: Buckets = _ParameterKind.buckets(hints, sig)
 
-        # AI_TASK: is it that easy?
-        # - still I need the modification of all _ParameterKind.POSITIONAL_ONLY etc
         buckets: Buckets = {part: [] for part in _inspect._ParameterKind}
         for param in sig.parameters.values():
             resolved: Any = hints.get(param.name, param.annotation)
@@ -462,7 +470,9 @@ class SigSpec:
             binding=_binding,
             tolerance=tolerance,
         )
-        if bind_to_self and _binding is not reflect.sig.Binding.METHOD:
+        if (
+            bind_to_self and _binding is not reflect.sig.Binding.STATIC
+        ) or _binding is reflect.sig.Binding.METHOD:
             return spec.bind_self()
         return spec
 

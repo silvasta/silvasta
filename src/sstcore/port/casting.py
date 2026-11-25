@@ -66,6 +66,7 @@ class LspViolation(_e.IntFlag):
     SINK_CALLBACK = (
         POS_ONLY_RENAMED
         | DROPPED_VAR_POS
+        | REDUCED_MAX_POS
         | DROPPED_VAR_KW
         | DROPPED_KW_NAME
         | WIDENED_RETURN_SUPERSET

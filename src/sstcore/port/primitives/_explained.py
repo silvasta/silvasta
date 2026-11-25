@@ -54,13 +54,28 @@ class ExplainedTuple[T: Any = Any](_ExplainBase[T], TupleBase):
         return out
 
     @classmethod
-    def combine(cls, member: T, table: Mapping[T, ExplainedTuple[T]]) -> Self:
-        # FIX: somehow the default for table was lost...
-        """
-        Synthesize a composite ExplainedTuple for a combined Flag/IntFlag member.
+    def _resolve_flag(cls, flag: T) -> ExplainedTuple[T]:
+        explain: Any = getattr(flag, "explain", None)
+        if isinstance(explain, cls):
+            return explain
+        for attr in vars(type(flag)).values():
+            if type(attr).__name__ == "EnumField":
+                val: Any = getattr(flag, attr.public_name, None)
+                if isinstance(val, cls):
+                    return val
+        raise KeyError(flag)
 
-        Remove:
-        Works both as a 1-arg LazyMap fallback and as a 2-arg explicit combiner.
+    @classmethod
+    def combine(
+        cls,
+        member: T,
+        table: Mapping[T, ExplainedTuple[T]] | None = None,
+    ) -> Self:
+        """
+        Synthesize a composite ExplainedTuple for a combined Flag/IntFlag member
+
+        - Work both as a 1-arg LazyMap fallback and as a 2-arg explicit combiner
+
         """
         flags: tuple[T, ...] = (
             tuple(member) if isinstance(member, Iterable) else ()
@@ -68,7 +83,10 @@ class ExplainedTuple[T: Any = Any](_ExplainBase[T], TupleBase):
         if not flags or (len(flags) == 1 and flags[0] == member):
             raise KeyError(member)
 
-        parts: list[ExplainedTuple[T]] = [table[flag] for flag in flags]
+        if table is not None:
+            parts: list[ExplainedTuple[T]] = [table[flag] for flag in flags]
+        else:
+            parts = [cls._resolve_flag(flag) for flag in flags]
 
         return cls(
             origin=member,

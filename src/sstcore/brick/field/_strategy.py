@@ -23,7 +23,7 @@ from ...port.casting import LspViolation
 from ...port.link import portlink
 from .. import reflect
 from ..call import SigSpec
-from ._base import DeleteField, ReadField
+from ._base import DeleteField, ReadField, WriteField
 from ._decorate import FieldDecorator
 
 
@@ -72,6 +72,13 @@ class MethodFieldEngine[**In, Out](
         self.bind_to_self: bool = bind_to_self
         super().__init__(func, *args, tolerance=tolerance, **kwargs)
 
+    def __call__[**CallIn, CallOut](
+        self, func: Callable[Concatenate[Any, CallIn], CallOut]
+    ) -> MethodFieldEngine[CallIn, CallOut]:  # ty:ignore
+        """Bind method when used as parameterized decorator @MethodFieldEngine(...)"""
+        self.bind(func)  # ty:ignore
+        return self  # ty: ignore
+
     def bind(self, func: Callable[..., Out]) -> None:
         super().bind(func)
         if self.signature is not None:
@@ -82,54 +89,94 @@ class MethodFieldEngine[**In, Out](
             )
 
     def read(self, unit: object) -> BoundStrategy[In, Out]:
-        # AI_TASK: here gets the ReadField.__get__ overload lost
-        if self._has_val(unit):
-            return BoundStrategy(self, unit, self._get_val(unit), bind=False)
-        if self.target_func is not None:
-            return BoundStrategy(
-                self, unit, self.target_func, bind=self.bind_to_self
-            )
-        raise self.raiser.Function(self, unit, "Missing Target Function")
+        if not self._has_val(unit) and self.target_func is None:
+            raise self.raiser.Function(self, unit, "Missing Target Function")
+        return BoundStrategy(self, unit)
 
-    def switch(self, func: Callable[..., Out]) -> Self:
-        """Modify Class-Level baseline strategy while ensuring LSP consistency"""
-        if not callable(func):
-            raise self.raiser.Function(self, type(self), value=func)
+    def validate_signature(
+        self,
+        unit: object,
+        value: Callable[..., Any],
+        *,
+        bind_to_self: bool = False,
+    ) -> Callable[In, Out]:
+        """Validate callable and check SigSpec compatibility under self.tolerance."""
+        value = super().validate(unit, value)
         candidate: SigSpec = SigSpec.detect(
-            func,
-            bind_to_self=self.bind_to_self,
+            value,
+            bind_to_self=bind_to_self,
             tolerance=self.tolerance,
         )
-        if self.signature is not None and candidate not in self.signature:
-            raise self.raiser.Signature(self, type(self), value=func)
-        self.bind(func)
+        if self.signature is None or candidate not in self.signature:
+            raise self.raiser.Signature(self, unit, value=value)
+        return value
+
+    def switch(
+        self, func: Callable[..., Any], unit: object | None = None
+    ) -> Self:
+        """Swap class-level baseline or instance-level strategy with LSP validation."""
+        if unit is None:
+            self.validate_signature(
+                type(self), func, bind_to_self=self.bind_to_self
+            )
+            self.bind(func)
+        else:
+            self.validate_signature(unit, func, bind_to_self=False)
+            WriteField.write(self, unit, func)
         return self
+
+    def morph(
+        self, func: Callable[..., Any], unit: object | None = None
+    ) -> Self:
+        """Unsafe strategy replacement (permitted only on MorphingField)."""
+        target: object = type(self) if unit is None else unit
+        raise self.raiser.Function(
+            self,
+            target,
+            message=f"Morphing forbidden on {self}!",
+            value=func,
+        )
 
 
 @portlink(attach.CallingDescriptor)
 class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
     """Forces the override to match the default function's signature"""
 
+    def __call__[**CallIn, CallOut](
+        self, func: Callable[Concatenate[Any, CallIn], CallOut]
+    ) -> StrategyField[CallIn, CallOut]:
+        """Bind method when used as parameterized decorator @StrategyField(...)"""
+        self.bind(func)  # ty:ignore
+        return self  # ty: ignore
+
     def validate(
-        self, unit: object, value: Callable[In, Out]
+        self, unit: object, value: Callable[..., Any]
     ) -> Callable[In, Out]:
-        """Enforce strict signature rules for instance-level overrides"""
-
-        value: Callable[In, Out] = super().validate(unit, value)
-
-        if self.signature is None or value not in self.signature:
-            raise self.raiser.Signature(self, unit, value=value)
-
-        return value
+        """Enforce signature rules for instance-level overrides"""
+        return self.validate_signature(unit, value, bind_to_self=False)
 
 
 @portlink(attach.MorphingDescriptor)
 class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
     """Allows swapping methods with arbitrary new signatures"""
 
-    def morph(self, func: Callable[..., Any]) -> Self:
-        """Unsafe Function Exchange on the Class Level"""
-        self.bind(func)
+    def __call__[**CallIn, CallOut](
+        self, func: Callable[Concatenate[Any, CallIn], CallOut]
+    ) -> MorphingField[CallIn, CallOut]:
+        """Bind method when used as parameterized decorator @MorphingField(...)"""
+        self.bind(func)  # ty:ignore
+        return self  # ty: ignore[invalid-return-type]
+
+    def morph(
+        self, func: Callable[..., Any], unit: object | None = None
+    ) -> Self:
+        """Unsafe Function Exchange on the Class or Instance Level"""
+        target: object = type(self) if unit is None else unit
+        super().validate(target, func)
+        if unit is None:
+            self.bind(func)
+        else:
+            WriteField.write(self, unit, func)
         return self
 
 
@@ -140,13 +187,35 @@ class BoundStrategy[**In, Out]:
         self,
         engine: MethodFieldEngine[In, Out],
         unit: Any,
-        func: Callable[..., Out],
-        bind: bool = True,
-    ):
+        func: Callable[..., Out] | None = None,
+        bind: bool | None = None,
+    ) -> None:
+        _ = func, bind
         self.engine: MethodFieldEngine[In, Out] = engine
         self.unit: Any = unit
-        self.func: Callable[..., Out] = func
-        self.bind: bool = bind
+
+    @property
+    def is_overridden(self) -> bool:
+        """Whether the instance holds a custom strategy override."""
+        return self.engine._has_val(self.unit)
+
+    @property
+    def func(self) -> Callable[..., Out]:
+        """Currently active callable for this unit."""
+        if self.engine._has_val(self.unit):
+            return self.engine._get_val(self.unit)
+        if self.engine.target_func is not None:
+            return self.engine.target_func
+        raise self.engine.raiser.Function(
+            self.engine, self.unit, "Missing Target Function"
+        )
+
+    @property
+    def bind(self) -> bool:
+        """Whether `unit` should be passed as the leading `self` argument."""
+        if self.engine._has_val(self.unit):
+            return False
+        return self.engine.bind_to_self
 
     @property
     def __name__(self) -> str:
@@ -155,13 +224,15 @@ class BoundStrategy[**In, Out]:
     @property
     def signature(self) -> SigSpec:
         """Active SigSpec of the currently mounted callable."""
+        active_func = self.func
         if (
-            self.func is self.engine.target_func
+            not self.is_overridden
+            and active_func is self.engine.target_func
             and self.engine.signature is not None
         ):
             return self.engine.signature
         return SigSpec.detect(
-            self.func,
+            active_func,
             bind_to_self=self.bind,
             tolerance=self.engine.tolerance,
         )
@@ -178,42 +249,21 @@ class BoundStrategy[**In, Out]:
             return self.func(self.unit, *args, **kwargs)
         return self.func(*args, **kwargs)
 
-    def __getattr__(self, name: str) -> Any:  # TEST:
+    def __getattr__(self, name: str) -> Any:
         """Keep mounted callable objects (LogEmitter, …) intact"""
         return getattr(self.func, name)
 
-    def switch(self, new_func: Callable[In, Out]) -> Self:
+    def switch(self, new_func: Callable[..., Any]) -> Self:
         """Swap function while ensuring LSP-consistency"""
-        if (
-            self.engine.signature is not None
-            and new_func not in self.engine.signature
-        ):
-            raise self.engine.raiser.Signature(
-                self.engine, self.unit, value=new_func
-            )
-        self.engine.write(self.unit, new_func)
-        self.func = new_func
-        self.bind = False
+        self.engine.switch(new_func, self.unit)
         return self
 
-    def morph[**Bound, Opened](self, new_func: Callable[Bound, Opened]) -> Self:
+    def morph(self, new_func: Callable[..., Any]) -> Self:
         """Swap function while ignoring LSP-violations (MorphingField only)"""
-        if not isinstance(self.engine, MorphingField):
-            raise self.engine.raiser.Function(
-                self.engine,
-                self.unit,
-                message=f"Morphing forbidden on {self}!",
-                value=new_func,
-            )
-        self.engine.write(self.unit, new_func)  # ty: ignore
-        self.func = new_func  # ty: ignore
-        self.bind = False
+        self.engine.morph(new_func, self.unit)
         return self
 
     def reset(self) -> Self:
         """Restore the instance strategy back to the class-level baseline."""
         self.engine.remove(self.unit)
-        if self.engine.target_func is not None:
-            self.func = self.engine.target_func
-            self.bind = self.engine.bind_to_self
         return self

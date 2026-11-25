@@ -33,12 +33,13 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
       - the other is to modify the callable itself (with/without decorator?)
     """
 
-    target_func: Callable[In, Out] | None = None
+    target_func: Callable[..., Out] | None = None
     signature: SigSpec | None = None
+    bind_to_self: bool = False
 
     def __init__(
         self,
-        func: Callable[In, Out] | None = None,
+        func: Callable[..., Out] | None = None,
         *args: Any,
         tolerance: LspViolation = LspViolation.ZERO,
         **kwargs: Any,
@@ -57,12 +58,16 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
     def __str__(self):
         return f"{self.target_func}[{self.signature}]"
 
-    def bind(self, func: Callable) -> None:
+    def bind(self, func: Callable[..., Any]) -> None:
         if not callable(func):
             raise TypeError(f"Target must be callable, got {type(func)}")
 
-        self.target_func: Callable[In, Out] = func
-        self.signature: SigSpec = SigSpec.detect(func, tolerance=self.tolerance)
+        self.target_func = func
+        self.signature: SigSpec = SigSpec.detect(
+            func,
+            bind_to_self=self.bind_to_self,
+            tolerance=self.tolerance,
+        )
 
         default_doc = f"Function bound by: {self}"
         self.__doc__: str = reflect.attr.doc(func, default=default_doc)
@@ -72,7 +77,7 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
             self.private_name: str = f"_{self.public_name}"
 
     def validate(
-        self, unit: object, value: Callable[In, Out]
+        self, unit: object, value: Callable[..., Any]
     ) -> Callable[In, Out]:
         """Finish the loop and return the value"""
 
