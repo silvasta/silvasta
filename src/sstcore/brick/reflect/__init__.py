@@ -12,11 +12,12 @@ __all__: list[str] = [
     "funcname",
     "objname",
     # modules
-    "scan",
-    "typehint",
-    "sig",
     "attr",
+    "scan",
     "invoke",
+    "typehint",
+    "types",
+    "sig",
     ## invoke
     "rich",
     "cli",
@@ -39,6 +40,7 @@ from . import _invoke as invoke
 from . import _scan as scan
 from . import _sig as sig
 from . import _typehint as typehint
+from . import _types as types
 from ._check import (
     Visibility,
     is_dunder,

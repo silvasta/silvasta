@@ -5,64 +5,108 @@ Callable Signature Inspection
 """
 
 __all__: list[str] = [
-    "types",
     "find",
+    "types",
     "params",
     "returns",
+    "Binding",
+    "is_async",
+    "is_generator",
 ]
 
-import inspect as _i
+import enum as _e
+import inspect as _inspect
+from collections.abc import Callable
 from collections.abc import Callable as _Callable
-from typing import Any
+from typing import Any as _Any
 
-from ...port._types import Types as _T  # noqa:N814
+from ...port._types import Types as _T  # noqa:N814  # noqa:N814
 from ...port.empty import VOID as _VOID
 from ...port.empty import MayNot as _MayNot
+from ...port.solid import EnumZero
 from . import _typehint
 
 
-def find(func: _Callable, /) -> _MayNot[_i.Signature]:
+def is_async(call: _Callable, /, *, unwrap=False):
+    _unwrapped = _inspect.unwrap(call) if unwrap else call
+    return (
+        _inspect.iscoroutinefunction(_unwrapped)
+        or _inspect.isasyncgenfunction(_unwrapped),
+    )
+
+
+def is_generator(call: _Callable, /, *, unwrap=False):
+    _unwrapped = _inspect.unwrap(call) if unwrap else call
+    return (
+        _inspect.isgeneratorfunction(_unwrapped)
+        or _inspect.isasyncgenfunction(_unwrapped),
+    )
+
+
+class Binding(EnumZero):
+    FUNC = _e.auto()
+    METHOD = _e.auto()
+    CLASS = _e.auto()
+    STATIC = _e.auto()
+
+    @classmethod
+    def detect(cls, target: Callable, /) -> Binding:
+        match target:
+            case staticmethod():
+                return cls.STATIC
+            case classmethod():
+                return cls.CLASS
+            case _ if getattr(target, "__self__", None) is not None:
+                return cls.METHOD
+            case _:
+                return cls.FUNC
+
+    def raw(self, target: Callable, /) -> Callable:
+        return target.__func__ if self in {self.CLASS, self.STATIC} else target  # ty:ignore
+
+
+def find(func: _Callable, /) -> _MayNot[_inspect.Signature]:
     # NEXT: StrategyField: func, bind_to_self=self.bind_to_self
     try:
-        return _i.signature(func)
+        return _inspect.signature(func)
     except TypeError, ValueError:
         return None
 
 
-def types(func: _Callable[..., Any]) -> tuple[Any, Any]:
+def types(func: _Callable[..., _Any]) -> tuple[_Any, _Any]:
     """Extract Params and Result of Callable[**P, R]"""
 
-    sig: _MayNot[_i.Signature] = find(func)
+    sig: _MayNot[_inspect.Signature] = find(func)
 
     if sig is None:
         return _VOID, _VOID
 
     hints: _MayNot[_T.StrDict] = _typehint.find(func)
-    returned: Any = returns(hints, sig)
-    sig_params: list[Any] = params(hints, sig)
+    returned: _Any = returns(hints, sig)
+    sig_params: list[_Any] = params(hints, sig)
 
     return tuple(sig_params), returned
 
 
-def params(hints: _MayNot[_T.StrDict], sig: _i.Signature) -> list[Any]:
+def params(hints: _MayNot[_T.StrDict], sig: _inspect.Signature) -> list[_Any]:
     # CHECK: use the tuple?
     return [
         hints[name]
         if hints is not None and name in hints
         else param.annotation
-        if param.annotation is not _i.Signature.empty
-        else Any
+        if param.annotation is not _inspect.Signature.empty
+        else _Any
         for name, param in sig.parameters.items()
     ]
 
 
-def returns(hints: _MayNot[_T.StrDict], sig: _i.Signature) -> Any:
+def returns(hints: _MayNot[_T.StrDict], sig: _inspect.Signature) -> _Any:
     return (
         hints["return"]
         if hints is not None and "return" in hints
         else (
             _VOID
-            if (returned := sig.return_annotation) is _i.Signature.empty
+            if (returned := sig.return_annotation) is _inspect.Signature.empty
             else returned
         )
     )
