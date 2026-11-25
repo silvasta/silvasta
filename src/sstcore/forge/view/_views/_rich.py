@@ -38,7 +38,7 @@ class RichNameMixin:
     """
 
     def __rich__(self) -> str:
-        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
+        return f"{reflect.clsname(self)}[{reflect.attr.name(self)}]"
 
 
 class RichModuleNameMixin:

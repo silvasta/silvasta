@@ -61,7 +61,7 @@ class FunctorView:
     _data: FunctorMetaData
 
     def __str__(self) -> str:
-        return f"[({reflect.clsname(self)})][{reflect.name(self)}]"
+        return f"[({reflect.clsname(self)})][{reflect.attr.name(self)}]"
 
     def __repr__(self) -> str:
         return f"{self}({norm.dict_to_str(vars(self))})"
@@ -69,7 +69,7 @@ class FunctorView:
     #  LINE: -- Select, later on -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
     def __rich__(self) -> str:
-        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
+        return f"{reflect.clsname(self)}[{reflect.attr.name(self)}]"
 
     def __rich1__(self) -> Richable:
         return colors(reflect.clsname(self), self._data.color)

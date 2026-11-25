@@ -20,7 +20,7 @@ from typing import Annotated, Any, NotRequired, Required
 from ...port._types import CallingTypes as _CT  # noqa: N814
 from ...port._types import _ArgCasting as ArgCasting
 from ...port.empty import MayNot
-from ..reflect._typehint import iter_type_hints
+from .. import reflect
 
 
 def build_plan(
@@ -29,7 +29,7 @@ def build_plan(
     """Match target annotations with explicit Annotated casters or fallback to Registry."""
     return {
         name: caster
-        for name, annotation in iter_type_hints(target)
+        for name, annotation in reflect.typehint.iter(target)
         if (caster := resolve_caster(annotation, registry)) is not None
     }
 

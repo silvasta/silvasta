@@ -25,7 +25,8 @@ from pathlib import Path
 from ....brick import reflect
 from ....brick.color import colorize
 from ....brick.format import norm
-from ....brick.reflect import scan
+
+# from ....brick.reflect import scan
 from ....port.color import Color
 from ....port.event.dto import LineDTO, MarkdownDTO, PanelDTO, TableDTO
 from ..factory import TableViewDTO
@@ -38,7 +39,7 @@ class MarkdownMixin:
     def __cli__(self) -> MarkdownDTO:
         content_field = "_markdown_text"
         content: str = (
-            reflect.text(self, attrs=[content_field])
+            reflect.attr.text(self, attrs=[content_field])
             or f"# {self}\n- Nothing defined in content field: '{content_field}'"
         )
         return MarkdownDTO(content)
@@ -55,7 +56,7 @@ class TableMixin:
     """Create table from public attributes"""
 
     def __cli__(self) -> TableDTO:
-        return TableViewDTO.from_rows(scan.data(self))
+        return TableViewDTO.from_rows(reflect.scan.data(self))
 
 
 class PanelMixin:
@@ -63,10 +64,8 @@ class PanelMixin:
 
     @property
     def _panel_data(self):
-        # def _panel_data(self) -> str | list[str]:
-        # TASK: new concept for that
         """Provide subhook for override custom panel data"""
-        return norm.dict_to_list(scan.data(self), sep=": ")
+        return norm.dict_to_list(reflect.scan.data(self), sep=": ")
 
     def __cli__(self) -> PanelDTO:
         return PanelDTO(

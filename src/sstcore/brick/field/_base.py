@@ -39,12 +39,11 @@ class NamedField:
         """Close the chain: super()"""
 
     def __set_name__(self, owner: type, name: str) -> None:
-        _owner = owner  # CHECK: assign and use for "OwnerCls.public_name"?
+        _ = owner
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
     def __str__(self):
-        # IDEA:"SelfCls[OwnerCls.public_name]?
         return f"{reflect.clsname(self)}[({self.public_name})]"
 
     def __repr__(self) -> str:
@@ -52,10 +51,6 @@ class NamedField:
 
     def name(self, unit_or_cls: Any, /) -> str:
         return f"{reflect.clsname(unit_or_cls)}.{self.public_name}"
-
-
-# TASK: easy export of Field attributes for Raiser
-# - provide some mapping with all possible specs
 
 
 @portlink(attach.Descriptor)
@@ -93,8 +88,7 @@ class WriteField[FieldT](BaseField):
         self._set_val(unit, value)
 
 
-class ReadOnlyField(BaseField):
-    # FIX: block read and delete field?
+class ReadOnlyField(BaseField):  # FIX: block read and delete field?
     def __set__(self, unit: object, value: Never) -> Never:
         raise self.raiser.ReadOnly(self, unit, value=value)
 

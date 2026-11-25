@@ -14,8 +14,10 @@ __all__: list[str] = [
 import builtins as _b
 import collections.abc as _cabc
 import typing as _typing
+from inspect import _ParameterKind
 from typing import Any
 
+from .. import empty as _empty
 from ._format import format_named_value
 from ._hashed import HashedTuple
 from ._tuplebase import get_named_value_item
@@ -26,6 +28,13 @@ from ._tuplebase import get_named_value_item
 class _NamedValue[T: Any = Any](_typing.NamedTuple):
     name: str
     value: T
+
+
+class _SigVar(_typing.NamedTuple):
+    name: str
+    kind: _ParameterKind
+    default: Any = _empty.VOID
+    annotation: Any = _empty.VOID
 
 
 class _SingleTuple[T: Any = Any](_typing.NamedTuple):

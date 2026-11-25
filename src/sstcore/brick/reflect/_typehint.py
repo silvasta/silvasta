@@ -10,6 +10,7 @@ __all__: list[str] = [
     "unwrap_alias",
 ]
 
+import inspect as _inspect
 import typing as _t
 from collections.abc import Callable as _Callable
 from types import UnionType as _UnionType
@@ -22,16 +23,22 @@ from ...port._types import Types as _T  # noqa:N814
 
 def find(func: _Callable, /, include_extras: bool = True) -> _T.StrDict:
     """Extract TypeHints from any Callable or get empty dict"""
+    target: _t.Any = (
+        func.__call__
+        if callable(func)
+        and not isinstance(func, type)
+        and not _inspect.isroutine(func)
+        else func
+    )
     try:
-        return _t.get_type_hints(func, include_extras=include_extras)
+        return _t.get_type_hints(target, include_extras=include_extras)
     except NameError, TypeError, ValueError:
-        return getattr(func, "__annotations__", {})
+        return getattr(target, "__annotations__", {})
 
 
 def iter(target: _CT.Castable, /) -> _t.Iterator[tuple[str, _t.Any]]:
-    # TODO: check _CT:Castable
+    # LATER:: check _CT:Castable
     """Provide TypeHint with fully unpacked and iterated TypedDicts"""
-
     for name, hint in unwrap_alias(target):
         if _t.get_origin(hint) is _t.Unpack:
             _unpacked_typed_dict = _t.get_args(hint)[0]
@@ -42,6 +49,8 @@ def iter(target: _CT.Castable, /) -> _t.Iterator[tuple[str, _t.Any]]:
 
 
 def unpack_union(target: object, /) -> tuple[_t.Any, ...]:
+    while isinstance(target, _t.TypeAliasType):
+        target = target.__value__
     origin: _t.Any | None = _t.get_origin(target)
     if origin is _t.Union or origin is _UnionType:
         return _t.get_args(target)

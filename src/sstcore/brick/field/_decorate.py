@@ -10,13 +10,14 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from inspect import Signature, signature
 from types import MethodType
 from typing import Any, Concatenate, Self
 
 from ...port import attach
+from ...port.casting import LspViolation
 from ...port.link import portlink
 from .. import reflect
+from ..call import SigSpec
 from ._base import DeleteField, ReadField
 from ._extend import ValidField
 
@@ -33,24 +34,22 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
     """
 
     target_func: Callable[In, Out] | None = None
-    signature: Signature | None = None
+    signature: SigSpec | None = None
 
     def __init__(
         self,
         func: Callable[In, Out] | None = None,
         *args: Any,
+        tolerance: LspViolation = LspViolation.ZERO,
         **kwargs: Any,
     ) -> None:
         """Initialize and optionally bind if used as @Field (no parens)."""
+        self.tolerance: LspViolation = tolerance
         super().__init__(*args, **kwargs)
         if func is not None:
             self.bind(func)
 
     def __call__(self, func: Callable[Concatenate[Any, In], Out]) -> Self:
-        # CHECK: why way NewIn,NewOut used?
-        # def __call__[**NewIn, NewOut](
-        #     self, func: Callable[Concatenate[Any, NewIn], NewOut]
-        # ) -> Self:
         """Invoke only when used as hybrid decorator with args:= @Field(args)"""
         self.bind(func)
         return self
@@ -59,17 +58,16 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
         return f"{self.target_func}[{self.signature}]"
 
     def bind(self, func: Callable) -> None:
-
         if not callable(func):
             raise TypeError(f"Target must be callable, got {type(func)}")
 
         self.target_func: Callable[In, Out] = func
-        self.signature: Signature = signature(func)  # NEXT: SigSpec
+        self.signature: SigSpec = SigSpec.detect(func, tolerance=self.tolerance)
 
-        default_doc = f"Bound Function by {self}"
-        self.__doc__: str = reflect.doc(func, default=default_doc)
+        default_doc = f"Function bound by: {self}"
+        self.__doc__: str = reflect.attr.doc(func, default=default_doc)
 
-        if not hasattr(self, "public_name"):  # LATER: ensure NamedField works
+        if not hasattr(self, "public_name"):
             self.public_name: str = reflect.funcname(func)
             self.private_name: str = f"_{self.public_name}"
 
@@ -139,10 +137,9 @@ class _CallableField[**In, Out](
             return self._get_val(unit)
 
         if self.target_func is None:
-            raise self.raiser.Function(
-                self, unit, "Missing target_func to bind."
-            )
+            raise self.raiser.Function(self, unit, "Missing Target to bind")
 
         if self.bind_to_self:
             return MethodType(self.target_func, unit)
+
         return self.target_func

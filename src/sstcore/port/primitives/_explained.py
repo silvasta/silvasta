@@ -55,6 +55,7 @@ class ExplainedTuple[T: Any = Any](_ExplainBase[T], TupleBase):
 
     @classmethod
     def combine(cls, member: T, table: Mapping[T, ExplainedTuple[T]]) -> Self:
+        # FIX: somehow the default for table was lost...
         """
         Synthesize a composite ExplainedTuple for a combined Flag/IntFlag member.
 

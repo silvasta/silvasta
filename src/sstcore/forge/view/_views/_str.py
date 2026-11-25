@@ -32,7 +32,7 @@ class NameMixin:
     """
 
     def __str__(self) -> str:
-        return f"{reflect.clsname(self)}[{reflect.name(self)}]"
+        return f"{reflect.clsname(self)}[{reflect.attr.name(self)}]"
 
 
 class ModuleNameMixin:

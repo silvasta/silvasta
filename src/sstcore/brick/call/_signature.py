@@ -6,135 +6,28 @@ Analyze the Signature of Callables
 
 __all__: list[str] = [
     "SigVar",
-    "SigPart",
     "SigSpec",
 ]
 
 import inspect as _inspect
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from enum import auto
 from inspect import Parameter, Signature, _empty, _ParameterKind
-from typing import Any, NamedTuple, Self, overload
+from typing import Any, Self
 
 from ...port._types import Types as _T  # noqa:N814
 from ...port.casting import LspViolation
 from ...port.empty import VOID, MayBe, MayNot
 from ...port.primitives import TupleField
-from ...port.solid import EnumZero
+from ...port.primitives._tuples import _SigVar
 from .. import reflect
 from . import _lsp
 
 EMPTY: type[_empty] = _empty
 
 
-type Buckets = dict[SigPart, list[SigVar]]
+type Buckets = dict[_ParameterKind, list[SigVar]]
 type SigVars = tuple[SigVar, ...]
-
-
-class SigPart(EnumZero):  # MOVE: to reflect.sig? or port.casting?
-    """
-    Govern the 5 Parameter Kinds - f(a, /, b, b=B, *c, d=D, **e)
-
-    - 0: Pure Positional Arguments
-    - 1: Mixed Positional and Keyword Arguments
-    - 2: Unbound Tuple(len[0,..N]) with Positional Arguments
-    - 3: Pure Keyword Arguments
-    - 4: Unbound Dict(len[0,..N]) with Keyword Arguments
-
-    - 5: Return Value or not
-
-    """
-
-    POSARG = auto()
-    ANYARG = auto()
-    ARGS = auto()
-    KEYARG = auto()
-    KWARGS = auto()
-
-    def to_inspect(self) -> _ParameterKind:
-        """Provide corresponding inspect._ParameterKind"""
-        return _ParameterKind(self.value)
-
-    @overload
-    @classmethod
-    def map(cls, target: SigPart, /) -> _ParameterKind: ...
-    @overload
-    @classmethod
-    def map(cls, target: _ParameterKind, /) -> SigPart: ...
-    @classmethod
-    def map(
-        cls, target: SigPart | _ParameterKind, /
-    ) -> _ParameterKind | SigPart:
-        """Swap sstcore.Param or inspect._ParameterKind to counterpart"""
-        match target:
-            case SigPart():
-                return _ParameterKind(target.value)
-            case _ParameterKind():
-                return SigPart(target.value)
-
-    @classmethod  # IDEA: from func or sig?
-    def buckets(cls, hints: _T.StrDict, sig: Signature) -> Buckets:
-        """Fill Table with all SigVars mapped to SigParts"""
-        buckets: Buckets = {part: [] for part in SigPart}
-        for param in sig.parameters.values():
-            resolved: Any = hints.get(param.name, param.annotation)
-            arg: SigVar = SigVar.detect(param, annotation=resolved)
-            buckets[arg.kind].append(arg)
-        return buckets
-
-
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class _SigVarData(NamedTuple):  # MOVE: to port.primitives._tuples
-    name: str
-    kind: SigPart
-    default: Any = VOID
-    annotation: Any = VOID
-
-
-class SigVar(_SigVarData):
-    """Define the Spec of 1 Signature Part: Parameter or Return"""
-
-    icon = TupleField[str]("λ")
-    sep = TupleField[str](": ")
-
-    def __new__(
-        cls,
-        name: str,
-        kind: SigPart,
-        default: Any = VOID,
-        annotation: Any = VOID,
-    ) -> Self:
-        default: MayBe[Any] = VOID if default is EMPTY else default
-        annotation: MayBe[Any] = VOID if annotation is EMPTY else annotation
-        return tuple.__new__(cls, (name, kind, default, annotation))
-
-    def __str__(self) -> str:
-        return f"{type(self).__name__}[{self.name}]::{self.kind}"
-
-    @property
-    def has_default(self) -> bool:
-        return self.default is not VOID
-
-    @property
-    def has_annotation(self) -> bool:
-        return self.annotation is not VOID
-
-    @classmethod
-    def detect(
-        cls, param: Parameter, default: Any = VOID, annotation: Any = VOID
-    ) -> Self:
-        return cls(
-            name=param.name,
-            kind=SigPart.map(param.kind),
-            default=param.default if default is VOID else default,
-            annotation=param.annotation if annotation is VOID else annotation,
-        )
-
-
-#  LINE: -- Signature -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,8 +44,6 @@ class SigSpec:
     is_generator: bool = False
     binding: reflect.sig.Binding = reflect.sig.Binding.FUNC
     tolerance: LspViolation = LspViolation.ZERO
-
-    # TODO: return Args/Kwargs or Params from port._params as property
 
     @property
     def positionals(self) -> list[SigVar]:
@@ -189,25 +80,200 @@ class SigSpec:
         """Maximum positional arguments accepted, or None if unbound: (*args)"""
         return None if self.args else len(self.positionals)
 
+    #  LINE: -- Algebraic Operators -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
     def __sub__(self, other: Self) -> Self:
-        # AI_TASK: how to get the meaningful difference here?
-        # - the operation is not commutative, meaning rsub (currently not needed) would not yield the same result
-        if not isinstance(other, type(self)):
+        """
+        Compute structural capability difference (self - other)
+
+        Parameters in `self.both` hold {POS(i), KEY(name)} capabilities:
+        - If `other` only has POS(i), the difference retains KEY(name) in `key`.
+        - If `other` only has KEY(name), the difference retains POS(i) in `pos`.
+        - If `other` has neither, the parameter remains in `both`.
+        """
+        if not isinstance(other, SigSpec):
             return NotImplemented
-        raise NotImplementedError
+
+        other_pos_len: int = len(other.positionals)
+        other_kw: dict[str, SigVar] = other.keyword_map
+
+        diff_pos: list[SigVar] = [
+            arg for i, arg in enumerate(self.pos) if i >= other_pos_len
+        ]
+        diff_both: list[SigVar] = []
+        diff_key: list[SigVar] = []
+
+        base_pos_len: int = len(self.pos)
+        for offset, arg in enumerate(self.both):
+            idx: int = base_pos_len + offset
+            has_pos: bool = idx < other_pos_len
+            has_key: bool = arg.name in other_kw
+
+            if not has_pos and not has_key:
+                diff_both.append(arg)
+            elif not has_pos and has_key:
+                diff_pos.append(arg.evolve(kind=_ParameterKind.POSITIONAL_ONLY))
+            elif has_pos and not has_key:
+                diff_key.append(arg.evolve(kind=_ParameterKind.KEYWORD_ONLY))
+
+        for arg in self.key:
+            if arg.name not in other_kw:
+                diff_key.append(arg)
+
+        diff_args: SigVars = self.args if (self.args and not other.args) else ()
+        diff_kwargs: SigVars = (
+            self.kwargs if (self.kwargs and not other.kwargs) else ()
+        )
+        diff_result: Any = (
+            VOID
+            if reflect.types.is_subtype(other.result, self.result)
+            else self.result
+        )
+
+        return replace(
+            self,
+            pos=tuple(diff_pos),
+            both=tuple(diff_both),
+            args=diff_args,
+            key=tuple(diff_key),
+            kwargs=diff_kwargs,
+            result=diff_result,
+        )
 
     def __and__(self, other: Self) -> Self:
-        # AI_TASK: similar for the and, for kwargs it is easy, even for args, but for both?
-        if not isinstance(other, type(self)):
+        """
+        Compute structural capability intersection (self & other)
+
+        Parameters in `self.both` hold {POS(i), KEY(name)} capabilities:
+        - If `other` has both POS(i) and KEY(name), it remains in `both`.
+        - If `other` only has POS(i), it demotes to `pos` (POSITIONAL_ONLY).
+        - If `other` only has KEY(name), it demotes to `key` (KEYARG).
+        """
+        if not isinstance(other, SigSpec):
             return NotImplemented
-        raise NotImplementedError
+
+        other_pos_len: int = len(other.positionals)
+        other_kw: dict[str, SigVar] = other.keyword_map
+
+        and_pos: list[SigVar] = [
+            arg for i, arg in enumerate(self.pos) if i < other_pos_len
+        ]
+        and_both: list[SigVar] = []
+        and_key: list[SigVar] = []
+
+        base_pos_len: int = len(self.pos)
+        for offset, arg in enumerate(self.both):
+            idx: int = base_pos_len + offset
+            has_pos: bool = idx < other_pos_len
+            has_key: bool = arg.name in other_kw
+
+            if has_pos and has_key:
+                and_both.append(arg)
+            elif has_pos and not has_key:
+                and_pos.append(arg.evolve(kind=_ParameterKind.POSITIONAL_ONLY))
+            elif not has_pos and has_key:
+                and_key.append(arg.evolve(kind=_ParameterKind.KEYWORD_ONLY))
+
+        for arg in self.key:
+            if arg.name in other_kw:
+                and_key.append(arg)
+
+        and_args: SigVars = self.args if (self.args and other.args) else ()
+        and_kwargs: SigVars = (
+            self.kwargs if (self.kwargs and other.kwargs) else ()
+        )
+
+        if reflect.types.is_subtype(self.result, other.result):
+            and_result: Any = self.result
+        elif reflect.types.is_subtype(other.result, self.result):
+            and_result: Any = other.result
+        else:
+            and_result: VOID = VOID
+
+        return replace(
+            self,
+            pos=tuple(and_pos),
+            both=tuple(and_both),
+            args=and_args,
+            key=tuple(and_key),
+            kwargs=and_kwargs,
+            result=and_result,
+        )
+
+    def __or__(self, other: Self) -> Self:
+        """Compute structural capability union (self | other)."""
+        if not isinstance(other, SigSpec):
+            return NotImplemented
+
+        rem: SigSpec = other - self
+        return replace(
+            self,
+            pos=self.pos + rem.pos,
+            both=self.both + rem.both,
+            args=self.args or other.args,
+            key=self.key + rem.key,
+            kwargs=self.kwargs or other.kwargs,
+            result=other.result if self.result is VOID else self.result,
+        )
+
+    def __rshift__(self, other: Self | Callable[..., Any]) -> LspViolation:
+        """Evaluate LSP violations when replacing `self` with `other` (self >> other)."""
+        target: MayNot[SigSpec] = self._coerce(other)
+        if target is None:
+            return NotImplemented
+        return self.diff(target)
+
+    def __lshift__(self, other: Self | Callable[..., Any]) -> LspViolation:
+        """Evaluate LSP violations when replacing `other` with `self` (self << other)."""
+        target: MayNot[SigSpec] = self._coerce(other)
+        if target is None:
+            return NotImplemented
+        return target.diff(self)
 
     def __contains__(self, other: object) -> bool:
-        """Is the incoming a valid replacement? (according to self.tolerance)"""
-        if not isinstance(other, SigSpec):
-            return False
-        return self.allows(other)
+        """Is the incoming SigSpec or Callable a valid replacement? (under self.tolerance)"""
+        target: MayNot[SigSpec] = self._coerce(other)
+        return False if target is None else self.allows(target)
 
+    def __ge__(self, other: Self | Callable[..., Any]) -> bool:
+        """Does `self` allow `other` as a substitute? (self >= other)"""
+        target: MayNot[SigSpec] = self._coerce(other)
+        if target is None:
+            return NotImplemented
+        return self.allows(target)
+
+    def __le__(self, other: Self | Callable[..., Any]) -> bool:
+        """Is `self` a valid substitute for `other`? (self <= other)"""
+        target: MayNot[SigSpec] = self._coerce(other)
+        if target is None:
+            return NotImplemented
+        return target.allows(self)
+
+    def __gt__(self, other: Self | Callable[..., Any]) -> bool:
+        """Does `self` strictly allow `other` while differing from `other`?"""
+        target: MayNot[SigSpec] = self._coerce(other)
+        if target is None:
+            return NotImplemented
+        return self != target and self.allows(target)
+
+    def __lt__(self, other: Self | Callable[..., Any]) -> bool:
+        """Is `self` a strict substitute for `other` while differing from `other`?"""
+        target: MayNot[SigSpec] = self._coerce(other)
+        if target is None:
+            return NotImplemented
+        return self != target and target.allows(self)
+
+    @classmethod
+    def _coerce(cls, other: object) -> MayNot[Self]:
+        match other:
+            case cls():
+                return other
+            case _ if callable(other):
+                return cls.detect(other)
+            case _:
+                return None
+
+    #  LINE: -- LSP Evaluation -- -- - -- -- - -- -- - -- -- - -- --
     def allows(
         self, other: SigSpec, tolerance: MayNot[LspViolation] = None
     ) -> bool:
@@ -225,21 +291,20 @@ class SigSpec:
         )
 
     def _diff_execution(self, other: SigSpec) -> LspViolation:
-        violatoin: LspViolation = LspViolation.ZERO
+        violation: LspViolation = LspViolation.ZERO
 
         if self.is_async != other.is_async:
-            violatoin |= LspViolation.SYNC_ASYNC_MISMATCH
+            violation |= LspViolation.SYNC_ASYNC_MISMATCH
 
         if self.is_generator != other.is_generator:
-            violatoin |= LspViolation.GENERATOR_MISMATCH
+            violation |= LspViolation.GENERATOR_MISMATCH
 
         if self.binding != other.binding:
-            violatoin |= LspViolation.DESCRIPTOR_BINDING_SHIFT
+            violation |= LspViolation.DESCRIPTOR_BINDING_SHIFT
 
-        return violatoin
+        return violation
 
     def _diff_positional(self, other: SigSpec) -> LspViolation:
-
         violation: LspViolation = LspViolation.ZERO
         _base_pos, _new_pos = self.positionals, other.positionals
 
@@ -252,7 +317,7 @@ class SigSpec:
         ):
             violation |= LspViolation.REDUCED_MAX_POS
 
-        for b_arg, n_arg in zip(self.pos, _new_pos, strict=True):
+        for b_arg, n_arg in zip(self.pos, _new_pos, strict=False):
             if b_arg.name != n_arg.name:
                 violation |= LspViolation.POS_ONLY_RENAMED
                 break
@@ -263,12 +328,12 @@ class SigSpec:
                 _base_pos[i].annotation, _new_pos[i].annotation
             )
 
-        if other.args is not None:
+        if other.args:
             for i in range(overlap, len(_base_pos)):
                 violation |= _lsp.check_param_variance(
                     _base_pos[i].annotation, other.args[0].annotation
                 )
-            if self.args is not None:
+            if self.args:
                 violation |= _lsp.check_param_variance(
                     self.args[0].annotation, other.args[0].annotation
                 )
@@ -295,32 +360,48 @@ class SigSpec:
                 )
             elif name in new_pos_names:
                 violation |= LspViolation.LOST_KW_ACCESS
-            elif other.kwargs is not None:
+            elif other.kwargs:
                 violation |= _lsp.check_param_variance(
                     base_arg.annotation, other.kwargs[0].annotation
                 )
             else:
                 violation |= LspViolation.DROPPED_KW_NAME
 
-        if self.kwargs is not None and other.kwargs is not None:
+        if self.kwargs and other.kwargs:
             violation |= _lsp.check_param_variance(
                 self.kwargs[0].annotation, other.kwargs[0].annotation
             )
 
-        _base_min = self.min_positional
+        _base_min: int = self.min_positional
         for idx, arg in enumerate(other.both):
             if (
                 arg.name not in _base_kw
                 and not arg.has_default
-                and (len(self.pos) + idx) >= _base_min
+                and (len(other.pos) + idx) >= _base_min
             ):
                 violation |= LspViolation.ADDED_REQUIRED_KW
 
         for arg in other.key:
-            if arg.name not in _base_kw and not arg.has_default:
+            if not arg.has_default and (
+                arg.name not in _base_kw or _base_kw[arg.name].has_default
+            ):
                 violation |= LspViolation.ADDED_REQUIRED_KW
 
         return violation
+
+    #  LINE: -- Transformations & Inspection -- -- - -- -- - -- --
+
+    def bind_self(self) -> Self:
+        """Return a new SigSpec with the leading receiver parameter (self/cls) bound."""
+        if self.pos:
+            return replace(self, pos=self.pos[1:])
+        if self.both:
+            return replace(self, both=self.both[1:])
+        if self.args:
+            return self
+        raise TypeError(
+            f"Cannot bind receiver (self/cls) to signature with 0 positional parameters: {self}"
+        )
 
     def evolve(
         self,
@@ -344,7 +425,9 @@ class SigSpec:
     def detect(
         cls,
         target: Callable[..., Any],
+        /,
         *,
+        bind_to_self: bool = False,
         tolerance: LspViolation = LspViolation.ZERO,
         include_extras: bool = False,
     ) -> Self:
@@ -356,16 +439,89 @@ class SigSpec:
         hints: _T.StrDict = reflect.typehint.find(
             unwrapped, include_extras=include_extras
         )
-        buckets: Buckets = SigPart.buckets(hints, sig)
-        return cls(
-            pos=tuple(*buckets[SigPart.POSARG]),
-            both=tuple(*buckets[SigPart.ANYARG]),
-            args=tuple(*buckets[SigPart.ARGS]),
-            key=tuple(*buckets[SigPart.KEYARG]),
-            kwargs=tuple(*buckets[SigPart.KWARGS]),
+        # REMOVE:
+        # buckets: Buckets = _ParameterKind.buckets(hints, sig)
+
+        # AI_TASK: is it that easy?
+        # - still I need the modification of all _ParameterKind.POSITIONAL_ONLY etc
+        buckets: Buckets = {part: [] for part in _inspect._ParameterKind}
+        for param in sig.parameters.values():
+            resolved: Any = hints.get(param.name, param.annotation)
+            arg: SigVar = SigVar.detect(param, annotation=resolved)
+            buckets[arg.kind].append(arg)
+
+        spec: Self = cls(
+            pos=tuple(buckets[_ParameterKind.POSITIONAL_ONLY]),
+            both=tuple(buckets[_ParameterKind.POSITIONAL_OR_KEYWORD]),
+            args=tuple(buckets[_ParameterKind.VAR_POSITIONAL]),
+            key=tuple(buckets[_ParameterKind.KEYWORD_ONLY]),
+            kwargs=tuple(buckets[_ParameterKind.VAR_KEYWORD]),
             result=reflect.sig.returns(hints, sig),
             is_async=reflect.sig.is_async(unwrapped),
             is_generator=reflect.sig.is_generator(unwrapped),
             binding=_binding,
             tolerance=tolerance,
+        )
+        if bind_to_self and _binding is not reflect.sig.Binding.METHOD:
+            return spec.bind_self()
+        return spec
+
+
+#  LINE: -- Param Data  -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class SigVar(_SigVar):  # TODO: TupleBase?
+    """Define the Spec of 1 Signature Part: Parameter or Return"""
+
+    icon = TupleField[str]("λ")
+    sep = TupleField[str](": ")
+
+    def __new__(
+        cls,
+        name: str,
+        kind: _ParameterKind,
+        default: Any = VOID,
+        annotation: Any = VOID,
+    ) -> Self:
+        default: MayBe[Any] = VOID if default is EMPTY else default
+        annotation: MayBe[Any] = VOID if annotation is EMPTY else annotation
+        return tuple.__new__(cls, (name, kind, default, annotation))
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}[{self.name}]::{self.kind}"
+
+    @property
+    def has_default(self) -> bool:
+        return self.default is not VOID
+
+    @property
+    def has_annotation(self) -> bool:
+        return self.annotation is not VOID
+
+    def evolve(
+        self,
+        *,
+        name: MayNot[str] = None,
+        kind: MayNot[_ParameterKind] = None,
+        default: Any = EMPTY,
+        annotation: Any = EMPTY,
+    ) -> Self:
+        """Return a copy of SigVar with updated attributes"""
+        return type(self)(
+            name=self.name if name is None else name,
+            kind=self.kind if kind is None else kind,
+            default=self.default if default is EMPTY else default,
+            annotation=self.annotation if annotation is EMPTY else annotation,
+        )
+
+    @classmethod
+    def detect(
+        cls, param: Parameter, default: Any = VOID, annotation: Any = VOID
+    ) -> Self:
+        """Create from Parameter and update with additional values"""
+        return cls(
+            name=param.name,
+            kind=param.kind,
+            default=param.default if default is VOID else default,
+            annotation=param.annotation if annotation is VOID else annotation,
         )

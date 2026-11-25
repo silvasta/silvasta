@@ -20,6 +20,8 @@ class LspViolation(_e.IntFlag):
         path=ModulePath.parse(
             "sstcore.brick.call._lsp:explain_lsp_violation",
         ),
+        # AI_TASK: here the wiring of ExplainedTuple.combine messed up...
+        # - find a solution that works just like here below
         fallback=ExplainedTuple.combine,
         cache_fallback=True,
     )

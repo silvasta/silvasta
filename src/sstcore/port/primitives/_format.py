@@ -53,7 +53,7 @@ def tuple_format(self, spec: str, /) -> str:
 
 
 def _tuple_format(self: Any, spec: str, /) -> str:
-    # CHECK:
+    # CHECK: new approach
     valid_flags: frozenset[str] = getattr(self, "format_flags", _VALID_FLAGS)
     parsed: SpecParse = SpecParse.read(spec, valid=valid_flags)
 
@@ -234,3 +234,35 @@ class SpecParse(_typing.NamedTuple):
         return (
             bool(flags or (has_sep and sep)) and set(flags) <= valid - exclude
         )
+
+
+_FORMAT: dict[str, str] = {
+    "a": "ascii - Don't use!",
+    "b": "bit|bare - better drop bare",
+    "c": "",
+    "d": "",
+    "e": "explain|extend",
+    "f": "unsure",
+    "g": "",
+    "h": "",
+    "i": "icon",
+    "j": "",
+    "k": "",
+    "l": "",
+    "m": "",
+    "n": "newline - line separated items",
+    "o": "",
+    "p": "",
+    "q": "quiet?",
+    "r": "repr - Don't use!",
+    "s": "str - Don't use!",
+    "t": "title?",
+    "u": "",
+    "v": "verbose - full output",
+    "w": "",
+    "x": "",
+    "y": "",
+    "z": "",
+    #
+    ";": "custom separator",
+}  # LATER: check set or mapping for gate

@@ -39,6 +39,17 @@ def is_generator(call: _Callable, /, *, unwrap=False):
     ) or _inspect.isasyncgenfunction(_unwrapped)
 
 
+def _resolve_routine(call: _Callable, /, *, unwrap: bool = False) -> _Callable:
+    target: _Callable = (
+        call.__call__
+        if callable(call)
+        and not isinstance(call, type)
+        and not _inspect.isroutine(call)
+        else call
+    )
+    return _inspect.unwrap(target) if unwrap else target
+
+
 class Binding(EnumZero):
     FUNC = _e.auto()
     METHOD = _e.auto()
@@ -62,7 +73,6 @@ class Binding(EnumZero):
 
 
 def find(func: _Callable, /) -> _MayNot[_inspect.Signature]:
-    # NEXT: StrategyField: func, bind_to_self=self.bind_to_self
     try:
         return _inspect.signature(func)
     except TypeError, ValueError:
@@ -85,7 +95,6 @@ def types(func: _Callable[..., _Any]) -> tuple[_Any, _Any]:
 
 
 def params(hints: _MayNot[_T.StrDict], sig: _inspect.Signature) -> list[_Any]:
-    # CHECK: use the tuple?
     return [
         hints[name]
         if hints is not None and name in hints
