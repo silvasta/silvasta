@@ -11,6 +11,8 @@ Prepare for direct Usage and as Base for further Specicications
                                                  DependencyLevel[2]
 """
 
+from typing import Any
+
 __all__: list[str] = [
     "RequiredField",
     "LazyField",
@@ -99,14 +101,21 @@ class Forward[T](ReadField[T]):
                 self._bus = EventBus()
 
             # Expose the bus's emit method directly on the App
-            emit = Forward(target_attr="_bus", method_name="emit")
+            emit = Forward(target="_bus", method="emit")
     """
 
-    def __init__(self, target_attr: str, method_name: str):
-        self.target_attr: str = target_attr
-        self.method_name: str = method_name
-        # WARN: forward by super here or not??
+    def __init__(
+        self, target: str, method: str | None = None, /, *args, **kwargs
+    ):
+        self.target_name: str = target
+        self.method_name: str | None = method
+        super().__init__(*args, **kwargs)
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        super().__set_name__(owner, name)
+        if self.method_name is None:
+            self.method_name = name
 
     def read(self, unit: object) -> T:
-        target: object = getattr(unit, self.target_attr)
-        return getattr(target, self.method_name)
+        target: Any = getattr(unit, self.target_name)
+        return getattr(target, self.method_name or "")

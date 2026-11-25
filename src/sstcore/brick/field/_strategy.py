@@ -74,10 +74,10 @@ class MethodFieldEngine[**In, Out](
 
     def __call__[**CallIn, CallOut](
         self, func: Callable[Concatenate[Any, CallIn], CallOut]
-    ) -> MethodFieldEngine[CallIn, CallOut]:  # ty:ignore
+    ) -> MethodFieldEngine[CallIn, CallOut]:
         """Bind method when used as parameterized decorator @MethodFieldEngine(...)"""
-        self.bind(func)  # ty:ignore
-        return self  # ty: ignore
+        self.bind(func)
+        return self
 
     def bind(self, func: Callable[..., Out]) -> None:
         super().bind(func)
@@ -122,6 +122,7 @@ class MethodFieldEngine[**In, Out](
             self.bind(func)
         else:
             self.validate_signature(unit, func, bind_to_self=False)
+            # FIX: why is here WriteField?? otherwise just skip DecoDescriptor that anyway causes so much conflicts
             WriteField.write(self, unit, func)
         return self
 
@@ -146,8 +147,8 @@ class StrategyField[**In, Out](MethodFieldEngine[In, Out]):
         self, func: Callable[Concatenate[Any, CallIn], CallOut]
     ) -> StrategyField[CallIn, CallOut]:
         """Bind method when used as parameterized decorator @StrategyField(...)"""
-        self.bind(func)  # ty:ignore
-        return self  # ty: ignore
+        self.bind(func)
+        return self
 
     def validate(
         self, unit: object, value: Callable[..., Any]
@@ -164,8 +165,8 @@ class MorphingField[**In, Out](MethodFieldEngine[In, Out]):
         self, func: Callable[Concatenate[Any, CallIn], CallOut]
     ) -> MorphingField[CallIn, CallOut]:
         """Bind method when used as parameterized decorator @MorphingField(...)"""
-        self.bind(func)  # ty:ignore
-        return self  # ty: ignore[invalid-return-type]
+        self.bind(func)
+        return self
 
     def morph(
         self, func: Callable[..., Any], unit: object | None = None
@@ -249,9 +250,10 @@ class BoundStrategy[**In, Out]:
             return self.func(self.unit, *args, **kwargs)
         return self.func(*args, **kwargs)
 
-    def __getattr__(self, name: str) -> Any:
-        """Keep mounted callable objects (LogEmitter, …) intact"""
-        return getattr(self.func, name)
+    # REMOVE: if not absolutely required
+    # def __getattr__(self, name: str) -> Any:
+    #     """Keep mounted callable objects (LogEmitter, …) intact"""
+    #     return getattr(self.func, name)
 
     def switch(self, new_func: Callable[..., Any]) -> Self:
         """Swap function while ensuring LSP-consistency"""

@@ -12,17 +12,10 @@ __all__: list[str] = [
 ]
 
 
-from collections.abc import Iterator, Mapping
+import typing as _typing
+from collections.abc import Iterable, Iterator, Mapping
 from enum import Enum
-from typing import (
-    Any,
-    ClassVar,
-    Protocol,
-    Self,
-    Unpack,
-    overload,
-    runtime_checkable,
-)
+from typing import Any, Self
 
 from .._modulepath import ModulePath
 from ..empty import MayNot
@@ -30,8 +23,8 @@ from ._gate import GateRaiser, LazyMap, MapGate
 from ._loader import Loader, Loading
 
 
-@runtime_checkable
-class EnumFieldLoader[E: Enum, Value: Any](Protocol):
+@_typing.runtime_checkable
+class EnumFieldLoader[E: Enum, Value: Any](_typing.Protocol):
     def __call__(self) -> Mapping[E, Value]:
         """Prepare Enum Data for Field"""
 
@@ -47,7 +40,7 @@ class EnumMemberMap[E: Enum, V](LazyMap[E, V]):
         source: MayNot[Loading[[], Mapping[Any, V]]] = None,
         fallback: MayNot[Loading[[E], V]] = None,
         cache_fallback: bool = False,
-        **tkw: Unpack[Loader.Input[V]],
+        **tkw: _typing.Unpack[Loader.Input[V]],
     ) -> None:
         super().__init__(
             source=source,
@@ -87,23 +80,30 @@ class EnumMemberMap[E: Enum, V](LazyMap[E, V]):
         allowed: set[E] = set(self.owner._member_map_.values())  # ty:ignore
         actual: set[E] = set(self._data)
 
-        if extra := {  # CHECK:
-            m for m in (actual - allowed) if not isinstance(m, self.owner)
+        if extra := {
+            member
+            for member in (actual - allowed)
+            if not isinstance(member, self.owner)
         }:
-            names: str = ", ".join(str(m) for m in extra)
-            raise GateRaiser.enum_extra(self.label, names)
+            raise GateRaiser.enum_extra(self.label, _join(extra))
 
         if strict or not self.fallback.is_ready:
             required: set[E] = set(self.owner)
             if missing := required - actual:
-                names: str = ", ".join(m.name or str(m) for m in missing)
-                raise GateRaiser.enum_missing(self.label, names)
+                raise GateRaiser.enum_missing(
+                    self.label, _join(missing, lambda x: x.name or f"{x}")
+                )
+
+
+def _join(members: Iterable, fmt=lambda x: f"{x}", /) -> str:
+    # LATER: use __format__
+    return ", ".join(fmt(member) for member in members)
 
 
 class EnumField[T]:
     """Setup independent Descriptor per EnumCls with Lazy data binding"""
 
-    _owners: ClassVar[set[type[Any]]] = set()
+    _owners: _typing.ClassVar[set[type[Any]]] = set()
 
     def __init__(
         self,
@@ -113,7 +113,7 @@ class EnumField[T]:
         ] = None,
         fallback: MayNot[Loading[[Any], T]] = None,
         cache_fallback: bool = False,
-        **tkw: Unpack[Loader.Input[T]],
+        **tkw: _typing.Unpack[Loader.Input[T]],
     ) -> None:
         self._source: Loader[[], Mapping[Any, T]] = Loader.loading(source)
         self._fallback: Loader[[Any], T] = Loader.loading(fallback, **tkw)
@@ -121,7 +121,6 @@ class EnumField[T]:
         self._name: str = ""
         self._owner: type[Any] = Enum
 
-        # CHECK:
         self._slots: LazyMap[type[Enum], EnumMemberMap[Any, T]] = LazyMap(
             self._make_slot,
             mode="item",
@@ -145,11 +144,11 @@ class EnumField[T]:
             cache_fallback=self._cache_fallback,
         )
 
-    @overload
+    @_typing.overload
     def __get__[E: Enum](
         self, member: None, owner: type[E]
     ) -> EnumMemberMap[E, T]: ...
-    @overload
+    @_typing.overload
     def __get__(self, member: Enum, owner: type[Any]) -> T: ...
     def __get__[E: Enum](
         self, member: E | None, owner: type[E]
@@ -166,7 +165,7 @@ class EnumField[T]:
         call_it: bool = True,
         fallback: MayNot[Loading[[Any], T]] = None,
         cache_fallback: bool = False,
-        **tkw: Unpack[Loader.Input[T]],
+        **tkw: _typing.Unpack[Loader.Input[T]],
     ) -> Self:
         """Create lazy field via deferred 'module.path:Attr' resolution."""
         return cls.lazy(
@@ -183,7 +182,7 @@ class EnumField[T]:
         *,
         fallback: MayNot[Loading[[Any], T]] = None,
         cache_fallback: bool = False,
-        **tkw: Unpack[Loader.Input[T]],
+        **tkw: _typing.Unpack[Loader.Input[T]],
     ) -> Self:
         """Create lazy field backed by a zero-arg bulk table loader."""
         return cls(
@@ -197,7 +196,7 @@ class EnumField[T]:
 class EnumFieldMap[E: Enum](MapGate[str, EnumMemberMap[E, Any]]):
     """Per-EnumCls map of field_name -> EnumMemberMap with global registry."""
 
-    _registry: ClassVar[LazyMap[type[Enum], EnumFieldMap[Any]]]
+    _registry: _typing.ClassVar[LazyMap[type[Enum], EnumFieldMap[Any]]]
 
     def __init__(self, owner: type[E], /) -> None:
         self.owner: type[E] = owner

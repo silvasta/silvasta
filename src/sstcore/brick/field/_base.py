@@ -53,6 +53,31 @@ class NamedField:
         return f"{reflect.clsname(unit_or_cls)}.{self.public_name}"
 
 
+class _SlotBaseField(NamedField):  # NEXT: wire this? make it Exchangeable?
+    def __init__(
+        self, *args, default: Any = VOID, frozen: bool = False, **kwargs
+    ):
+        self.default: Any = default
+        self.frozen: bool = frozen
+        super().__init__(*args, **kwargs)
+
+    def _get_val(self, unit: object) -> Any:
+        return object.__getattribute__(unit, self.private_name)
+
+    def _set_val(self, unit: object, value: Any) -> None:
+        object.__setattr__(unit, self.private_name, value)
+
+    def _del_val(self, unit: object) -> None:
+        object.__delattr__(unit, self.private_name)
+
+    def _has_val(self, unit: object) -> bool:
+        try:
+            object.__getattribute__(unit, self.private_name)
+            return True
+        except AttributeError:
+            return False
+
+
 @portlink(attach.Descriptor)
 class BaseField(NamedField):
     """Provide Utils for all Fields"""
@@ -60,7 +85,7 @@ class BaseField(NamedField):
     def __init__(
         self, *args, default: Any = VOID, frozen: bool = False, **kwargs
     ):
-        self.default = default
+        self.default: Any = default
         self.frozen: bool = frozen
         super().__init__(*args, **kwargs)
 

@@ -1,8 +1,7 @@
 """
-Class attribute Fields
+Attach Fields as Class or Unit Attributes
 
-- Attach with Descriptor
-                                   DependencyLevel.sstcore.brick[1]
+                                 DependencyLevel.sstcore.brick[1:2]
 """
 
 __all__: list[str] = [

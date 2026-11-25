@@ -27,7 +27,7 @@ from ._base import VOID, DeleteField, WriteField
 class ResetField[DefaultT](DeleteField):
     def __init__(self, *args, default: DefaultT, **kwargs) -> None:
         self.default: DefaultT = default
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, default=default, **kwargs)
 
     def remove(self, unit: object) -> None:
         if self.default is not VOID:
