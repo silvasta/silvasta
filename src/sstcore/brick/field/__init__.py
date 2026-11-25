@@ -19,6 +19,7 @@ __all__: list[str] = [
     # _decorate
     "FieldDecorator",
     "DecoratedField",
+    "CallableField",
     # _combos
     "RequiredField",
     "LazyField",
@@ -32,7 +33,6 @@ __all__: list[str] = [
     # _strategy
     "StrategyField",
     "MorphingField",
-    "MethodFieldEngine",
     "BoundStrategy",
     # functor
     "FunctorField",
@@ -52,21 +52,9 @@ from ._base import (
     ReadOnlyField,
     WriteField,
 )
-from ._combos import (
-    DerivedField,
-    Forward,
-    LazyField,
-    RequiredField,
-)
-from ._decorate import (
-    DecoratedField,
-    FieldDecorator,
-)
-from ._extend import (
-    ResetField,
-    TypedField,
-    ValidField,
-)
+from ._combos import DerivedField, Forward, LazyField, RequiredField
+from ._decorate import CallableField, DecoratedField, FieldDecorator
+from ._extend import ResetField, TypedField, ValidField
 from ._functor import FunctorField
 from ._policy import (
     MatchPolicyField,
@@ -81,9 +69,4 @@ from ._raise import (
     FieldRaiseCall,
     FieldRaiser,
 )
-from ._strategy import (
-    BoundStrategy,
-    MethodFieldEngine,
-    MorphingField,
-    StrategyField,
-)
+from ._strategy import BoundStrategy, MorphingField, StrategyField

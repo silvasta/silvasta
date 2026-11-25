@@ -13,7 +13,7 @@ __all__: list[str] = [
 
 from typing import Any
 
-from ...brick.field import MethodFieldEngine
+from ...brick.field import StrategyField
 from ...port.empty import VOID, MayBe
 from ...port.link import portlink
 from ...port.shape import Meta, MetaData
@@ -66,7 +66,7 @@ def sync_inherited_strategy_fields(
       - switch() and morph() should not change class-level attributes
 
     """
-    inherited_engines: dict[str, MethodFieldEngine] = {}
+    inherited_engines: dict[str, StrategyField] = {}
 
     for base in bases:
         for parent in base.__mro__:
@@ -74,14 +74,14 @@ def sync_inherited_strategy_fields(
                 continue
             for attr_name, attr_val in parent.__dict__.items():
                 if attr_name not in inherited_engines and isinstance(
-                    attr_val, MethodFieldEngine
+                    attr_val, StrategyField
                 ):
                     inherited_engines[attr_name] = attr_val
 
     for field_name, parent_engine in inherited_engines.items():
         existing: object = namespace.get(field_name, VOID)
 
-        if isinstance(existing, MethodFieldEngine):
+        if isinstance(existing, StrategyField):
             continue
 
         if callable(existing):

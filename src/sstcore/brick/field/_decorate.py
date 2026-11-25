@@ -7,17 +7,16 @@ Setup Minimal Components to Assemble individual Descriptors
 __all__: list[str] = [
     "FieldDecorator",
     "DecoratedField",
+    "CallableField",
 ]
 
 from collections.abc import Callable
 from types import MethodType
-from typing import Any, Concatenate, Self
+from typing import Any, Concatenate, Literal, Self, overload
 
 from ...port import attach
-from ...port.casting import LspViolation
 from ...port.link import portlink
 from .. import reflect
-from ..call import SigSpec
 from ._base import DeleteField, ReadField
 from ._extend import ValidField
 
@@ -34,18 +33,40 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
     """
 
     target_func: Callable[..., Out] | None = None
-    signature: SigSpec | None = None
     bind_to_self: bool = False
 
+    @overload
+    def __init__(
+        self,
+        func: Callable[Concatenate[Any, In], Out],
+        *args: Any,
+        bind_to_self: Literal[True] = True,
+        **kwargs: Any,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        func: Callable[In, Out],
+        *args: Any,
+        bind_to_self: Literal[False],
+        **kwargs: Any,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        func: None = None,
+        *args: Any,
+        bind_to_self: bool = True,
+        **kwargs: Any,
+    ) -> None: ...
     def __init__(
         self,
         func: Callable[..., Out] | None = None,
         *args: Any,
-        tolerance: LspViolation = LspViolation.ZERO,
+        bind_to_self: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Initialize and optionally bind if used as @Field (no parens)."""
-        self.tolerance: LspViolation = tolerance
+        self.bind_to_self = bind_to_self
         super().__init__(*args, **kwargs)
         if func is not None:
             self.bind(func)
@@ -55,19 +76,18 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
         self.bind(func)
         return self
 
-    def __str__(self):
-        return f"{self.target_func}[{self.signature}]"
-
     def bind(self, func: Callable[..., Any]) -> None:
         if not callable(func):
             raise TypeError(f"Target must be callable, got {type(func)}")
 
         self.target_func = func
-        self.signature: SigSpec = SigSpec.detect(
-            func,
-            bind_to_self=self.bind_to_self,
-            tolerance=self.tolerance,
-        )
+
+        default_doc = f"Function bound by: {reflect.clsname(self)}"
+        self.__doc__: str = reflect.attr.doc(func, default=default_doc)
+
+        if not hasattr(self, "public_name"):
+            self.public_name: str = reflect.funcname(func)
+            self.private_name: str = f"_{self.public_name}"
 
         default_doc = f"Function bound by: {self}"
         self.__doc__: str = reflect.attr.doc(func, default=default_doc)
@@ -105,37 +125,25 @@ class DecoratedField[**In, Out](
             return self._get_val(unit)
 
         if self.target_func is None:
-            text = "Missing target_func to bind."
-            raise self.raiser.Function(self, unit, text)
+            raise self.raiser.Function(
+                self, unit, "Missing target_func to bind."
+            )
 
         bound_method = MethodType(self.target_func, unit)
         self.write(unit, bound_method)
-
         return bound_method
 
 
-#  LINE: -- Ideas -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
 @portlink(attach.DecoDescriptor)
-class _CallableField[**In, Out](
+class CallableField[**In, Out](
     ReadField[Callable[In, Out]], FieldDecorator[In, Out], DeleteField
 ):
     """
     Mount default fallback method to overwrite by Callable or Emitter object
 
-    (LogEmitter, DbEmitter, CliEmitter) WITHOUT PROXY WRAPPING.
-    """
+    - without proxy wrapping (LogEmitter, DbEmitter, CliEmitter)
 
-    def __init__(
-        self,
-        func: Callable[..., Out] | None = None,
-        *args: Any,
-        bind_to_self: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        self.bind_to_self: bool = bind_to_self
-        super().__init__(func, *args, **kwargs)
+    """
 
     def read(self, unit: object) -> Callable[In, Out]:
         if self._has_val(unit):

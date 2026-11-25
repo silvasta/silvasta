@@ -63,7 +63,7 @@ class PathGuardField(
             self.logic = logic
         self.lazy: bool = lazy
         self.policy: dict[str, Any] = policy
-        super().__init__(func)
+        super().__init__(func, bind_to_self=False)  # WARN: is this proper??
 
     def read(self, unit: object) -> Path:
         """Store and Read function value from Unit or Recompute on any Call"""

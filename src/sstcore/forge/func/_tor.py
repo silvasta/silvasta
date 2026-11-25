@@ -10,7 +10,7 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Callable
-from typing import Any, Self, TypeGuard, Unpack, reveal_type
+from typing import Any, Self, Unpack
 
 from loguru import logger
 
@@ -30,9 +30,6 @@ class BaseFunctor[**Args, Result](
     FunctorView, metaclass=FunctorMeta, data=FunctorMetaInput
 ):
     """Ensure Requirements and close MRO forwarding"""
-
-    # if TYPE_CHECKING:
-    #     _emit: BoundLog
 
     def __init__(self, **kwargs: Unpack[FunctorInput[Args, Result]]):
         _spec = FunctorSpec.absorb(kwargs)
@@ -75,23 +72,3 @@ class BaseFunctor[**Args, Result](
         logger.bind(
             event_name=CoreEvent.FUNCTOR, sender=f"{self}", **extra
         ).log(level.upper(), message)
-
-
-if __name__ == "__main__":
-    reveal_type(BaseFunctor._emit)
-
-    def is_valid_emit(fn: Any) -> TypeGuard[BoundLog]:
-        """Validation logic follows later..."""
-        return True
-
-    if is_valid_emit(BaseFunctor._emit):
-        reveal_type(BaseFunctor._emit)
-        y: BoundLog = BaseFunctor._emit
-
-    _functor = BaseFunctor(name="TestFunctor")
-    reveal_type(_functor._emit)
-    _functor._emit("Hello", level="DEBUG", test=33)
-    try:
-        _functor._emit("this", "should", "fail", "fast")
-    except TypeError as error:
-        print(f"{error=}")
