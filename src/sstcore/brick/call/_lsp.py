@@ -4,6 +4,8 @@ Explain the Rules of the LSP Violation Levels
 -
 """
 
+from typing import Any
+
 __all__: list[str] = [
     "LspViolationDetail",
     "explain_lsp_violation",
@@ -11,6 +13,7 @@ __all__: list[str] = [
 
 from ...port.casting import LspViolation
 from ...port.primitives import ExplainedTuple
+from .. import reflect
 
 type LspViolationDetail = ExplainedTuple[LspViolation]
 
@@ -140,3 +143,42 @@ def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
             "Allows replacing the return type with any type while preserving strict input call compatibility.",
         ),
     )
+
+
+def check_param_variance(base_t: Any, new_t: Any) -> LspViolation:
+    """Evaluate contravariant parameter type compatibility (base -> new)."""
+
+    if reflect.types.is_untyped(new_t):
+        return LspViolation.ZERO
+
+    if reflect.types.is_untyped(base_t):
+        return LspViolation.ADDED_PARAM_CONSTRAINT
+
+    if reflect.types.is_subtype(base_t, new_t):
+        return LspViolation.ZERO
+
+    if reflect.types.overlap(base_t, new_t):
+        return LspViolation.NARROWED_PARAM_TYPE
+
+    return LspViolation.DISJOINT_PARAM_TYPE
+
+
+def check_return_variance(base_r: Any, new_r: Any) -> LspViolation:
+    """Evaluate covariant return type compatibility (base -> new)."""
+
+    if reflect.types.is_untyped(base_r):
+        return LspViolation.ZERO
+
+    if reflect.types.is_untyped(new_r):
+        return LspViolation.WIDENED_RETURN_SUPERSET
+
+    if reflect.types.is_subtype(new_r, base_r):
+        return LspViolation.ZERO
+
+    if reflect.types.is_subtype(base_r, new_r):
+        return LspViolation.WIDENED_RETURN_SUPERSET
+
+    if reflect.types.overlap(base_r, new_r):
+        return LspViolation.OVERLAPPING_RETURN_UNION
+
+    return LspViolation.DISJOINT_RETURN_TYPE

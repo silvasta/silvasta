@@ -28,19 +28,15 @@ from . import _typehint
 
 
 def is_async(call: _Callable, /, *, unwrap=False):
-    _unwrapped = _inspect.unwrap(call) if unwrap else call
-    return (
-        _inspect.iscoroutinefunction(_unwrapped)
-        or _inspect.isasyncgenfunction(_unwrapped),
-    )
+    return _inspect.iscoroutinefunction(
+        _unwrapped := _inspect.unwrap(call) if unwrap else call
+    ) or _inspect.isasyncgenfunction(_unwrapped)
 
 
 def is_generator(call: _Callable, /, *, unwrap=False):
-    _unwrapped = _inspect.unwrap(call) if unwrap else call
-    return (
-        _inspect.isgeneratorfunction(_unwrapped)
-        or _inspect.isasyncgenfunction(_unwrapped),
-    )
+    return _inspect.isgeneratorfunction(
+        _unwrapped := _inspect.unwrap(call) if unwrap else call
+    ) or _inspect.isasyncgenfunction(_unwrapped)
 
 
 class Binding(EnumZero):

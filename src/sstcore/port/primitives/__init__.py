@@ -20,8 +20,9 @@ __all__: list[str] = [
     "SingleTuple",
     # "Variadics", CHECK: out of order
     "TupleBase",
+    "TupleField",
     "is_tuplebase_cls",
-    "is_tuplebase",
+    "is_tuplebased",
     "is_notext_sequence",
     "KeyFormatting",
     "VarsView",
@@ -42,6 +43,7 @@ __all__: list[str] = [
     "LockedClsMeta",
 ]
 from .._types import _LockedClsMeta as LockedClsMeta
+from ._explained import ExplainedTuple
 from ._frozen import frozendict
 from ._hashed import HashedTuple
 from ._name import (
@@ -59,19 +61,8 @@ from ._params import (
     Params,
     SingleTuple,
     Var,
-    # Variadics,
     VarsView,
 )
 from ._set import DunderSet, FieldSet, NormSet
-from ._tuple import ExplainedTuple
-from ._tupled import (
-    TupleBase,
-    is_tuplebase,
-    is_tuplebase_cls,
-)
-from ._zero import (
-    get_slots,
-    is_notext_sequence,
-    iter_slot_names,
-    unpack_types,
-)
+from ._tuplebase import TupleBase, TupleField, is_tuplebase_cls, is_tuplebased
+from ._zero import get_slots, is_notext_sequence, iter_slot_names, unpack_types

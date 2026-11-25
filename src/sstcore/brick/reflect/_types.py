@@ -14,6 +14,7 @@ __all__: list[str] = [
 import inspect as _inspect
 import typing as _t
 
+from ...port.empty import VOID
 from . import _typehint
 
 _EMPTY = _inspect._empty
@@ -31,9 +32,7 @@ def overlap(target1: object, target2: object, /) -> bool:
 
 
 def is_untyped(target: object, /) -> bool:
-    # NEXT: VOID? define when is VOID/_empty difference required
-    # - VOID should never leave the internal functions!
-    return target is _EMPTY or target is _t.Any
+    return target is _t.Any or target is VOID or target is _EMPTY
 
 
 def is_subtype(sub: _t.Any, sup: _t.Any, /) -> bool:
