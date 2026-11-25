@@ -24,13 +24,13 @@ from .._types import Types as _T  # noqa:N814
 from ..empty import VOID, MayNot
 from . import _zero as _z
 from ._frozen import frozendict
-from ._tuple import NamedValue, SingleTuple
-from ._tupled import (
+from ._tuplebase import (
     TupleBase,
     TupleField,
     merge_into_mapping,
     merge_into_sequence,
 )
+from ._tuples import NamedValue, SingleTuple
 
 type VarsView = _typing.Literal["live", "dict", "frozen"]
 
@@ -50,7 +50,7 @@ class KeyFormatting(_typing.Protocol):
 class Var[T: Any = Any](NamedValue[T]):
     """Variable with Name and Value"""
 
-    # NEXT: add the keyformat to his here
+    # TODO: add keyformat to his here
     # - maybe use __new__ to cast incoming not-str to str
 
     sep = TupleField[str]("=")
@@ -67,8 +67,7 @@ class Var[T: Any = Any](NamedValue[T]):
         return cls(name, value=getattr(target, name))
 
 
-@TupleBase.mix
-class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S]):
+class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], TupleBase):
     """Capture and Visualize Positional Parameter"""
 
     sep = TupleField[str](", ")
@@ -154,8 +153,7 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S]):
 type _KeyFilter = _cabc.Set[str] | _cabc.Mapping[str, Any] | Kwargs[Any]
 
 
-@TupleBase.mix
-class Kwargs[M: _T.Map](SingleTuple[M]):
+class Kwargs[M: _T.Map](SingleTuple[M], TupleBase):
     """Capture and Visualize Keyword Parameter"""
 
     sep = TupleField[str](", ")
@@ -306,8 +304,7 @@ class _Variadics[A: SingleTuple, K: SingleTuple](_typing.NamedTuple):
     kwargs: Kwargs
 
 
-@TupleBase.mix
-class Params(_Variadics):
+class Params(_Variadics, TupleBase):
     """Capture and Visualize 1 Signature"""
 
     sep = TupleField[str](", ")

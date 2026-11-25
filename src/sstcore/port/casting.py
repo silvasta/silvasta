@@ -12,68 +12,17 @@ from .primitives import ExplainedTuple
 from .primitives._format import SpecParse
 from .structures import EnumField
 
-EXPLAIN_PATH: ModulePath = ModulePath.parse(
-    "sstcore.brick.call._explain_lsp:explain_lsp_violation"
-)
 
+class LspViolation(_e.IntFlag):
+    """Categorize different Levels of LSP Violations"""
 
-class _LspViolationBase(_e.IntFlag):
-    # IDEA: move entire thing here to somewhere hidden/ ExplainedTuple.__format__?
-    explaining = EnumField[ExplainedTuple[Any]].imports(
-        EXPLAIN_PATH,
+    explain = EnumField[ExplainedTuple[Any]].imports(
+        path=ModulePath.parse(
+            "sstcore.brick.call._lsp:explain_lsp_violation",
+        ),
         fallback=ExplainedTuple.combine,
         cache_fallback=True,
     )
-
-    @property
-    def bits(self) -> str:
-        """Provide the Bit Representation (with Zeros and Ones)."""
-        return f"{self:0{len(type(self))}b}"
-
-    @property
-    # REMOVE: make this on tuple, LspViolation.MEMBER.explain.brief?
-    def title(self) -> str:
-        """Short one-line summary of the violation(s)."""
-        return self.explaining.title
-
-    @property
-    # REMOVE: make this on tuple, LspViolation.MEMBER.explain.detail(ed)
-    def detail(self) -> str:
-        """Extended explanation of runtime and static typing impact."""
-        return self.explaining.detail
-
-    # REMOVE: call directly the tuple by that
-    def explain(self, brief: bool = False) -> str:
-        """Return a human-readable explanation of this violation mask."""
-        return self.explaining.explain(brief=brief)
-
-    def __rich__(self) -> Any:
-        return self.explaining.__rich__()
-
-    def __str__(self) -> str:
-        return f"{type(self).__name__}[{self.bits}]::{self.name}[{self.value}]"
-
-    def __format__(self, format_spec: str) -> str:
-        # TODO: what is actually needed?
-        # MOVE: close to ExplainedTuple.__format__
-        match format_spec:
-            case "":
-                return str(self)
-            case "b":
-                return self.bits
-            case spec if SpecParse.accepts(spec):
-                return self.explaining.__format__(spec)
-            case _:
-                if (
-                    any(c in format_spec for c in "<>^")
-                    and format_spec[-1] not in "bcdoxXn"
-                ):
-                    return format(str(self), format_spec)
-                return super().__format__(format_spec)
-
-
-class LspViolation(_LspViolationBase):
-    """Categorize different Levels of LSP Violations"""
 
     ZERO = 0
 
@@ -129,3 +78,29 @@ class LspViolation(_LspViolationBase):
     MORPHING_ANY_RETURN = (  # Full transformation
         MORPHING_INCLUSIVE | OVERLAPPING_RETURN_UNION | DISJOINT_RETURN_TYPE
     )
+
+    @property
+    def bits(self) -> str:
+        """Provide the Bit Representation (with Zeros and Ones)"""
+        return f"{self:0{len(type(self))}b}"
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}[{self.bits}]::{self.name}[{self.value}]"
+
+    def __rich__(self) -> Any:
+        return self.explain.__rich__()
+
+    def __format__(self, format_spec: str) -> str:
+        # MOVE: close to ExplainedTuple.__format__? at least somewhere hidden
+        match format_spec:
+            case "b":
+                return self.bits
+            case spec if SpecParse.accepts(spec):
+                return self.explain.__format__(spec)
+            case _:
+                if (
+                    any(c in format_spec for c in "<>^")
+                    and format_spec[-1] not in "bcdoxXn"
+                ):
+                    return format(str(self), format_spec)
+                return super().__format__(format_spec)

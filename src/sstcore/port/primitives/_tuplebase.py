@@ -8,8 +8,7 @@ __all__: list[str] = [
     "TupleBase",
     "TupleField",
     "is_tuplebase_cls",
-    "is_tuplebase",
-    "create",
+    "is_tuplebased",
     "merge_into_mapping",
     "merge_into_sequence",
     "get_named_value_item",
@@ -21,14 +20,14 @@ import typing as _typing
 from collections.abc import Callable
 from functools import cache
 from types import NotImplementedType
-from typing import Any, Self, overload
+from typing import Any, NamedTuple, Self, overload
 
 from .._types import Types as _T  # noqa:N814
 from ..empty import VOID, MayBe, MayNot
 from ._format import tuple_format
 
 
-class TupleField[Value]:  # CHECK: Tuple?
+class TupleField[Value]:  # CHECK: Tuple? or more general?
     """
     Generate Non-Member Field for (Named)Tuple with mutable values
 
@@ -106,36 +105,7 @@ class TupleField[Value]:  # CHECK: Tuple?
         vars(unit).pop(self._name, None)
 
 
-def is_tuplebase_cls(target: object, /) -> _typing.TypeIs[type[TupleBase]]:
-    # RENAME:
-    _origin = _typing.get_origin(target) or target
-    return isinstance(_origin, type) and issubclass(_origin, TupleBase)
-
-
-def is_tuplebase(target: object, /) -> _typing.TypeIs[TupleBase]:
-    # RENAME:
-    return isinstance(target, TupleBase)
-
-
-@cache
-def _tuple_schema(
-    cls: type[TupleBase],
-) -> tuple[tuple[str, ...], dict[str, Any], dict[str, Any]]:
-    """Scan Custom Tuple.__new__ and provide Fields, Defaults and Annotations"""
-
-    fields: tuple[str, ...] = getattr(cls, "_fields", ())
-    defaults: dict[str, Any] = dict(getattr(cls, "_field_defaults", {}))
-    sig: _inspect.Signature = _inspect.signature(cls.__new__)
-    params: list[_inspect.Parameter] = list(sig.parameters.values())[1:]
-
-    for field, param in zip(fields, params, strict=False):
-        if (
-            field not in defaults
-            and param.default is not _inspect.Parameter.empty
-        ):
-            defaults[field] = param.default
-
-    return fields, defaults, _typing.get_type_hints(cls)
+#  LINE: -- Mountables for Classes -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
 def merge_into_mapping(target: _T.Map, extra: _T.Map, /) -> Any:
@@ -156,12 +126,12 @@ def merge_into_mapping(target: _T.Map, extra: _T.Map, /) -> Any:
         return NotImplemented
 
 
-def merge_into_sequence[S: _T.Seq](
-    target: S, extra: _T.Seq, /
-) -> S | NotImplementedType:
+def merge_into_sequence[Seq: _T.Seq](
+    target: Seq, extra: _T.Seq, /
+) -> Seq | NotImplementedType:
     """Apply [Target + Extra] to type of target with overwrites from extra"""
 
-    cls: type[S] = type(target)
+    cls: type[Seq] = type(target)
 
     if cls is tuple:
         return (*target, *extra)  # ty:ignore
@@ -204,85 +174,87 @@ def get_named_value_item[T](self, key: str | int) -> T | str:
             raise TypeError(f"{self}: Unknown {type(key)}[{key=}]")
 
 
-def create[C: TupleBase](cls: type[C], *args: Any, **kwargs: Any) -> C:
-    """
-    Universal smart factory for any TupleBase NamedTuple.
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
-    Supports:
-      - None fallback to empty defaults / child .create()
-      - Auto-coercion of raw Sequences/Mappings into child TupleBase types
-      - Flattened prefix kwargs (e.g. text_args=..., error_kwargs=...)
 
-    """
-    if not args and not kwargs:
-        try:
-            return cls()
-        except TypeError:
-            pass
+class _TupleSchema(NamedTuple):
+    """Helper: Define the Order of the Annotation"""
 
-    if len(args) == 1 and not kwargs and isinstance(args[0], cls):
-        return args[0]
+    fields: _T.StrTuple
+    defaults: _T.StrDict
+    annotations: _T.StrDict
 
-    _fields, _defaults, _annotations = _tuple_schema(cls)
 
-    if len(args) > len(_fields):
-        raise TypeError(
-            f"{cls.__name__}.create() takes at most {len(_fields)} "
-            f"positional args, got {len(args)}"
+@cache
+def _tuple_schema(cls: type[TupleBase]) -> _TupleSchema:
+    """Scan Custom Tuple.__new__ and provide Fields, Defaults and Annotations"""
+
+    fields: tuple[str, ...] = getattr(cls, "_fields", ())
+    defaults: dict[str, Any] = dict(getattr(cls, "_field_defaults", {}))
+    sig: _inspect.Signature = _inspect.signature(cls.__new__)
+    params: list[_inspect.Parameter] = list(sig.parameters.values())[1:]
+
+    for field, param in zip(fields, params, strict=False):
+        if (
+            field not in defaults
+            and param.default is not _inspect.Parameter.empty
+        ):
+            defaults[field] = param.default
+
+    return _TupleSchema(fields, defaults, _typing.get_type_hints(cls))
+
+
+class _TupleInputTasks(NamedTuple):
+    """Helper: Define the Rules for the Resolving"""
+
+    bound: _T.StrDict
+    pending: _T.StrDict
+
+    def __str__(self):
+        return f"pending kwargs: {self.pending} (processed: {self.bound})"
+
+    @classmethod
+    def prepare(
+        cls, fields: _T.StrTuple, args: _T.Tuple, kwargs: _T.Dict
+    ) -> Self:
+        """Compare Fields with inputs and assign values to process"""
+        return cls(
+            bound=(bound := dict(zip(fields, args, strict=False))),
+            pending=_remaining_kwargs(fields, bound, kwargs),
         )
 
-    bound: _T.StrDict = dict(zip(_fields, args, strict=False))
-    remaining: _T.StrDict = _remaining_kwargs(_fields, bound, kwargs)
+    def create_field_resolver(
+        self, cls: type, defaults: _T.StrDict, annotations: _T.StrDict
+    ) -> Callable[[str], Any]:
+        """Bind Resolver that processes one Field by another"""
 
-    resolved: list[Any] = [
-        _resolve_field(
-            cls,
-            field,
-            _extract_prefixed(f"{field}_", remaining),
-            bound,
-            _defaults,
-            field_type=_annotations.get(field),
-        )
-        for field in _fields
-    ]
-    if remaining:
-        bad: str = ", ".join(repr(k) for k in remaining)
-        raise TypeError(f"{cls.__name__}.create() unexpected kwargs: {bad}")
+        def resolve(field: str) -> Any:
 
-    return cls(*resolved)
+            _field_type = annotations.get(field)
+            _prefixed = _extract_prefixed(f"{field}_", self.pending)
 
+            if _prefixed and is_tuplebase_cls(_field_type):
+                return _field_type.create(**_prefixed)
 
-def _resolve_field(cls, field, prefixed, bound, defaults, field_type):
-    if prefixed and is_tuplebase_cls(field_type):
-        return field_type.create(**prefixed)
-    if field in bound and (val := bound[field]) is not None:
-        if is_tuplebase_cls(field_type) and not isinstance(val, field_type):
-            return field_type.create(val)
-        else:
-            return val
-    if is_tuplebase_cls(field_type):
-        return field_type.create()
-    if field in defaults:
-        return defaults[field]
-    raise TypeError(
-        f"{cls.__name__}.create() missing required field: {field!r}"
-    )
+            if field in self.bound and (val := self.bound[field]) is not None:
+                if is_tuplebase_cls(_field_type) and not isinstance(
+                    val, _field_type
+                ):
+                    return _field_type.create(val)
+                else:
+                    return val
 
+            if is_tuplebase_cls(_field_type):
+                return _field_type.create()
 
-def _extract_prefixed(prefix, to_pop: _T.StrDict, /) -> _T.StrDict:
-    return {
-        k.removeprefix(prefix): to_pop.pop(k)
-        for k in list(to_pop)
-        if k.startswith(prefix)
-    }
+            if field in defaults:
+                return defaults[field]
 
+            raise TypeError(
+                f"{cls.__name__}.create() missing required field: {field!r}"
+            )
 
-def _annotations(cls) -> _T.StrDict:
-    return (
-        _typing.get_type_hints(cls)
-        if hasattr(cls, "__annotations__")  # CHECK: needed?
-        else {}
-    )
+        return resolve
 
 
 def _remaining_kwargs(fields, bound, kwargs):
@@ -293,30 +265,34 @@ def _remaining_kwargs(fields, bound, kwargs):
     return remaining_kwargs
 
 
+def _extract_prefixed(prefix, pending: _T.StrDict, /) -> _T.StrDict:
+    """Destroy Kwargs if they match the Prefix"""
+    return {
+        # AI: unsure about this, when is what removed?
+        k.removeprefix(prefix): pending.pop(k)
+        for k in list(pending)
+        if k.startswith(prefix)
+    }
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def is_tuplebased(target: object, /) -> _typing.TypeIs[TupleBase]:
+    return isinstance(target, TupleBase)
+
+
+def is_tuplebase_cls(target: object, /) -> _typing.TypeIs[type[TupleBase]]:
+    _origin = _typing.get_origin(target) or target
+    return isinstance(_origin, type) and issubclass(_origin, TupleBase)
+
+
 class TupleBase:
     """Inject Behaviour into NamedTuples"""
 
     __iter__: Any
     icon = TupleField[str]("◈")
     sep = TupleField[str](", ")
-
-    def __str__(self) -> str:
-        return self.__format__("")
-
-    def __format__(self, spec: str, /) -> str:
-        return tuple_format(self, spec)
-
-    @classmethod
-    def create(cls, *args: Any, **kwargs: Any) -> Self:
-        """
-        Universal smart factory for any TupleBase NamedTuple.
-
-        Supports:
-          - None fallback to empty defaults / child .create()
-          - Auto-coercion of raw Sequences/Mappings into child TupleBase types
-          - Flattened prefix kwargs (e.g. text_args=..., error_kwargs=...)
-        """
-        return create(cls, *args, **kwargs)
 
     @property
     def joined(self) -> str:
@@ -326,6 +302,19 @@ class TupleBase:
     def joins(self) -> _cabc.Iterator:
         """Stream the visual representation joins (indepenent of __iter__)"""
         yield from self
+
+    def __str__(self) -> str:
+        return self.__format__("")
+
+    def __format__(self, spec: str, /) -> str:
+        return tuple_format(self, spec)
+
+    def __reduce__(self) -> _T.Tuple:
+        """Provide anchor for Pickling"""
+        raw_fields: _T.Tuple = tuple(tuple.__iter__(self))  # ty:ignore
+        if state := getattr(self, "__dict__", None):
+            return type(self), raw_fields, state
+        return type(self), raw_fields
 
     @classmethod
     def mix[T](cls, target: type[T], /) -> _T._NoIntersect[T, Self]:
@@ -337,9 +326,55 @@ class TupleBase:
         }
         return type(target.__name__, (target, cls), namespace)  # ty:ignore
 
-    def __reduce__(self) -> _T.Tuple:
-        """Provide anchor for Pickling"""
-        raw_fields: _T.Tuple = tuple(tuple.__iter__(self))  # ty:ignore
-        if state := getattr(self, "__dict__", None):
-            return type(self), raw_fields, state
-        return type(self), raw_fields
+    @classmethod
+    def create(cls, *args: Any, **kwargs: Any) -> Self:
+        """
+        Universal smart factory for any TupleBase NamedTuple.
+
+        Supports:
+          - None fallback to empty defaults / child .create()
+          - Auto-coercion of raw Sequences/Mappings into child TupleBase types
+          - Flattened prefix kwargs (e.g. text_args=..., error_kwargs=...)
+
+        """
+        if from_empty := _check_empty(cls, args, kwargs):
+            return from_empty  # REMOVE:??
+
+        if _already_ready(cls, args, kwargs):
+            return args[0]
+
+        _fields, _defaults, _annotations = _tuple_schema(cls)
+
+        _accept_or_raise_on_positional(cls, args, _fields)
+
+        _tasks = _TupleInputTasks.prepare(_fields, args, kwargs)
+        _resolve = _tasks.create_field_resolver(cls, _defaults, _annotations)
+        resolved: list[Any] = [_resolve(field) for field in _fields]
+
+        if _tasks.pending:
+            raise TypeError(f"{cls.__name__}.create() Input Failed! [{_tasks}]")
+
+        return cls(*resolved)
+
+
+#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+def _check_empty(cls, args, kwargs):
+    if not args and not kwargs:
+        try:
+            return cls()
+        except TypeError:
+            pass  # AI: can this ever recover afterwards?
+
+
+def _already_ready(cls, args, kwargs) -> bool:
+    """Catch Case where an already prepared instance is placed in a nested setup"""
+    return len(args) == 1 and not kwargs and isinstance(args[0], cls)
+
+
+def _accept_or_raise_on_positional(cls, args, fields):
+    if len(args) > len(fields):
+        raise TypeError(
+            f"{cls.__name__}.create() takes at most {len(fields)} positional args, got {len(args)}"
+        )

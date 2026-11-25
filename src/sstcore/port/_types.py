@@ -111,6 +111,7 @@ class Types(metaclass=_LockedClsMeta):
     type Slot = tuple[Mixin, Proto] | Mixin | Proto  # CHECK: usage?
 
     type Tuple[T: Any = Any] = tuple[T, ...]
+    type StrTuple = Types.Tuple[str]
     type Dict[K, V] = dict[K, V]
     type StrDict[T: Any = Any] = dict[str, T]
     type Map[K, V] = Mapping[K, V]
