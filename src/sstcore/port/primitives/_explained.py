@@ -9,7 +9,6 @@ __all__: list[str] = [
 ]
 
 from collections.abc import Iterable, Mapping
-from enum import Enum
 from typing import Any, Self
 
 from ._format import format_explain
@@ -55,29 +54,20 @@ class ExplainedTuple[T: Any = Any](_ExplainBase[T], TupleBase):
         return out
 
     @classmethod
-    def combine[E: Enum](  # FIX: strange parametization
-        cls,
-        member: T,
-        field: Mapping[E, ExplainedTuple[E]] | str = "explaining",
-    ) -> Self:
+    def combine(cls, member: T, table: Mapping[T, ExplainedTuple[T]]) -> Self:
         """
         Synthesize a composite ExplainedTuple for a combined Flag/IntFlag member.
 
+        Remove:
         Works both as a 1-arg LazyMap fallback and as a 2-arg explicit combiner.
         """
-        table: Mapping[E, ExplainedTuple[E]] = (
-            getattr(type(member), field) if isinstance(field, str) else field
-        )
-
-        # CHECK:
-        flags: tuple[E, ...] = (
+        flags: tuple[T, ...] = (
             tuple(member) if isinstance(member, Iterable) else ()
         )
-        # CHECK:
         if not flags or (len(flags) == 1 and flags[0] == member):
             raise KeyError(member)
 
-        parts: list[ExplainedTuple[E]] = [table[flag] for flag in flags]
+        parts: list[ExplainedTuple[T]] = [table[flag] for flag in flags]
 
         return cls(
             origin=member,

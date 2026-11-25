@@ -32,10 +32,12 @@ class _SingleTuple[T: Any = Any](_typing.NamedTuple):
     data: T
 
 
-class _Variadics[A: SingleTuple, K: SingleTuple](_typing.NamedTuple):
-    # FAIL: parameter forwarding for Params
-    args: SingleTuple
-    kwargs: SingleTuple
+class _Variadics[
+    A: SingleTuple[Any] = SingleTuple[Any],
+    K: SingleTuple[Any] = SingleTuple[Any],
+](_typing.NamedTuple):
+    args: A
+    kwargs: K
 
 
 class _ExplainBase[T: Any = Any](_typing.NamedTuple):
@@ -47,7 +49,7 @@ class _ExplainBase[T: Any = Any](_typing.NamedTuple):
 #  LINE: -- Default Methods -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
 
-class NamedValue[T: Any = Any](_NamedValue):
+class NamedValue[T: Any = Any](_NamedValue[T]):
     """Define the Handling and Visualization of the Name and Value"""
 
     def __bool__(self) -> bool:
@@ -68,7 +70,7 @@ class NamedValue[T: Any = Any](_NamedValue):
         return HashedTuple(*self, strict=strict)
 
 
-class SingleTuple[T: Any = Any](_SingleTuple):
+class SingleTuple[T: Any = Any](_SingleTuple[T]):
     """Define the Forwarding of the Single Data Point"""
 
     def __iter__(self) -> _cabc.Iterator:
@@ -84,13 +86,13 @@ class SingleTuple[T: Any = Any](_SingleTuple):
         return item in self.data
 
     @property
-    def tuple(self):
+    def tuple(self) -> _b.tuple[T]:
         return _b.tuple(self.data)
 
     @property
-    def list(self):
+    def list(self) -> _b.list[T]:
         return _b.list(self.data)
 
     @property
-    def set(self):  # LATER: check for not hashable
-        return _b.set(self.data)
+    def set(self) -> _b.set[T]:
+        return _b.set(self.data) if HashedTuple.accepts(self.data) else set()

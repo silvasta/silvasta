@@ -18,7 +18,7 @@ import builtins as _b
 import collections.abc as _cabc
 import typing as _typing
 from collections.abc import Callable
-from typing import Any, Literal, Self, overload
+from typing import Any, Literal, Self, SupportsIndex, TypeIs, overload
 
 from .._types import Types as _T  # noqa:N814
 from ..empty import VOID, MayNot
@@ -30,7 +30,7 @@ from ._tuplebase import (
     merge_into_mapping,
     merge_into_sequence,
 )
-from ._tuples import NamedValue, SingleTuple
+from ._tuples import NamedValue, SingleTuple, _Variadics
 
 type VarsView = _typing.Literal["live", "dict", "frozen"]
 
@@ -40,20 +40,46 @@ class KeyFormatting(_typing.Protocol):
         """Render the Value to a valid Key"""
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+class Feedable:
+    """Enable `container @ func`, `func @ container`, and `a @ b @ func` stacking."""
+
+    def feed[R](self, func: Callable[..., R], /) -> R:
+        raise NotImplementedError(func)
+
+    def params(self) -> Params:
+        # IDEA: make @property like for list,tuple,set?
+        raise NotImplementedError
+
+    @_typing.overload
+    def __matmul__(self, other: Feedable, /) -> Params: ...
+    @_typing.overload
+    def __matmul__[R](self, other: Callable[..., R], /) -> R: ...
+    def __matmul__(self, other: Any, /) -> Any:
+        """Check Feedable BEFORE callable() because Var defines __call__"""
+        if isinstance(other, Feedable):
+            return self.params() | other.params()
+        if callable(other):
+            return self.feed(other)
+        return NotImplemented
+
+    def __rmatmul__[R](self, func: Callable[..., R], /) -> R:
+        return self.feed(func) if callable(func) else NotImplemented
 
 
-#  LINE: -- XXX -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-@TupleBase.mix
-class Var[T: Any = Any](NamedValue[T]):
+class Var[T: Any = Any](NamedValue[T], Feedable, TupleBase):
     """Variable with Name and Value"""
 
-    # TODO: add keyformat to his here
-    # - maybe use __new__ to cast incoming not-str to str
-
     sep = TupleField[str]("=")
+    keyformat = TupleField[KeyFormatting](lambda v: f"{v}")
+
+    def __new__(cls, name: object, value: T, /) -> Self:
+        if not isinstance(name, str):
+            name: str = (
+                cls.keyformat(func=lambda name: f"{name}")(name)
+                if (formatter := cls.keyformat._default) is VOID
+                else formatter(name)
+            )
+        return super().__new__(cls, name, value)
 
     def __call__(self, *args, **kwargs) -> Any:
         """Invoke the Value if callable or provide its Representation"""
@@ -61,13 +87,27 @@ class Var[T: Any = Any](NamedValue[T]):
             return self.value(*args, **kwargs)
         return f"Not Callable: {self}[{self.value!r}]"
 
+    def feed[R](self, func: Callable[..., R], /) -> R:
+        return func(**{self.name: self.value})
+
+    def params(self) -> Params:
+        return Params(kwargs=Kwargs({self.name: self.value}))
+
+    @classmethod
+    def is_unit(cls, item: object) -> TypeIs[Self]:
+        return isinstance(item, cls)
+
+    @classmethod
+    def named(cls, item: Self | T, /) -> Self:
+        return item if cls.is_unit(item) else cls(item, item)
+
     @classmethod
     def gettr(cls, target: object, name: str, /) -> Self:
         """Hit the Target with the Name to get the Attr"""
-        return cls(name, value=getattr(target, name))
+        return cls(name, getattr(target, name))
 
 
-class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], TupleBase):
+class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], Feedable, TupleBase):
     """Capture and Visualize Positional Parameter"""
 
     sep = TupleField[str](", ")
@@ -90,18 +130,27 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], TupleBase):
                     f"{cls.__name__}() expects a sequence, not {type(data).__name__}"
                 )
             case _ if not isinstance(data, tuple):
+                # LATER: make like a mode for tuple/list
                 data: _T.Tuple = tuple(data)
         return tuple.__new__(cls, (data,))
 
-    def __getitem__(self, index: int) -> Any:  # ty: ignore
+    @overload
+    def __getitem__(self, index: SupportsIndex, /) -> Any: ...
+    @overload
+    def __getitem__(self, index: slice, /) -> tuple[Any, ...]: ...
+    @overload
+    def __getitem__(self, index: str, /) -> Any: ...
+    def __getitem__(self, index: SupportsIndex | int | slice, /) -> Any:
         """Forward Index to inner Tuple"""
-        return self.data[index]
+        if isinstance(index, (int, slice)):
+            return self.data[index]
+        return self.kwargs()[index]
 
     def __add__(self, other: Self | _cabc.Sequence) -> Self:
         match other:
             case _ if isinstance(other, type(self)):
                 other_seq: _T.Seq = other.data
-            case _ if _z.is_notext_sequence(other):
+            case _ if _z.is_notext_iter(other):
                 other_seq: _T.Seq = other
             case _:
                 return NotImplemented
@@ -110,7 +159,7 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], TupleBase):
     def __radd__[Seq: _cabc.Sequence](self, other: Seq) -> Seq:
         return (
             merge_into_sequence(other, self.data)
-            if _z.is_notext_sequence(other)
+            if _z.is_notext_iter(other)
             else NotImplemented
         )
 
@@ -121,15 +170,21 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], TupleBase):
         """Transform Sequential Args into Mapped Kwargs (unwrapping Vars & deduplicating keys)."""
         out: dict[str, Any] = {}
         for item in self.data:
-            _name, _val = (
-                item  # -> name, val | tuple dereference
-                if isinstance(item, Var)
-                else (self.keyformat(item), item)  # LATER: keyformat on Var
+            name, val = (
+                (self.keyformat(item), item)
+                if not isinstance(item, Var)
+                else item
             )
-            out[_z.uniqued(_name, out)] = _val
+            out[_z.uniqued(name, out)] = val
         return Kwargs(**out)
 
-    if _typing.TYPE_CHECKING:
+    def feed[R](self, func: Callable[..., R], /) -> R:
+        return func(*self)
+
+    def params(self) -> Params:
+        return Params(self)
+
+    if _typing.TYPE_CHECKING:  # CHECK: still needed without TupleBase.mix?
 
         @classmethod
         def create[Seq: _T.Seq](
@@ -153,7 +208,7 @@ class Args[S: _cabc.Sequence = _T.Tuple](SingleTuple[S], TupleBase):
 type _KeyFilter = _cabc.Set[str] | _cabc.Mapping[str, Any] | Kwargs[Any]
 
 
-class Kwargs[M: _T.Map](SingleTuple[M], TupleBase):
+class Kwargs[M: _T.Map](SingleTuple[M], Feedable, TupleBase):
     """Capture and Visualize Keyword Parameter"""
 
     sep = TupleField[str](", ")
@@ -229,6 +284,8 @@ class Kwargs[M: _T.Map](SingleTuple[M], TupleBase):
     @_typing.overload
     def __ror__[T: _T.Map](self, other: T, /) -> T: ...
     def __ror__(self, other: _T.Map, /) -> Any:
+        if _typing.TYPE_CHECKING:
+            other: Any = other
         return (
             merge_into_mapping(other, self.data)
             if isinstance(other, _cabc.Mapping)
@@ -249,8 +306,14 @@ class Kwargs[M: _T.Map](SingleTuple[M], TupleBase):
         for name, value in self.data.items():
             yield Var(name, value)
 
-    def __getitem__(self, key: str | int) -> Any:  # ty: ignore
-        if isinstance(key, int):
+    @overload
+    def __getitem__(self, key: SupportsIndex, /) -> Any: ...
+    @overload
+    def __getitem__(self, key: slice, /) -> tuple[Any, ...]: ...
+    @overload
+    def __getitem__(self, key: str, /) -> Any: ...
+    def __getitem__(self, key: str | int) -> Any:
+        if isinstance(key, (int, slice)):
             return self[tuple(self.keys())[key]]
         return self.data[key]
 
@@ -261,7 +324,13 @@ class Kwargs[M: _T.Map](SingleTuple[M], TupleBase):
         """Transform Mapped Kwargs into Sequential Args of Vars."""
         return Args(tuple(self))
 
-    if _typing.TYPE_CHECKING:
+    def feed[R](self, func: Callable[..., R], /) -> R:
+        return func(**self.data)
+
+    def params(self) -> Params:
+        return Params(kwargs=self)
+
+    if _typing.TYPE_CHECKING:  # CHECK: still needed without TupleBase.mix?
 
         @classmethod
         def create(
@@ -298,13 +367,9 @@ _EMPTY_ARGS: Args = Args()
 _EMPTY_KWARGS: Kwargs = Kwargs()
 
 
-class _Variadics[A: SingleTuple, K: SingleTuple](_typing.NamedTuple):
-    # TASK: compare with ._tuple._Variadics
-    args: Args
-    kwargs: Kwargs
-
-
-class Params(_Variadics, TupleBase):
+class Params[A: _cabc.Sequence[Any] = _T.Tuple, K: _T.Map = _T.StrDict](
+    _Variadics[Args[A], Kwargs[K]], Feedable, TupleBase
+):
     """Capture and Visualize 1 Signature"""
 
     sep = TupleField[str](", ")
@@ -326,13 +391,15 @@ class Params(_Variadics, TupleBase):
                 f"{cls.__name__}() cannot take kwargs with a {cls.__name__} instance"
             )
         if not isinstance(args, Args):
-            args = Args(args)
+            args: Args = Args(args)
         if not isinstance(kwargs, Kwargs):
-            kwargs = Kwargs(kwargs)
+            kwargs: Kwargs = Kwargs(kwargs)
         return tuple.__new__(cls, (args, kwargs))
 
     def __or__(self, other: Params | Kwargs[Any] | _T.StrMap, /) -> Self:
         """Merge two Params (concatenating args and updating kwargs)."""
+        if _typing.TYPE_CHECKING:
+            other: Any = other
         if isinstance(other, Params):
             return type(self)(
                 self.args + other.args, self.kwargs | other.kwargs
@@ -341,21 +408,31 @@ class Params(_Variadics, TupleBase):
             return type(self)(self.args, self.kwargs | other)
         return NotImplemented
 
+    def __ror__(self, other: Kwargs[Any] | _T.StrMap, /) -> Self:
+        if _typing.TYPE_CHECKING:
+            other: Any = other
+        if isinstance(other, (Kwargs, _cabc.Mapping)):
+            return type(self)(self.args, Kwargs(other) | self.kwargs)
+        return NotImplemented
+
     def __add__(self, other: Args[Any] | _cabc.Sequence[Any], /) -> Self:
-        if _z.is_notext_sequence(other):
+        if _z.is_notext_iter(other):
             return type(self)(self.args + other, self.kwargs)
         return NotImplemented
 
+    def __radd__(self, other: Args[Any] | _cabc.Sequence[Any], /) -> Self:
+        if isinstance(other, Args) or (
+            not isinstance(other, TupleBase) and _z.is_notext_iter(other)
+        ):
+            return type(self)(Args(other) + self.args, self.kwargs)
+        return NotImplemented
+
     def __sub__(self, other: _KeyFilter, /) -> Self:
+        if _typing.TYPE_CHECKING:
+            other: Any = other
         if isinstance(other, (Kwargs, _cabc.Set, _cabc.Mapping)):
             return type(self)(self.args, self.kwargs - other)
         return NotImplemented
-
-    def __rmatmul__[R](self, func: Callable[..., R], /) -> R:
-        return self.feed(func) if callable(func) else NotImplemented
-
-    def __str__(self):
-        return f"{type(self).__name__}[{self.args}{self.sep}{self.kwargs}]"
 
     def __bool__(self) -> bool:
         return bool(self.args) or bool(self.kwargs)
@@ -363,13 +440,19 @@ class Params(_Variadics, TupleBase):
     def __iter__(self) -> _cabc.Iterator[Any]:
         yield from self.args
 
-    def __getitem__(self, key: str) -> Any:  # ty: ignore
+    @overload
+    def __getitem__(self, key: SupportsIndex, /) -> Any: ...
+    @overload
+    def __getitem__(self, key: slice, /) -> tuple[Any, ...]: ...
+    @overload
+    def __getitem__(self, key: str, /) -> Any: ...
+    def __getitem__(self, key: str) -> Any:
         return self.kwargs[key]
 
     def keys(self) -> _cabc.KeysView[str]:
         return self.kwargs.keys()
 
-    def joins(self) -> _cabc.Iterator:  # TEST:
+    def joins(self) -> _cabc.Iterator:
         yield from self.args
         yield from self.kwargs
 
@@ -377,7 +460,7 @@ class Params(_Variadics, TupleBase):
         """Apply captured *args,**kwargs to Function"""
         return func(*self, **self)
 
-    if _typing.TYPE_CHECKING:
+    if _typing.TYPE_CHECKING:  # CHECK: still needed without TupleBase.mix?
 
         @classmethod
         def create(

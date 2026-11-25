@@ -23,7 +23,7 @@ __all__: list[str] = [
     "TupleField",
     "is_tuplebase_cls",
     "is_tuplebased",
-    "is_notext_sequence",
+    "is_notext_iter",
     "KeyFormatting",
     "VarsView",
     "ExplainedTuple",
@@ -65,4 +65,4 @@ from ._params import (
 )
 from ._set import DunderSet, FieldSet, NormSet
 from ._tuplebase import TupleBase, TupleField, is_tuplebase_cls, is_tuplebased
-from ._zero import get_slots, is_notext_sequence, iter_slot_names, unpack_types
+from ._zero import get_slots, is_notext_iter, iter_slot_names, unpack_types

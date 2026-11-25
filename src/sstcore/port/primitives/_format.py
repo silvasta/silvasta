@@ -11,6 +11,7 @@ __all__: list[str] = [
     "SpecParse",
 ]
 
+import collections.abc as _cabc
 import typing as _typing
 from typing import Any
 
@@ -21,6 +22,9 @@ _EXPLAIN_FLAGS: frozenset[str] = frozenset("bivnte")
 
 
 #  LINE: -- Format -- -- - -- -- - -- -- - -- -- - -- -- - -- --
+
+
+class _TupleFormat: ...
 
 
 def tuple_format(self, spec: str, /) -> str:
@@ -37,7 +41,7 @@ def tuple_format(self, spec: str, /) -> str:
     parsed: SpecParse = SpecParse.read(spec)
     body: str = parsed.active_sep(fallback=self.sep).join(
         child.__format__(parsed.child_spec)
-        if isinstance(child, type(self))
+        if isinstance(child, _TupleFormat)
         else stringed(child, verbose=parsed.verbose)
         for child in self.joins()
     )
@@ -46,6 +50,40 @@ def tuple_format(self, spec: str, /) -> str:
         body = f"\n{indented}\n"
 
     return body if parsed.bare else _format_box(self, parsed.icon_only, body)
+
+
+def _tuple_format(self: Any, spec: str, /) -> str:
+    # CHECK:
+    valid_flags: frozenset[str] = getattr(self, "format_flags", _VALID_FLAGS)
+    parsed: SpecParse = SpecParse.read(spec, valid=valid_flags)
+
+    def _format_child(child: Any, parsed: SpecParse) -> str:
+        """Format nested formattable units with child_spec, or fallback to stringed."""
+        if isinstance(child, FormattableUnit):
+            return child.__format__(parsed.child_spec)
+        return stringed(child, verbose=parsed.verbose)
+
+    body: str = (
+        custom_body(parsed)
+        if (custom_body := getattr(self, "_format_body", None))
+        else parsed.active_sep(fallback=self.sep).join(
+            _format_child(child, parsed) for child in self.joins()
+        )
+    )
+
+    if parsed.multiline and body and not parsed.bare:
+        indented: str = "\n".join(f"  {line}" for line in body.splitlines())
+        body = f"\n{indented}\n"
+
+    return body if parsed.bare else _format_box(self, parsed.icon_only, body)
+
+
+@_typing.runtime_checkable
+class FormattableUnit(_typing.Protocol):
+    icon: str
+    sep: str
+
+    def joins(self) -> _cabc.Iterator[Any]: ...
 
 
 def format_named_value(self, spec: str) -> str:
@@ -138,9 +176,15 @@ class SpecParse(_typing.NamedTuple):
     icon_only: bool
     verbose: bool
     multiline: bool
+
     title_only: bool = False
     explain_only: bool = False
+
     separator: str | None = None
+    flags: frozenset[str] = frozenset()
+
+    def __contains__(self, flag: object) -> bool:
+        return isinstance(flag, str) and flag in self.flags
 
     def active_sep(self, fallback: str) -> str:
         if self.separator is not None:
@@ -148,7 +192,7 @@ class SpecParse(_typing.NamedTuple):
         return "\n" if self.multiline else fallback
 
     @property
-    def child_spec(self) -> str:  # TASK: resolve, together with format above
+    def child_spec(self) -> str:
         base: str = "v" if self.verbose else "b"
         return f"{base}n" if self.multiline else base
 
@@ -162,10 +206,8 @@ class SpecParse(_typing.NamedTuple):
     ) -> SpecParse:
         """Parse Format Spec against allowed flag set."""
         _flags, _has_sep, _sep = spec.partition(";")
-        if unknown := set(_flags) - valid:
-            raise ValueError(
-                f"Unknown format flag(s): {''.join(sorted(unknown))!r}"
-            )
+        if _unknown := (flag_set := frozenset(_flags)) - valid:
+            raise ValueError(f"Unknown format: {''.join(sorted(_unknown))!r}")
         return cls(
             bare="b" in _flags,
             icon_only="i" in _flags,
@@ -173,13 +215,22 @@ class SpecParse(_typing.NamedTuple):
             multiline="n" in _flags,
             title_only="t" in _flags,
             explain_only="e" in _flags,
+            flags=flag_set,
             separator=_sep if _has_sep else None,
         )
 
     @staticmethod
-    def accepts(spec: str, /) -> bool:  # CHECK: generic enough?
-        """Check if a format_spec targets ExplainTuple rendering (t, e, v, n, i, ;sep)"""
+    def accepts(
+        spec: str,
+        /,
+        *,
+        valid: frozenset[str] = _EXPLAIN_FLAGS,
+        exclude: frozenset[str] = frozenset("b"),
+    ) -> bool:
+        """Check if a format_spec uses valid target flags and/or custom separator."""
         if not spec:
             return False
-        flags, has_sep, _ = spec.partition(";")
-        return bool(flags or has_sep) and set(flags) <= (_EXPLAIN_FLAGS - {"b"})
+        flags, has_sep, sep = spec.partition(";")
+        return (
+            bool(flags or (has_sep and sep)) and set(flags) <= valid - exclude
+        )
