@@ -131,3 +131,85 @@ def union[S: SigSpecing](left: S, right: S) -> S:
         kwargs=left.kwargs or right.kwargs,
         result=right.result if left.result is VOID else left.result,
     )
+
+
+def _union[S: SigSpecing](left: S, right: S) -> S:
+    # CHECK: Why left | right = left + (right - left) Breaks union
+    # - maybe this will be reqired at some point
+    """Compute structural capability union (left | right)."""
+    left_pos = left.positionals
+    right_pos = right.positionals
+    left_kw = left.keyword_map
+    right_kw = right.keyword_map
+
+    # 1. Merge positional slots 0..max_len-1 without shifting indices
+    slots: list[SigVariable] = []
+    for i in range(max(len(left_pos), len(right_pos))):
+        if i < len(left_pos):
+            arg = left_pos[i]
+            if (
+                arg.kind is _ParameterKind.POSITIONAL_ONLY
+                and arg.name in right_kw
+            ):
+                arg = arg.evolve(kind=_ParameterKind.POSITIONAL_OR_KEYWORD)
+        else:
+            arg = right_pos[i]
+            if (
+                arg.kind is _ParameterKind.POSITIONAL_ONLY
+                and arg.name in left_kw
+            ):
+                arg = arg.evolve(kind=_ParameterKind.POSITIONAL_OR_KEYWORD)
+        slots.append(arg)
+
+    # 2. Split at the first POS_OR_KW (Python allows only one `/` boundary)
+    slash_idx = next(
+        (
+            i
+            for i, arg in enumerate(slots)
+            if arg.kind is _ParameterKind.POSITIONAL_OR_KEYWORD
+        ),
+        len(slots),
+    )
+    uni_pos: list[SigVariable] = slots[:slash_idx]
+    uni_both: list[SigVariable] = [
+        arg
+        if arg.kind is _ParameterKind.POSITIONAL_OR_KEYWORD
+        else arg.evolve(kind=_ParameterKind.POSITIONAL_OR_KEYWORD)
+        for arg in slots[slash_idx:]
+    ]
+
+    # 3. Collect remaining keyword-only parameters without duplicating names
+    taken: set[str] = {arg.name for arg in (*uni_pos, *uni_both)}
+    uni_key: list[SigVariable] = []
+    for arg in (*left.key, *right_kw.values()):
+        if arg.name in taken:
+            continue
+        taken.add(arg.name)
+        uni_key.append(
+            arg
+            if arg.kind is _ParameterKind.KEYWORD_ONLY
+            else arg.evolve(kind=_ParameterKind.KEYWORD_ONLY)
+        )
+
+    # 4. Join return types symmetrically (dual of intersect)
+    uni_result: Any
+    if left.result is VOID:
+        uni_result = right.result
+    elif right.result is VOID:
+        uni_result = left.result
+    elif reflect.types.is_subtype(left.result, right.result):
+        uni_result = right.result
+    elif reflect.types.is_subtype(right.result, left.result):
+        uni_result = left.result
+    else:
+        uni_result = left.result
+
+    return replace(
+        left,
+        pos=tuple(uni_pos),
+        both=tuple(uni_both),
+        args=left.args or right.args,
+        key=tuple(uni_key),
+        kwargs=left.kwargs or right.kwargs,
+        result=uni_result,
+    )

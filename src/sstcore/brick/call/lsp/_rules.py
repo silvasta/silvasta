@@ -302,6 +302,7 @@ class LspRules(metaclass=PresetMeta):
         LspViolation.LOST_POS_ACCESS: _lost_pos_access,
         LspViolation.DROPPED_KW_NAME: _dropped_kw_name,
         LspViolation.ADDED_REQUIRED_KW: _added_required_kw,
+        LspViolation.POS_KW_COLLISION: _pos_kw_collision,
     }
 
     EVALUATORS: Mapping[LspViolation, Evaluator] = {

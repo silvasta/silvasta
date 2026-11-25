@@ -194,7 +194,7 @@ class SigSpec:
             else _algebra.union(left=self, right=other)
         )
 
-    def ___rshift__(self, other: Self | Callable[..., Any]) -> LspViolation:
+    def __rshift__(self, other: Self | Callable[..., Any]) -> LspViolation:
         """Evaluate LSP violations when replacing `self` with `other`."""
         return (
             NotImplemented
@@ -226,7 +226,7 @@ class SigSpec:
             else self.allows(target)
         )
 
-    def ___le__(self, other: Self | Callable[..., Any]) -> bool:
+    def __le__(self, other: Self | Callable[..., Any]) -> bool:
         """Is `self` a valid substitute for `other`? (self <= other)"""
         return (
             NotImplemented
@@ -251,16 +251,6 @@ class SigSpec:
         )
 
     def __lt__(self, other: Self | Callable[..., Any]) -> bool:
-        """Is `self` a strict substitute for `other` (asymmetric preorder)?"""
-        if (target := self._coerce(other)) is None:
-            return NotImplemented
-        tol = target.tolerance if isinstance(other, SigSpec) else self.tolerance
-
-        return target.allows(self, tolerance=tol) and not self.allows(
-            target, tolerance=tol
-        )
-
-    def ___lt__(self, other: Self | Callable[..., Any]) -> bool:
         """Is `self` a strict substitute for `other` (asymmetric preorder)?"""
         return (
             NotImplemented
