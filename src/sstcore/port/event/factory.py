@@ -16,7 +16,6 @@ __all__: list[str] = [
 ]
 
 
-# TODO: external imports _privat
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 from typing import Unpack as _U  # noqa: N814
@@ -25,6 +24,9 @@ from .._types import EventTypes as _ET  # noqa: N814
 from .._types import _Stringable
 from . import _param as _p
 from .dto import CliDTO, LineDTO, LogDTO, MarkdownDTO, PanelDTO, TableDTO
+
+# AI_TASK: here is the layer where the raw DTO inputs get transformed to usable input
+# - the producer should accept anything (object) and transform it into something useful
 
 
 class EventDtoFactory(Protocol):

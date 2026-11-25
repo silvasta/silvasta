@@ -36,6 +36,8 @@ from ._functors import (
 class PrinterLayouts(PrinterBase):
     """Assemble DtoFactory, RenderHub, PrintFunctors and many Presets"""
 
+    # AI: this is the most important part in the final usage
+
     line = FunctorField(LinePrintFunctor)
     lines = FunctorField(LinePrintFunctor)
     box = FunctorField(BoxPrintFunctor)

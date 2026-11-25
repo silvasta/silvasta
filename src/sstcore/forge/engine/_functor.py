@@ -20,38 +20,35 @@ from ...port.shape import Meta, MetaData
 from ._meta_base import SstMeta, SstMetaData
 
 
-@portlink(Meta)
-class FunctorMeta(SstMeta):
-    """Create the Skeleton for dynamic and flexibel Functorials"""
-
-    def __new__(
-        mcs,
-        name: str,
-        bases: tuple[type, ...],
-        namespace: dict[str, Any],
-        data: MayBe[FunctorMetaData] = VOID,
-        # AI: opening the Cls paramspace here is the least worse solution
-        # - still, on the base Meta this is not desired!
-    ):
-        if data is VOID:
-            data: FunctorMetaData = _inherit_data(bases, FunctorMetaData)
-        sync_inherited_strategy_fields(namespace, bases)
-        return super().__new__(mcs, name, bases, namespace, data)
-
-
 @portlink(MetaData)
 class FunctorMetaData(SstMetaData):
     """Likely that this will be extended soon.."""
 
 
+@portlink(Meta)
+class FunctorMeta(SstMeta):
+    """Create the Skeleton for dynamic and flexibel Functorials"""
+
+    def __new__(
+        mcls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        data: MayBe[FunctorMetaData] = VOID,
+    ):
+        if data is VOID:
+            data: FunctorMetaData = _inherit_data(bases, FunctorMetaData)
+        sync_inherited_strategy_fields(namespace, bases)
+        return super().__new__(mcls, name, bases, namespace, data)
+
+
 def _inherit_data[Data: SstMetaData](
-    bases: tuple[type, ...], factory: type[Data]
-) -> Data:  # MOVE: maybe useful for other? Don't mount in Base!!
+    bases: tuple[type, ...], factory: type[Data], /
+) -> Data:
     for base in bases:
         found: MayBe[Data] = getattr(base, "_data", VOID)
-        if isinstance(found, factory):  # CHECK: what is minimum? factory fine?
+        if isinstance(found, factory):
             return found
-        # LATER: check what is if found is other SstMetaData, other or even None
     return factory()
 
 
@@ -82,12 +79,12 @@ def sync_inherited_strategy_fields(
                     inherited_engines[attr_name] = attr_val
 
     for field_name, parent_engine in inherited_engines.items():
-        existing = namespace.get(field_name, VOID)
+        existing: object = namespace.get(field_name, VOID)
 
         if isinstance(existing, MethodFieldEngine):
             continue
 
-        if callable(existing):  # WARN: for type mounted on cls, callable?
+        if callable(existing):
             namespace[field_name] = type(parent_engine)(
                 existing, bind_to_self=True
             )

@@ -47,6 +47,7 @@ class PrintFunctor[DTO: EventDTO = EventDTO](SafeFunctor[..., DTO]):
 
 @portlink(functorial.MountableFunctor)
 class LinePrintFunctor(PrintFunctor[LineDTO]):
+    # AI: this was the root that showd strange type checker messages in another project
     """
     Handle single separator lines, sequential lines, and counted line blocks.
 
@@ -97,7 +98,7 @@ class BoxPrintFunctor(PrintFunctor[PanelDTO]):
 
     def __call__(
         self,
-        *content: _ET.CliSpec,
+        *content: object,  # TEST:
         box: Boxes = Boxes.OPEN,
         **kw: _U[_p.BoxInput],
     ) -> PanelDTO:

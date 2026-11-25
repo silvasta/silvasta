@@ -252,14 +252,14 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
     @classmethod
     def deco[**P2, BE2: Exception, SE2: SstError = SstError](
         cls,
-        builtin_error: type[BE],
+        builtin_error: type[BE2],
         template: str,
         /,
         test_input: tuple[object, ...] = (),
         *,
         sst_error: MayNotCls[SE2] = None,
     ) -> Callable[[Callable[P2, RaiserParams]], RaiserField[P2, SE2, BE2]]:
-        # LATER: decorators for different configuration
+        # TODO: decorators for different configuration
         # - either handling the params, the entire formatting, something else
         def _bind(
             func: Callable[P2, RaiserParams], /
@@ -300,19 +300,6 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
         return f"{self.owner.__name__}.{self.name}"
 
     def __repr__(self):
-        # rr = [
-        #     "--- b",
-        #     f"{self}[{Kwargs.vars(self):b}]",
-        #     "--- i",
-        #     f"{self}[{Kwargs.vars(self):i}]",
-        #     "--- n",
-        #     f"{self}[{Kwargs.vars(self):n}]",
-        #     "--- v",
-        #     f"{self}[{Kwargs.vars(self):v}]",
-        #     "--- nv",
-        #     f"{self}[{Kwargs.vars(self):nv}]",
-        # ]
-        # return "\n".join(rr)
         return f"{self}[{Kwargs.vars(self):nv}]"  # PARAM: FORMAT
 
     def __set_name__(self, owner: type, name: str) -> None:
@@ -372,7 +359,6 @@ class RaiserField[**P, SE: SstError = SstError, BE: Exception = Exception]:
 
     def _format(self, params: Params) -> str:
         """Create the message Text"""
-        # print(f"{params=}")
         if params.args and params.kwargs:
             raise NotImplementedError("Insert either args or kwargs")
         return self.name_parser(

@@ -44,6 +44,10 @@ class PrintMode(EnumMode):
         return cls.RICH
 
 
+# AI_TASK: here the object as input is already to weak, destroys typing for the final user
+# - come up with an idea how to accept here good input while that is then normalized by the producer
+
+
 class PrintBase(Protocol):
     """Define the Base of the Printer"""
 
@@ -56,7 +60,7 @@ class PrintBase(Protocol):
     def project_info(self) -> str:
         """Style the top right title of printer.title Panel"""
 
-    def __call__(self, target: Any, /, **kwargs) -> Any:
+    def __call__(self, target: object, /, **kwargs) -> Any:
         """Print the target and return the manual"""
 
     def muted(self) -> Any: ...
@@ -68,13 +72,13 @@ class PrintBase(Protocol):
 
 class LinePrinting(Protocol):
     def __call__(
-        self, *content: _ET.CliSpec, **kw: _U[_p.LineInput]
+        self, *content: object, **kw: _U[_p.LineInput]
     ) -> dto.LineDTO: ...
 
     def len(
         self,
         name: str,
-        *content: _ET.CliSpec | Sequence[_ET.CliSpec],
+        *content: object | Sequence[object],
         **kw: _U[_p.LinePresetInput],
     ) -> dto.LineDTO: ...
 
@@ -82,26 +86,20 @@ class LinePrinting(Protocol):
 class BoxPrinting(Protocol):
     def __call__(
         self,
-        *content: _ET.CliSpec,
+        *content: object,
         box: _Boxes = _Boxes.OPEN,
         **kw: _U[_p.BoxInput],
     ) -> dto.PanelDTO: ...
 
-    def open(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
-    ) -> dto.PanelDTO: ...
+    def open(self, *content: object, **kw: _U[_p.BoxInput]) -> dto.PanelDTO: ...
     def round(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
+        self, *content: object, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def corner(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
+        self, *content: object, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
-    def up(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
-    ) -> dto.PanelDTO: ...
-    def down(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
-    ) -> dto.PanelDTO: ...
+    def up(self, *content: object, **kw: _U[_p.BoxInput]) -> dto.PanelDTO: ...
+    def down(self, *content: object, **kw: _U[_p.BoxInput]) -> dto.PanelDTO: ...
     def mini(
         self,
         *content: _ET.CliSpec,
@@ -109,10 +107,10 @@ class BoxPrinting(Protocol):
         **kw: _U[_p.BoxInput],
     ) -> dto.PanelDTO: ...
     def mini_up(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
+        self, *content: object, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
     def mini_down(
-        self, *content: _ET.CliSpec, **kw: _U[_p.BoxInput]
+        self, *content: object, **kw: _U[_p.BoxInput]
     ) -> dto.PanelDTO: ...
 
 
@@ -120,7 +118,7 @@ class HeaderPrinting(Protocol):
     def __call__(
         self,
         title: str,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.HeaderPresetInput],
     ) -> dto.PanelDTO: ...
 
@@ -130,7 +128,7 @@ class DipPrinting(Protocol):
         self,
         head: str,
         text: str,
-        *content: _ET.CliSpec,
+        *content: object,
         color: ColorArg = ...,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
@@ -139,35 +137,35 @@ class DipPrinting(Protocol):
         self,
         head: str,
         text: str,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def green(
         self,
         head: str,
         text: str,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def yellow(
         self,
         head: str,
         text: str,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def red(
         self,
         head: str,
         text: str,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
     def purple(
         self,
         head: str,
         text: str,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
@@ -184,9 +182,7 @@ class PrintLayouts(Protocol):
     @property
     def dip(self) -> DipPrinting: ...
 
-    def panel(
-        self, *content: _ET.CliSpec, **kw: _U[_p.PanelInput]
-    ) -> dto.PanelDTO:
+    def panel(self, *content: object, **kw: _U[_p.PanelInput]) -> dto.PanelDTO:
         """Render Panel with full configuration."""
 
     def md(
@@ -198,7 +194,7 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.HeaderPresetInput],
     ) -> dto.PanelDTO:
         """Single Slim Panel with Semantic Coloring"""
@@ -207,7 +203,7 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
@@ -215,7 +211,7 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
@@ -223,7 +219,7 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
@@ -231,7 +227,7 @@ class PrintLayouts(Protocol):
         self,
         title: str,
         /,
-        *content: _ET.CliSpec,
+        *content: object,
         **kw: _U[_p.StatusInput],
     ) -> dto.PanelDTO: ...
 
@@ -256,9 +252,9 @@ class TuiPrinter(Print):
 class Printing(Protocol):
     """Define the Printers Print"""
 
-    def __call__(  # LATER: work out, together with Inputs and Specs
-        self, target: Any, /, *more: Any, **spec: _U[PrintInput]
-    ) -> Any: ...
+    def __call__(
+        self, target: object, /, *more: object, **spec: _U[PrintInput]
+    ) -> CliDTO: ...
 
 
 # LATER:
