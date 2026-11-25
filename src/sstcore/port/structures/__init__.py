@@ -5,7 +5,7 @@ Draw the Shape of the Core Data Structures
 """
 
 __all__: list[str] = [
-    # dataclass
+    "DataClass",
     "CachedDataclassMeta",
     "create_field_resolver",
     "SpecBase",
@@ -33,6 +33,7 @@ __all__: list[str] = [
 from ._dataclass import (
     ArgSpec,
     CachedDataclassMeta,
+    DataClass,
     DataClassSpec,
     ParamSpec,
     SpecBase,

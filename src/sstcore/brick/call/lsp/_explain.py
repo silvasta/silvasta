@@ -1,23 +1,25 @@
 """
 Explain the Rules of the LSP Violation Levels
 
--
+                      DependencyLevel.sstcore.brick.call.lsp[1.1:0]
 """
 
 __all__: list[str] = [
     "explain_lsp_violation",
-    "LspViolationDetail",
 ]
 
 
-from ...port.casting import LspViolation
-from ...port.primitives import ExplainedTuple
-
-type LspViolationDetail = ExplainedTuple[LspViolation]
+from ....port.primitives import ExplainedTuple
+from ....port.sigspect import LspViolation
 
 
 def explain_lsp_violation() -> dict[LspViolation, ExplainedTuple[LspViolation]]:
-    """Build the lazy-loaded explanation mapping for LspViolation."""
+    """
+    Build the lazy-loaded explanation mapping for LspViolation
+
+    - Check ExplainedTuple.__format__ for renderings (nv ~ full)
+
+    """
     return ExplainedTuple.table(
         ExplainedTuple(
             LspViolation.ZERO,

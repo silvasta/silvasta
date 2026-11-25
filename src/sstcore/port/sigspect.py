@@ -1,21 +1,20 @@
 """
-Define the Shape and Rules of the Input/Output Caster
+Define the Shape and Rules of the Input/Output Cast and Inspect
 
 -
 """
 
 import enum as _e
 from collections.abc import Mapping
-from enum import auto
-from inspect import Parameter, Signature, _ParameterKind
-from typing import Any, Protocol, Self, overload
+from inspect import _empty as EMPTY  # noqa:N812
+from inspect import _ParameterKind
+from typing import Any, Protocol, Self
 
 from ._modulepath import ModulePath
-from .empty import VOID
+from .empty import MayNot
 from .primitives import ExplainedTuple
 from .primitives._format import SpecParse
-from .solid import EnumZero
-from .structures import EnumField
+from .structures import DataClass, EnumField
 
 
 class LspViolation(_e.IntFlag):
@@ -122,9 +121,17 @@ class SigVariable(Protocol):
     def has_default(self) -> bool: ...
     @property
     def annotation(self) -> Any: ...
+    def evolve(
+        self,
+        *,
+        name: MayNot[str] = None,
+        kind: MayNot[_ParameterKind] = None,
+        default: Any = EMPTY,
+        annotation: Any = EMPTY,
+    ) -> Self: ...
 
 
-class SigSpecing(Protocol):
+class SigSpecing(DataClass, Protocol):
     """Read-only signature contract required by LSP rule evaluators."""
 
     @property
@@ -154,71 +161,3 @@ class SigSpecing(Protocol):
     def both_indices(self) -> Mapping[str, int]: ...
     @property
     def min_pos_only(self) -> int: ...
-
-
-#  LINE: -- Storage - Maybe Delete -- -- - -- -- - -- -- - -- -- - -- -- - -- --
-
-
-class _SigPart(EnumZero):  # LATER: wire somehow?
-    """
-    Govern the 5 Parameter Kinds - f(a, /, b, b=B, *c, d=D, **e)
-
-    - 0: Pure Positional Arguments
-    - 1: Mixed Positional and Keyword Arguments
-    - 2: Unbound Tuple(len[0,..N]) with Positional Arguments
-    - 3: Pure Keyword Arguments
-    - 4: Unbound Dict(len[0,..N]) with Keyword Arguments
-
-    - 5: Return Value or not
-
-    """
-
-    POSARG = auto()
-    ANYARG = auto()
-    ARGS = auto()
-    KEYARG = auto()
-    KWARGS = auto()
-
-    def to_inspect(self) -> _ParameterKind:
-        """Provide corresponding inspect._ParameterKind"""
-        return _ParameterKind(self.value)
-
-    @overload
-    @classmethod
-    def map(cls, target: _SigPart, /) -> _ParameterKind: ...
-    @overload
-    @classmethod
-    def map(cls, target: _ParameterKind, /) -> _SigPart: ...
-    @classmethod
-    def map(
-        cls, target: _SigPart | _ParameterKind, /
-    ) -> _ParameterKind | _SigPart:
-        """Swap sstcore.Param or inspect._ParameterKind to counterpart"""
-        match target:
-            case _SigPart():
-                return _ParameterKind(target.value)
-            case _ParameterKind():
-                return _SigPart(target.value)
-
-    @classmethod
-    def buckets(cls, hints: dict[str, Any], sig: Signature) -> _Buckets:
-        """Fill Table with all SigVars mapped to _SigParts"""
-        buckets: _Buckets = {part: [] for part in _SigPart}
-        for param in sig.parameters.values():
-            resolved: Any = hints.get(param.name, param.annotation)
-            arg: _SigVar = _SigVar.detect(param, annotation=resolved)
-            buckets[arg.kind].append(arg)
-        return buckets
-
-
-type _Buckets = dict[_SigPart, list[_SigVar]]
-
-
-class _SigVar:
-    kind: _SigPart
-
-    @classmethod
-    def detect(
-        cls, param: Parameter, default: Any = VOID, annotation: Any = VOID
-    ) -> Self:
-        raise NotImplementedError(param, default, annotation)
