@@ -17,10 +17,10 @@ from loguru import logger
 from ...brick.field import StrategyField
 from ...brick.reflect import clsname, funcname
 from ...port import functorial
-from ...port.casting import LspViolation
 from ...port.event.emit import BoundLog
 from ...port.event.name import CoreEvent
 from ...port.link import portlink
+from ...port.sigspect import LspViolation
 from ..engine import FunctorMeta
 from ._zero import FunctorInput, FunctorMetaInput, FunctorSpec, FunctorView
 

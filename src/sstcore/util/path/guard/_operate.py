@@ -84,7 +84,7 @@ class TransferStrategy(PathStrategy[[Path, Path], Path]):
 class DeleteStrategy(PathStrategy[[Path], bool]):
     """Execute Delete Operation in Safe Environment"""
 
-    @StrategyField
+    @StrategyField(bind_to_self=True)
     def _catch(self, error: Exception, target: PathArg) -> bool:
         logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
         return False

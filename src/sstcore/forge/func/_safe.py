@@ -46,7 +46,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
         self, error: Exception, /, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | VOID | NoReturn:
         """Execute pure Policy if catch is not defined"""
-        self._emit(  # LATER: pack this into Raiser
+        self._emit(
             f"{self} failed: {error}", level="CRITICAL", param=(args, kwargs)
         )
         match self.policy:

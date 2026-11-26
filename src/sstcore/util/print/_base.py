@@ -11,7 +11,7 @@ from typing import Any
 
 from ...brick import reflect
 from ...brick.color.box._colors import Colors
-from ...brick.field import RequiredField
+from ...brick.field import LazyField
 from ...port.config import ProjectInformation
 from ...port.link import portlink
 from ...port.printer import PrintBase, PrintMode
@@ -52,7 +52,9 @@ class PrinterConfiguration:
 class PrinterBase(PrinterConfiguration):
     """Provide Base with Rich Console and Theme setup"""
 
-    info: RequiredField[ProjectInformation] = RequiredField(types=ProjectInfo)
+    info: LazyField[ProjectInformation] = LazyField(
+        loader=lambda _: ProjectInfo.collect("sstcore")
+    )
 
     @property
     def project_info(self) -> str:

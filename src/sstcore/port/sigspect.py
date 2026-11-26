@@ -22,7 +22,7 @@ class LspViolation(_e.IntFlag):
 
     explain = EnumField[ExplainedTuple[Any]].imports(
         path=ModulePath.parse(
-            "sstcore.brick.call._lsp_detail:explain_lsp_violation",
+            "sstcore.brick.call.lsp._explain:explain_lsp_violation",
         ),
         fallback=ExplainedTuple.combine,
         cache_fallback=True,
