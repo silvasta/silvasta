@@ -18,6 +18,7 @@ from ...brick.field._strategy import StrategyField
 from ...port.empty import VOID
 from ...port.functorial import Catch, ErrorPolicy, SafeFunctorial
 from ...port.link import portlink
+from ...port.sigspect import LspViolation
 from ._tor import BaseFunctor
 from ._zero import SafeFunctorInput, SafeFunctorSpec
 
@@ -41,7 +42,7 @@ class SafeFunctor[**Args, Result](BaseFunctor[Args, Result]):
 
         super().__init__(**kwargs)
 
-    @StrategyField(bind_to_self=True)
+    @StrategyField(bind_to_self=True, tolerance=LspViolation.FUNCTOR_SLOT)
     def _catch(
         self, error: Exception, /, *args: Args.args, **kwargs: Args.kwargs
     ) -> Result | VOID | NoReturn:

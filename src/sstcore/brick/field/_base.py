@@ -43,14 +43,14 @@ class NamedField:
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
-    def __str__(self):
+    def name(self):
         return f"{reflect.clsname(self)}[({self.public_name})]"
 
     def __repr__(self) -> str:
         return f"{self}[\n{Kwargs.vars(self):nv}\n]"
 
-    def name(self, unit_or_cls: Any, /) -> str:
-        return f"{reflect.clsname(unit_or_cls)}.{self.public_name}"
+    def __str__(self) -> str:
+        return f"{reflect.clsname(self)}.{self.public_name}"
 
 
 class _SlotBaseField(NamedField):  # NEXT: wire this? make it Exchangeable?

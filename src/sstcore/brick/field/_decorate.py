@@ -76,6 +76,17 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
         self.bind(func)
         return self
 
+    def __set__(self, unit: object, value: Callable[..., Any]) -> None:
+        # NEXT: remove after tests
+        # NEXT: remove after tests
+        # NEXT: remove after tests
+        self.write(unit, value)
+
+    def write(self, unit: object, value: Callable[..., Any]) -> None:
+        # NEXT: remove after tests
+        # NEXT: remove after tests
+        super().write(unit, value)
+
     def bind(self, func: Callable[..., Any]) -> None:
         if not callable(func):
             raise TypeError(f"Target must be callable, got {type(func)}")

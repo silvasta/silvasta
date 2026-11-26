@@ -18,10 +18,10 @@ from collections.abc import Callable
 from typing import Any, Concatenate, Literal, Self, overload
 
 from ...port import attach
-from ...port.casting import LspViolation
 from ...port.link import portlink
+from ...port.sigspect import LspViolation
 from .. import reflect
-from ..call import SigSpec
+from ..call.lsp import SigSpec
 from ._base import WriteField
 from ._decorate import CallableField
 
@@ -82,7 +82,7 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         func: Callable[Concatenate[Any, CallIn], CallOut],
     ) -> StrategyField[CallIn, CallOut]:  # ty:ignore
         """Bind method when used as parameterized decorator @StrategyField(...)"""
-        self.bind(func)  # ty:ignore
+        self.bind(func)  # ty:ignore # FIX:
         return self  # ty: ignore
 
     def bind(self, func: Callable[..., Out]) -> None:
@@ -92,6 +92,7 @@ class StrategyField[**In, Out](CallableField[In, Out]):
             bind_to_self=self.bind_to_self,
             tolerance=self.tolerance,
         )
+        # print(self.signature)# WARN::
 
     def validate_signature(
         self,
@@ -107,8 +108,20 @@ class StrategyField[**In, Out](CallableField[In, Out]):
             bind_to_self=bind_to_self,
             tolerance=self.tolerance,
         )
-        if self.signature is None or candidate not in self.signature:
-            raise self.raiser.Signature(self, unit, value=value)
+        if self.signature is None or self.signature.allows(other=candidate):
+            from rich import print
+
+            if self.signature is not None:
+                print(f"{self.signature.allows(other=candidate)=}")
+                print(f"{candidate.allows(other=self.signature)=}")
+            print(self.signature)
+            print(candidate)
+            if self.signature is not None:
+                print(f"{self.signature <= candidate=}")
+                print(f"{candidate.diff(self.signature)=}")
+            raise self.raiser.Signature(
+                self, unit, value=value, sig1=self.signature, sig2=candidate
+            )
         return value
 
     def validate(
@@ -133,6 +146,23 @@ class StrategyField[**In, Out](CallableField[In, Out]):
     def bound(self, unit: object) -> BoundStrategy[In, Out]:
         """Return an explicit BoundStrategy controller/inspector for `unit`."""
         return BoundStrategy(self, unit)
+
+    def clone(
+        self,
+        func: Callable[..., Any] | None = None,
+        *,
+        bind_to_self: bool | None = None,
+        tolerance: LspViolation | None = None,
+    ) -> Self:
+        return type(self)(
+            self.target_func if func is None else func,
+            bind_to_self=self.bind_to_self
+            if bind_to_self is None
+            else bind_to_self,
+            tolerance=self.tolerance if tolerance is None else tolerance,
+            default=self.default,
+            frozen=self.frozen,
+        )
 
 
 @portlink(attach.MorphingDescriptor)

@@ -85,13 +85,10 @@ def sync_inherited_strategy_fields(
             continue
 
         if callable(existing):
-            namespace[field_name] = type(parent_engine)(
+            namespace[field_name] = parent_engine.clone(
                 existing, bind_to_self=True
             )
             continue
 
         if existing is VOID and parent_engine.target_func is not None:
-            namespace[field_name] = type(parent_engine)(
-                parent_engine.target_func,
-                bind_to_self=parent_engine.bind_to_self,
-            )
+            namespace[field_name] = parent_engine.clone()

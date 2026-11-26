@@ -26,3 +26,6 @@ print(f"{combo:t}")
 print(f"{combo:tn}")
 print(f"{combo:n}")
 print()
+
+x = ~LspViolation.ZERO
+print(f"XXX::: {x}")

@@ -125,7 +125,8 @@ class TestSigSpecViews:
 # ============================================================================
 
 
-def async_fn(x: int) -> int: ...  # helper defined inside test below
+def async_fn(_x: int) -> int:
+    return 5
 
 
 class _DummyClass:

@@ -11,8 +11,6 @@ File System Operations
 # TODO: create tests for this!
 # - when everything works, run _atomic on them
 
-from typing import Never
-
 __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
     "TransferStrategy",
     "check_sync_mode",
@@ -29,6 +27,7 @@ __all__: list[str] = [  # LATER: what about Rotate,Trash,.. functor instances?
 ]
 
 from pathlib import Path
+from typing import Never
 
 from loguru import logger
 
@@ -40,6 +39,7 @@ from ....forge.func import SafeFunctor
 from ....port._modulepath import DotPath
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
+from ....port.sigspect import LspViolation
 from .._pathcast import PathArg, ResolvedSource, SourcePath, TargetPath
 from . import _ensure, _increment
 
@@ -84,7 +84,7 @@ class TransferStrategy(PathStrategy[[Path, Path], Path]):
 class DeleteStrategy(PathStrategy[[Path], bool]):
     """Execute Delete Operation in Safe Environment"""
 
-    @StrategyField(bind_to_self=True)
+    @StrategyField(bind_to_self=True, tolerance=LspViolation.FUNCTOR_SLOT)
     def _catch(self, error: Exception, target: PathArg) -> bool:
         logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
         return False

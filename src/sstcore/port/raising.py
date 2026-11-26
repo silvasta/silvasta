@@ -49,6 +49,10 @@ class ErrorSpec(ParamSpec, frozen=True):
     def __str__(self):
         return f"{type(self).__name__}[{self.reason}]"
 
+    def get(self, key: str) -> Any:
+        if self.extra is not None:
+            return self.extra.get(key)
+
     @classmethod
     def capture(
         cls, reason: Raiser, /, *args, **kwargs: Unpack[ErrorInput]

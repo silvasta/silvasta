@@ -17,7 +17,8 @@ import inspect as _inspect
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from inspect import Parameter, Signature, _empty, _ParameterKind
-from typing import Any, Self
+from types import UnionType
+from typing import Any, ParamSpecArgs, ParamSpecKwargs, Self, TypeVar, get_args
 
 from ....port._types import Types as _T  # noqa: N814
 from ....port.empty import VOID, MayBe, MayNot
@@ -160,6 +161,9 @@ class SigSpec:
     ) -> bool:
         """Check whether Other may substitute Self under Tolerance"""
         limit: LspViolation = self.tolerance if tolerance is None else tolerance
+        print(f"{limit=}")
+        print(f"{self.tolerance=}")
+        print(f"{other}")
         return _rules.allows(base=self, new=other, tolerance=limit)
 
     def diff(
@@ -333,7 +337,9 @@ class SigSpec:
         buckets: Buckets = {part: [] for part in _ParameterKind}
         for param in sig.parameters.values():
             resolved: Any = hints.get(param.name, param.annotation)
-            arg = SigVar.detect(param, annotation=resolved)
+            arg = SigVar.detect(  # NEXT:
+                param, annotation=_normalize_generic_annotation(resolved)
+            )
             buckets[arg.kind].append(arg)
 
         spec = cls(
@@ -353,3 +359,21 @@ class SigSpec:
         ) or _binding is reflect.sig.Binding.METHOD:
             return spec.bind_self()
         return spec
+
+
+def _normalize_generic_annotation(annotation: Any) -> Any:  # NEXT:
+    if isinstance(annotation, (ParamSpecArgs, ParamSpecKwargs)):
+        return VOID
+    if isinstance(annotation, TypeVar):
+        if annotation.__bound__ is None and not annotation.__constraints__:
+            return VOID
+        return annotation.__bound__ or annotation
+    if isinstance(annotation, UnionType):
+        args = tuple(
+            _normalize_generic_annotation(a) for a in get_args(annotation)
+        )
+        if VOID in args:
+            # An unconstrained TypeVar in `Result | VOID | NoReturn` means
+            # the return type is unconstrained until specialized.
+            return VOID
+    return annotation

@@ -63,8 +63,8 @@ class BaseFunctor[**Args, Result](
     def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         return self._call(*args, **kwargs)
 
-    @StrategyField(bind_to_self=True, tolerance=LspViolation(1000))
-    def _call(self, *args: Args.args, **kwargs: Args.kwargs):
+    @StrategyField(bind_to_self=True, tolerance=~LspViolation.ZERO)
+    def _call(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         raise AttributeError(f"{self} has no _call!", self, args, kwargs)
 
     @StrategyField(bind_to_self=True)

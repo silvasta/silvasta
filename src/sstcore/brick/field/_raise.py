@@ -182,7 +182,8 @@ class FieldRaiser(Raiser, zero=True):
 
             case FieldRaiser.Signature:
                 # TODO:
-                return f"{data}: {field=}, but got {value=}"
+
+                return f"{field}[\n---sig1\n{data.get('sig1')}\n---sig2\n{data.get('sig2')}\n]"
 
             case FieldRaiser.Transition:
                 return f"Failed transfer for {data}: {field}"
