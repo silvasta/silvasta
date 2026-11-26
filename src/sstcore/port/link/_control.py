@@ -4,6 +4,8 @@ Define the Configuration and Control Mechanics of PortLink
                            DependencyLevel.sstcore.port.link[0.4.1]
 """
 
+from pathlib import Path
+
 __all__: list[str] = [
     "Channels",
     "LinkSpec",
@@ -23,9 +25,12 @@ from . import _render
 from ._define import LinkInput, PortEmit, PortPrinter
 
 HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
-    # "log",
-    # "report",
-    # "init",
+    "log",
+    "sigspec",
+    "strategy",
+    "BaseFunctor",
+    "init",
+    "operate",
     # "name",
 )
 # LATER: maybe move to .._presets ??
@@ -139,6 +144,11 @@ class Tap:
             # - desired is toggle with channel, some distributed location wants to use the printer independent what happens in the port otherwise
             _render._load_printer() if spec.report > 0 else _render.NOOP_PRINTER
         )
+        if self.spec.use_loguru:
+            from loguru import logger
+
+            logger.remove()
+            logger.add(sink=Path.cwd() / "tap.log", level="DEBUG")
         return self
 
     def config(self, **changes: Unpack[LinkInput]) -> Self:
@@ -227,7 +237,7 @@ class Tap:
         return _decorator(cls) if cls is not None else _decorator
 
 
-if _t.TYPE_CHECKING:
+if _t.TYPE_CHECKING:  # TODO: use portlink1
     _config: type[_def.LinkConfig] = Tap
 
 
@@ -252,7 +262,8 @@ def _prepare_emit(spec: LinkSpec) -> PortEmit:
         if sender is not None and sender not in spec.channels:
             return
 
-        _render._rich(sender, *args, **kwargs)
+        # TASK: mute  this on demand
+        # _render._rich(sender, *args, **kwargs)
 
         if spec.use_loguru:
             _render._loguru(*args, sender=_who(sender), **kwargs)

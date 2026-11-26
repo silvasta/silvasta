@@ -40,8 +40,8 @@ class Descriptor(_t.Protocol):
     public_name: str
     private_name: str
 
-    def name(self, unit_or_cls: _t.Any, /) -> str:
-        """UnitName.attr_name"""
+    # def name(self, unit_or_cls: _t.Any, /) -> str:
+    #     """UnitName.attr_name"""
 
     def __set_name__(self, owner: type, name: str) -> None: ...
 

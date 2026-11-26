@@ -22,6 +22,7 @@ from typing import Any, ParamSpecArgs, ParamSpecKwargs, Self, TypeVar, get_args
 
 from ....port._types import Types as _T  # noqa: N814
 from ....port.empty import VOID, MayBe, MayNot
+from ....port.link import portlink
 from ....port.primitives import TupleField
 from ....port.primitives._tuples import _SigVar
 from ....port.sigspect import LspViolation
@@ -156,14 +157,12 @@ class SigSpec:
 
     #  LINE: -- LSP Façade -- -- - -- -- - -- -- - -- -- - -- -- - -- --
 
+    @portlink.tap.watch
     def allows(
         self, other: SigSpec, tolerance: MayNot[LspViolation] = None
     ) -> bool:
         """Check whether Other may substitute Self under Tolerance"""
         limit: LspViolation = self.tolerance if tolerance is None else tolerance
-        print(f"{limit=}")
-        print(f"{self.tolerance=}")
-        print(f"{other}")
         return _rules.allows(base=self, new=other, tolerance=limit)
 
     def diff(

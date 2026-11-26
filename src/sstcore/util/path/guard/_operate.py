@@ -39,6 +39,7 @@ from ....forge.func import SafeFunctor
 from ....port._modulepath import DotPath
 from ....port.files import SyncMode
 from ....port.functorial import ErrorPolicy
+from ....port.link import portlink
 from ....port.sigspect import LspViolation
 from .._pathcast import PathArg, ResolvedSource, SourcePath, TargetPath
 from . import _ensure, _increment
@@ -73,6 +74,7 @@ class PathStrategy[**Args, Result](SafeFunctor[Args, Result]):
         return f"PathGuard::{name or super()._format_name()}"
 
 
+@portlink.tap.trace
 class TransferStrategy(PathStrategy[[Path, Path], Path]):
     """Execute Transfer Operation in Safe Environment"""
 
@@ -81,6 +83,7 @@ class TransferStrategy(PathStrategy[[Path, Path], Path]):
         return self(source, check_sync_mode(target, mode))
 
 
+@portlink.tap.trace
 class DeleteStrategy(PathStrategy[[Path], bool]):
     """Execute Delete Operation in Safe Environment"""
 

@@ -35,6 +35,7 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
     target_func: Callable[..., Out] | None = None
     bind_to_self: bool = False
 
+    # AI: does this massive overload bring any benefit?
     @overload
     def __init__(
         self,
@@ -77,14 +78,11 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
         return self
 
     def __set__(self, unit: object, value: Callable[..., Any]) -> None:
-        # NEXT: remove after tests
-        # NEXT: remove after tests
-        # NEXT: remove after tests
+        # TEST: already helps, is that the solution?
         self.write(unit, value)
 
     def write(self, unit: object, value: Callable[..., Any]) -> None:
-        # NEXT: remove after tests
-        # NEXT: remove after tests
+        # TEST: already helps, is that the solution?
         super().write(unit, value)
 
     def bind(self, func: Callable[..., Any]) -> None:

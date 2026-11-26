@@ -11,8 +11,13 @@ from sstcore.brick.call.lsp import SigSpec
 from sstcore.port.sigspect import LspViolation
 
 
-def section(title: str) -> None:
-    print(f"\n{'=' * 78}\n  {title}\n{'=' * 78}")
+def main():
+    demo_single_spec_views()
+    demo_format_mini_language()
+    demo_composite_violations()
+    demo_algebra()
+    demo_rich_panel()
+    pass
 
 
 # ----------------------------------------------------------------------------
@@ -147,11 +152,8 @@ def demo_algebra() -> None:
     _summarize("reader | writer", s_or)
 
 
-def demo_rich_if_available() -> None:
-    try:
-        from rich.console import Console
-    except ImportError:
-        return
+def demo_rich_panel() -> None:
+    from rich.console import Console
 
     section("5. Rich Panel Rendering (__rich__)")
     console = Console()
@@ -160,9 +162,9 @@ def demo_rich_if_available() -> None:
     console.print(s_base.diff(s_broken))
 
 
+def section(title: str) -> None:
+    print(f"\n{'=' * 78}\n  {title}\n{'=' * 78}")
+
+
 if __name__ == "__main__":
-    demo_single_spec_views()
-    demo_format_mini_language()
-    demo_composite_violations()
-    demo_algebra()
-    demo_rich_if_available()
+    main()

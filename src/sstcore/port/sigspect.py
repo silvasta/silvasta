@@ -64,6 +64,7 @@ class LspViolation(_e.IntFlag):
         | DROPPED_VAR_POS
         | DROPPED_VAR_KW
         | ADDED_PARAM_CONSTRAINT
+        | POS_KW_COLLISION
     )
 
     SINK_CALLBACK = (

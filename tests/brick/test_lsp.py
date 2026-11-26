@@ -163,7 +163,7 @@ class TestLspAtomicRules:
             (lambda *, a=1: a, lambda: None, LspViolation.DROPPED_KW_NAME),
             (lambda a: a, lambda a, *, req: a, LspViolation.ADDED_REQUIRED_KW),
             (
-                lambda a, /, *, b=1: a,
+                lambda a, x, /, *, b=1: a,
                 lambda a, b=1: a,
                 LspViolation.POS_KW_COLLISION,
             ),

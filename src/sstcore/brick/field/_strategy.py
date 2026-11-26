@@ -37,8 +37,9 @@ class StrategyField[**In, Out](CallableField[In, Out]):
     - Owner.field.bound(unit): return a BoundStrategy inspector/controller
     """
 
-    signature: SigSpec | None = None
+    signature: SigSpec | None = None  # WARN: why as like a ClassVar??
 
+    # AI: does this massive overload bring any benefit?
     @overload
     def __init__(
         self,
@@ -73,18 +74,25 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         bind_to_self: bool = True,
         tolerance: LspViolation = LspViolation.ZERO,
         **kwargs: Any,
-    ) -> None:
+    ):
+        """Overload for Method or Function"""
+
         self.tolerance: LspViolation = tolerance
         super().__init__(func, *args, bind_to_self=bind_to_self, **kwargs)
+
+    def bound(self, unit: object) -> BoundStrategy[In, Out]:
+        """Return an explicit BoundStrategy controller/inspector for `unit`."""
+        return BoundStrategy(self, unit)
 
     def __call__[**CallIn, CallOut](
         self,
         func: Callable[Concatenate[Any, CallIn], CallOut],
     ) -> StrategyField[CallIn, CallOut]:  # ty:ignore
         """Bind method when used as parameterized decorator @StrategyField(...)"""
-        self.bind(func)  # ty:ignore # FIX:
-        return self  # ty: ignore
+        self.bind(func)  # ty:ignor # FIX:
+        return self  # ty: ignor
 
+    @portlink.tap.watch
     def bind(self, func: Callable[..., Out]) -> None:
         super().bind(func)
         self.signature = SigSpec.detect(
@@ -92,33 +100,24 @@ class StrategyField[**In, Out](CallableField[In, Out]):
             bind_to_self=self.bind_to_self,
             tolerance=self.tolerance,
         )
-        # print(self.signature)# WARN::
 
+    @portlink.tap.watch
     def validate_signature(
+        # AI_QUESTION: why not resovle this with self.validate?
         self,
         unit: object,
-        value: Callable[..., Any],
+        value: Callable[..., Any],  # CHECK: why Any?
         *,
         bind_to_self: bool = False,
     ) -> Callable[In, Out]:
         """Validate callability and check SigSpec compatibility under self.tolerance."""
-        value = super().validate(unit, value)
+        value: Callable[..., Any] = super().validate(unit, value)
         candidate: SigSpec = SigSpec.detect(
-            value,
-            bind_to_self=bind_to_self,
-            tolerance=self.tolerance,
+            value, bind_to_self=bind_to_self, tolerance=self.tolerance
         )
-        if self.signature is None or self.signature.allows(other=candidate):
-            from rich import print
-
-            if self.signature is not None:
-                print(f"{self.signature.allows(other=candidate)=}")
-                print(f"{candidate.allows(other=self.signature)=}")
-            print(self.signature)
-            print(candidate)
-            if self.signature is not None:
-                print(f"{self.signature <= candidate=}")
-                print(f"{candidate.diff(self.signature)=}")
+        # AI_TASK: self.signature=None? that should be a forbidden state!
+        # as soon as func arrives -> attach signature, even if generic but if so: allow overwrite
+        if self.signature is None or not self.signature.allows(other=candidate):
             raise self.raiser.Signature(
                 self, unit, value=value, sig1=self.signature, sig2=candidate
             )
@@ -128,6 +127,9 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         self, unit: object, value: Callable[..., Any]
     ) -> Callable[In, Out]:
         """Enforce signature rules for instance-level overrides (`unit.field = fn`)."""
+        # AI: why is here not forwarded to super()?
+        # - so far only the negative effects of the MRO pipeline are accumulated
+        # - every benefit is instead thrown away...
         return self.validate_signature(unit, value, bind_to_self=False)
 
     def switch(
@@ -143,10 +145,6 @@ class StrategyField[**In, Out](CallableField[In, Out]):
             self.write(unit, func)
         return self
 
-    def bound(self, unit: object) -> BoundStrategy[In, Out]:
-        """Return an explicit BoundStrategy controller/inspector for `unit`."""
-        return BoundStrategy(self, unit)
-
     def clone(
         self,
         func: Callable[..., Any] | None = None,
@@ -154,11 +152,10 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         bind_to_self: bool | None = None,
         tolerance: LspViolation | None = None,
     ) -> Self:
+        bind: bool = self.bind_to_self if bind_to_self is None else bind_to_self
         return type(self)(
-            self.target_func if func is None else func,
-            bind_to_self=self.bind_to_self
-            if bind_to_self is None
-            else bind_to_self,
+            func=self.target_func if func is None else func,
+            bind_to_self=bind,
             tolerance=self.tolerance if tolerance is None else tolerance,
             default=self.default,
             frozen=self.frozen,
@@ -172,8 +169,8 @@ class MorphingField[**In, Out](StrategyField[In, Out]):
     def __call__[**CallIn, CallOut](
         self, func: Callable[Concatenate[Any, CallIn], CallOut]
     ) -> MorphingField[CallIn, CallOut]:
-        self.bind(func)  # type: ignore
-        return self  # type: ignore
+        self.bind(func)  # type: ignor
+        return self  # type: ignor
 
     def morph(
         self, func: Callable[..., Any], unit: object | None = None
@@ -184,6 +181,9 @@ class MorphingField[**In, Out](StrategyField[In, Out]):
         if unit is None:
             self.bind(func)
         else:
+            # AI_QUESTION: super().write would trigger FieldDecorator.write which directly forwards,
+            # - why not using this path as well?
+            # - hardcoded class name look even more fragile than the super() chain
             WriteField.write(self, unit, func)
         return self
 
@@ -191,54 +191,49 @@ class MorphingField[**In, Out](StrategyField[In, Out]):
 class BoundStrategy[**In, Out]:
     """Obtain via OwnerClass.field.bound(unit)"""
 
-    def __init__(
-        self,
-        field: StrategyField[In, Out],
-        unit: Any,
-    ) -> None:
+    def __init__(self, field: StrategyField[In, Out], unit: Any):
         self.field: StrategyField[In, Out] = field
         self.unit: Any = unit
+        self.__name__: str = reflect.funcname(self.func)
 
     @property
     def is_overridden(self) -> bool:
-        """Whether the instance holds a custom strategy override."""
+        """Does the instance hold a custom strategy override?"""
         return self.field._has_val(self.unit)
 
     @property
-    def func(self) -> Callable[..., Out]:
-        """Currently active underlying callable for this unit."""
-        if self.field._has_val(self.unit):
-            return self.field._get_val(self.unit)
-        if self.field.target_func is not None:
-            return self.field.target_func
-        raise self.field.raiser.Function(
-            self.field, self.unit, "Missing Target Function"
-        )
-
-    @property
-    def bind(self) -> bool:
-        """Whether `unit` is passed as the leading `self` argument."""
+    def is_bound(self) -> bool:
+        """Is the Unit passed as leading 'self' argument?"""
         if self.field._has_val(self.unit):
             return False
         return self.field.bind_to_self
 
     @property
-    def __name__(self) -> str:
-        return reflect.funcname(self.func)
+    def func(self) -> Callable[..., Out]:
+        """Currently active underlying Callable"""
+
+        if self.field._has_val(self.unit):
+            return self.field._get_val(self.unit)
+
+        if self.field.target_func is not None:
+            return self.field.target_func
+
+        raise self.field.raiser.Function(
+            self.field, self.unit, "Missing Target Function"
+        )
 
     @property
     def signature(self) -> SigSpec:
         """Active SigSpec of the currently mounted callable."""
-        active_func = self.func
         if (
             not self.is_overridden
-            and active_func is self.field.target_func
+            and self.func is self.field.target_func
             and self.field.signature is not None
         ):
             return self.field.signature
         return SigSpec.detect(
-            active_func,
-            bind_to_self=self.bind,
+            self.func,
+            bind_to_self=self.is_bound,
             tolerance=self.field.tolerance,
         )
 

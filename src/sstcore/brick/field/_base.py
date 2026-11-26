@@ -34,6 +34,7 @@ class NamedField:
     """Provide Name for all Fields"""
 
     raiser: type[FieldRaiser] = FieldRaiser
+    public_name: str = "field"
 
     def __init__(self, *args, **kwargs):
         """Close the chain: super()"""
@@ -43,8 +44,8 @@ class NamedField:
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
-    def name(self):
-        return f"{reflect.clsname(self)}[({self.public_name})]"
+    # def name(self):
+    #     return f"{reflect.clsname(self)}[({self.public_name})]"
 
     def __repr__(self) -> str:
         return f"{self}[\n{Kwargs.vars(self):nv}\n]"
