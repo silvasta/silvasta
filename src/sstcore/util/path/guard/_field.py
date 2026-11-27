@@ -74,7 +74,7 @@ class PathGuardField(
         if self.target_func is None:
             raise self.raiser.Function(self, unit, "Missing target_func!")
 
-        raw_path: PathArg = self.target_func(unit)
+        raw_path: PathArg = super().read(unit)  # CHECK:
         resolved: Path = type(self).logic(raw_path, **self.policy)
 
         if self.lazy:

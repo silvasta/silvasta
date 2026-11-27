@@ -87,7 +87,8 @@ class TransferStrategy(PathStrategy[[Path, Path], Path]):
 class DeleteStrategy(PathStrategy[[Path], bool]):
     """Execute Delete Operation in Safe Environment"""
 
-    @StrategyField(bind_to_self=True, tolerance=LspViolation.FUNCTOR_SLOT)
+    @StrategyField(bind_to_self=True, tolerance=LspViolation.ZERO)
+    # @StrategyField(bind_to_self=True, tolerance=LspViolation.FUNCTOR_SLOT)
     def _catch(self, error: Exception, target: PathArg) -> bool:
         logger.warning(f"{self.__name__}: {clsname(error)}", error, target)
         return False
@@ -176,7 +177,7 @@ Rotate: TransferStrategy = TransferStrategy(
 Hardlink = TransferStrategy(
     name="Hardlink",
     call=_hardlink,
-    catch=_handle_hardlink,
+    catch=_handle_hardlink,  # AI: here the error gets lost...
     policy=ErrorPolicy.RE_RAISE,
 )
 

@@ -25,16 +25,16 @@ from . import _render
 from ._define import LinkInput, PortEmit, PortPrinter
 
 HAND_TOGGLE: tuple[str, ...] = (  # Master PARAM:
-    "log",
-    "sigspec",
-    "strategy",
-    "BaseFunctor",
-    "init",
-    "operate",
+    # "log",
+    # "sigspec",
+    # "strategy",
+    # "BaseFunctor",
+    # "init",
     # "name",
 )
-# LATER: maybe move to .._presets ??
+
 META_FLAGS: frozenset[str] = frozenset({"log", "report", "init"})
+# LATER: maybe move to .._presets ??
 LINK_FLAGS: frozenset[str] = frozenset({"link", "port.link"})
 
 

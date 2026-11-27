@@ -23,7 +23,6 @@ from ...port.link import portlink
 from ...port.sigspect import LspViolation
 from .. import reflect
 from ..call.lsp import SigSpec
-from ._base import WriteField
 from ._decorate import CallableField, MaybeBound, SelfBound
 
 
@@ -45,6 +44,7 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         *args,
         bind_to_self: Literal[True] = True,
         tolerance: LspViolation = LspViolation.ZERO,
+        abstract: bool = False,
         **kwargs,
     ) -> None: ...
     @overload
@@ -54,6 +54,7 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         *args,
         bind_to_self: Literal[False],
         tolerance: LspViolation = LspViolation.ZERO,
+        abstract: bool = False,
         **kwargs,
     ) -> None: ...
     @overload
@@ -63,6 +64,7 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         *args,
         bind_to_self: bool = True,
         tolerance: LspViolation = LspViolation.ZERO,
+        abstract: bool = False,
         **kwargs,
     ) -> None: ...
     def __init__(
@@ -71,33 +73,95 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         *args,
         bind_to_self: bool = True,
         tolerance: LspViolation = LspViolation.ZERO,
+        abstract: bool = False,
         **kwargs,
     ):
         """Overload for Method or Function"""
 
+        self.abstract: bool = abstract
         self.tolerance: LspViolation = tolerance
-        self.bind_to_self: bool = bind_to_self
-        self.signature: SigSpec | None = None
+        self.signature: MayNot[SigSpec] = None
         super().__init__(func, *args, bind_to_self=bind_to_self, **kwargs)
+
+    # REMOVE: 1:1 copy of FieldDecorator??
+    # def __call__(self, func: SelfBound[In, Out]) -> Self:
+    #     """Bind method when used as parameterized decorator @StrategyField(...)"""
+    #     self.bind_target_func(func)
+    #     return self
+
+    def bind_target_func(
+        self, func: Callable[Concatenate[Any, In], Out] | Callable[In, Out]
+    ) -> None:
+        super().bind_target_func(func)
+        self.signature: MayNot[SigSpec] = (
+            None if self.abstract else self._create_sig(func)
+        )
+
+    def validate(
+        self,
+        unit: object | None,
+        value: Callable[..., Any],
+        *,
+        bind_to_self: MayNot[bool] = None,
+    ) -> Callable[In, Out]:
+        """Callable check, then LSP check against the class-level baseline."""
+        value = super().validate(unit, value)
+        self._guard_signature(unit, value, bind_to_self=bind_to_self)
+        return value
 
     # RENAME: per_unit_bound??
     def bound(self, unit: object) -> BoundStrategy[In, Out]:
         """Return an explicit BoundStrategy controller/inspector for `unit`."""
         return BoundStrategy(self, unit)
 
-    def __call__(self, func: SelfBound[In, Out]) -> Self:
-        """Bind method when used as parameterized decorator @StrategyField(...)"""
-        # REMOVE: 1:1 copy of FieldDecorator??
-        self.bind_target_func(func)
+    def switch(
+        self, func: Callable[..., Any], unit: object | None = None
+    ) -> Self:
+        """Swap class-level baseline (``unit is None``) or instance strategy."""
+        if unit is None:
+            _func = self.validate(unit, func)
+            self.bind_target_func(_func)
+        else:
+            self.write(unit, func)
         return self
 
+    def clone(
+        self,
+        func: Callable[..., Any] | None = None,  # REMOVE:???
+        *,
+        bind_to_self: bool | None = None,
+        tolerance: LspViolation | None = None,
+    ) -> Self:
+        _bind = self.bind_to_self if bind_to_self is None else bind_to_self
+        return type(self)(  # ty:ignore
+            self.target_func if func is None else func,
+            bind_to_self=_bind,
+            tolerance=self.tolerance if tolerance is None else tolerance,
+            abstract=self.abstract if func is None else False,
+            default=self.default,
+            frozen=self.frozen,
+        )
+
     @portlink.tap.watch
-    def bind_target_func(
-        self, func: Callable[Concatenate[Any, In], Out] | Callable[In, Out]
+    def _guard_signature(
+        self,
+        unit: object | None,
+        value: Callable[..., Any],
+        *,
+        bind_to_self: MayNot[bool] = None,
     ) -> None:
-        super().bind_target_func(func)
-        # CHECK: before or after bind_target_func?
-        self.signature: SigSpec = self._create_sig(func)
+        _bind = (
+            (self.bind_to_self if unit is None else False)
+            if bind_to_self is None
+            else bind_to_self
+        )
+        candidate: SigSpec = self._create_sig(value, bind_to_self=_bind)
+        if self.signature is not None and not self.signature.allows(
+            other=candidate
+        ):
+            raise self.raiser.Signature(
+                self, unit, value=value, sig1=self.signature, sig2=candidate
+            )
 
     def _create_sig(
         self,
@@ -114,76 +178,25 @@ class StrategyField[**In, Out](CallableField[In, Out]):
             tolerance=self.tolerance if tolerance is None else tolerance,
         )
 
-    def validate(
-        self,
-        unit: object,
-        value: Callable[..., Any],
-        *,
-        bind_to_self: MayNot[bool] = None,
-    ) -> Callable[In, Out]:
-        """Enforce signature rules for instance-level overrides (`unit.field = fn`)."""
-        value: Callable[..., Any] = super().validate(unit, value)
-        candidate: SigSpec = self._create_sig(value, bind_to_self=bind_to_self)
-        # CHECK: when is self.signature=None possible?
-        if self.signature is None or not self.signature.allows(other=candidate):
-            raise self.raiser.Signature(
-                self, unit, value=value, sig1=self.signature, sig2=candidate
-            )
-        return value
-
-    def switch(
-        self, func: Callable[..., Any], unit: object | None = None
-    ) -> Self:
-        """Swap class-level baseline (`unit=None`) or instance-level strategy."""
-        # IMPORTANT: del old function??
-        if unit is None:
-            self.validate(type(self), func, bind_to_self=self.bind_to_self)
-            self.bind_target_func(func)
-        else:
-            self.write(unit, func)
-        return self
-
-    def clone(
-        self,
-        func: Callable[..., Any] | None = None,
-        *,
-        bind_to_self: bool | None = None,
-        tolerance: LspViolation | None = None,
-    ) -> Self:
-        _bind = self.bind_to_self if bind_to_self is None else bind_to_self
-        return type(self)(
-            self.target_func if func is None else func,
-            bind_to_self=_bind,
-            tolerance=self.tolerance if tolerance is None else tolerance,
-            default=self.default,
-            frozen=self.frozen,
-        )
-
 
 @portlink(attach.MorphingDescriptor)
 class MorphingField[**In, Out](StrategyField[In, Out]):
-    """Allows swapping methods with arbitrary new signatures via `.morph()`."""
+    """Allows swapping methods with arbitrary new signatures via .morph()"""
 
-    # REMOVE:
-    # def __call__[**CallIn, CallOut](
-    #     self, func: Callable[Concatenate[Any, CallIn], CallOut]
-    # ) -> MorphingField[CallIn, CallOut]:
-    #     self.bind(func)  # type: ignor
-    #     return self  # type: ignor
+    def _guard_signature(
+        self,
+        unit: object | None,
+        value: Callable[..., Any],
+        *,
+        bind_to_self: MayNot[bool] = None,
+    ) -> None:
+        _ = unit, value, bind_to_self
 
     def morph(
         self, func: Callable[..., Any], unit: object | None = None
     ) -> Self:
-        """Unsafe function exchange on the Class or Instance level."""
-        target: object = type(self) if unit is None else unit
-        # REMOVE: any bypassing of the MRO chain!!!
-        CallableField.validate(self, target, func)
-        if unit is None:
-            self.bind_target_func(func)
-        else:
-            # REMOVE: any bypassing of the MRO chain!!!
-            WriteField.write(self, unit, func)
-        return self
+        """Exchange the callable on the class or instance, ignoring LSP"""
+        return self.switch(func, unit)
 
 
 class BoundStrategy[**In, Out]:

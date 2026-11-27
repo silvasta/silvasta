@@ -85,19 +85,20 @@ class LspViolation(_e.IntFlag):
     MORPHING_ANY_RETURN = (  # Full transformation
         MORPHING_INCLUSIVE | OVERLAPPING_RETURN_UNION | DISJOINT_RETURN_TYPE
     )
-
-    FUNCTOR_SLOT = (  # Specializing (*args: Args.args, **kwargs: Args.kwargs)
-        POS_ONLY_RENAMED
-        | DROPPED_VAR_POS
-        | REDUCED_MAX_POS
-        | INCREASED_MIN_POS
-        | DROPPED_VAR_KW
-        | ADDED_REQUIRED_KW
-        | ADDED_PARAM_CONSTRAINT
-        # WARN: remove them below
-        | DISJOINT_RETURN_TYPE
-        | DISJOINT_PARAM_TYPE
-    )
+    #
+    # AI: better remove this? or just like *args,**kwargs drop?
+    # FUNCTOR_SLOT = (  # Specializing (*args: Args.args, **kwargs: Args.kwargs)
+    #     POS_ONLY_RENAMED
+    #     | DROPPED_VAR_POS
+    #     | REDUCED_MAX_POS
+    #     | INCREASED_MIN_POS
+    #     | DROPPED_VAR_KW
+    #     | ADDED_REQUIRED_KW
+    #     | ADDED_PARAM_CONSTRAINT
+    #     # WARN: remove them below
+    #     | DISJOINT_RETURN_TYPE
+    #     | DISJOINT_PARAM_TYPE
+    # )
 
     @property
     def bits(self) -> str:

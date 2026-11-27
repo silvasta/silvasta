@@ -142,7 +142,7 @@ def test_modulepath_properties_and_truediv() -> None:
         (DummyClass().method, __name__, "DummyClass.method"),
         (
             ModulePath("a.b", "C"),
-            "sstcore.port.structures._module",
+            "sstcore.port._modulepath",
             "ModulePath",
         ),
     ],
@@ -215,8 +215,8 @@ def test_existence_and_lazy_loader() -> None:
     ("arg", "expected", "options"),
     [
         (
-            "sstcore.port.structures._module:ModulePath",
-            ModulePath("sstcore.port.structures._module", "ModulePath"),
+            "sstcore.port._modulepath:ModulePath",
+            ModulePath("sstcore.port._modulepath", "ModulePath"),
             {"require_attr": True, "must_exists": True},
         ),
         (
@@ -275,12 +275,12 @@ def test_modulespec_from_path_rejects_objects() -> None:
 
 
 def test_moduleguard_introspection_and_paths() -> None:
-    assert ModuleGuard.name(ModulePath) == "sstcore.port.structures._module"
-    assert ModuleGuard.public(ModulePath) == "sstcore.port.structures"
+    assert ModuleGuard.name(ModulePath) == "sstcore.port._modulepath"
+    assert ModuleGuard.public(ModulePath) == "sstcore.port"
 
     mod_file = ModuleGuard.file(ModulePath)
     assert isinstance(mod_file, Path)
-    assert mod_file.name == "_module.py"
+    assert mod_file.name == "_modulepath.py"
     assert mod_file.is_file()
 
     pkg_dir = ModuleGuard.dir(structures_pkg)
@@ -304,5 +304,5 @@ def test_moduleguard_submodules() -> None:
     )
 
     assert all(not mp.modules[-1].startswith("_") for mp in public_subs)
-    assert ModulePath("sstcore.port.structures._module") in all_subs
-    assert ModulePath("sstcore.port.structures._module") not in public_subs
+    assert ModulePath("sstcore.port._modulepath") in all_subs
+    assert ModulePath("sstcore.port._modulepath") not in public_subs

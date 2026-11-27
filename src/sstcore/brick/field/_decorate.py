@@ -21,13 +21,12 @@ from .. import reflect
 from ._base import DeleteField, ReadField
 from ._extend import ValidField
 
-# NOTE: SelfBound == ClsBound?
 type SelfBound[**In, Out] = Callable[Concatenate[Any, In], Out]
 type MaybeBound[**In, Out] = SelfBound[In, Out] | Callable[In, Out]
 
 
 @portlink(attach.DecoDescriptor)
-class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):  # CHECK:
+class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):
     """
     Decorate Method with or without Args
 
@@ -41,9 +40,8 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):  # CHECK:
         self, func: MayNot[MaybeBound[In, Out]] = None, *args, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
-        if func is None:
-            self.target_func: MayNot[MaybeBound[In, Out]] = None
-        else:
+        self.target_func: MayNot[MaybeBound[In, Out]] = None
+        if func is not None:
             self.bind_target_func(func)
 
     def __call__(self, func: SelfBound[In, Out]) -> Self:
@@ -60,7 +58,8 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):  # CHECK:
     #     super().write(unit, value)
 
     def bind_target_func(self, func: MaybeBound[In, Out]) -> None:
-        if not callable(func):  # CHECK: call self.validate?
+        """Install class-level callable: Entry point for decorator binding"""
+        if not callable(func):
             raise self.raiser.Function(self, value=func)
 
         self.target_func: MaybeBound[In, Out] = func
@@ -73,9 +72,6 @@ class FieldDecorator[**In, Out](ValidField[Callable[In, Out]]):  # CHECK:
             self.private_name: str = f"_{self.public_name}"
 
     def validate(self, unit: object, value: Callable) -> Callable[In, Out]:
-        # CHECK: -> AnyBound?
-        """Finish the loop and return the value"""
-
         if not callable(value):
             raise self.raiser.Function(self, unit, value=value)
 
@@ -91,32 +87,32 @@ class DecoratedField[**In, Out](
     def validate(
         self, unit: object, value: Callable[In, Out]
     ) -> Callable[In, Out]:
-        # WARN: crash for StrategyField?? just do not derive of it?
         if self._has_val(unit):
             raise self.raiser.WriteExists(self, unit, value=value)
         return super().validate(unit, value)
 
     def read(self, unit: object) -> Callable[In, Out]:
-        if self._has_val(unit):  # CHECK: super().read???
-            return self._get_val(unit)
-
-        if self.target_func is None:
-            raise self.raiser.Function(
-                self, unit, "Missing target_func to bind."
-            )
-        # REMOVE: when new version works
-        # bound_method = MethodType(self.target_func, unit)
-        # self.write(unit, bound_method)
-        # return bound_method
-        self.write(unit, value=MethodType(self.target_func, unit))
-        return self.read(unit)  # CHECK: recurision? some breaker?
+        if not self._has_val(unit):
+            if self.target_func is None:
+                raise self.raiser.Function(self, unit, "Missing target_func")
+            self.write(unit, MethodType(self.target_func, unit))
+        return super().read(unit)
 
 
 @portlink(attach.DecoDescriptor)
 class CallableField[**In, Out](
-    ReadField[Callable[In, Out]], FieldDecorator[In, Out], DeleteField
+    FieldDecorator[In, Out], ReadField[Callable[In, Out]], DeleteField
 ):
-    # REMOVE: undesired copy of DecoratedField??
+    def __init__(
+        self,
+        func: MayNot[MaybeBound[In, Out]] = None,
+        *args,
+        bind_to_self: bool = True,
+        **kwargs,
+    ) -> None:
+        self.bind_to_self: bool = bind_to_self
+        super().__init__(func, *args, **kwargs)
+
     def read(self, unit: object) -> Callable[In, Out]:
         if self._has_val(unit):
             return self._get_val(unit)
@@ -124,8 +120,8 @@ class CallableField[**In, Out](
         if self.target_func is None:
             raise self.raiser.Function(self, unit, "Missing Target to bind")
 
-        # CHECK: write here? like in DecoratedField?
-        if self.bind_to_self:
-            return MethodType(self.target_func, unit)
-
-        return self.target_func
+        return (
+            MethodType(self.target_func, unit)  # ty:ignore
+            if self.bind_to_self
+            else self.target_func
+        )

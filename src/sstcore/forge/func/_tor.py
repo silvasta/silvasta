@@ -20,7 +20,6 @@ from ...port import functorial
 from ...port.event.emit import BoundLog
 from ...port.event.name import CoreEvent
 from ...port.link import portlink
-from ...port.sigspect import LspViolation
 from ..engine import FunctorMeta
 from ._zero import FunctorInput, FunctorMetaInput, FunctorSpec, FunctorView
 
@@ -64,7 +63,9 @@ class BaseFunctor[**Args, Result](
     def __call__(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         return self._call(*args, **kwargs)
 
-    @StrategyField(bind_to_self=True, tolerance=LspViolation.FUNCTOR_SLOT)
+    @StrategyField(bind_to_self=True, abstract=True)
+    # @StrategyField(bind_to_self=True, tolerance=LspViolation.ZERO)
+    # @StrategyField(bind_to_self=True, tolerance=LspViolation.FUNCTOR_SLOT)
     # @StrategyField(bind_to_self=True, tolerance=~LspViolation.ZERO)
     def _call(self, *args: Args.args, **kwargs: Args.kwargs) -> Result:
         raise AttributeError(f"{self} has no _call!", self, args, kwargs)

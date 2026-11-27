@@ -8,8 +8,6 @@ Create Global RenderHub that visualizes all EventDTOs
                         DependencyLevel.sstcore.forge.view[c.2.4.0]
 """
 
-from typing import reveal_type
-
 __all__: list[str] = [
     "DtoRenderHub",
     "DtoVisualizer",
@@ -50,8 +48,7 @@ class DtoRenderHub:
 
     def __init__(self, colors: ColorBox) -> None:
         self.colors: ColorBox = colors  # CHECK: just Colors?
-        reveal_type(self.log)
-        self._dispatch: dict[str, DtoVisualizer[EventDTO]] = {  # ty:ignore FIX:
+        self._dispatch: dict[str, DtoVisualizer[EventDTO]] = {
             "log": self.log,
             "cli": self.cli,
             "panel": self.panel,

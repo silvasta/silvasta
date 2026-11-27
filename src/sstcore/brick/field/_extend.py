@@ -55,7 +55,8 @@ class TypedField[AnnoT](ValidField[AnnoT]):
         super().__init__(*args, **kwargs)
 
     def raise_on_typing(self, unit: object, value: AnnoT) -> Never:
-        _m = f"{self.name(unit)} expected {self.types!r}, got {clsname(value)}"
+        _ = unit  # NEXT: use Raiser
+        _m = f"{self} expected {self.types!r}, got {clsname(value)}"
         raise TypeError(_m)
 
     def validate(self, unit: object, value: AnnoT) -> AnnoT:
