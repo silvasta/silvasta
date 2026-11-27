@@ -71,13 +71,9 @@ class FieldErrorSpec[UnitT](raising.ErrorSpec):
     def attr(self) -> Any | None:
         return None if self.field is None else self.field.public_name
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # CHECK:
         """Find best Combination of available Nameable parts"""
         if self.field is not None:
-            if self.unit is not VOID:
-                return self.field.name(self.unit)
-            if self.owner is not None:
-                return self.field.name(self.owner)
             return f"{self.field}"
         if self.unit is not VOID:
             return f"{type(self.unit).__name__}[{self.unit}]"
@@ -178,11 +174,10 @@ class FieldRaiser(Raiser, zero=True):
                 return f"{data}: expected {value=}, got {received=}"
 
             case FieldRaiser.Function:
-                return f"Not Callable, {value=}! {self.name}"
+                return f"Not Callable, {data}: {value=}! "
 
             case FieldRaiser.Signature:
                 # TODO:
-
                 return f"{field}[\n---sig1\n{data.get('sig1')}\n---sig2\n{data.get('sig2')}\n]"
 
             case FieldRaiser.Transition:

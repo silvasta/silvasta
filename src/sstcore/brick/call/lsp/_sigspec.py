@@ -81,14 +81,14 @@ class SigVar(_SigVar):
 
     @classmethod
     def detect(
-        cls, param: Parameter, default: Any = VOID, annotation: Any = VOID
+        cls, param: Parameter, default: Any = EMPTY, annotation: Any = EMPTY
     ) -> Self:
         """Create from inspect.Parameter with optional overrides."""
         return cls(
             name=param.name,
             kind=param.kind,
-            default=param.default if default is VOID else default,
-            annotation=param.annotation if annotation is VOID else annotation,
+            default=param.default if default is EMPTY else default,
+            annotation=param.annotation if annotation is EMPTY else annotation,
         )
 
 
@@ -336,10 +336,12 @@ class SigSpec:
         buckets: Buckets = {part: [] for part in _ParameterKind}
         for param in sig.parameters.values():
             resolved: Any = hints.get(param.name, param.annotation)
-            arg = SigVar.detect(  # NEXT:
+            arg: SigVar = SigVar.detect(
                 param, annotation=_normalize_generic_annotation(resolved)
             )
             buckets[arg.kind].append(arg)
+
+        _result = _normalize_generic_annotation(reflect.sig.returns(hints, sig))
 
         spec = cls(
             pos=tuple(buckets[_ParameterKind.POSITIONAL_ONLY]),
@@ -347,7 +349,7 @@ class SigSpec:
             args=tuple(buckets[_ParameterKind.VAR_POSITIONAL]),
             key=tuple(buckets[_ParameterKind.KEYWORD_ONLY]),
             kwargs=tuple(buckets[_ParameterKind.VAR_KEYWORD]),
-            result=reflect.sig.returns(hints, sig),
+            result=_result,
             is_async=reflect.sig.is_async(unwrapped),
             is_generator=reflect.sig.is_generator(unwrapped),
             binding=_binding,
@@ -360,7 +362,7 @@ class SigSpec:
         return spec
 
 
-def _normalize_generic_annotation(annotation: Any) -> Any:  # NEXT:
+def _normalize_generic_annotation(annotation: Any, /) -> Any:  # NEXT:
     if isinstance(annotation, (ParamSpecArgs, ParamSpecKwargs)):
         return VOID
     if isinstance(annotation, TypeVar):

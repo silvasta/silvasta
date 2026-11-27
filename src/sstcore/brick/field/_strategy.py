@@ -18,12 +18,13 @@ from collections.abc import Callable
 from typing import Any, Concatenate, Literal, Self, overload
 
 from ...port import attach
+from ...port.empty import MayNot
 from ...port.link import portlink
 from ...port.sigspect import LspViolation
 from .. import reflect
 from ..call.lsp import SigSpec
 from ._base import WriteField
-from ._decorate import CallableField
+from ._decorate import CallableField, MaybeBound, SelfBound
 
 
 @portlink(attach.CallingDescriptor)
@@ -37,110 +38,107 @@ class StrategyField[**In, Out](CallableField[In, Out]):
     - Owner.field.bound(unit): return a BoundStrategy inspector/controller
     """
 
-    signature: SigSpec | None = None  # WARN: why as like a ClassVar??
-
-    # AI: does this massive overload bring any benefit?
     @overload
     def __init__(
         self,
-        func: Callable[Concatenate[Any, In], Out],
-        *args: Any,
+        func: SelfBound[In, Out],
+        *args,
         bind_to_self: Literal[True] = True,
         tolerance: LspViolation = LspViolation.ZERO,
-        **kwargs: Any,
+        **kwargs,
     ) -> None: ...
     @overload
     def __init__(
         self,
         func: Callable[In, Out],
-        *args: Any,
+        *args,
         bind_to_self: Literal[False],
         tolerance: LspViolation = LspViolation.ZERO,
-        **kwargs: Any,
+        **kwargs,
     ) -> None: ...
     @overload
     def __init__(
         self,
         func: None = None,
-        *args: Any,
+        *args,
         bind_to_self: bool = True,
         tolerance: LspViolation = LspViolation.ZERO,
-        **kwargs: Any,
+        **kwargs,
     ) -> None: ...
     def __init__(
         self,
-        func: Callable[..., Out] | None = None,
-        *args: Any,
+        func: MaybeBound[In, Out] | None = None,
+        *args,
         bind_to_self: bool = True,
         tolerance: LspViolation = LspViolation.ZERO,
-        **kwargs: Any,
+        **kwargs,
     ):
         """Overload for Method or Function"""
 
         self.tolerance: LspViolation = tolerance
+        self.bind_to_self: bool = bind_to_self
+        self.signature: SigSpec | None = None
         super().__init__(func, *args, bind_to_self=bind_to_self, **kwargs)
 
+    # RENAME: per_unit_bound??
     def bound(self, unit: object) -> BoundStrategy[In, Out]:
         """Return an explicit BoundStrategy controller/inspector for `unit`."""
         return BoundStrategy(self, unit)
 
-    def __call__[**CallIn, CallOut](
-        self,
-        func: Callable[Concatenate[Any, CallIn], CallOut],
-    ) -> StrategyField[CallIn, CallOut]:  # ty:ignore
+    def __call__(self, func: SelfBound[In, Out]) -> Self:
         """Bind method when used as parameterized decorator @StrategyField(...)"""
-        self.bind(func)  # ty:ignor # FIX:
-        return self  # ty: ignor
+        # REMOVE: 1:1 copy of FieldDecorator??
+        self.bind_target_func(func)
+        return self
 
     @portlink.tap.watch
-    def bind(self, func: Callable[..., Out]) -> None:
-        super().bind(func)
-        self.signature = SigSpec.detect(
+    def bind_target_func(
+        self, func: Callable[Concatenate[Any, In], Out] | Callable[In, Out]
+    ) -> None:
+        super().bind_target_func(func)
+        # CHECK: before or after bind_target_func?
+        self.signature: SigSpec = self._create_sig(func)
+
+    def _create_sig(
+        self,
+        func: Callable,
+        /,
+        *,
+        bind_to_self: MayNot[bool] = None,
+        tolerance: MayNot[LspViolation] = None,
+    ) -> SigSpec:
+        _bind = self.bind_to_self if bind_to_self is None else bind_to_self
+        return SigSpec.detect(
             func,
-            bind_to_self=self.bind_to_self,
-            tolerance=self.tolerance,
+            bind_to_self=_bind,
+            tolerance=self.tolerance if tolerance is None else tolerance,
         )
 
-    @portlink.tap.watch
-    def validate_signature(
-        # AI_QUESTION: why not resovle this with self.validate?
+    def validate(
         self,
         unit: object,
-        value: Callable[..., Any],  # CHECK: why Any?
+        value: Callable[..., Any],
         *,
-        bind_to_self: bool = False,
+        bind_to_self: MayNot[bool] = None,
     ) -> Callable[In, Out]:
-        """Validate callability and check SigSpec compatibility under self.tolerance."""
+        """Enforce signature rules for instance-level overrides (`unit.field = fn`)."""
         value: Callable[..., Any] = super().validate(unit, value)
-        candidate: SigSpec = SigSpec.detect(
-            value, bind_to_self=bind_to_self, tolerance=self.tolerance
-        )
-        # AI_TASK: self.signature=None? that should be a forbidden state!
-        # as soon as func arrives -> attach signature, even if generic but if so: allow overwrite
+        candidate: SigSpec = self._create_sig(value, bind_to_self=bind_to_self)
+        # CHECK: when is self.signature=None possible?
         if self.signature is None or not self.signature.allows(other=candidate):
             raise self.raiser.Signature(
                 self, unit, value=value, sig1=self.signature, sig2=candidate
             )
         return value
 
-    def validate(
-        self, unit: object, value: Callable[..., Any]
-    ) -> Callable[In, Out]:
-        """Enforce signature rules for instance-level overrides (`unit.field = fn`)."""
-        # AI: why is here not forwarded to super()?
-        # - so far only the negative effects of the MRO pipeline are accumulated
-        # - every benefit is instead thrown away...
-        return self.validate_signature(unit, value, bind_to_self=False)
-
     def switch(
         self, func: Callable[..., Any], unit: object | None = None
     ) -> Self:
         """Swap class-level baseline (`unit=None`) or instance-level strategy."""
+        # IMPORTANT: del old function??
         if unit is None:
-            self.validate_signature(
-                type(self), func, bind_to_self=self.bind_to_self
-            )
-            self.bind(func)
+            self.validate(type(self), func, bind_to_self=self.bind_to_self)
+            self.bind_target_func(func)
         else:
             self.write(unit, func)
         return self
@@ -152,10 +150,10 @@ class StrategyField[**In, Out](CallableField[In, Out]):
         bind_to_self: bool | None = None,
         tolerance: LspViolation | None = None,
     ) -> Self:
-        bind: bool = self.bind_to_self if bind_to_self is None else bind_to_self
+        _bind = self.bind_to_self if bind_to_self is None else bind_to_self
         return type(self)(
-            func=self.target_func if func is None else func,
-            bind_to_self=bind,
+            self.target_func if func is None else func,
+            bind_to_self=_bind,
             tolerance=self.tolerance if tolerance is None else tolerance,
             default=self.default,
             frozen=self.frozen,
@@ -166,24 +164,24 @@ class StrategyField[**In, Out](CallableField[In, Out]):
 class MorphingField[**In, Out](StrategyField[In, Out]):
     """Allows swapping methods with arbitrary new signatures via `.morph()`."""
 
-    def __call__[**CallIn, CallOut](
-        self, func: Callable[Concatenate[Any, CallIn], CallOut]
-    ) -> MorphingField[CallIn, CallOut]:
-        self.bind(func)  # type: ignor
-        return self  # type: ignor
+    # REMOVE:
+    # def __call__[**CallIn, CallOut](
+    #     self, func: Callable[Concatenate[Any, CallIn], CallOut]
+    # ) -> MorphingField[CallIn, CallOut]:
+    #     self.bind(func)  # type: ignor
+    #     return self  # type: ignor
 
     def morph(
         self, func: Callable[..., Any], unit: object | None = None
     ) -> Self:
         """Unsafe function exchange on the Class or Instance level."""
         target: object = type(self) if unit is None else unit
+        # REMOVE: any bypassing of the MRO chain!!!
         CallableField.validate(self, target, func)
         if unit is None:
-            self.bind(func)
+            self.bind_target_func(func)
         else:
-            # AI_QUESTION: super().write would trigger FieldDecorator.write which directly forwards,
-            # - why not using this path as well?
-            # - hardcoded class name look even more fragile than the super() chain
+            # REMOVE: any bypassing of the MRO chain!!!
             WriteField.write(self, unit, func)
         return self
 

@@ -22,7 +22,7 @@ __all__: list[str] = [
 from typing import Any, Never, Self, overload
 
 from ...port import attach
-from ...port.empty import VOID
+from ...port.empty import VOID, MayNot
 from ...port.link import portlink
 from ...port.primitives import Kwargs
 from .. import reflect
@@ -34,7 +34,6 @@ class NamedField:
     """Provide Name for all Fields"""
 
     raiser: type[FieldRaiser] = FieldRaiser
-    public_name: str = "field"
 
     def __init__(self, *args, **kwargs):
         """Close the chain: super()"""
@@ -44,17 +43,18 @@ class NamedField:
         self.public_name: str = name
         self.private_name: str = f"_{name}"
 
-    # def name(self):
-    #     return f"{reflect.clsname(self)}[({self.public_name})]"
-
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # LATER: use __format__ for multiline
         return f"{self}[\n{Kwargs.vars(self):nv}\n]"
 
     def __str__(self) -> str:
-        return f"{reflect.clsname(self)}.{self.public_name}"
+        name: str = getattr(self, "public_name", "FIELD")
+        return f"{reflect.clsname(self)}.{name}"
 
 
-class _SlotBaseField(NamedField):  # NEXT: wire this? make it Exchangeable?
+class _SlotBaseField(NamedField):
+    # TASK: wire this
+    # - use mode:Literal["dict","slots"]
+    # - maybe runtime toggle?
     def __init__(
         self, *args, default: Any = VOID, frozen: bool = False, **kwargs
     ):
@@ -94,6 +94,7 @@ class BaseField(NamedField):
         return unit.__dict__[self.private_name]
 
     def _set_val(self, unit: object, value: Any) -> None:
+        # TODO: frozen? or this as escape of frozen?
         unit.__dict__[self.private_name] = value
 
     def _del_val(self, unit: object) -> None:
@@ -114,7 +115,7 @@ class WriteField[FieldT](BaseField):
         self._set_val(unit, value)
 
 
-class ReadOnlyField(BaseField):  # FIX: block read and delete field?
+class ReadOnlyField(BaseField):  # IDEA: block read and delete field?
     def __set__(self, unit: object, value: Never) -> Never:
         raise self.raiser.ReadOnly(self, unit, value=value)
 
@@ -128,8 +129,9 @@ class ReadField[FieldT](BaseField):
     def __get__(self, unit: None, owner: type | None) -> Self: ...
     @overload
     def __get__(self, unit: object, owner: type | None) -> FieldT: ...
+    # AI_QUESTION: is owner ever None? should always be a Cls right?
     def __get__(
-        self, unit: object | None, owner: type | None = None
+        self, unit: MayNot[object], owner: type | None = None
     ) -> FieldT | Self:
         """Dispatch by Caller: unit=instance or owner=type(instance)"""
         _ = owner
